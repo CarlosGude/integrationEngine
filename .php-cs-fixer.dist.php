@@ -8,24 +8,29 @@ use PhpCsFixer\Finder;
 return (new Config())
     ->setRiskyAllowed(true)
     ->setRules([
-        '@auto' => true,
-        '@auto:risky' => true,
+        // Base moderna y segura (sin Symfony opinionado)
         '@PhpCsFixer' => true,
-        '@Symfony' => true
+        '@PhpCsFixer:risky' => true,
+
+        // PHPUnit moderno (attributes-first)
+        'php_unit_attributes' => true,
+        'php_unit_test_annotation' => false,
+        'php_unit_internal_class' => false,
+
+        // Evita docblocks heredados de PHPUnit legacy
+        'phpdoc_to_comment' => false,
+
+        // Mantener consistencia en tests sin ruido
+        'php_unit_method_casing' => true,
     ])
-    // 💡 by default, Fixer looks for `*.php` files excluding `./vendor/` - here, you can groom this config
     ->setFinder(
         (new Finder())
-            // 💡 root folder to check
             ->in(__DIR__)
-            // 💡 additional files, eg bin entry file
-            // ->append([__DIR__.'/bin-entry-file'])
-            // 💡 folders to exclude, if any
-            // ->exclude([/* ... */])
-            // 💡 path patterns to exclude, if any
-            // ->notPath([/* ... */])
-            // 💡 extra configs
-            // ->ignoreDotFiles(false) // true by default in v3, false in v4 or future mode
-            // ->ignoreVCS(true) // true by default
-    )
-;
+            ->exclude([
+                'vendor',
+                'var',
+                'cache',
+            ])
+            ->ignoreDotFiles(true)
+            ->ignoreVCS(true)
+    );

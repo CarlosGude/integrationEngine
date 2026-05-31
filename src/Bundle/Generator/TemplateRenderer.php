@@ -8,8 +8,7 @@ final class TemplateRenderer
 {
     public function __construct(
         private readonly IntegrationContext $ctx,
-    ) {
-    }
+    ) {}
 
     /* =========================
      * INTEGRATION ROOT

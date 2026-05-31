@@ -1,11 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace IntegrationEngine\Tests\Support\Fixtures\GetHelloWorld\Request;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Tests\Support\Fixtures\GetHelloWorld\Response\GetHelloWorldMappper;
-
-
 
 final readonly class GetHelloWorldAction extends AbstractAction
 {

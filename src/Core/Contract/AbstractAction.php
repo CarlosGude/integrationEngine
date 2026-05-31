@@ -11,8 +11,7 @@ abstract readonly class AbstractAction
         private string $path,
         private ?ActionBodyInterface $body,
         private mixed $authorization,
-    ) {
-    }
+    ) {}
 
     final public static function create(
         string $method,
@@ -54,7 +53,7 @@ abstract readonly class AbstractAction
     /**
      * Mapper used only if hasResponse() === true.
      *
-     * @return class-string<AbstractMapper>|null
+     * @return null|class-string<AbstractMapper>
      */
     abstract public static function mapper(): ?string;
 }

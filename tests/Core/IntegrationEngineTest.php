@@ -9,8 +9,13 @@ use IntegrationEngine\Tests\Support\FakeCache;
 use IntegrationEngine\Tests\Support\FakeClient;
 use IntegrationEngine\Tests\Support\FakeConfigPort;
 use IntegrationEngine\Tests\Support\Fixtures\Action\ActionFactory;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
+#[CoversNothing]
 final class IntegrationEngineTest extends TestCase
 {
     private IntegrationEngine $engine;
@@ -50,7 +55,7 @@ final class IntegrationEngineTest extends TestCase
 
         $response = $this->engine->send(actionName: $action::getName());
 
-        $this->assertSame(
+        self::assertSame(
             $expectedResponse,
             $response->toArray(),
         );

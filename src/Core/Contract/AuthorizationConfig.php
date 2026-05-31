@@ -8,8 +8,7 @@ abstract readonly class AuthorizationConfig
 {
     public function __construct(
         public readonly string $type,
-    ) {
-    }
+    ) {}
 
     public static function fromArray(array $config): self
     {

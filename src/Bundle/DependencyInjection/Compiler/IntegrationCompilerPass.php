@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Bundle\DependencyInjection\Compiler;
 
+use IntegrationEngine\Core\IntegrationEngine;
+use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
@@ -25,7 +27,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
             $configId = "integration_engine.config.{$name}";
 
             $container->setDefinition($configId, new Definition(
-                \IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter::class,
+                YamlConfigAdapter::class,
                 [$config['config_path']]
             ));
 
@@ -40,7 +42,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
             $integrationId = "integration_engine.integration.{$name}";
 
             $container->setDefinition($integrationId, new Definition(
-                \IntegrationEngine\Core\IntegrationEngine::class,
+                IntegrationEngine::class,
                 [
                     new Reference($configId),
                     $clientRef,

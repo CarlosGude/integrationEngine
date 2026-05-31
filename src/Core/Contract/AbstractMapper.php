@@ -17,6 +17,23 @@ abstract class AbstractMapper
     abstract public static function getAction(): string;
 
     /**
+     * Validates the action and delegates to transform().
+     * Called automatically by the engine — do not override.
+     *
+     * @throws MapperActionMismatchException
+     */
+    final public static function map(
+        AbstractAction $action,
+        array $response,
+    ): ResponseInterface {
+        if ($action::class !== static::getAction()) {
+            throw new MapperActionMismatchException(mapperClass: static::class, expectedActionClass: static::getAction(), actualActionClass: $action::class);
+        }
+
+        return static::transform($action, $response);
+    }
+
+    /**
      * Transforms the raw response array into a typed ResponseInterface.
      * Implement this in your mapper — the action type is guaranteed to match getAction().
      *
@@ -33,21 +50,4 @@ abstract class AbstractMapper
         AbstractAction $action,
         array $response,
     ): ResponseInterface;
-
-    /**
-     * Validates the action and delegates to transform().
-     * Called automatically by the engine — do not override.
-     *
-     * @throws MapperActionMismatchException
-     */
-    final public static function map(
-        AbstractAction $action,
-        array $response,
-    ): ResponseInterface {
-        if ($action::class !== static::getAction()) {
-            throw new MapperActionMismatchException(mapperClass: static::class, expectedActionClass: static::getAction(), actualActionClass: $action::class);
-        }
-
-        return static::transform($action, $response);
-    }
 }

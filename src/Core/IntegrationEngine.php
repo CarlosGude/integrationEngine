@@ -22,8 +22,7 @@ final readonly class IntegrationEngine
         private ConfigPort $config,
         private ClientInterface $client,
         private CachePort $cache,
-    ) {
-    }
+    ) {}
 
     /**
      * @throws \InvalidArgumentException
@@ -69,7 +68,7 @@ final readonly class IntegrationEngine
 
     private function resolveToken(DynamicAuthorizationConfig $authConfig): string
     {
-        $cacheKey = sprintf('integration_engine.token.%s', $authConfig->action);
+        $cacheKey = \sprintf('integration_engine.token.%s', $authConfig->action);
 
         if ($this->cache->has($cacheKey)) {
             return $this->cache->get($cacheKey);
@@ -83,7 +82,7 @@ final readonly class IntegrationEngine
         $responseArray = $authResponse->toArray();
 
         if (!isset($responseArray[$authConfig->tokenField])) {
-            throw new \RuntimeException(sprintf('Dynamic auth action "%s" response does not contain field "%s".', $authConfig->action, $authConfig->tokenField));
+            throw new \RuntimeException(\sprintf('Dynamic auth action "%s" response does not contain field "%s".', $authConfig->action, $authConfig->tokenField));
         }
 
         $token = $responseArray[$authConfig->tokenField];
@@ -98,7 +97,7 @@ final readonly class IntegrationEngine
         $mapperClass = $action::mapper();
 
         if (null === $mapperClass) {
-            throw new \LogicException(sprintf('Action "%s" requires a mapper but none was defined.', $action::class));
+            throw new \LogicException(\sprintf('Action "%s" requires a mapper but none was defined.', $action::class));
         }
 
         if (!is_a($mapperClass, AbstractMapper::class, true)) {

@@ -17,25 +17,25 @@ final class YamlConfigAdapter implements ConfigPort
     public function __construct(string $configPath)
     {
         if (!file_exists($configPath)) {
-            throw new \InvalidArgumentException(sprintf('Integration config file not found: %s', $configPath));
+            throw new \InvalidArgumentException(\sprintf('Integration config file not found: %s', $configPath));
         }
 
         $this->config = Yaml::parseFile($configPath);
     }
 
     public function getAction(
-        string $actionName,
+        string $name,
         ?ActionBodyInterface $body = null,
     ): AbstractAction {
-        if (!isset($this->config[$actionName])) {
-            throw new \InvalidArgumentException(sprintf('Action "%s" not found in integration config.', $actionName));
+        if (!isset($this->config[$name])) {
+            throw new \InvalidArgumentException(\sprintf('Action "%s" not found in integration config.', $name));
         }
 
-        $actionConfig = $this->config[$actionName];
+        $actionConfig = $this->config[$name];
 
         foreach (['action', 'method', 'path'] as $key) {
             if (!isset($actionConfig[$key])) {
-                throw new \InvalidArgumentException(sprintf('Action "%s" is missing required key: "%s".', $actionName, $key));
+                throw new \InvalidArgumentException(\sprintf('Action "%s" is missing required key: "%s".', $name, $key));
             }
         }
 

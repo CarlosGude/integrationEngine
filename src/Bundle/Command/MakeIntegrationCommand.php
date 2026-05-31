@@ -65,9 +65,9 @@ final class MakeIntegrationCommand extends Command
 
         // ── Build full action name: verb + name (e.g. Get + Orders = GetOrders)
         $resource = (string) $input->getArgument('action');
-        $verb         = ucfirst(strtolower($method));
-        $resourceClean = preg_replace('/^' . $verb . '/i', '', $resource);
-        $action        = $verb . ucfirst($resourceClean);
+        $verb = ucfirst(strtolower($method));
+        $resourceClean = preg_replace('/^'.$verb.'/i', '', $resource);
+        $action = $verb.ucfirst($resourceClean);
 
         $ctx = new IntegrationContext(
             name: $name,
@@ -132,7 +132,7 @@ final class MakeIntegrationCommand extends Command
 
     private function writeFile(string $filePath, string $content, SymfonyStyle $io): void
     {
-        $dir = dirname($filePath);
+        $dir = \dirname($filePath);
 
         if (!is_dir($dir) && !mkdir($dir, 0o755, true) && !is_dir($dir)) {
             $io->error("Cannot create dir: {$dir}");

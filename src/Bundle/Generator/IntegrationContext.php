@@ -13,8 +13,7 @@ final readonly class IntegrationContext
         public string $path,
         public string $baseNamespace,
         public string $basePath,
-    ) {
-    }
+    ) {}
 
     /**
      * Base namespace of the integration module

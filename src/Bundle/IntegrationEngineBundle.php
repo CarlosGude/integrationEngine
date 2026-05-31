@@ -6,6 +6,4 @@ namespace IntegrationEngine\Bundle;
 
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 
-final class IntegrationEngineBundle extends Bundle
-{
-}
+final class IntegrationEngineBundle extends Bundle {}

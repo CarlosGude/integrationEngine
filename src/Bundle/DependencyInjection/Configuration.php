@@ -23,9 +23,9 @@ final class Configuration implements ConfigurationInterface
             ->scalarNode('config_path')
             ->defaultNull()
             ->info(
-                'Path to the YAML file defining the actions. '.
-                'Defaults to {base_path}/{IntegrationName}/{IntegrationName}.yaml '.
-                'resolved at compile time by IntegrationCompilerPass.'
+                'Path to the YAML file defining the actions. '
+                .'Defaults to {base_path}/{IntegrationName}/{IntegrationName}.yaml '
+                .'resolved at compile time by IntegrationCompilerPass.'
             )
             ->end()
             ->scalarNode('base_path')
@@ -46,7 +46,7 @@ final class Configuration implements ConfigurationInterface
             ->end()
             ->end()
             ->validate()
-            ->ifTrue(fn ($v) => null === $v['base_url'] && null === $v['client_service'])
+            ->ifTrue(static fn ($v) => null === $v['base_url'] && null === $v['client_service'])
             ->thenInvalid('Each integration must define either "base_url" or "client_service".')
             ->end()
             ->end()
