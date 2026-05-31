@@ -22,7 +22,7 @@
 El proyecto ya tiene `composer.json` con las dependencias de desarrollo. Instálalas:
 
 ```bash
-cd integration-engine
+cd integrationEngine
 composer install
 ```
 
@@ -40,7 +40,7 @@ Si alguno falla, revisa que `require-dev` en `composer.json` esté correcto y vu
 
 ## 2. Escribir los tests
 
-No existe directorio `tests/` aún. Créalo con la siguiente estructura:
+Crea la estructura de tests:
 
 ```
 tests/
@@ -55,6 +55,10 @@ tests/
                 YamlConfigAdapterTest.php
             Cache/
                 InMemoryCacheAdapterTest.php
+    Fixtures/
+        yaml/
+            valid.yaml
+            missing_method.yaml
 ```
 
 A continuación los tests más importantes, listos para copiar.
@@ -63,7 +67,7 @@ A continuación los tests más importantes, listos para copiar.
 
 ### `tests/Unit/Core/Contract/AbstractActionTest.php`
 
-Verifica que `AbstractAction::create()` valida el método HTTP y que los getters funcionan.
+Verifica que `AbstractAction::create()` construye la acción correctamente y que los getters funcionan.
 
 ```php
 <?php
@@ -73,14 +77,13 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Unit\Core\Contract;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Exception\InvalidMethodException;
 use PHPUnit\Framework\TestCase;
 
 final class AbstractActionTest extends TestCase
 {
     public function test_create_builds_action_with_valid_method(): void
     {
-        $action = StubAction::create(method: 'GET', path: '/orders');
+        $action = StubAction::create(method: 'GET', path: '/orders', body: null, authorization: null);
 
         $this->assertSame('GET', $action->getMethod());
         $this->assertSame('/orders', $action->getPath());
@@ -88,23 +91,11 @@ final class AbstractActionTest extends TestCase
         $this->assertNull($action->getAuthorization());
     }
 
-    public function test_create_throws_on_invalid_method(): void
+    public function test_has_body_and_has_response_flags(): void
     {
-        $this->expectException(InvalidMethodException::class);
-
-        StubAction::create(method: 'INVALID', path: '/orders');
-    }
-
-    /** @dataProvider validMethods */
-    public function test_all_valid_methods_are_accepted(string $method): void
-    {
-        $action = StubAction::create(method: $method, path: '/tests');
-        $this->assertSame($method, $action->getMethod());
-    }
-
-    public static function validMethods(): array
-    {
-        return [['GET'], ['POST'], ['PUT'], ['DELETE']];
+        $this->assertFalse(StubAction::hasBody());
+        $this->assertTrue(StubAction::hasResponse());
+        $this->assertSame(StubMapper::class, StubAction::mapper());
     }
 }
 
@@ -112,7 +103,9 @@ final class AbstractActionTest extends TestCase
 final readonly class StubAction extends AbstractAction
 {
     public static function getName(): string    { return 'stub'; }
-    public static function getMapper(): string  { return StubMapper::class; }
+    public static function hasBody(): bool      { return false; }
+    public static function hasResponse(): bool  { return true; }
+    public static function mapper(): ?string    { return StubMapper::class; }
 }
 ```
 
@@ -139,7 +132,7 @@ final class AbstractMapperTest extends TestCase
 {
     public function test_map_returns_response_for_correct_action(): void
     {
-        $action   = CorrectAction::create('GET', '/tests');
+        $action   = CorrectAction::create('GET', '/tests', null, null);
         $response = CorrectMapper::map($action, ['value' => 42]);
 
         $this->assertInstanceOf(StubResponse::class, $response);
@@ -150,7 +143,7 @@ final class AbstractMapperTest extends TestCase
     {
         $this->expectException(MapperActionMismatchException::class);
 
-        $wrongAction = WrongAction::create('GET', '/other');
+        $wrongAction = WrongAction::create('GET', '/other', null, null);
         CorrectMapper::map($wrongAction, []);
     }
 }
@@ -159,14 +152,18 @@ final class AbstractMapperTest extends TestCase
 
 final readonly class CorrectAction extends AbstractAction
 {
-    public static function getName(): string   { return 'correct'; }
-    public static function getMapper(): string { return CorrectMapper::class; }
+    public static function getName(): string    { return 'correct'; }
+    public static function hasBody(): bool      { return false; }
+    public static function hasResponse(): bool  { return true; }
+    public static function mapper(): ?string    { return CorrectMapper::class; }
 }
 
 final readonly class WrongAction extends AbstractAction
 {
-    public static function getName(): string   { return 'wrong'; }
-    public static function getMapper(): string { return CorrectMapper::class; }
+    public static function getName(): string    { return 'wrong'; }
+    public static function hasBody(): bool      { return false; }
+    public static function hasResponse(): bool  { return true; }
+    public static function mapper(): ?string    { return CorrectMapper::class; }
 }
 
 final class CorrectMapper extends AbstractMapper
@@ -190,7 +187,7 @@ final readonly class StubResponse implements ResponseInterface
 
 ### `tests/Unit/Core/IntegrationTest.php`
 
-Este es el test más importante: verifica el flujo completo de `Integration::send()` usando dobles de test, sin hacer ninguna llamada HTTP real.
+Verifica el flujo completo de `Integration::send()` usando dobles de test, sin hacer ninguna llamada HTTP real.
 
 ```php
 <?php
@@ -201,11 +198,9 @@ namespace IntegrationEngine\Tests\Unit\Core;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\AbstractMapper;
-use IntegrationEngine\Core\Contract\ActionBodyInterface;
 use IntegrationEngine\Core\Contract\ClientInterface;
 use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\ResponseInterface;
-use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\InvalidMapperException;
 use IntegrationEngine\Core\Integration;
 use IntegrationEngine\Core\Port\CachePort;
@@ -215,10 +210,10 @@ use PHPUnit\Framework\TestCase;
 
 final class IntegrationTest extends TestCase
 {
-    private ConfigPort&MockObject   $config;
+    private ConfigPort&MockObject    $config;
     private ClientInterface&MockObject $client;
-    private CachePort&MockObject    $cache;
-    private Integration             $integration;
+    private CachePort&MockObject     $cache;
+    private Integration              $integration;
 
     protected function setUp(): void
     {
@@ -230,11 +225,11 @@ final class IntegrationTest extends TestCase
 
     public function test_send_returns_typed_response(): void
     {
-        $action = TestAction::create('GET', '/orders');
+        $action = TestAction::create('GET', '/orders', null, null);
 
         $this->config->expects($this->once())
             ->method('getAction')
-            ->with('getOrders')
+            ->with('GetOrders')
             ->willReturn($action);
 
         $this->client->expects($this->once())
@@ -242,7 +237,7 @@ final class IntegrationTest extends TestCase
             ->with($action)
             ->willReturn(['id' => 99]);
 
-        $response = $this->integration->send('getOrders');
+        $response = $this->integration->send('GetOrders');
 
         $this->assertInstanceOf(TestResponse::class, $response);
         $this->assertSame(['id' => 99], $response->toArray());
@@ -252,7 +247,7 @@ final class IntegrationTest extends TestCase
     {
         $this->expectException(InvalidMapperException::class);
 
-        $action = BadMapperAction::create('GET', '/bad');
+        $action = BadMapperAction::create('GET', '/bad', null, null);
 
         $this->config->method('getAction')->willReturn($action);
         $this->client->method('send')->willReturn([]);
@@ -260,69 +255,52 @@ final class IntegrationTest extends TestCase
         $this->integration->send('bad');
     }
 
+    public function test_delete_action_returns_empty_response_without_mapper(): void
+    {
+        $action = DeleteAction::create('DELETE', '/orders/1', null, null);
+
+        $this->config->method('getAction')->willReturn($action);
+        $this->client->expects($this->once())->method('send')->willReturn([]);
+
+        $response = $this->integration->send('DeleteOrders');
+
+        $this->assertSame([], $response->toArray());
+    }
+
     public function test_dynamic_auth_uses_cached_token_on_second_call(): void
     {
         $dynAuth = new DynamicAuthorizationConfig(
-            action: 'login',
+            action: 'PostLogin',
             tokenField: 'token',
             ttl: 3600,
         );
 
-        $actionWithDynAuth = TestAction::create('GET', '/orders', authorization: $dynAuth);
+        $actionWithDynAuth = TestAction::create('GET', '/orders', null, $dynAuth);
 
         $this->config->method('getAction')
             ->willReturnCallback(fn(string $name) => match ($name) {
-                'getOrders' => $actionWithDynAuth,
-                'login'     => LoginAction::create('POST', '/auth'),
+                'GetOrders' => $actionWithDynAuth,
+                'PostLogin' => LoginAction::create('POST', '/auth', null, null),
                 default     => throw new \InvalidArgumentException("Unknown: $name"),
             });
 
-        // First call: cache miss → login is called
         $this->cache->expects($this->exactly(2))
             ->method('has')
             ->willReturnOnConsecutiveCalls(false, true);
 
-        $this->cache->expects($this->once())
-            ->method('set');
+        $this->cache->expects($this->once())->method('set');
+        $this->cache->expects($this->once())->method('get')->willReturn('my-jwt-token');
 
-        $this->cache->expects($this->once())
-            ->method('get')
-            ->willReturn('my-jwt-token');
-
-        $this->client->expects($this->exactly(3)) // login + getOrders + getOrders(cached)
+        $this->client->expects($this->exactly(3))
             ->method('send')
             ->willReturnOnConsecutiveCalls(
-                ['token' => 'my-jwt-token'],  // login response
-                ['id' => 1],                   // first getOrders
-                ['id' => 2],                   // second getOrders (cached token)
+                ['token' => 'my-jwt-token'],
+                ['id' => 1],
+                ['id' => 2],
             );
 
-        $this->integration->send('getOrders');
-        $this->integration->send('getOrders');
-    }
-
-    public function test_dynamic_auth_throws_if_token_field_missing(): void
-    {
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('token');
-
-        $dynAuth = new DynamicAuthorizationConfig(
-            action: 'login',
-            tokenField: 'token',
-            ttl: 3600,
-        );
-
-        $this->config->method('getAction')
-            ->willReturnCallback(fn(string $name) => match ($name) {
-                'getOrders' => TestAction::create('GET', '/orders', authorization: $dynAuth),
-                'login'     => LoginAction::create('POST', '/auth'),
-                default     => throw new \InvalidArgumentException(),
-            });
-
-        $this->cache->method('has')->willReturn(false);
-        $this->client->method('send')->willReturn(['wrong_key' => 'value']);
-
-        $this->integration->send('getOrders');
+        $this->integration->send('GetOrders');
+        $this->integration->send('GetOrders');
     }
 }
 
@@ -330,20 +308,34 @@ final class IntegrationTest extends TestCase
 
 final readonly class TestAction extends AbstractAction
 {
-    public static function getName(): string   { return 'getOrders'; }
-    public static function getMapper(): string { return TestMapper::class; }
+    public static function getName(): string    { return 'GetOrders'; }
+    public static function hasBody(): bool      { return false; }
+    public static function hasResponse(): bool  { return true; }
+    public static function mapper(): ?string    { return TestMapper::class; }
 }
 
 final readonly class LoginAction extends AbstractAction
 {
-    public static function getName(): string   { return 'login'; }
-    public static function getMapper(): string { return TokenMapper::class; }
+    public static function getName(): string    { return 'PostLogin'; }
+    public static function hasBody(): bool      { return true; }
+    public static function hasResponse(): bool  { return true; }
+    public static function mapper(): ?string    { return TokenMapper::class; }
+}
+
+final readonly class DeleteAction extends AbstractAction
+{
+    public static function getName(): string    { return 'DeleteOrders'; }
+    public static function hasBody(): bool      { return false; }
+    public static function hasResponse(): bool  { return false; }
+    public static function mapper(): ?string    { return null; }
 }
 
 final readonly class BadMapperAction extends AbstractAction
 {
-    public static function getName(): string   { return 'bad'; }
-    public static function getMapper(): string { return \stdClass::class; } // Not an AbstractMapper
+    public static function getName(): string    { return 'bad'; }
+    public static function hasBody(): bool      { return false; }
+    public static function hasResponse(): bool  { return true; }
+    public static function mapper(): ?string    { return \stdClass::class; } // Not an AbstractMapper
 }
 
 final class TestMapper extends AbstractMapper
@@ -416,8 +408,6 @@ final class InMemoryCacheAdapterTest extends TestCase
 }
 ```
 
-> **Nota:** este test sólo funciona correctamente si `InMemoryCacheAdapter` almacena la hora de expiración y la comprueba en `has()`. Si el adaptador actual ignora el TTL por ser in-memory, el test `test_expired_entry_is_not_available` fallará — y ese fallo es informativo: te está diciendo que el adaptador no respeta el TTL ni en memoria.
-
 ---
 
 ### `tests/Unit/Infrastructure/Adapter/YamlConfigAdapterTest.php`
@@ -444,7 +434,7 @@ final class YamlConfigAdapterTest extends TestCase
     public function test_get_action_returns_action_for_valid_config(): void
     {
         $adapter = new YamlConfigAdapter($this->fixturesPath . 'valid.yaml');
-        $action  = $adapter->getAction('getOrders');
+        $action  = $adapter->getAction('GetOrders');
 
         $this->assertSame('GET', $action->getMethod());
         $this->assertSame('/orders', $action->getPath());
@@ -463,16 +453,16 @@ final class YamlConfigAdapterTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
 
         $adapter = new YamlConfigAdapter($this->fixturesPath . 'missing_method.yaml');
-        $adapter->getAction('getOrders');
+        $adapter->getAction('GetOrders');
     }
 }
 ```
 
-Crea los ficheros de fixture en `tests/Fixtures/yaml/`:
+Crea los ficheros de fixture en `tests/Fixtures/yaml/`.
 
 **`tests/Fixtures/yaml/valid.yaml`:**
 ```yaml
-getOrders:
+GetOrders:
     action: IntegrationEngine\Tests\Unit\Core\TestAction
     method: GET
     path: /orders
@@ -480,7 +470,7 @@ getOrders:
 
 **`tests/Fixtures/yaml/missing_method.yaml`:**
 ```yaml
-getOrders:
+GetOrders:
     action: IntegrationEngine\Tests\Unit\Core\TestAction
     path: /orders
 ```
@@ -489,30 +479,7 @@ getOrders:
 
 ## 3. Ejecutar los tests
 
-Antes de ejecutar, crea `phpunit.xml` en la raíz del proyecto:
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
-         colors="true">
-
-    <testsuites>
-        <testsuite name="Unit">
-            <directory>tests/Unit</directory>
-        </testsuite>
-    </testsuites>
-
-    <coverage>
-        <include>
-            <directory suffix=".php">src</directory>
-        </include>
-    </coverage>
-</phpunit>
-```
-
-Ejecuta:
+El proyecto ya incluye `phpunit.xml.dist` configurado. Ejecuta:
 
 ```bash
 # Tests con salida descriptiva
@@ -528,10 +495,10 @@ vendor/bin/phpstan analyse src tests --level=8
 vendor/bin/php-cs-fixer fix --dry-run --diff
 ```
 
-Si usas el `Makefile` del proyecto:
+O usando el `Makefile`:
 
 ```bash
-make tests    # phpunit
+make tests   # phpunit
 make stan    # phpstan
 make cs      # cs-fixer
 make qa      # los tres en secuencia
@@ -543,7 +510,7 @@ make qa      # los tres en secuencia
 
 ### 4.1 `.gitignore`
 
-Crea `.gitignore` en la raíz:
+El proyecto ya incluye `.gitignore`. Verifica que cubre:
 
 ```gitignore
 /vendor/
@@ -560,7 +527,7 @@ Crea `.gitignore` en la raíz:
 Antes de hacer el primer commit, verifica que tienes:
 
 ```
-integration-engine/
+integrationEngine/
     src/
     tests/
         Unit/
@@ -568,42 +535,15 @@ integration-engine/
     .gitignore
     .github/
         workflows/
-            ci.yml          ← lo crearemos en el paso 6
+            ci.yml
     composer.json
-    phpunit.xml
+    phpunit.xml.dist
     README.md
     DOCUMENTATION.md
     CONTRIBUTING.md
+    MANUAL_PUBLICACION.md
     Makefile
-    LICENSE              ← el proyecto declara MIT, crea este fichero
-```
-
-### 4.3 Fichero `LICENSE`
-
-El `composer.json` declara `"license": "MIT"`. Crea el fichero para que sea válido:
-
-```
-MIT License
-
-Copyright (c) 2025 TU_NOMBRE
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+    LICENSE
 ```
 
 ---
@@ -613,7 +553,7 @@ SOFTWARE.
 ### 5.1 Crear el repositorio
 
 1. Ve a [github.com/new](https://github.com/new)
-2. Nombre: `integration-engine`
+2. Nombre: `integrationEngine`
 3. Visibilidad: **Public** (Packagist requiere repositorios públicos para el plan gratuito)
 4. **No** inicialices con README ni .gitignore (ya los tienes)
 5. Clic en **Create repository**
@@ -621,7 +561,7 @@ SOFTWARE.
 ### 5.2 Primer push
 
 ```bash
-cd integration-engine
+cd integrationEngine
 
 git init
 git add .
@@ -632,60 +572,22 @@ git branch -M main
 git push -u origin main
 ```
 
-### 5.3 Actualizar `composer.json` con la URL real
+### 5.3 Estado actual del `composer.json`
 
-Abre `composer.json` y actualiza el campo `name` con tu vendor real de Packagist (ver paso 7) y añade los campos de soporte:
+El `composer.json` ya está configurado con el nombre correcto de Packagist y las URLs reales:
 
 ```json
 {
     "name": "carlosgude/integration-engine",
-    "description": "Hexagonal integration engine as a Symfony Bundle",
-    "type": "symfony-bundle",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Carlos Gude",
-            "email": "tu@email.com"
-        }
-    ],
-    "keywords": ["symfony", "bundle", "integration", "api", "hexagonal"],
     "homepage": "https://github.com/CarlosGude/integrationEngine",
     "support": {
         "issues": "https://github.com/CarlosGude/integrationEngine/issues",
         "source": "https://github.com/CarlosGude/integrationEngine"
-    },
-    "require": {
-        "php": ">=8.2",
-        "symfony/yaml": "^6.4|^7.0",
-        "symfony/http-client": "^6.4|^7.0"
-    },
-    "require-dev": {
-        "phpunit/phpunit": "^11.0",
-        "phpstan/phpstan": "^1.0",
-        "friendsofphp/php-cs-fixer": "^3.0",
-        "symfony/framework-bundle": "^6.4|^7.0"
-    },
-    "autoload": {
-        "psr-4": {
-            "IntegrationEngine\\": "src/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "IntegrationEngine\\Tests\\": "tests/"
-        }
-    },
-    "config": {
-        "sort-packages": true
     }
 }
 ```
 
-```bash
-git add composer.json
-git commit -m "chore: update composer.json with author and support links"
-git push
-```
+No necesitas modificarlo antes de publicar.
 
 ---
 
@@ -710,7 +612,7 @@ jobs:
     strategy:
       matrix:
         php: ['8.2', '8.3']
-        symfony: ['6.4', '7.2']
+        symfony: ['6.4', '7.2', '8.1']
 
     steps:
       - name: Checkout
@@ -749,18 +651,13 @@ Ve a la pestaña **Actions** de tu repositorio en GitHub y verifica que el workf
 
 ## 7. Preparar el package para Composer
 
-### 7.1 Elegir el nombre del vendor
+### 7.1 Nombre del vendor en Packagist
 
-El nombre en Packagist es `vendor/package`. El vendor normalmente es tu username de GitHub en minúsculas. Ejemplos:
-
-- `carlosgude/integration-engine`
-- `carlosgude/integration-engine`
-
-Una vez elegido, actualiza `"name"` en `composer.json` y haz push antes de registrar en Packagist. **El nombre no se puede cambiar fácilmente después.**
+El nombre ya está definido como `carlosgude/integration-engine` en `composer.json`. **No lo cambies** — una vez publicado en Packagist, el nombre no se puede modificar fácilmente.
 
 ### 7.2 Crear la primera tag de versión
 
-Packagist trabaja con tags de Git como versiones. El formato es `MAJOR.MINOR.PATCH` con prefijo `v`:
+Packagist trabaja con tags de Git como versiones:
 
 ```bash
 git tag v1.0.0
@@ -775,12 +672,12 @@ git push origin v1.0.0
 
 1. Ve a [packagist.org](https://packagist.org) e inicia sesión (puedes usar tu cuenta de GitHub)
 2. Clic en **Submit**
-3. En el campo URL introduce la URL de tu repositorio de GitHub:
+3. En el campo URL introduce:
    ```
    https://github.com/CarlosGude/integrationEngine
    ```
-4. Clic en **Check** — Packagist leerá el `composer.json` y mostrará el nombre y descripción detectados
-5. Si todo es correcto, clic en **Submit**
+4. Clic en **Check** — Packagist leerá el `composer.json` y mostrará `carlosgude/integration-engine`
+5. Clic en **Submit**
 
 El paquete ya es instalable:
 
@@ -789,8 +686,6 @@ composer require carlosgude/integration-engine
 ```
 
 ### 8.2 Configurar el webhook para actualizaciones automáticas
-
-Sin el webhook, Packagist no se entera de los nuevos tags hasta que lo actualices manualmente. Configúralo así:
 
 **En Packagist:**
 1. Ve a la página de tu paquete
@@ -805,7 +700,7 @@ Sin el webhook, Packagist no se entera de los nuevos tags hasta que lo actualice
 5. Events: **Just the push event**
 6. Clic en **Add webhook**
 
-Desde ese momento, cada `git push` y cada nuevo tag se reflejan en Packagist automáticamente en segundos.
+Desde ese momento, cada `git push` y cada nuevo tag se reflejan en Packagist automáticamente.
 
 ---
 
@@ -817,18 +712,15 @@ Desde ese momento, cada `git push` y cada nuevo tag se reflejan en Packagist aut
 # 1. Asegúrate de que los tests pasan
 make qa
 
-# 2. Actualiza CHANGELOG.md si lo tienes
-# 3. Haz commit de los cambios
+# 2. Haz commit de los cambios
 git add .
 git commit -m "feat: descripción del cambio"
 git push
 
-# 4. Crea la tag
+# 3. Crea la tag
 git tag v1.1.0
 git push origin v1.1.0
 ```
-
-Packagist detectará el nuevo tag y expondrá `v1.1.0` como versión instalable.
 
 ### Cuándo subir MAJOR / MINOR / PATCH
 
@@ -842,34 +734,31 @@ Packagist detectará el nuevo tag y expondrá `v1.1.0` como versión instalable.
 
 - Renombrar o eliminar una interfaz, clase abstracta o método público del Core
 - Cambiar la firma de `Integration::send()`, `AbstractAction::create()`, `AbstractMapper::map()`
+- Añadir métodos abstractos a `AbstractAction` (actualmente: `getName`, `hasBody`, `hasResponse`, `mapper`)
 - Modificar los campos requeridos en el YAML de configuración
 
 ---
 
 ## 10. Checklist completa
 
-Antes de publicar, verifica que tienes todo:
-
 **Código:**
-- [ ] `src/` completo y sin `final` en `SymfonyHttpClientAdapter`
+- [ ] `src/` completo y sin errores de PHPStan nivel 8
 - [ ] `tests/` con cobertura de los flujos principales
-- [ ] `phpunit.xml` configurado
-- [ ] Tests en verde localmente
+- [ ] Tests en verde localmente (`make qa`)
 
 **Repositorio:**
 - [ ] `.gitignore` correcto (no hay `vendor/` en el repo)
 - [ ] `LICENSE` presente (MIT)
 - [ ] `README.md` con Quick Start funcional
 - [ ] `DOCUMENTATION.md` completa
-- [ ] `composer.json` con `name`, `authors`, `homepage`, `support`, `keywords`
+- [ ] `composer.json` con `name: carlosgude/integration-engine`, `authors`, `homepage`, `support`, `keywords`
 - [ ] Primera tag `v1.0.0` creada y pusheada
 
 **GitHub:**
-- [ ] Repositorio público
+- [ ] Repositorio público en `github.com/CarlosGude/integrationEngine`
 - [ ] GitHub Actions en verde en la pestaña Actions
 - [ ] Webhook de Packagist configurado
 
 **Packagist:**
 - [ ] Paquete registrado y visible en packagist.org
 - [ ] `composer require carlosgude/integration-engine` funciona en un proyecto de prueba
-

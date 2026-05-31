@@ -4,13 +4,12 @@
 
 - PHP 8.2+
 - Composer
-- Docker + Docker Compose (recommended)
 
 ## Setup
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/integration-engine.git
-cd integration-engine
+git clone https://github.com/CarlosGude/integrationEngine.git
+cd integrationEngine
 composer install
 ```
 
@@ -18,6 +17,15 @@ composer install
 
 ```bash
 vendor/bin/phpunit --testdox
+```
+
+Or via the Makefile:
+
+```bash
+make tests   # phpunit
+make stan    # phpstan level 8
+make cs      # php-cs-fixer (dry-run)
+make qa      # all three in sequence
 ```
 
 ## Code quality

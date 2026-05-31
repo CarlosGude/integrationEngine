@@ -33,33 +33,57 @@ Bundle (DI wiring)
 
 **Bundle** reads the project's `integration_engine.yaml`, builds service definitions, and registers everything with Symfony's DI container. No business logic lives here.
 
+### Generated file structure
+
+The `make:integration` command places each action in its own subdirectory, with a clear Request/Response split:
+
+```
+src/Infrastructure/Integrations/Stripe/
+    StripeIntegration.php           ← IntegrationName constant
+    StripeHttpClient.php            ← extend point for custom HTTP behaviour
+    Stripe.yaml                     ← action registry for this integration
+    GetCharge/
+        Request/
+            GetChargeAction.php
+            GetChargeBody.php       ← only for POST/PUT
+        Response/
+            GetChargeMapper.php
+            GetChargeResponse.php
+    DeleteCharge/
+        Request/
+            DeleteChargeAction.php  ← DELETE actions have no Response layer
+```
+
 ### Request lifecycle
 
 ```
-$registry->get(StripeIntegration::NAME)->send('chargeCard', $body)
+$registry->get(StripeIntegration::NAME)->send('GetCharge', $body)
     │
-    ├─ ConfigPort::getAction('chargeCard', $body)
-    │       reads stripe.yaml
-    │       validates method, path, action class
-    │       builds ChargeCardAction with authorization config
+    ├─ ConfigPort::getAction('GetCharge', $body)
+    │       reads Stripe.yaml
+    │       validates action class, method, path
+    │       builds GetChargeAction with authorization config
     │
     ├─ [if authorization.type = dynamic]
-    │       CachePort::has('integration_engine.token.login')?
+    │       CachePort::has('integration_engine.token.<auth_action>')?
     │           yes → use cached token, skip login
-    │           no  → send login action
-    │                 extract token_field from response
+    │           no  → send auth action
+    │                 extract token_field from response via toArray()
     │                 CachePort::set(token, ttl)
     │       rebuild action with StaticAuthorizationConfig(bearer, token)
     │
-    ├─ ClientInterface::send(ChargeCardAction)
+    ├─ ClientInterface::send(GetChargeAction)
     │       resolves Authorization header from auth config
     │       sends HTTP request
     │       returns raw decoded array
     │
-    └─ AbstractMapper::map(ChargeCardAction, rawArray)
+    ├─ [if action::hasResponse() === false]
+    │       return EmptyResponse (no mapper invoked)
+    │
+    └─ AbstractMapper::map(GetChargeAction, rawArray)
             validates mapper ↔ action pairing
-            calls ChargeCardMapper::transform()
-            returns typed ChargeCardResponse
+            calls GetChargeMapper::transform()
+            returns typed GetChargeResponse
 ```
 
 ---
@@ -71,7 +95,7 @@ $registry->get(StripeIntegration::NAME)->send('chargeCard', $body)
 Implement on every request DTO. The HTTP client calls `toArray()` to build the JSON body.
 
 ```php
-final readonly class ChargeCardBody implements ActionBodyInterface
+final readonly class PostChargeBody implements ActionBodyInterface
 {
     public function __construct(
         public readonly string $token,
@@ -96,22 +120,34 @@ final readonly class ChargeCardBody implements ActionBodyInterface
 
 ### `AbstractAction`
 
-Extend this once per action. Declare `getName()` (the string key used in `send()`) and `getMapper()` (the mapper class for this action). The class body is otherwise empty.
+Extend this once per action. Declare four static methods:
 
 ```php
-final readonly class ChargeCardAction extends AbstractAction
+final readonly class GetChargeAction extends AbstractAction
 {
     public static function getName(): string
     {
-        return 'chargeCard';
+        return 'GetCharge';
     }
 
-    public static function getMapper(): string
+    public static function hasBody(): bool
     {
-        return ChargeCardMapper::class;
+        return false; // true for POST/PUT
+    }
+
+    public static function hasResponse(): bool
+    {
+        return true; // false for DELETE
+    }
+
+    public static function mapper(): ?string
+    {
+        return GetChargeMapper::class; // null when hasResponse() is false
     }
 }
 ```
+
+`getName()` is the string key used in `send()`. `hasBody()` and `hasResponse()` control which layers the engine activates. `mapper()` returns the mapper class string, or `null` for actions without a response (e.g. DELETE).
 
 You never instantiate actions directly. `YamlConfigAdapter` builds them from the YAML file and passes them through the engine.
 
@@ -122,16 +158,16 @@ You never instantiate actions directly. `YamlConfigAdapter` builds them from the
 Extend this to transform the raw API response array into a typed `ResponseInterface`.
 
 ```php
-final class ChargeCardMapper extends AbstractMapper
+final class GetChargeMapper extends AbstractMapper
 {
     public static function getAction(): string
     {
-        return ChargeCardAction::class;
+        return GetChargeAction::class;
     }
 
     protected static function transform(AbstractAction $action, array $response): ResponseInterface
     {
-        return new ChargeCardResponse(
+        return new GetChargeResponse(
             id:       $response['id'],
             status:   $response['status'],
             amount:   $response['amount'],
@@ -143,6 +179,8 @@ final class ChargeCardMapper extends AbstractMapper
 
 `getAction()` declares the action class this mapper belongs to. The engine validates the pairing at runtime and throws `MapperActionMismatchException` if it does not match. `transform()` is `protected` and called only after validation passes. `map()` is `final` — do not override it.
 
+The mapper is only invoked when `action::hasResponse()` returns `true`. For DELETE actions, `mapper()` returns `null` and no mapper is needed.
+
 ---
 
 ### `ResponseInterface`
@@ -150,7 +188,7 @@ final class ChargeCardMapper extends AbstractMapper
 Implement on every response DTO.
 
 ```php
-final readonly class ChargeCardResponse implements ResponseInterface
+final readonly class GetChargeResponse implements ResponseInterface
 {
     public function __construct(
         public readonly string $id,
@@ -199,28 +237,33 @@ final class StripeIntegration implements IntegrationName
 }
 
 // Usage:
-$registry->get(StripeIntegration::NAME)->send('chargeCard', $body);
+$registry->get(StripeIntegration::NAME)->send('GetCharge', $body);
 ```
 
-Using the constant prevents magic strings from scattering across the codebase. The `make:integration` command generates this class automatically.
+Using the constant prevents magic strings from scattering across the codebase. The `make:integration` command generates this class automatically with a snake_case `NAME` derived from the PascalCase integration name.
 
 ---
 
 ## 3. The integration YAML
 
-Each integration has its own YAML file. Top-level keys are action names that map directly to the first argument of `Integration::send()`.
+Each integration has a single YAML file (named after the integration). Top-level keys are action names that map directly to the first argument of `Integration::send()`.
 
 ```yaml
-# src/Integration/Stripe/config/stripe.yaml
+# src/Infrastructure/Integrations/Stripe/Stripe.yaml
 
-chargeCard:
-    action: App\Integration\Stripe\Action\ChargeCardAction
+GetCharge:
+    action: App\Infrastructure\Integrations\Stripe\GetCharge\Request\GetChargeAction
+    method: GET
+    path: /v1/charges/{id}
+
+PostCharge:
+    action: App\Infrastructure\Integrations\Stripe\PostCharge\Request\PostChargeAction
     method: POST
     path: /v1/charges
 
-getCharge:
-    action: App\Integration\Stripe\Action\GetChargeAction
-    method: GET
+DeleteCharge:
+    action: App\Infrastructure\Integrations\Stripe\DeleteCharge\Request\DeleteChargeAction
+    method: DELETE
     path: /v1/charges/{id}
 ```
 
@@ -238,7 +281,7 @@ getCharge:
 |---|---|
 | `authorization` | Auth config block — see [Authorization](#4-authorization) |
 
-> The `mapper` key present in version 1 has been removed. The mapper is now declared directly on the action class via `getMapper()`, which makes the YAML shorter and the pairing statically verifiable.
+The mapper is **not** declared in the YAML. It is declared directly on the action class via `mapper()`, which makes the YAML shorter and the pairing statically verifiable.
 
 ---
 
@@ -250,8 +293,8 @@ The token is a fixed value (or an environment variable resolved at boot time).
 
 **Bearer token:**
 ```yaml
-chargeCard:
-    action: App\Integration\Stripe\Action\ChargeCardAction
+PostCharge:
+    action: App\Infrastructure\Integrations\Stripe\PostCharge\Request\PostChargeAction
     method: POST
     path: /v1/charges
     authorization:
@@ -261,8 +304,8 @@ chargeCard:
 
 **API key header:**
 ```yaml
-getWeather:
-    action: App\Integration\Weather\Action\GetWeatherAction
+GetWeather:
+    action: App\Infrastructure\Integrations\Weather\GetWeather\Request\GetWeatherAction
     method: GET
     path: /current
     authorization:
@@ -273,8 +316,8 @@ getWeather:
 
 **HTTP Basic:**
 ```yaml
-getReport:
-    action: App\Integration\Reports\Action\GetReportAction
+GetReport:
+    action: App\Infrastructure\Integrations\Reports\GetReport\Request\GetReportAction
     method: GET
     path: /reports
     authorization:
@@ -292,48 +335,48 @@ getReport:
 Use this when the API requires a login request to obtain a short-lived token (JWT, session token, etc.).
 
 ```yaml
-# Auth action — defined like any other action, no authorization block
-login:
-    action: App\Integration\Acme\Action\LoginAction
+# src/Infrastructure/Integrations/Acme/Acme.yaml
+
+PostLogin:
+    action: App\Infrastructure\Integrations\Acme\PostLogin\Request\PostLoginAction
     method: POST
     path: /auth/token
 
-# Protected action
-getOrders:
-    action: App\Integration\Acme\Action\GetOrdersAction
+GetOrders:
+    action: App\Infrastructure\Integrations\Acme\GetOrders\Request\GetOrdersAction
     method: GET
     path: /orders
     authorization:
         type: dynamic
-        action: login       # name of the auth action in this same YAML
-        token_field: token  # key to extract from the auth response's toArray()
-        ttl: 3600           # seconds to cache the token
+        action: PostLogin       # name of the auth action in this same YAML
+        token_field: token      # key to extract from the auth response's toArray()
+        ttl: 3600               # seconds to cache the token
 ```
 
 **How it works:**
 
-1. On the first call the engine sends the `login` action and stores the token in the cache.
+1. On the first call the engine sends the `PostLogin` action and stores the token in the cache under the key `integration_engine.token.PostLogin`.
 2. The token is injected as a `bearer` `StaticAuthorizationConfig` into the main action.
 3. Subsequent calls within the TTL window skip the login entirely.
 4. When the TTL expires the engine re-authenticates transparently on the next call.
 
-The `TokenMapper` must return a `ResponseInterface` whose `toArray()` includes the `token_field` key:
+The login mapper must return a `ResponseInterface` whose `toArray()` includes the `token_field` key:
 
 ```php
-final class TokenMapper extends AbstractMapper
+final class PostLoginMapper extends AbstractMapper
 {
     public static function getAction(): string
     {
-        return LoginAction::class;
+        return PostLoginAction::class;
     }
 
     protected static function transform(AbstractAction $action, array $response): ResponseInterface
     {
-        return new TokenResponse(token: $response['access_token']);
+        return new PostLoginResponse(token: $response['access_token']);
     }
 }
 
-final readonly class TokenResponse implements ResponseInterface
+final readonly class PostLoginResponse implements ResponseInterface
 {
     public function __construct(public readonly string $token) {}
 
@@ -350,56 +393,89 @@ final readonly class TokenResponse implements ResponseInterface
 
 ## 5. The make:integration command
 
-Generates the complete file skeleton for a new integration in one command.
+Generates the complete file skeleton for a new integration or appends a new action to an existing one, all in a single interactive command.
 
 ```bash
-php bin/console make:integration <Name> <FirstAction> [options]
+php bin/console make:integration <Name> <Resource> [options]
 ```
 
 ### Arguments
 
 | Argument | Description |
 |---|---|
-| `Name` | Integration name in PascalCase (e.g. `Stripe`, `AcmeApi`) |
-| `FirstAction` | First action name in PascalCase (e.g. `ChargeCard`, `GetOrders`) |
+| `Name` | Integration name in PascalCase (e.g. `Stripe`, `AcmeErp`) |
+| `Resource` | Resource name in PascalCase (e.g. `Charge`, `Orders`). The HTTP verb is prepended automatically. |
 
 ### Options
 
 | Option | Default | Description |
 |---|---|---|
-| `--namespace` | `App\Integration` | Base PHP namespace |
-| `--path` | `src/Integration` | Base directory relative to project root |
+| `--namespace` | `App\Infrastructure\Integrations` | Base PHP namespace |
+| `--path` | `src/Infrastructure/Integrations` | Base directory relative to project root |
+
+### Interactive prompts
+
+After the arguments, the command asks interactively:
+
+1. **HTTP method** — choice between `GET`, `POST`, `PUT`, `DELETE` (default: `GET`)
+2. **Action path** — the URL path, e.g. `/orders/{id}` (required, re-prompts if empty)
+
+The final action name is built by prepending the verb: `Get` + `Charge` = `GetCharge`, `Post` + `Orders` = `PostOrders`.
 
 ### Example
 
 ```bash
-php bin/console make:integration AcmeErp GetOrders \
-    --namespace="App\Integration" \
-    --path="src/Integration"
+php bin/console make:integration AcmeErp Orders
+# → chooses GET
+# → enters /orders
+# → action name becomes: GetOrders
 ```
 
-Generates:
+Generates (new integration):
 
 ```
-src/Integration/AcmeErp/
-    AcmeErpIntegration.php          ← IntegrationName constant
-    AcmeErpHttpClient.php           ← extend point for custom HTTP behaviour
-    Action/GetOrdersAction.php
-    Body/GetOrdersBody.php
-    Mapper/GetOrdersMapper.php
-    Response/GetOrdersResponse.php
-    config/acmeerp.yaml
+src/Infrastructure/Integrations/AcmeErp/
+    AcmeErpIntegration.php
+    AcmeErpHttpClient.php
+    AcmeErp.yaml
+    GetOrders/
+        Request/
+            GetOrdersAction.php
+        Response/
+            GetOrdersMapper.php
+            GetOrdersResponse.php
 ```
 
-The command never overwrites existing files. Running it again with a different action name on an existing integration is safe — only missing files are created.
+For a **POST** action:
+
+```
+src/Infrastructure/Integrations/AcmeErp/
+    PostOrders/
+        Request/
+            PostOrdersAction.php
+            PostOrdersBody.php      ← only generated for POST/PUT
+        Response/
+            PostOrdersMapper.php
+            PostOrdersResponse.php
+```
+
+For a **DELETE** action:
+
+```
+src/Infrastructure/Integrations/AcmeErp/
+    DeleteOrders/
+        Request/
+            DeleteOrdersAction.php  ← no Response layer for DELETE
+```
+
+The command never overwrites existing files. Running it again on an existing integration is safe — only missing files are created, and the new action entry is appended to the existing YAML.
 
 ### After generation
 
-1. Fill in request fields in `Body/GetOrdersBody.php`
-2. Fill in response fields in `Response/GetOrdersResponse.php`
-3. Implement the mapping in `Mapper/GetOrdersMapper.php`
-4. Set `method` and `path` in `config/acmeerp.yaml`
-5. Register in `config/packages/integration_engine.yaml` (the command prints the exact snippet)
+1. Fill in request fields in `Request/{Action}Body.php` (POST/PUT only)
+2. Fill in response fields in `Response/{Action}Response.php`
+3. Implement the mapping in `Response/{Action}Mapper.php`
+4. Register in `config/packages/integration_engine.yaml` (the command prints the exact snippet)
 
 ---
 
@@ -418,16 +494,16 @@ Enable it by setting `base_url` in the bundle config:
 integration_engine:
     integrations:
         stripe:
-            config_path: '%kernel.project_dir%/src/Integration/Stripe/config/stripe.yaml'
+            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/Stripe/Stripe.yaml'
             base_url: '%env(STRIPE_BASE_URL)%'
 ```
 
 ### Extending the built-in client
 
-If you need to add custom headers, logging, or retry logic without replacing the client entirely, extend `SymfonyHttpClientAdapter`:
+`SymfonyHttpClientAdapter` is declared `readonly`. Subclasses must also be `readonly`. The `make:integration` command generates a ready-to-use `{Name}HttpClient.php` stub for each integration:
 
 ```php
-final class StripeHttpClient extends SymfonyHttpClientAdapter
+final readonly class StripeHttpClient extends SymfonyHttpClientAdapter
 {
     public function send(AbstractAction $action): array
     {
@@ -478,8 +554,8 @@ Register it as a Symfony service and reference it via `client_service`:
 integration_engine:
     integrations:
         stripe:
-            config_path: '%kernel.project_dir%/src/Integration/Stripe/config/stripe.yaml'
-            client_service: App\Integration\Stripe\StripeHttpClient
+            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/Stripe/Stripe.yaml'
+            client_service: App\Infrastructure\Integrations\Stripe\StripeHttpClient
 ```
 
 When `client_service` is set, `base_url` is ignored.
@@ -492,7 +568,7 @@ The cache is used exclusively for dynamic authorization tokens.
 
 ### Default: InMemoryCacheAdapter
 
-Stores tokens in a PHP array. Suitable for development, CLI commands, and test suites. **Not suitable for production use with dynamic auth under PHP-FPM**, because the array is destroyed at the end of each request.
+Stores tokens in a PHP array along with their expiry timestamps. Suitable for development, CLI commands, and test suites. **Not suitable for production use with dynamic auth under PHP-FPM**, because the array is destroyed at the end of each request.
 
 ### Production: persistent cache
 
@@ -534,7 +610,7 @@ Register it and point `cache_service` to it on integrations that use dynamic aut
 integration_engine:
     integrations:
         acme_erp:
-            config_path: '%kernel.project_dir%/src/Integration/AcmeErp/config/acme_erp.yaml'
+            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/AcmeErp/AcmeErp.yaml'
             base_url: '%env(ACME_ERP_BASE_URL)%'
             cache_service: App\Cache\SymfonyCacheAdapter
 ```
@@ -552,15 +628,15 @@ integration_engine:
     integrations:
 
         stripe:
-            config_path: '%kernel.project_dir%/src/Integration/Stripe/config/stripe.yaml'
+            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/Stripe/Stripe.yaml'
             base_url: '%env(STRIPE_BASE_URL)%'
 
         sendgrid:
-            config_path: '%kernel.project_dir%/src/Integration/SendGrid/config/sendgrid.yaml'
+            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/SendGrid/SendGrid.yaml'
             base_url: '%env(SENDGRID_BASE_URL)%'
 
         acme_erp:
-            config_path: '%kernel.project_dir%/src/Integration/AcmeErp/config/acme_erp.yaml'
+            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/AcmeErp/AcmeErp.yaml'
             base_url: '%env(ACME_ERP_BASE_URL)%'
             cache_service: App\Cache\SymfonyCacheAdapter  # needs persistent cache for JWT
 ```
@@ -568,9 +644,9 @@ integration_engine:
 Access them by name through the registry:
 
 ```php
-$this->registry->get(StripeIntegration::NAME)->send('chargeCard', $body);
-$this->registry->get(SendGridIntegration::NAME)->send('sendEmail', $body);
-$this->registry->get(AcmeErpIntegration::NAME)->send('getOrders', $body);
+$this->registry->get(StripeIntegration::NAME)->send('GetCharge', $body);
+$this->registry->get(SendGridIntegration::NAME)->send('PostEmail', $body);
+$this->registry->get(AcmeErpIntegration::NAME)->send('GetOrders', $body);
 ```
 
 ---
@@ -582,23 +658,23 @@ $this->registry->get(AcmeErpIntegration::NAME)->send('getOrders', $body);
 ### File structure
 
 ```
-src/Integration/AcmeErp/
+src/Infrastructure/Integrations/AcmeErp/
     AcmeErpIntegration.php
     AcmeErpHttpClient.php
-    Action/
-        LoginAction.php
-        GetOrdersAction.php
-    Body/
-        LoginBody.php
-        GetOrdersBody.php
-    Mapper/
-        TokenMapper.php
-        OrdersMapper.php
-    Response/
-        TokenResponse.php
-        OrdersResponse.php
-    config/
-        acme_erp.yaml
+    AcmeErp.yaml
+    PostLogin/
+        Request/
+            PostLoginAction.php
+            PostLoginBody.php
+        Response/
+            PostLoginMapper.php
+            PostLoginResponse.php
+    GetOrders/
+        Request/
+            GetOrdersAction.php
+        Response/
+            GetOrdersMapper.php
+            GetOrdersResponse.php
 ```
 
 ### AcmeErpIntegration.php
@@ -610,20 +686,22 @@ final class AcmeErpIntegration implements IntegrationName
 }
 ```
 
-### LoginAction.php
+### PostLoginAction.php
 
 ```php
-final readonly class LoginAction extends AbstractAction
+final readonly class PostLoginAction extends AbstractAction
 {
-    public static function getName(): string  { return 'login'; }
-    public static function getMapper(): string { return TokenMapper::class; }
+    public static function getName(): string    { return 'PostLogin'; }
+    public static function hasBody(): bool      { return true; }
+    public static function hasResponse(): bool  { return true; }
+    public static function mapper(): ?string    { return PostLoginMapper::class; }
 }
 ```
 
-### LoginBody.php
+### PostLoginBody.php
 
 ```php
-final readonly class LoginBody implements ActionBodyInterface
+final readonly class PostLoginBody implements ActionBodyInterface
 {
     public function __construct(
         private readonly string $username,
@@ -637,24 +715,24 @@ final readonly class LoginBody implements ActionBodyInterface
 }
 ```
 
-### TokenMapper.php
+### PostLoginMapper.php
 
 ```php
-final class TokenMapper extends AbstractMapper
+final class PostLoginMapper extends AbstractMapper
 {
-    public static function getAction(): string { return LoginAction::class; }
+    public static function getAction(): string { return PostLoginAction::class; }
 
     protected static function transform(AbstractAction $action, array $response): ResponseInterface
     {
-        return new TokenResponse(token: $response['access_token']);
+        return new PostLoginResponse(token: $response['access_token']);
     }
 }
 ```
 
-### TokenResponse.php
+### PostLoginResponse.php
 
 ```php
-final readonly class TokenResponse implements ResponseInterface
+final readonly class PostLoginResponse implements ResponseInterface
 {
     public function __construct(public readonly string $token) {}
 
@@ -670,38 +748,23 @@ final readonly class TokenResponse implements ResponseInterface
 ```php
 final readonly class GetOrdersAction extends AbstractAction
 {
-    public static function getName(): string  { return 'getOrders'; }
-    public static function getMapper(): string { return OrdersMapper::class; }
+    public static function getName(): string    { return 'GetOrders'; }
+    public static function hasBody(): bool      { return false; }
+    public static function hasResponse(): bool  { return true; }
+    public static function mapper(): ?string    { return GetOrdersMapper::class; }
 }
 ```
 
-### GetOrdersBody.php
+### GetOrdersMapper.php
 
 ```php
-final readonly class GetOrdersBody implements ActionBodyInterface
-{
-    public function __construct(
-        public readonly string $status = 'pending',
-        public readonly int    $page   = 1,
-    ) {}
-
-    public function toArray(): array
-    {
-        return ['status' => $this->status, 'page' => $this->page];
-    }
-}
-```
-
-### OrdersMapper.php
-
-```php
-final class OrdersMapper extends AbstractMapper
+final class GetOrdersMapper extends AbstractMapper
 {
     public static function getAction(): string { return GetOrdersAction::class; }
 
     protected static function transform(AbstractAction $action, array $response): ResponseInterface
     {
-        return new OrdersResponse(
+        return new GetOrdersResponse(
             orders: $response['data'],
             total:  $response['meta']['total'],
         );
@@ -709,10 +772,10 @@ final class OrdersMapper extends AbstractMapper
 }
 ```
 
-### OrdersResponse.php
+### GetOrdersResponse.php
 
 ```php
-final readonly class OrdersResponse implements ResponseInterface
+final readonly class GetOrdersResponse implements ResponseInterface
 {
     public function __construct(
         public readonly array $orders,
@@ -726,21 +789,21 @@ final readonly class OrdersResponse implements ResponseInterface
 }
 ```
 
-### acme_erp.yaml
+### AcmeErp.yaml
 
 ```yaml
-login:
-    action: App\Integration\AcmeErp\Action\LoginAction
+PostLogin:
+    action: App\Infrastructure\Integrations\AcmeErp\PostLogin\Request\PostLoginAction
     method: POST
     path: /auth/token
 
-getOrders:
-    action: App\Integration\AcmeErp\Action\GetOrdersAction
+GetOrders:
+    action: App\Infrastructure\Integrations\AcmeErp\GetOrders\Request\GetOrdersAction
     method: GET
     path: /orders
     authorization:
         type: dynamic
-        action: login
+        action: PostLogin
         token_field: token
         ttl: 3600
 ```
@@ -751,7 +814,7 @@ getOrders:
 integration_engine:
     integrations:
         acme_erp:
-            config_path: '%kernel.project_dir%/src/Integration/AcmeErp/config/acme_erp.yaml'
+            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/AcmeErp/AcmeErp.yaml'
             base_url: '%env(ACME_ERP_BASE_URL)%'
             cache_service: App\Cache\SymfonyCacheAdapter
 ```
@@ -761,9 +824,9 @@ integration_engine:
 ```php
 $orders = $this->registry
     ->get(AcmeErpIntegration::NAME)
-    ->send(GetOrdersAction::getName(), new GetOrdersBody(status: 'pending', page: 1));
+    ->send('GetOrders', null);
 
-// $orders is a typed OrdersResponse
+// $orders is a typed GetOrdersResponse
 foreach ($orders->orders as $order) {
     // ...
 }
@@ -814,6 +877,7 @@ final class DatabaseConfigAdapter implements ConfigPort
             method: $row['method'],
             path:   $row['path'],
             body:   $body,
+            authorization: null,
         );
     }
 }
@@ -833,12 +897,12 @@ Under PHP-FPM each HTTP request runs in a separate process. `InMemoryCacheAdapte
 
 ### Path parameters are not resolved automatically
 
-If a YAML path contains placeholders (e.g. `/v1/charges/{id}`), the built-in `SymfonyHttpClientAdapter` does not substitute them. You must either build the path in the action or override the client to interpolate parameters from the body.
+If a YAML path contains placeholders (e.g. `/v1/charges/{id}`), the built-in `SymfonyHttpClientAdapter` does not substitute them. You must either build the final path in a custom client or pre-resolve the path before passing it to `send()`.
 
 ### Only JSON responses are supported by the built-in client
 
 `SymfonyHttpClientAdapter` calls `$response->toArray()`, which expects a JSON response. For XML, CSV, or binary responses, implement a custom `ClientInterface`.
 
-### PATCH is not listed as a valid method
+### PATCH is not listed as a valid method in the command
 
-`AbstractAction::METHODS` includes `GET`, `POST`, `PUT`, and `DELETE`. `PATCH` is handled correctly by the HTTP client but will be rejected by `AbstractAction::create()`. Add `PATCH` to the `METHODS` constant if your integrations require it.
+The `make:integration` command only offers `GET`, `POST`, `PUT`, and `DELETE`. The built-in HTTP client does handle `PATCH` correctly (it sends the body as JSON), but you must add the action manually if you need it — the generator will not create the `PATCH` skeleton.
