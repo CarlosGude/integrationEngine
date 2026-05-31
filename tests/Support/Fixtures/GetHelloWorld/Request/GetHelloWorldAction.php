@@ -1,0 +1,31 @@
+<?php
+
+namespace IntegrationEngine\Tests\Support\Fixtures\GetHelloWorld\Request;
+
+use IntegrationEngine\Core\Contract\AbstractAction;
+use IntegrationEngine\Tests\Support\Fixtures\GetHelloWorld\Response\GetHelloWorldMappper;
+
+
+
+final readonly class GetHelloWorldAction extends AbstractAction
+{
+    public static function getName(): string
+    {
+        return 'get_hello_world';
+    }
+
+    public static function hasBody(): bool
+    {
+        return false;
+    }
+
+    public static function hasResponse(): bool
+    {
+        return true;
+    }
+
+    public static function mapper(): ?string
+    {
+        return GetHelloWorldMappper::class;
+    }
+}
