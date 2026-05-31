@@ -1,0 +1,12 @@
+parameters:
+    level: max
+
+    paths:
+        - src
+        - tests
+
+    bootstrapFiles:
+        - vendor/autoload.php
+
+    checkMissingIterableValueType: true
+    treatPhpDocTypesAsCertain: true
