@@ -102,11 +102,22 @@ final class TemplateRenderer
 
             use IntegrationEngine\\Core\\Contract\\AbstractAction;{$mapperUse}
 
-            final class {$this->ctx->action}Action extends AbstractAction
+            final readonly class {$this->ctx->action}Action extends AbstractAction
             {
-                public static function getName(): string   { return '{$this->ctx->action}'; }
-                public static function hasBody(): bool     { return {$hasBody}; }
-                public static function hasResponse(): bool { return {$hasResponse}; }
+                public static function getName(): string
+                {
+                    return '{$this->ctx->action}';
+                }
+
+                public static function hasBody(): bool
+                {
+                    return {$hasBody};
+                }
+
+                public static function hasResponse(): bool
+                {
+                    return {$hasResponse};
+                }
 
                 public static function mapper(): ?string
                 {
