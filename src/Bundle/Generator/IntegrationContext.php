@@ -14,18 +14,36 @@ final readonly class IntegrationContext
     ) {
     }
 
+    /**
+     * Base namespace of the integration module
+     * App\Infrastructure\Integrations\Iberia
+     */
     public function integrationNamespace(): string
     {
         return $this->baseNamespace . '\\' . $this->name;
     }
 
-    public function requestNamespace(): string
+    /**
+     * Namespace of the action level
+     */
+    public function actionNamespace(): string
     {
-        return $this->integrationNamespace() . '\\Request';
+        return $this->integrationNamespace() . '\\' . $this->action;
     }
 
+    /**
+     * Request namespace
+     */
+    public function requestNamespace(): string
+    {
+        return $this->actionNamespace() . '\\Request';
+    }
+
+    /**
+     * Response namespace
+     */
     public function responseNamespace(): string
     {
-        return $this->integrationNamespace() . '\\Response';
+        return $this->actionNamespace() . '\\Response';
     }
 }
