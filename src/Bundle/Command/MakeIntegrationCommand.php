@@ -29,8 +29,8 @@ final class MakeIntegrationCommand extends Command
         $this
             ->addArgument('name', InputArgument::REQUIRED, 'Integration name in PascalCase (e.g. Stripe, AcmeApi)')
             ->addArgument('action', InputArgument::REQUIRED, 'First action name in PascalCase (e.g. ChargeCard, GetOrders)')
-            ->addOption('namespace', null, InputOption::VALUE_REQUIRED, 'Base namespace for the integration', 'App\\Integration')
-            ->addOption('path', null, InputOption::VALUE_REQUIRED, 'Base path to generate files', 'src/Integration');
+            ->addOption('namespace', null, InputOption::VALUE_REQUIRED, 'Base namespace for the integration', 'App\\Infrastructure\\Integrations')
+            ->addOption('path', null, InputOption::VALUE_REQUIRED, 'Base path to generate files', 'src/Infrastructure/Integrations');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -62,10 +62,10 @@ final class MakeIntegrationCommand extends Command
     {
         return [
             sprintf('%s/%sIntegration.php', $path, $name)          => $this->renderIntegration($name, $ns),
-            sprintf('%s/Action/%sAction.php', $path, $action)       => $this->renderAction($action, $ns),
-            sprintf('%s/Body/%sBody.php', $path, $action)           => $this->renderBody($action, $ns),
-            sprintf('%s/Mapper/%sMapper.php', $path, $action)       => $this->renderMapper($action, $ns),
-            sprintf('%s/Response/%sResponse.php', $path, $action)   => $this->renderResponse($action, $ns),
+            sprintf('%s/Actions/%sAction.php', $path, $action)       => $this->renderAction($action, $ns),
+            sprintf('%s/Bodys/%sBody.php', $path, $action)           => $this->renderBody($action, $ns),
+            sprintf('%s/Mappers/%sMapper.php', $path, $action)       => $this->renderMapper($action, $ns),
+            sprintf('%s/Responses/%sResponse.php', $path, $action)   => $this->renderResponse($action, $ns),
             sprintf('%s/%sHttpClient.php', $path, $name)            => $this->renderClient($name, $ns),
             sprintf('%s/config/%s.yaml', $path, strtolower($name))  => $this->renderYaml($name, $action, $ns),
         ];
@@ -100,10 +100,10 @@ PHP;
 
 declare(strict_types=1);
 
-namespace {$ns}\Action;
+namespace {$ns}\Actions;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
-use {$ns}\Mapper\{$action}Mapper;
+use {$ns}\Mappers\{$action}Mapper;
 
 final readonly class {$action}Action extends AbstractAction
 {
@@ -127,7 +127,7 @@ PHP;
 
 declare(strict_types=1);
 
-namespace {$ns}\Body;
+namespace {$ns}\Bodys;
 
 use IntegrationEngine\Core\Contract\ActionBodyInterface;
 
@@ -155,7 +155,7 @@ PHP;
 
 declare(strict_types=1);
 
-namespace {$ns}\Mapper;
+namespace {$ns}\Mappers;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\AbstractMapper;
@@ -189,7 +189,7 @@ PHP;
 
 declare(strict_types=1);
 
-namespace {$ns}\Response;
+namespace {$ns}\Responses;
 
 use IntegrationEngine\Core\Contract\ResponseInterface;
 

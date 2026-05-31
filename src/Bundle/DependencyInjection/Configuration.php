@@ -17,7 +17,6 @@ final class Configuration implements ConfigurationInterface
             ->children()
                 ->arrayNode('integrations')
                     ->isRequired()
-                    ->requiresAtLeastOneElement()
                     ->useAttributeAsKey('name')
                     ->arrayPrototype()
                         ->children()
