@@ -98,7 +98,7 @@ final class AbstractActionTest extends TestCase
     /** @dataProvider validMethods */
     public function test_all_valid_methods_are_accepted(string $method): void
     {
-        $action = StubAction::create(method: $method, path: '/test');
+        $action = StubAction::create(method: $method, path: '/tests');
         $this->assertSame($method, $action->getMethod());
     }
 
@@ -108,7 +108,7 @@ final class AbstractActionTest extends TestCase
     }
 }
 
-// Stub mínimo dentro del mismo archivo de test
+// Stub mínimo dentro del mismo archivo de tests
 final readonly class StubAction extends AbstractAction
 {
     public static function getName(): string    { return 'stub'; }
@@ -139,7 +139,7 @@ final class AbstractMapperTest extends TestCase
 {
     public function test_map_returns_response_for_correct_action(): void
     {
-        $action   = CorrectAction::create('GET', '/test');
+        $action   = CorrectAction::create('GET', '/tests');
         $response = CorrectMapper::map($action, ['value' => 42]);
 
         $this->assertInstanceOf(StubResponse::class, $response);
@@ -531,7 +531,7 @@ vendor/bin/php-cs-fixer fix --dry-run --diff
 Si usas el `Makefile` del proyecto:
 
 ```bash
-make test    # phpunit
+make tests    # phpunit
 make stan    # phpstan
 make cs      # cs-fixer
 make qa      # los tres en secuencia

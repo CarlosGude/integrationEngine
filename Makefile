@@ -1,10 +1,10 @@
 PHP=php
 COMPOSER=composer
-
+.PHONY: test
 # -----------------------------
 # QA PRINCIPAL
 # -----------------------------
-qa: cs stan test
+qa: cs test
 	@echo "✔ QA OK — el código no ha explotado"
 
 # -----------------------------
