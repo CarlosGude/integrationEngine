@@ -11,24 +11,25 @@ final class IntegrationFileGenerator
         $tpl = new TemplateRenderer($ctx);
 
         $base = $ctx->basePath;
+        $action = $ctx->action;
 
         return [
             // Integration root
             "{$base}/{$ctx->name}Integration.php" =>
                 $tpl->integration(),
 
-            // REQUEST LAYER
-            "{$base}/Request/{$ctx->action}Action.php" =>
+            // ACTION ROOT FOLDER + REQUEST
+            "{$base}/{$action}/Request/{$action}Action.php" =>
                 $tpl->action(),
 
-            "{$base}/Request/{$ctx->action}Body.php" =>
+            "{$base}/{$action}/Request/{$action}Body.php" =>
                 $tpl->body(),
 
             // RESPONSE LAYER
-            "{$base}/Response/{$ctx->action}Mapper.php" =>
+            "{$base}/{$action}/Response/{$action}Mapper.php" =>
                 $tpl->mapper(),
 
-            "{$base}/Response/{$ctx->action}Response.php" =>
+            "{$base}/{$action}/Response/{$action}Response.php" =>
                 $tpl->response(),
 
             // CLIENT
