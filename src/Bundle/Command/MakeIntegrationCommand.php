@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Bundle\Command;
 
+use IntegrationEngine\Bundle\Generator\IntegrationContext;
 use IntegrationEngine\Bundle\Generator\IntegrationFileGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -45,10 +46,10 @@ final class MakeIntegrationCommand extends Command
         $namespace = rtrim((string) $input->getOption('namespace'), '\\');
         $basePath = rtrim((string) $input->getOption('path'), '/');
 
-        $context = new \IntegrationEngine\Bundle\Generator\IntegrationContext(
+        $context = new IntegrationContext(
             name: $name,
             action: $action,
-            namespace: $namespace,
+            baseNamespace: $namespace,
             basePath: $this->projectDir . '/' . $basePath,
         );
 
