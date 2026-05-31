@@ -16,42 +16,55 @@ use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
 
-final class Integration
+final readonly class Integration
 {
     public function __construct(
-        private readonly ConfigPort $config,
-        private readonly ClientInterface $client,
-        private readonly CachePort $cache,
+        private ConfigPort $config,
+        private ClientInterface $client,
+        private CachePort $cache,
     ) {
     }
 
     /**
-     * @throws \InvalidArgumentException     if the action is not found
-     * @throws InvalidMapperException        if the mapper class is invalid
-     * @throws MapperActionMismatchException if the mapper does not belong to the action
-     * @throws \RuntimeException             on HTTP errors
+     * @throws \InvalidArgumentException
+     * @throws InvalidMapperException
+     * @throws MapperActionMismatchException
+     * @throws \RuntimeException
      */
     public function send(string $actionName, ?ActionBodyInterface $body = null): ResponseInterface
     {
         $action = $this->config->getAction($actionName, $body);
 
-        if ($action->getAuthorization() instanceof DynamicAuthorizationConfig) {
-            $token = $this->resolveToken($action->getAuthorization());
-
-            $action = $action::create(
-                method: $action->getMethod(),
-                path: $action->getPath(),
-                body: $action->getBody(),
-                authorization: new StaticAuthorizationConfig(
-                    type: 'bearer',
-                    params: ['token' => $token],
-                ),
-            );
-        }
+        $action = $this->applyAuthorization($action);
 
         $rawResponse = $this->client->send($action);
 
+        if (!$action::hasResponse()) {
+            return $this->createEmptyResponse();
+        }
+
         return $this->applyMapper($action, $rawResponse);
+    }
+
+    private function applyAuthorization(AbstractAction $action): AbstractAction
+    {
+        $auth = $action->getAuthorization();
+
+        if (!$auth instanceof DynamicAuthorizationConfig) {
+            return $action;
+        }
+
+        $token = $this->resolveToken($auth);
+
+        return $action::create(
+            method: $action->getMethod(),
+            path: $action->getPath(),
+            body: $action->getBody(),
+            authorization: new StaticAuthorizationConfig(
+                type: 'bearer',
+                params: ['token' => $token],
+            ),
+        );
     }
 
     private function resolveToken(DynamicAuthorizationConfig $authConfig): string
@@ -64,15 +77,21 @@ final class Integration
 
         $authAction = $this->config->getAction($authConfig->action);
         $rawResponse = $this->client->send($authAction);
+
         $authResponse = $this->applyMapper($authAction, $rawResponse);
 
         $responseArray = $authResponse->toArray();
 
         if (!isset($responseArray[$authConfig->tokenField])) {
-            throw new \RuntimeException(sprintf('Dynamic auth action "%s" response does not contain field "%s".', $authConfig->action, $authConfig->tokenField));
+            throw new \RuntimeException(sprintf(
+                'Dynamic auth action "%s" response does not contain field "%s".',
+                $authConfig->action,
+                $authConfig->tokenField
+            ));
         }
 
         $token = $responseArray[$authConfig->tokenField];
+
         $this->cache->set($cacheKey, $token, $authConfig->ttl);
 
         return $token;
@@ -80,16 +99,37 @@ final class Integration
 
     private function applyMapper(AbstractAction $action, array $rawResponse): ResponseInterface
     {
-        $mapperClass = $action::getMapper();
+        $mapperClass = $action::mapper();
 
-        if (!is_a($mapperClass, AbstractMapper::class, allow_string: true)) {
+        if ($mapperClass === null) {
+            throw new \LogicException(sprintf(
+                'Action "%s" requires a mapper but none was defined.',
+                $action::class
+            ));
+        }
+
+        if (!is_a($mapperClass, AbstractMapper::class, true)) {
             throw new InvalidMapperException($mapperClass);
         }
 
         if ($mapperClass::getAction() !== $action::class) {
-            throw new MapperActionMismatchException(mapperClass: $mapperClass, expectedActionClass: $mapperClass::getAction(), actualActionClass: $action::class);
+            throw new MapperActionMismatchException(
+                mapperClass: $mapperClass,
+                expectedActionClass: $mapperClass::getAction(),
+                actualActionClass: $action::class
+            );
         }
 
         return $mapperClass::map($action, $rawResponse);
+    }
+
+    private function createEmptyResponse(): ResponseInterface
+    {
+        return new class implements ResponseInterface {
+            public function toArray(): array
+            {
+                return [];
+            }
+        };
     }
 }

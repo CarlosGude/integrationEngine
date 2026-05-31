@@ -9,11 +9,5 @@ use IntegrationEngine\Core\Contract\ActionBodyInterface;
 
 interface ConfigPort
 {
-    /**
-     * @throws \InvalidArgumentException if the action is not found or config is malformed
-     */
-    public function getAction(
-        string $actionName,
-        ?ActionBodyInterface $body = null,
-    ): AbstractAction;
+    public function getAction(string $name, ?ActionBodyInterface $body = null): AbstractAction;
 }
