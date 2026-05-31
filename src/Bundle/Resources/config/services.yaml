@@ -1,16 +1,9 @@
 services:
-    IntegrationEngine\Core\Registry\IntegrationRegistry:
-        public: true
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        bind:
+            string $projectDir: '%kernel.project_dir%'
 
-    IntegrationEngine\Infrastructure\Cache\InMemoryCacheAdapter: ~
-
-    IntegrationEngine\Core\Port\CachePort:
-        alias: IntegrationEngine\Infrastructure\Cache\InMemoryCacheAdapter
-
-    IntegrationEngine\Bundle\Generator\IntegrationFileGenerator: ~
-
-    IntegrationEngine\Bundle\Command\MakeIntegrationCommand:
-        arguments:
-            $projectDir: '%kernel.project_dir%'
-        tags:
-            - { name: console.command }
+    IntegrationEngine\:
+        resource: '../../src/'
