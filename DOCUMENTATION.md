@@ -252,19 +252,19 @@ Each integration has a single YAML file (named after the integration). Top-level
 # src/Infrastructure/Integrations/Stripe/Stripe.yaml
 
 GetCharge:
-    action: App\Infrastructure\Integrations\Stripe\GetCharge\Request\GetChargeAction
-    method: GET
-    path: /v1/charges/{id}
+  action: App\Infrastructure\Integrations\Stripe\GetCharge\Request\GetChargeAction
+  method: GET
+  path: /v1/charges/{id}
 
 PostCharge:
-    action: App\Infrastructure\Integrations\Stripe\PostCharge\Request\PostChargeAction
-    method: POST
-    path: /v1/charges
+  action: App\Infrastructure\Integrations\Stripe\PostCharge\Request\PostChargeAction
+  method: POST
+  path: /v1/charges
 
 DeleteCharge:
-    action: App\Infrastructure\Integrations\Stripe\DeleteCharge\Request\DeleteChargeAction
-    method: DELETE
-    path: /v1/charges/{id}
+  action: App\Infrastructure\Integrations\Stripe\DeleteCharge\Request\DeleteChargeAction
+  method: DELETE
+  path: /v1/charges/{id}
 ```
 
 ### Required keys per action
@@ -294,36 +294,36 @@ The token is a fixed value (or an environment variable resolved at boot time).
 **Bearer token:**
 ```yaml
 PostCharge:
-    action: App\Infrastructure\Integrations\Stripe\PostCharge\Request\PostChargeAction
-    method: POST
-    path: /v1/charges
-    authorization:
-        type: bearer
-        token: '%env(STRIPE_API_KEY)%'
+  action: App\Infrastructure\Integrations\Stripe\PostCharge\Request\PostChargeAction
+  method: POST
+  path: /v1/charges
+  authorization:
+    type: bearer
+    token: '%env(STRIPE_API_KEY)%'
 ```
 
 **API key header:**
 ```yaml
 GetWeather:
-    action: App\Infrastructure\Integrations\Weather\GetWeather\Request\GetWeatherAction
-    method: GET
-    path: /current
-    authorization:
-        type: api_key
-        header: X-RapidAPI-Key
-        token: '%env(RAPIDAPI_KEY)%'
+  action: App\Infrastructure\Integrations\Weather\GetWeather\Request\GetWeatherAction
+  method: GET
+  path: /current
+  authorization:
+    type: api_key
+    header: X-RapidAPI-Key
+    token: '%env(RAPIDAPI_KEY)%'
 ```
 
 **HTTP Basic:**
 ```yaml
 GetReport:
-    action: App\Infrastructure\Integrations\Reports\GetReport\Request\GetReportAction
-    method: GET
-    path: /reports
-    authorization:
-        type: basic
-        username: '%env(API_USER)%'
-        password: '%env(API_PASS)%'
+  action: App\Infrastructure\Integrations\Reports\GetReport\Request\GetReportAction
+  method: GET
+  path: /reports
+  authorization:
+    type: basic
+    username: '%env(API_USER)%'
+    password: '%env(API_PASS)%'
 ```
 
 `SymfonyHttpClientAdapter` handles `bearer`, `api_key`, and `basic` out of the box. Any other type requires a custom `ClientInterface`.
@@ -338,19 +338,19 @@ Use this when the API requires a login request to obtain a short-lived token (JW
 # src/Infrastructure/Integrations/Acme/Acme.yaml
 
 PostLogin:
-    action: App\Infrastructure\Integrations\Acme\PostLogin\Request\PostLoginAction
-    method: POST
-    path: /auth/token
+  action: App\Infrastructure\Integrations\Acme\PostLogin\Request\PostLoginAction
+  method: POST
+  path: /auth/token
 
 GetOrders:
-    action: App\Infrastructure\Integrations\Acme\GetOrders\Request\GetOrdersAction
-    method: GET
-    path: /orders
-    authorization:
-        type: dynamic
-        action: PostLogin       # name of the auth action in this same YAML
-        token_field: token      # key to extract from the auth response's toArray()
-        ttl: 3600               # seconds to cache the token
+  action: App\Infrastructure\Integrations\Acme\GetOrders\Request\GetOrdersAction
+  method: GET
+  path: /orders
+  authorization:
+    type: dynamic
+    action: PostLogin       # name of the auth action in this same YAML
+    token_field: token      # key to extract from the auth response's toArray()
+    ttl: 3600               # seconds to cache the token
 ```
 
 **How it works:**
@@ -492,10 +492,10 @@ Enable it by setting `base_url` in the bundle config:
 
 ```yaml
 integration_engine:
-    integrations:
-        stripe:
-            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/Stripe/Stripe.yaml'
-            base_url: '%env(STRIPE_BASE_URL)%'
+  integrations:
+    stripe:
+      config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/Stripe/Stripe.yaml'
+      base_url: '%env(STRIPE_BASE_URL)%'
 ```
 
 ### Extending the built-in client
@@ -552,10 +552,10 @@ Register it as a Symfony service and reference it via `client_service`:
 
 ```yaml
 integration_engine:
-    integrations:
-        stripe:
-            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/Stripe/Stripe.yaml'
-            client_service: App\Infrastructure\Integrations\Stripe\StripeHttpClient
+  integrations:
+    stripe:
+      config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/Stripe/Stripe.yaml'
+      client_service: App\Infrastructure\Integrations\Stripe\StripeHttpClient
 ```
 
 When `client_service` is set, `base_url` is ignored.
@@ -608,11 +608,11 @@ Register it and point `cache_service` to it on integrations that use dynamic aut
 
 ```yaml
 integration_engine:
-    integrations:
-        acme_erp:
-            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/AcmeErp/AcmeErp.yaml'
-            base_url: '%env(ACME_ERP_BASE_URL)%'
-            cache_service: App\Cache\SymfonyCacheAdapter
+  integrations:
+    acme_erp:
+      config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/AcmeErp/AcmeErp.yaml'
+      base_url: '%env(ACME_ERP_BASE_URL)%'
+      cache_service: App\Cache\SymfonyCacheAdapter
 ```
 
 Integrations that do not use dynamic auth are unaffected by the cache setting.
@@ -625,20 +625,20 @@ Each integration is fully independent: its own YAML, HTTP client, and cache.
 
 ```yaml
 integration_engine:
-    integrations:
+  integrations:
 
-        stripe:
-            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/Stripe/Stripe.yaml'
-            base_url: '%env(STRIPE_BASE_URL)%'
+    stripe:
+      config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/Stripe/Stripe.yaml'
+      base_url: '%env(STRIPE_BASE_URL)%'
 
-        sendgrid:
-            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/SendGrid/SendGrid.yaml'
-            base_url: '%env(SENDGRID_BASE_URL)%'
+    sendgrid:
+      config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/SendGrid/SendGrid.yaml'
+      base_url: '%env(SENDGRID_BASE_URL)%'
 
-        acme_erp:
-            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/AcmeErp/AcmeErp.yaml'
-            base_url: '%env(ACME_ERP_BASE_URL)%'
-            cache_service: App\Cache\SymfonyCacheAdapter  # needs persistent cache for JWT
+    acme_erp:
+      config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/AcmeErp/AcmeErp.yaml'
+      base_url: '%env(ACME_ERP_BASE_URL)%'
+      cache_service: App\Cache\SymfonyCacheAdapter  # needs persistent cache for JWT
 ```
 
 Access them by name through the registry:
@@ -793,30 +793,30 @@ final readonly class GetOrdersResponse implements ResponseInterface
 
 ```yaml
 PostLogin:
-    action: App\Infrastructure\Integrations\AcmeErp\PostLogin\Request\PostLoginAction
-    method: POST
-    path: /auth/token
+  action: App\Infrastructure\Integrations\AcmeErp\PostLogin\Request\PostLoginAction
+  method: POST
+  path: /auth/token
 
 GetOrders:
-    action: App\Infrastructure\Integrations\AcmeErp\GetOrders\Request\GetOrdersAction
-    method: GET
-    path: /orders
-    authorization:
-        type: dynamic
-        action: PostLogin
-        token_field: token
-        ttl: 3600
+  action: App\Infrastructure\Integrations\AcmeErp\GetOrders\Request\GetOrdersAction
+  method: GET
+  path: /orders
+  authorization:
+    type: dynamic
+    action: PostLogin
+    token_field: token
+    ttl: 3600
 ```
 
 ### config/packages/integration_engine.yaml
 
 ```yaml
 integration_engine:
-    integrations:
-        acme_erp:
-            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/AcmeErp/AcmeErp.yaml'
-            base_url: '%env(ACME_ERP_BASE_URL)%'
-            cache_service: App\Cache\SymfonyCacheAdapter
+  integrations:
+    acme_erp:
+      config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/AcmeErp/AcmeErp.yaml'
+      base_url: '%env(ACME_ERP_BASE_URL)%'
+      cache_service: App\Cache\SymfonyCacheAdapter
 ```
 
 ### Usage
@@ -857,8 +857,8 @@ Declare it in the YAML like any other static auth type:
 
 ```yaml
 authorization:
-    type: hmac
-    secret: '%env(API_SECRET)%'
+  type: hmac
+  secret: '%env(API_SECRET)%'
 ```
 
 ### Replace the config source
@@ -903,6 +903,8 @@ If a YAML path contains placeholders (e.g. `/v1/charges/{id}`), the built-in `Sy
 
 `SymfonyHttpClientAdapter` calls `$response->toArray()`, which expects a JSON response. For XML, CSV, or binary responses, implement a custom `ClientInterface`.
 
-### PATCH is not listed as a valid method in the command
+### PATCH support is not yet implemented
 
-The `make:integration` command only offers `GET`, `POST`, `PUT`, and `DELETE`. The built-in HTTP client does handle `PATCH` correctly (it sends the body as JSON), but you must add the action manually if you need it — the generator will not create the `PATCH` skeleton.
+`PATCH` is intentionally out of scope for now. The semantics of a partial update require knowing the current state of the resource and computing a diff against the modified version — a non-trivial concern that deserves its own design before being added to the engine.
+
+The built-in HTTP client already handles `PATCH` at the transport level (it sends the body as JSON), but the generator, the action contract, and the body mechanism do not yet model the concept of a calculated patch. This will be addressed in a future version once the approach is defined.
