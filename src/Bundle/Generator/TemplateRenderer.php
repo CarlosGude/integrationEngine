@@ -102,7 +102,7 @@ use IntegrationEngine\Core\Contract\ResponseInterface;
 use {$this->ctx->requestNamespace()}\\{$this->ctx->action}Action;
 use {$this->ctx->responseNamespace()}\\{$this->ctx->action}Response;
 
-final class {$this->ctx->action}Mapper extends AbstractMapper
+final class {$this->ctx->action}Action extends AbstractAction
 {
     public static function getAction(): string
     {
