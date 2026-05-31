@@ -33,7 +33,7 @@ final class MakeIntegrationCommand extends Command
     {
         $this
             ->addArgument('name', InputArgument::REQUIRED, 'Integration name (e.g. Iberia)')
-            ->addArgument('action', InputArgument::REQUIRED, 'Action name (e.g. GetOrders)')
+            ->addArgument('action', InputArgument::REQUIRED, 'Action name including HTTP verb (e.g. GetOrders, CreateOrder, UpdateOrder, DeleteOrder)')
             ->addOption('namespace', null, InputOption::VALUE_REQUIRED, 'Base namespace', 'App\Infrastructure\Integrations')
             ->addOption('path', null, InputOption::VALUE_REQUIRED, 'Base path', 'src/Infrastructure/Integrations')
         ;
