@@ -44,7 +44,6 @@ final class MakeIntegrationCommand extends Command
         $io = new SymfonyStyle($input, $output);
 
         $name = (string) $input->getArgument('name');
-        $action = (string) $input->getArgument('action');
         $namespace = rtrim((string) $input->getOption('namespace'), '\\');
         $basePath = rtrim((string) $input->getOption('path'), '/');
 
@@ -65,9 +64,10 @@ final class MakeIntegrationCommand extends Command
         }
 
         // ── Build full action name: verb + name (e.g. Get + Orders = GetOrders)
-        $verb = ucfirst(strtolower($method));
-        $actionClean = preg_replace('/^'.$verb.'/i', '', $action);
-        $action = $verb.ucfirst($actionClean);
+        $resource = (string) $input->getArgument('action');
+        $verb         = ucfirst(strtolower($method));
+        $resourceClean = preg_replace('/^' . $verb . '/i', '', $resource);
+        $action        = $verb . ucfirst($resourceClean);
 
         $ctx = new IntegrationContext(
             name: $name,
