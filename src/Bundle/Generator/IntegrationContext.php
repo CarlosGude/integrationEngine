@@ -9,18 +9,23 @@ final readonly class IntegrationContext
     public function __construct(
         public string $name,
         public string $action,
-        public string $namespace,
+        public string $baseNamespace,
         public string $basePath,
     ) {
     }
 
     public function integrationNamespace(): string
     {
-        return $this->namespace . '\\' . $this->name;
+        return $this->baseNamespace . '\\' . $this->name;
     }
 
-    public function integrationPath(): string
+    public function requestNamespace(): string
     {
-        return $this->basePath . '/' . $this->name;
+        return $this->integrationNamespace() . '\\Request';
+    }
+
+    public function responseNamespace(): string
+    {
+        return $this->integrationNamespace() . '\\Response';
     }
 }

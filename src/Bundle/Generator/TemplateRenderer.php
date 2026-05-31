@@ -31,6 +31,10 @@ final class {$this->ctx->name}Integration implements IntegrationName
 PHP;
     }
 
+    /* =========================
+     * REQUEST LAYER
+     * ========================= */
+
     public function action(): string
     {
         return <<<PHP
@@ -38,10 +42,10 @@ PHP;
 
 declare(strict_types=1);
 
-namespace {$this->ctx->integrationNamespace()}\\Actions;
+namespace {$this->ctx->requestNamespace()};
 
-use IntegrationEngine\Core\\Contract\\AbstractAction;
-use {$this->ctx->integrationNamespace()}\\Mappers\\{$this->ctx->action}Mapper;
+use IntegrationEngine\Core\Contract\AbstractAction;
+use {$this->ctx->responseNamespace()}\\{$this->ctx->action}Mapper;
 
 final readonly class {$this->ctx->action}Action extends AbstractAction
 {
@@ -65,9 +69,9 @@ PHP;
 
 declare(strict_types=1);
 
-namespace {$this->ctx->integrationNamespace()}\\Body;
+namespace {$this->ctx->requestNamespace()};
 
-use IntegrationEngine\Core\\Contract\\ActionBodyInterface;
+use IntegrationEngine\Core\Contract\ActionBodyInterface;
 
 final readonly class {$this->ctx->action}Body implements ActionBodyInterface
 {
@@ -79,6 +83,10 @@ final readonly class {$this->ctx->action}Body implements ActionBodyInterface
 PHP;
     }
 
+    /* =========================
+     * RESPONSE LAYER
+     * ========================= */
+
     public function mapper(): string
     {
         return <<<PHP
@@ -86,13 +94,13 @@ PHP;
 
 declare(strict_types=1);
 
-namespace {$this->ctx->integrationNamespace()}\\Mappers;
+namespace {$this->ctx->responseNamespace()};
 
-use IntegrationEngine\Core\\Contract\\AbstractAction;
-use IntegrationEngine\Core\\Contract\\AbstractMapper;
-use IntegrationEngine\Core\\Contract\\ResponseInterface;
-use {$this->ctx->integrationNamespace()}\\Actions\\{$this->ctx->action}Action;
-use {$this->ctx->integrationNamespace()}\\Responses\\{$this->ctx->action}Response;
+use IntegrationEngine\Core\Contract\AbstractAction;
+use IntegrationEngine\Core\Contract\AbstractMapper;
+use IntegrationEngine\Core\Contract\ResponseInterface;
+use {$this->ctx->requestNamespace()}\\{$this->ctx->action}Action;
+use {$this->ctx->responseNamespace()}\\{$this->ctx->action}Response;
 
 final class {$this->ctx->action}Mapper extends AbstractMapper
 {
@@ -116,9 +124,9 @@ PHP;
 
 declare(strict_types=1);
 
-namespace {$this->ctx->integrationNamespace()}\\Responses;
+namespace {$this->ctx->responseNamespace()};
 
-use IntegrationEngine\Core\\Contract\\ResponseInterface;
+use IntegrationEngine\Core\Contract\ResponseInterface;
 
 final readonly class {$this->ctx->action}Response implements ResponseInterface
 {
@@ -130,6 +138,10 @@ final readonly class {$this->ctx->action}Response implements ResponseInterface
 PHP;
     }
 
+    /* =========================
+     * CLIENT
+     * ========================= */
+
     public function client(): string
     {
         return <<<PHP
@@ -139,7 +151,7 @@ declare(strict_types=1);
 
 namespace {$this->ctx->integrationNamespace()};
 
-use IntegrationEngine\\Infrastructure\\Http\\SymfonyHttpClientAdapter;
+use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 
 final class {$this->ctx->name}HttpClient extends SymfonyHttpClientAdapter
 {
@@ -147,11 +159,15 @@ final class {$this->ctx->name}HttpClient extends SymfonyHttpClientAdapter
 PHP;
     }
 
+    /* =========================
+     * CONFIG
+     * ========================= */
+
     public function yaml(): string
     {
         return <<<YAML
 {$this->ctx->action}:
-    action: {$this->ctx->integrationNamespace()}\\Actions\\{$this->ctx->action}Action
+    action: {$this->ctx->requestNamespace()}\\{$this->ctx->action}Action
     method: POST
     path: /TODO
 YAML;
