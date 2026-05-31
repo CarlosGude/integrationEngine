@@ -83,9 +83,13 @@ final class MakeIntegrationCommand extends Command
             $this->writeFile($file, $content, $io);
         }
 
-        // ── Append entry to config yaml ───────────────────────────────────────
-        $configPath = $this->generator->appendActionToConfig($ctx);
-        $io->text("  updated  {$configPath}");
+        // ── Append entry to config yaml (only for existing integrations) ──────
+        // When the integration is new, generateIntegrationFiles() already wrote
+        // the yaml with the first action entry — no need to append again.
+        if ($integrationExists) {
+            $configPath = $this->generator->appendActionToConfig($ctx);
+            $io->text("  updated  {$configPath}");
+        }
 
         $io->success('Done.');
 
