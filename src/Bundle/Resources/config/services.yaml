@@ -1,0 +1,14 @@
+services:
+    IntegrationEngine\Core\Registry\IntegrationRegistry:
+        public: true
+
+    IntegrationEngine\Infrastructure\Cache\InMemoryCacheAdapter: ~
+
+    IntegrationEngine\Core\Port\CachePort:
+        alias: IntegrationEngine\Infrastructure\Cache\InMemoryCacheAdapter
+
+    IntegrationEngine\Bundle\Command\MakeIntegrationCommand:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+        tags:
+            - { name: console.command }
