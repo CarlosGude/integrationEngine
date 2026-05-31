@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core\Registry;
 
-use IntegrationEngine\Core\Integration;
 use IntegrationEngine\Core\Exception\IntegrationNotFoundException;
+use IntegrationEngine\Core\Integration;
 
 final class IntegrationRegistry
 {

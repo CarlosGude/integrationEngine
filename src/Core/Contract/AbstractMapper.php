@@ -45,11 +45,7 @@ abstract class AbstractMapper
         array $response,
     ): ResponseInterface {
         if ($action::class !== static::getAction()) {
-            throw new MapperActionMismatchException(
-                mapperClass: static::class,
-                expectedActionClass: static::getAction(),
-                actualActionClass: $action::class,
-            );
+            throw new MapperActionMismatchException(mapperClass: static::class, expectedActionClass: static::getAction(), actualActionClass: $action::class);
         }
 
         return static::transform($action, $response);

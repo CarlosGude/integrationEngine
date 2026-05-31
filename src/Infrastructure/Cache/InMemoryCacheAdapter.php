@@ -19,7 +19,7 @@ final class InMemoryCacheAdapter implements CachePort
     public function set(string $key, mixed $value, int $ttl): void
     {
         $this->store[$key] = [
-            'value'      => $value,
+            'value' => $value,
             'expires_at' => time() + $ttl,
         ];
     }
@@ -32,6 +32,7 @@ final class InMemoryCacheAdapter implements CachePort
 
         if (time() >= $this->store[$key]['expires_at']) {
             unset($this->store[$key]);
+
             return false;
         }
 

@@ -7,7 +7,7 @@ namespace IntegrationEngine\Core\Contract;
 final readonly class StaticAuthorizationConfig extends AuthorizationConfig
 {
     /**
-     * @param array<string, mixed> $params  e.g. ['token' => 'sk_live_...']
+     * @param array<string, mixed> $params e.g. ['token' => 'sk_live_...']
      */
     public function __construct(
         string $type,

@@ -18,9 +18,7 @@ final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
     {
         foreach (['action', 'token_field', 'ttl'] as $key) {
             if (!isset($config[$key])) {
-                throw new \InvalidArgumentException(
-                    sprintf('Dynamic authorization config must define "%s".', $key)
-                );
+                throw new \InvalidArgumentException(sprintf('Dynamic authorization config must define "%s".', $key));
             }
         }
 

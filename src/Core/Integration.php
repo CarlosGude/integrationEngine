@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core;
 
-use IntegrationEngine\Core\Contract\ActionBodyInterface;
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\AbstractMapper;
+use IntegrationEngine\Core\Contract\ActionBodyInterface;
 use IntegrationEngine\Core\Contract\ClientInterface;
 use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\ResponseInterface;
@@ -62,20 +62,14 @@ final class Integration
             return $this->cache->get($cacheKey);
         }
 
-        $authAction   = $this->config->getAction($authConfig->action);
-        $rawResponse  = $this->client->send($authAction);
+        $authAction = $this->config->getAction($authConfig->action);
+        $rawResponse = $this->client->send($authAction);
         $authResponse = $this->applyMapper($authAction, $rawResponse);
 
         $responseArray = $authResponse->toArray();
 
         if (!isset($responseArray[$authConfig->tokenField])) {
-            throw new \RuntimeException(
-                sprintf(
-                    'Dynamic auth action "%s" response does not contain field "%s".',
-                    $authConfig->action,
-                    $authConfig->tokenField,
-                )
-            );
+            throw new \RuntimeException(sprintf('Dynamic auth action "%s" response does not contain field "%s".', $authConfig->action, $authConfig->tokenField));
         }
 
         $token = $responseArray[$authConfig->tokenField];
@@ -93,11 +87,7 @@ final class Integration
         }
 
         if ($mapperClass::getAction() !== $action::class) {
-            throw new MapperActionMismatchException(
-                mapperClass: $mapperClass,
-                expectedActionClass: $mapperClass::getAction(),
-                actualActionClass: $action::class,
-            );
+            throw new MapperActionMismatchException(mapperClass: $mapperClass, expectedActionClass: $mapperClass::getAction(), actualActionClass: $action::class);
         }
 
         return $mapperClass::map($action, $rawResponse);

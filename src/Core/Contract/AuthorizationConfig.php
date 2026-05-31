@@ -19,7 +19,7 @@ abstract readonly class AuthorizationConfig
 
         return match ($config['type']) {
             'dynamic' => DynamicAuthorizationConfig::fromArray($config),
-            default   => StaticAuthorizationConfig::fromArray($config),
+            default => StaticAuthorizationConfig::fromArray($config),
         };
     }
 }

@@ -10,11 +10,11 @@ use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
-class SymfonyHttpClientAdapter implements ClientInterface
+readonly class SymfonyHttpClientAdapter implements ClientInterface
 {
     public function __construct(
-        private readonly HttpClientInterface $httpClient,
-        private readonly string $baseUrl,
+        private HttpClientInterface $httpClient,
+        private string              $baseUrl,
     ) {
     }
 
@@ -28,45 +28,28 @@ class SymfonyHttpClientAdapter implements ClientInterface
         ];
 
         $body = $action->getBody();
-        if ($body !== null && in_array($action->getMethod(), ['POST', 'PUT', 'PATCH'], strict: true)) {
+        if (null !== $body && in_array($action->getMethod(), ['POST', 'PUT', 'PATCH'], strict: true)) {
             $options['json'] = $body->toArray();
         }
 
         try {
             $response = $this->httpClient->request(
                 $action->getMethod(),
-                $this->baseUrl . $action->getPath(),
+                $this->baseUrl.$action->getPath(),
                 $options,
             );
 
             $statusCode = $response->getStatusCode();
 
             if ($statusCode >= 400) {
-                throw new RequestResponseException(
-                    statusCode: $statusCode,
-                    context: sprintf(
-                        '%s %s returned HTTP %d: %s',
-                        $action->getMethod(),
-                        $action->getPath(),
-                        $statusCode,
-                        $response->getContent(throw: false),
-                    ),
-                );
+                throw new RequestResponseException(statusCode: $statusCode, context: sprintf('%s %s returned HTTP %d: %s', $action->getMethod(), $action->getPath(), $statusCode, $response->getContent(throw: false)));
             }
 
             return $response->toArray();
         } catch (RequestResponseException $e) {
             throw $e;
         } catch (\Throwable $e) {
-            throw new RequestResponseException(
-                statusCode: 0,
-                context: sprintf(
-                    'Network error on %s %s: %s',
-                    $action->getMethod(),
-                    $action->getPath(),
-                    $e->getMessage(),
-                ),
-            );
+            throw new RequestResponseException(statusCode: 0, context: sprintf('Network error on %s %s: %s', $action->getMethod(), $action->getPath(), $e->getMessage()));
         }
     }
 
@@ -81,13 +64,13 @@ class SymfonyHttpClientAdapter implements ClientInterface
         }
 
         $headers += match ($auth->type) {
-            'bearer'  => ['Authorization' => sprintf('Bearer %s', $auth->params['token'] ?? '')],
-            'basic'   => ['Authorization' => sprintf(
+            'bearer' => ['Authorization' => sprintf('Bearer %s', $auth->params['token'] ?? '')],
+            'basic' => ['Authorization' => sprintf(
                 'Basic %s',
-                base64_encode(($auth->params['username'] ?? '') . ':' . ($auth->params['password'] ?? ''))
+                base64_encode(($auth->params['username'] ?? '').':'.($auth->params['password'] ?? ''))
             )],
             'api_key' => [($auth->params['header'] ?? 'X-Api-Key') => $auth->params['token'] ?? ''],
-            default   => [],
+            default => [],
         };
 
         return $headers;

@@ -1,24 +1,43 @@
-.PHONY: up down build shell test qa cs stan
+PHP=php
+COMPOSER=composer
 
-up:
-	docker compose up -d
+# -----------------------------
+# QA PRINCIPAL
+# -----------------------------
+qa: cs stan test
+	@echo "✔ QA OK — el código no ha explotado"
 
-down:
-	docker compose down
-
-build:
-	docker compose build --no-cache
-
-shell:
-	docker compose exec php sh
-
-test:
-	docker compose exec php vendor/bin/phpunit --testdox
-
-stan:
-	docker compose exec php vendor/bin/phpstan analyse src tests --level=8
-
+# -----------------------------
+# CODE STYLE
+# -----------------------------
 cs:
-	docker compose exec php vendor/bin/php-cs-fixer fix --diff
+	./vendor/bin/php-cs-fixer fix --dry-run --diff
 
-qa: stan cs test
+cs-fix:
+	./vendor/bin/php-cs-fixer fix
+
+# -----------------------------
+# ANALYSIS
+# -----------------------------
+stan:
+	./vendor/bin/phpstan analyse $(PATHS)
+
+# -----------------------------
+# TESTS
+# -----------------------------
+test:
+	./vendor/bin/phpunit
+
+test-coverage:
+	./vendor/bin/phpunit --coverage-text
+
+# -----------------------------
+# SETUP
+# -----------------------------
+install:
+	$(COMPOSER) install
+
+# -----------------------------
+# CI SIMULATION
+# -----------------------------
+ci: cs stan test

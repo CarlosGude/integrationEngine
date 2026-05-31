@@ -23,7 +23,7 @@ final class IntegrationEngineExtension extends Extension
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
-        $loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
+        $loader = new YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
         $loader->load('services.yaml');
 
         $registryDefinition = $container->getDefinition(IntegrationRegistry::class);
@@ -37,7 +37,7 @@ final class IntegrationEngineExtension extends Extension
             ));
 
             // Client: custom service o built-in SymfonyHttpClientAdapter
-            if ($integrationConfig['client_service'] !== null) {
+            if (null !== $integrationConfig['client_service']) {
                 $clientReference = new Reference($integrationConfig['client_service']);
             } else {
                 $clientId = sprintf('integration_engine.http_client.%s', $name);
@@ -55,7 +55,7 @@ final class IntegrationEngineExtension extends Extension
             $integrationId = sprintf('integration_engine.integration.%s', $name);
             $container->setDefinition($integrationId, new Definition(
                 Integration::class,
-                [$configAdapterId instanceof Reference ? $configAdapterId : new Reference($configAdapterId), $clientReference, $cacheReference],
+                [$configAdapterId, $clientReference, $cacheReference],
             ));
 
             $registryDefinition->addMethodCall('register', [$name, new Reference($integrationId)]);

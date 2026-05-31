@@ -28,9 +28,9 @@ abstract readonly class AbstractAction
      */
     abstract public static function getMapper(): string;
 
-    public const string METHOD_GET    = 'GET';
-    public const string METHOD_POST   = 'POST';
-    public const string METHOD_PUT    = 'PUT';
+    public const string METHOD_GET = 'GET';
+    public const string METHOD_POST = 'POST';
+    public const string METHOD_PUT = 'PUT';
     public const string METHOD_DELETE = 'DELETE';
 
     public const array METHODS = [
@@ -69,8 +69,23 @@ abstract readonly class AbstractAction
         );
     }
 
-    public function getMethod(): string                      { return $this->method; }
-    public function getPath(): string                        { return $this->path; }
-    public function getBody(): ?ActionBodyInterface          { return $this->body; }
-    public function getAuthorization(): ?AuthorizationConfig { return $this->authorization; }
+    public function getMethod(): string
+    {
+        return $this->method;
+    }
+
+    public function getPath(): string
+    {
+        return $this->path;
+    }
+
+    public function getBody(): ?ActionBodyInterface
+    {
+        return $this->body;
+    }
+
+    public function getAuthorization(): ?AuthorizationConfig
+    {
+        return $this->authorization;
+    }
 }

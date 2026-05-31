@@ -12,6 +12,6 @@ final class RequestResponseException extends \RuntimeException
         public readonly int $statusCode,
         public readonly string $context,
     ) {
-        parent::__construct(self::ERROR . ': ' . $context, $statusCode);
+        parent::__construct(self::ERROR.': '.$context, $statusCode);
     }
 }
