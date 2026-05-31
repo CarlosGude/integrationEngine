@@ -33,19 +33,20 @@ final class MakeIntegrationCommand extends Command
     {
         $this
             ->addArgument('name', InputArgument::REQUIRED, 'Integration name (e.g. Iberia)')
-            ->addArgument('action', InputArgument::REQUIRED, 'Action name including HTTP verb (e.g. GetOrders, CreateOrder, UpdateOrder, DeleteOrder)')
-            ->addOption('namespace', null, InputOption::VALUE_REQUIRED, 'Base namespace', 'App\\Infrastructure\\Integrations')
-            ->addOption('path', null, InputOption::VALUE_REQUIRED, 'Base path', 'src/Infrastructure/Integrations');
+            ->addArgument('action', InputArgument::REQUIRED, 'Resource name in PascalCase (e.g. Orders, FlightStatus). The HTTP verb will be prepended automatically.')
+            ->addOption('namespace', null, InputOption::VALUE_REQUIRED, 'Base namespace', 'App\Infrastructure\Integrations')
+            ->addOption('path', null, InputOption::VALUE_REQUIRED, 'Base path', 'src/Infrastructure/Integrations')
+        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
 
-        $name      = (string) $input->getArgument('name');
-        $action    = (string) $input->getArgument('action');
+        $name = (string) $input->getArgument('name');
+        $action = (string) $input->getArgument('action');
         $namespace = rtrim((string) $input->getOption('namespace'), '\\');
-        $basePath  = rtrim((string) $input->getOption('path'), '/');
+        $basePath = rtrim((string) $input->getOption('path'), '/');
 
         // ── Ask for HTTP method ───────────────────────────────────────────────
         $method = $io->choice(
@@ -63,13 +64,18 @@ final class MakeIntegrationCommand extends Command
             }
         }
 
+        // ── Build full action name: verb + name (e.g. Get + Orders = GetOrders)
+        $verb = ucfirst(strtolower($method));
+        $actionClean = preg_replace('/^'.$verb.'/i', '', $action);
+        $action = $verb.ucfirst($actionClean);
+
         $ctx = new IntegrationContext(
             name: $name,
             action: $action,
             method: $method,
             path: $path,
             baseNamespace: $namespace,
-            basePath: $this->projectDir . '/' . $basePath,
+            basePath: $this->projectDir.'/'.$basePath,
         );
 
         // ── Integration root files (only if new integration) ─────────────────
@@ -108,15 +114,15 @@ final class MakeIntegrationCommand extends Command
 
     private function describeAction(IntegrationContext $ctx, SymfonyStyle $io): void
     {
-        $lines = ['<info>Request/</info>' . $ctx->action . 'Action.php'];
+        $lines = ['<info>Request/</info>'.$ctx->action.'Action.php'];
 
         if ($ctx->hasBody()) {
-            $lines[] = '<info>Request/</info>' . $ctx->action . 'Body.php';
+            $lines[] = '<info>Request/</info>'.$ctx->action.'Body.php';
         }
 
         if ($ctx->hasResponse()) {
-            $lines[] = '<info>Response/</info>' . $ctx->action . 'Mapper.php';
-            $lines[] = '<info>Response/</info>' . $ctx->action . 'Response.php';
+            $lines[] = '<info>Response/</info>'.$ctx->action.'Mapper.php';
+            $lines[] = '<info>Response/</info>'.$ctx->action.'Response.php';
         } else {
             $lines[] = '<comment>Response layer skipped (DELETE has no response)</comment>';
         }
@@ -130,11 +136,13 @@ final class MakeIntegrationCommand extends Command
 
         if (!is_dir($dir) && !mkdir($dir, 0o755, true) && !is_dir($dir)) {
             $io->error("Cannot create dir: {$dir}");
+
             return;
         }
 
         if (file_exists($filePath)) {
             $io->warning("Skipped (already exists): {$filePath}");
+
             return;
         }
 
