@@ -37,6 +37,7 @@ PHP;
 
     public function client(): string
     {
+        // SymfonyHttpClientAdapter is readonly, so the subclass must also be readonly
         return <<<PHP
 <?php
 
@@ -46,7 +47,7 @@ namespace {$this->ctx->integrationNamespace()};
 
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 
-final class {$this->ctx->name}HttpClient extends SymfonyHttpClientAdapter
+final readonly class {$this->ctx->name}HttpClient extends SymfonyHttpClientAdapter
 {
 }
 PHP;
@@ -81,6 +82,9 @@ YAML;
             ? "\nuse {$this->ctx->responseNamespace()}\\{$this->ctx->action}Mapper;"
             : '';
 
+        // AbstractAction is NOT readonly, so we must not declare this class readonly.
+        // We also need to implement all abstract methods: create, getMethod, getPath,
+        // getBody, getAuthorization, hasBody, hasResponse, mapper.
         return <<<PHP
 <?php
 
@@ -91,8 +95,30 @@ namespace {$this->ctx->requestNamespace()};
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\ActionBodyInterface;{$mapperUse}
 
-final readonly class {$this->ctx->action}Action extends AbstractAction
+final class {$this->ctx->action}Action extends AbstractAction
 {
+    private function __construct(
+        private string              \$method,
+        private string              \$path,
+        private ?ActionBodyInterface \$body,
+        private mixed               \$authorization,
+    ) {
+    }
+
+    public static function create(
+        string               \$method,
+        string               \$path,
+        ?ActionBodyInterface  \$body,
+        mixed                \$authorization,
+    ): static {
+        return new static(\$method, \$path, \$body, \$authorization);
+    }
+
+    public function getMethod(): string        { return \$this->method; }
+    public function getPath(): string          { return \$this->path; }
+    public function getBody(): ?ActionBodyInterface { return \$this->body; }
+    public function getAuthorization(): mixed  { return \$this->authorization; }
+
     public static function getName(): string
     {
         return '{$this->ctx->action}';
