@@ -3,7 +3,6 @@
 /public/
 /bin/
 symfony.lock
-composer.lock
 /.php-cs-fixer.cache
 /.phpunit.cache
 /.phpunit.result.cache
