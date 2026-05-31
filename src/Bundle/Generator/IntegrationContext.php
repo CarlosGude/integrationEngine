@@ -10,6 +10,7 @@ final readonly class IntegrationContext
         public string $name,
         public string $action,
         public string $method,
+        public string $path,
         public string $baseNamespace,
         public string $basePath,
     ) {

@@ -73,7 +73,7 @@ PHP;
 {$this->ctx->action}:
     action: {$this->ctx->requestNamespace()}\\{$this->ctx->action}Action
     method: {$method}
-    path: /TODO
+    path: {$this->ctx->path}
 YAML;
     }
 

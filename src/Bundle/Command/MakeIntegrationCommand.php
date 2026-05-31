@@ -54,10 +54,20 @@ final class MakeIntegrationCommand extends Command
             default: 'GET',
         );
 
+        // ── Ask for URL (required) ────────────────────────────────────────────
+        $path = null;
+        while (empty($path)) {
+            $path = trim((string) $io->ask('Action path (e.g. /orders/{id})'));
+            if (empty($path)) {
+                $io->error('Path is required.');
+            }
+        }
+
         $ctx = new IntegrationContext(
             name: $name,
             action: $action,
             method: $method,
+            path: $path,
             baseNamespace: $namespace,
             basePath: $this->projectDir . '/' . $basePath,
         );
