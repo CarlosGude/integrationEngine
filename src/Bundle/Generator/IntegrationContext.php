@@ -9,6 +9,7 @@ final readonly class IntegrationContext
     public function __construct(
         public string $name,
         public string $action,
+        public string $method,
         public string $baseNamespace,
         public string $basePath,
     ) {
@@ -45,5 +46,35 @@ final readonly class IntegrationContext
     public function responseNamespace(): string
     {
         return $this->actionNamespace() . '\\Response';
+    }
+
+    public function isGet(): bool
+    {
+        return strtoupper($this->method) === 'GET';
+    }
+
+    public function isPost(): bool
+    {
+        return strtoupper($this->method) === 'POST';
+    }
+
+    public function isPut(): bool
+    {
+        return strtoupper($this->method) === 'PUT';
+    }
+
+    public function isDelete(): bool
+    {
+        return strtoupper($this->method) === 'DELETE';
+    }
+
+    public function hasBody(): bool
+    {
+        return $this->isPost() || $this->isPut();
+    }
+
+    public function hasResponse(): bool
+    {
+        return !$this->isDelete();
     }
 }

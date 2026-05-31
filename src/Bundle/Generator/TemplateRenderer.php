@@ -11,6 +11,10 @@ final class TemplateRenderer
     ) {
     }
 
+    /* =========================
+     * INTEGRATION ROOT
+     * ========================= */
+
     public function integration(): string
     {
         $name = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $this->ctx->name));
@@ -31,12 +35,52 @@ final class {$this->ctx->name}Integration implements IntegrationName
 PHP;
     }
 
+    public function client(): string
+    {
+        return <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace {$this->ctx->integrationNamespace()};
+
+use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
+
+final class {$this->ctx->name}HttpClient extends SymfonyHttpClientAdapter
+{
+}
+PHP;
+    }
+
+    public function yaml(): string
+    {
+        $method = strtoupper($this->ctx->method);
+
+        return <<<YAML
+{$this->ctx->action}:
+    action: {$this->ctx->requestNamespace()}\\{$this->ctx->action}Action
+    method: {$method}
+    path: /TODO
+YAML;
+    }
+
     /* =========================
      * REQUEST LAYER
      * ========================= */
 
     public function action(): string
     {
+        $method      = strtoupper($this->ctx->method);
+        $hasBody     = $this->ctx->hasBody()     ? 'true'  : 'false';
+        $hasResponse = $this->ctx->hasResponse() ? 'true'  : 'false';
+        $mapperLine  = $this->ctx->hasResponse()
+            ? "return {$this->ctx->action}Mapper::class;"
+            : 'return null;';
+
+        $mapperUse = $this->ctx->hasResponse()
+            ? "\nuse {$this->ctx->responseNamespace()}\\{$this->ctx->action}Mapper;"
+            : '';
+
         return <<<PHP
 <?php
 
@@ -45,7 +89,7 @@ declare(strict_types=1);
 namespace {$this->ctx->requestNamespace()};
 
 use IntegrationEngine\Core\Contract\AbstractAction;
-use {$this->ctx->responseNamespace()}\\{$this->ctx->action}Mapper;
+use IntegrationEngine\Core\Contract\ActionBodyInterface;{$mapperUse}
 
 final readonly class {$this->ctx->action}Action extends AbstractAction
 {
@@ -54,14 +98,27 @@ final readonly class {$this->ctx->action}Action extends AbstractAction
         return '{$this->ctx->action}';
     }
 
-    public static function getMapper(): ?string
+    public static function hasBody(): bool
     {
-        return {$this->ctx->action}Mapper::class;
+        return {$hasBody};
+    }
+
+    public static function hasResponse(): bool
+    {
+        return {$hasResponse};
+    }
+
+    public static function mapper(): ?string
+    {
+        {$mapperLine}
     }
 }
 PHP;
     }
 
+    /**
+     * Only generated for POST and PUT.
+     */
     public function body(): string
     {
         return <<<PHP
@@ -87,6 +144,9 @@ PHP;
      * RESPONSE LAYER
      * ========================= */
 
+    /**
+     * Only generated when the action has a response (not DELETE).
+     */
     public function mapper(): string
     {
         return <<<PHP
@@ -100,9 +160,8 @@ use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\AbstractMapper;
 use IntegrationEngine\Core\Contract\ResponseInterface;
 use {$this->ctx->requestNamespace()}\\{$this->ctx->action}Action;
-use {$this->ctx->responseNamespace()}\\{$this->ctx->action}Response;
 
-final class {$this->ctx->action}Action extends AbstractAction
+final class {$this->ctx->action}Mapper extends AbstractMapper
 {
     public static function getAction(): string
     {
@@ -117,6 +176,9 @@ final class {$this->ctx->action}Action extends AbstractAction
 PHP;
     }
 
+    /**
+     * Only generated when the action has a response (not DELETE).
+     */
     public function response(): string
     {
         return <<<PHP
@@ -136,40 +198,5 @@ final readonly class {$this->ctx->action}Response implements ResponseInterface
     }
 }
 PHP;
-    }
-
-    /* =========================
-     * CLIENT
-     * ========================= */
-
-    public function client(): string
-    {
-        return <<<PHP
-<?php
-
-declare(strict_types=1);
-
-namespace {$this->ctx->integrationNamespace()};
-
-use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
-
-final class {$this->ctx->name}HttpClient extends SymfonyHttpClientAdapter
-{
-}
-PHP;
-    }
-
-    /* =========================
-     * CONFIG
-     * ========================= */
-
-    public function yaml(): string
-    {
-        return <<<YAML
-{$this->ctx->action}:
-    action: {$this->ctx->requestNamespace()}\\{$this->ctx->action}Action
-    method: POST
-    path: /TODO
-YAML;
     }
 }

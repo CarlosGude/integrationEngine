@@ -16,10 +16,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'make:integration',
-    description: 'Generates the skeleton for a new integration',
+    description: 'Generates the skeleton for a new integration or adds an action to an existing one',
 )]
 final class MakeIntegrationCommand extends Command
 {
+    private const METHODS = ['GET', 'POST', 'PUT', 'DELETE'];
+
     public function __construct(
         private readonly string $projectDir,
         private readonly IntegrationFileGenerator $generator,
@@ -30,8 +32,8 @@ final class MakeIntegrationCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('name', InputArgument::REQUIRED)
-            ->addArgument('action', InputArgument::REQUIRED)
+            ->addArgument('name', InputArgument::REQUIRED, 'Integration name (e.g. Iberia)')
+            ->addArgument('action', InputArgument::REQUIRED, 'Action name (e.g. GetOrders)')
             ->addOption('namespace', null, InputOption::VALUE_REQUIRED, 'Base namespace', 'App\\Infrastructure\\Integrations')
             ->addOption('path', null, InputOption::VALUE_REQUIRED, 'Base path', 'src/Infrastructure/Integrations');
     }
@@ -40,30 +42,71 @@ final class MakeIntegrationCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $name = (string) $input->getArgument('name');
-        $action = (string) $input->getArgument('action');
-
+        $name      = (string) $input->getArgument('name');
+        $action    = (string) $input->getArgument('action');
         $namespace = rtrim((string) $input->getOption('namespace'), '\\');
-        $basePath = rtrim((string) $input->getOption('path'), '/');
+        $basePath  = rtrim((string) $input->getOption('path'), '/');
 
-        $context = new IntegrationContext(
+        // ── Ask for HTTP method ───────────────────────────────────────────────
+        $method = $io->choice(
+            question: 'HTTP method for this action',
+            choices: self::METHODS,
+            default: 'GET',
+        );
+
+        $ctx = new IntegrationContext(
             name: $name,
             action: $action,
+            method: $method,
             baseNamespace: $namespace,
             basePath: $this->projectDir . '/' . $basePath,
         );
 
-        $io->title("Generating integration: {$name}");
+        // ── Integration root files (only if new integration) ─────────────────
+        $integrationExists = $this->generator->integrationExists($ctx);
 
-        $files = $this->generator->generate($context);
+        if ($integrationExists) {
+            $io->note("Integration \"{$name}\" already exists — skipping root files.");
+        } else {
+            $io->title("Generating integration: {$name}");
+            foreach ($this->generator->generateIntegrationFiles($ctx) as $file => $content) {
+                $this->writeFile($file, $content, $io);
+            }
+        }
 
-        foreach ($files as $file => $content) {
+        // ── Action files ─────────────────────────────────────────────────────
+        $io->section("Generating action: {$action} [{$method}]");
+
+        $this->describeAction($ctx, $io);
+
+        foreach ($this->generator->generateActionFiles($ctx) as $file => $content) {
             $this->writeFile($file, $content, $io);
         }
 
         $io->success('Done.');
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Prints a short summary of what will be generated based on the HTTP method.
+     */
+    private function describeAction(IntegrationContext $ctx, SymfonyStyle $io): void
+    {
+        $lines = ['<info>Request/</info>' . $ctx->action . 'Action.php'];
+
+        if ($ctx->hasBody()) {
+            $lines[] = '<info>Request/</info>' . $ctx->action . 'Body.php';
+        }
+
+        if ($ctx->hasResponse()) {
+            $lines[] = '<info>Response/</info>' . $ctx->action . 'Mapper.php';
+            $lines[] = '<info>Response/</info>' . $ctx->action . 'Response.php';
+        } else {
+            $lines[] = '<comment>Response layer skipped (DELETE has no response)</comment>';
+        }
+
+        $io->listing($lines);
     }
 
     private function writeFile(string $filePath, string $content, SymfonyStyle $io): void
@@ -76,11 +119,11 @@ final class MakeIntegrationCommand extends Command
         }
 
         if (file_exists($filePath)) {
-            $io->warning("Skipped: {$filePath}");
+            $io->warning("Skipped (already exists): {$filePath}");
             return;
         }
 
         file_put_contents($filePath, $content);
-        $io->text("created {$filePath}");
+        $io->text("  created  {$filePath}");
     }
 }

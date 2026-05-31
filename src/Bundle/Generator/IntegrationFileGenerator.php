@@ -6,44 +6,56 @@ namespace IntegrationEngine\Bundle\Generator;
 
 final class IntegrationFileGenerator
 {
-    public function generate(IntegrationContext $ctx): array
+    /**
+     * Files needed only once per integration (root level).
+     * Returns an empty array if the integration already exists.
+     */
+    public function generateIntegrationFiles(IntegrationContext $ctx): array
     {
-        $tpl = new TemplateRenderer($ctx);
-
+        $tpl  = new TemplateRenderer($ctx);
         $root = $ctx->basePath . '/' . $ctx->name;
-        $action = $ctx->action;
 
         return [
-            /*
-             * =========================
-             * INTEGRATION ROOT
-             * =========================
-             */
-            "{$root}/{$ctx->name}Integration.php" =>
-                $tpl->integration(),
-
-            "{$root}/{$ctx->name}HttpClient.php" =>
-                $tpl->client(),
-
-            "{$root}/config/" . strtolower($ctx->name) . ".yaml" =>
-                $tpl->yaml(),
-
-            /*
-             * =========================
-             * ACTION LAYER (ROOT PER ACTION)
-             * =========================
-             */
-            "{$root}/{$action}/Request/{$action}Action.php" =>
-                $tpl->action(),
-
-            "{$root}/{$action}/Request/{$action}Body.php" =>
-                $tpl->body(),
-
-            "{$root}/{$action}/Response/{$action}Mapper.php" =>
-                $tpl->mapper(),
-
-            "{$root}/{$action}/Response/{$action}Response.php" =>
-                $tpl->response(),
+            "{$root}/{$ctx->name}Integration.php" => $tpl->integration(),
+            "{$root}/{$ctx->name}HttpClient.php"  => $tpl->client(),
+            "{$root}/config/" . strtolower($ctx->name) . '.yaml' => $tpl->yaml(),
         ];
+    }
+
+    /**
+     * Files generated for every new action, respecting the HTTP method rules:
+     *
+     *   GET    → Request/Action          + Response/Mapper + Response/Response
+     *   POST   → Request/Action + Body   + Response/Mapper + Response/Response
+     *   PUT    → Request/Action + Body   + Response/Mapper + Response/Response
+     *   DELETE → Request/Action          (no Response layer)
+     */
+    public function generateActionFiles(IntegrationContext $ctx): array
+    {
+        $tpl    = new TemplateRenderer($ctx);
+        $root   = $ctx->basePath . '/' . $ctx->name;
+        $action = $ctx->action;
+
+        $files = [];
+
+        // ── Request layer ────────────────────────────────────────────────────
+        $files["{$root}/{$action}/Request/{$action}Action.php"] = $tpl->action();
+
+        if ($ctx->hasBody()) {
+            $files["{$root}/{$action}/Request/{$action}Body.php"] = $tpl->body();
+        }
+
+        // ── Response layer (not for DELETE) ──────────────────────────────────
+        if ($ctx->hasResponse()) {
+            $files["{$root}/{$action}/Response/{$action}Mapper.php"]   = $tpl->mapper();
+            $files["{$root}/{$action}/Response/{$action}Response.php"] = $tpl->response();
+        }
+
+        return $files;
+    }
+
+    public function integrationExists(IntegrationContext $ctx): bool
+    {
+        return is_dir($ctx->basePath . '/' . $ctx->name);
     }
 }
