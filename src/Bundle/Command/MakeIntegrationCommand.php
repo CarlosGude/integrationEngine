@@ -58,16 +58,33 @@ final class MakeIntegrationCommand extends Command
         return Command::SUCCESS;
     }
 
-    private function buildFiles(string $name, string $action, string $ns, string $path): array
-    {
+    private function buildFiles(
+        string $name,
+        string $action,
+        string $ns,
+        string $path
+    ): array {
         return [
-            sprintf('%s/%sIntegration.php', $path, $name)          => $this->renderIntegration($name, $ns),
-            sprintf('%s/Actions/%sAction.php', $path, $action)       => $this->renderAction($action, $ns),
-            sprintf('%s/Bodys/%sBody.php', $path, $action)           => $this->renderBody($action, $ns),
-            sprintf('%s/Mappers/%sMapper.php', $path, $action)       => $this->renderMapper($action, $ns),
-            sprintf('%s/Responses/%sResponse.php', $path, $action)   => $this->renderResponse($action, $ns),
-            sprintf('%s/%sHttpClient.php', $path, $name)            => $this->renderClient($name, $ns),
-            sprintf('%s/config/%s.yaml', $path, strtolower($name))  => $this->renderYaml($name, $action, $ns),
+            sprintf('%s/%sIntegration.php', $path, $name)
+            => $this->renderIntegration($name, $ns),
+
+            sprintf('%s/%s/%sAction.php', $path, $action, $action)
+            => $this->renderAction($action, $ns),
+
+            sprintf('%s/%s/%sBody.php', $path, $action, $action)
+            => $this->renderBody($action, $ns),
+
+            sprintf('%s/%s/%sMapper.php', $path, $action, $action)
+            => $this->renderMapper($action, $ns),
+
+            sprintf('%s/%s/%sResponse.php', $path, $action, $action)
+            => $this->renderResponse($action, $ns),
+
+            sprintf('%s/%sHttpClient.php', $path, $name)
+            => $this->renderClient($name, $ns),
+
+            sprintf('%s/config/%s.yaml', $path, strtolower($name))
+            => $this->renderYaml($name, $action, $ns),
         ];
     }
 
@@ -127,7 +144,7 @@ PHP;
 
 declare(strict_types=1);
 
-namespace {$ns}\Bodys;
+namespace {$ns}\Body;
 
 use IntegrationEngine\Core\Contract\ActionBodyInterface;
 
