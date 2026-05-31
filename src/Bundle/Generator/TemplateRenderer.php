@@ -53,7 +53,19 @@ final readonly class {$this->ctx->name}HttpClient extends SymfonyHttpClientAdapt
 PHP;
     }
 
+    /**
+     * Full yaml file — only written when the integration is created for the first time.
+     * Contains the first action entry already.
+     */
     public function yaml(): string
+    {
+        return $this->yamlEntry();
+    }
+
+    /**
+     * A single action entry — appended to the yaml on every new action.
+     */
+    public function yamlEntry(): string
     {
         $method = strtoupper($this->ctx->method);
 
@@ -71,7 +83,6 @@ YAML;
 
     public function action(): string
     {
-        $method      = strtoupper($this->ctx->method);
         $hasBody     = $this->ctx->hasBody()     ? 'true'  : 'false';
         $hasResponse = $this->ctx->hasResponse() ? 'true'  : 'false';
         $mapperLine  = $this->ctx->hasResponse()
@@ -82,9 +93,8 @@ YAML;
             ? "\nuse {$this->ctx->responseNamespace()}\\{$this->ctx->action}Mapper;"
             : '';
 
-        // AbstractAction is NOT readonly, so we must not declare this class readonly.
-        // We also need to implement all abstract methods: create, getMethod, getPath,
-        // getBody, getAuthorization, hasBody, hasResponse, mapper.
+        // AbstractAction is NOT readonly — this class must not be readonly either.
+        // All abstract methods must be implemented.
         return <<<PHP
 <?php
 
@@ -98,10 +108,10 @@ use IntegrationEngine\Core\Contract\ActionBodyInterface;{$mapperUse}
 final class {$this->ctx->action}Action extends AbstractAction
 {
     private function __construct(
-        private string              \$method,
-        private string              \$path,
+        private string               \$method,
+        private string               \$path,
         private ?ActionBodyInterface \$body,
-        private mixed               \$authorization,
+        private mixed                \$authorization,
     ) {
     }
 
@@ -114,10 +124,10 @@ final class {$this->ctx->action}Action extends AbstractAction
         return new static(\$method, \$path, \$body, \$authorization);
     }
 
-    public function getMethod(): string        { return \$this->method; }
-    public function getPath(): string          { return \$this->path; }
+    public function getMethod(): string             { return \$this->method; }
+    public function getPath(): string               { return \$this->path; }
     public function getBody(): ?ActionBodyInterface { return \$this->body; }
-    public function getAuthorization(): mixed  { return \$this->authorization; }
+    public function getAuthorization(): mixed       { return \$this->authorization; }
 
     public static function getName(): string
     {

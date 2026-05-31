@@ -83,14 +83,15 @@ final class MakeIntegrationCommand extends Command
             $this->writeFile($file, $content, $io);
         }
 
+        // ── Append entry to config yaml ───────────────────────────────────────
+        $configPath = $this->generator->appendActionToConfig($ctx);
+        $io->text("  updated  {$configPath}");
+
         $io->success('Done.');
 
         return Command::SUCCESS;
     }
 
-    /**
-     * Prints a short summary of what will be generated based on the HTTP method.
-     */
     private function describeAction(IntegrationContext $ctx, SymfonyStyle $io): void
     {
         $lines = ['<info>Request/</info>' . $ctx->action . 'Action.php'];

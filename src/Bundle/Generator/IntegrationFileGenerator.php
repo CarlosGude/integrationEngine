@@ -18,7 +18,7 @@ final class IntegrationFileGenerator
         return [
             "{$root}/{$ctx->name}Integration.php" => $tpl->integration(),
             "{$root}/{$ctx->name}HttpClient.php"  => $tpl->client(),
-            "{$root}/config/" . strtolower($ctx->name) . '.yaml' => $tpl->yaml(),
+            "{$root}/{$ctx->name}.yaml"            => $tpl->yaml(),
         ];
     }
 
@@ -54,8 +54,33 @@ final class IntegrationFileGenerator
         return $files;
     }
 
+    /**
+     * Appends the new action entry to the existing {Integration}.yaml config file.
+     * If the file doesn't exist yet (shouldn't happen, but safe), it creates it.
+     */
+    public function appendActionToConfig(IntegrationContext $ctx): string
+    {
+        $tpl        = new TemplateRenderer($ctx);
+        $configPath = $ctx->basePath . '/' . $ctx->name . '/' . $ctx->name . '.yaml';
+
+        $entry = $tpl->yamlEntry();
+
+        if (file_exists($configPath)) {
+            file_put_contents($configPath, "\n" . $entry, FILE_APPEND);
+        } else {
+            file_put_contents($configPath, $entry);
+        }
+
+        return $configPath;
+    }
+
     public function integrationExists(IntegrationContext $ctx): bool
     {
         return is_dir($ctx->basePath . '/' . $ctx->name);
+    }
+
+    public function configPath(IntegrationContext $ctx): string
+    {
+        return $ctx->basePath . '/' . $ctx->name . '/' . $ctx->name . '.yaml';
     }
 }

@@ -21,9 +21,16 @@ final class Configuration implements ConfigurationInterface
             ->arrayPrototype()
             ->children()
             ->scalarNode('config_path')
-            ->isRequired()
-            ->cannotBeEmpty()
-            ->info('Absolute path to the YAML file defining the actions.')
+            ->defaultNull()
+            ->info(
+                'Path to the YAML file defining the actions. ' .
+                'Defaults to {base_path}/{IntegrationName}/{IntegrationName}.yaml ' .
+                'resolved at compile time by IntegrationCompilerPass.'
+            )
+            ->end()
+            ->scalarNode('base_path')
+            ->defaultNull()
+            ->info('Base filesystem path used to resolve config_path when it is not set explicitly.')
             ->end()
             ->scalarNode('base_url')
             ->defaultNull()
