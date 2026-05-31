@@ -9,7 +9,7 @@
       "homepage": "https://github.com/CarlosGude"
     }
   ],
-  "keywords": ["symfony", "bundle", "integration", "api", "hexagonal", "adapter"],
+  "keywords": ["symfony", "bundle", "integration", "api", "hexagonal", "adapter", "engine"],
   "homepage": "https://github.com/CarlosGude/integrationEngine",
   "support": {
     "issues": "https://github.com/CarlosGude/integrationEngine/issues",
