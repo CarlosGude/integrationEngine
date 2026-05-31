@@ -10,29 +10,33 @@ final class IntegrationFileGenerator
     {
         $tpl = new TemplateRenderer($ctx);
 
-        $ns = $ctx->integrationNamespace();
-        $path = $ctx->integrationPath();
+        $base = $ctx->basePath;
 
         return [
-            "{$path}/{$ctx->name}Integration.php" =>
+            // Integration root
+            "{$base}/{$ctx->name}Integration.php" =>
                 $tpl->integration(),
 
-            "{$path}/{$ctx->action}/{$ctx->action}Action.php" =>
+            // REQUEST LAYER
+            "{$base}/Request/{$ctx->action}Action.php" =>
                 $tpl->action(),
 
-            "{$path}/{$ctx->action}/{$ctx->action}Body.php" =>
+            "{$base}/Request/{$ctx->action}Body.php" =>
                 $tpl->body(),
 
-            "{$path}/{$ctx->action}/{$ctx->action}Mapper.php" =>
+            // RESPONSE LAYER
+            "{$base}/Response/{$ctx->action}Mapper.php" =>
                 $tpl->mapper(),
 
-            "{$path}/{$ctx->action}/{$ctx->action}Response.php" =>
+            "{$base}/Response/{$ctx->action}Response.php" =>
                 $tpl->response(),
 
-            "{$path}/{$ctx->name}HttpClient.php" =>
+            // CLIENT
+            "{$base}/{$ctx->name}HttpClient.php" =>
                 $tpl->client(),
 
-            "{$path}/config/" . strtolower($ctx->name) . ".yaml" =>
+            // CONFIG
+            "{$base}/config/" . strtolower($ctx->name) . ".yaml" =>
                 $tpl->yaml(),
         ];
     }

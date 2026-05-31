@@ -6,4 +6,4 @@ services:
             string $projectDir: '%kernel.project_dir%'
 
     IntegrationEngine\:
-        resource: '../../../src/'
+        resource: '../../../'
