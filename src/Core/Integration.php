@@ -83,11 +83,7 @@ final readonly class Integration
         $responseArray = $authResponse->toArray();
 
         if (!isset($responseArray[$authConfig->tokenField])) {
-            throw new \RuntimeException(sprintf(
-                'Dynamic auth action "%s" response does not contain field "%s".',
-                $authConfig->action,
-                $authConfig->tokenField
-            ));
+            throw new \RuntimeException(sprintf('Dynamic auth action "%s" response does not contain field "%s".', $authConfig->action, $authConfig->tokenField));
         }
 
         $token = $responseArray[$authConfig->tokenField];
@@ -101,11 +97,8 @@ final readonly class Integration
     {
         $mapperClass = $action::mapper();
 
-        if ($mapperClass === null) {
-            throw new \LogicException(sprintf(
-                'Action "%s" requires a mapper but none was defined.',
-                $action::class
-            ));
+        if (null === $mapperClass) {
+            throw new \LogicException(sprintf('Action "%s" requires a mapper but none was defined.', $action::class));
         }
 
         if (!is_a($mapperClass, AbstractMapper::class, true)) {
@@ -113,11 +106,7 @@ final readonly class Integration
         }
 
         if ($mapperClass::getAction() !== $action::class) {
-            throw new MapperActionMismatchException(
-                mapperClass: $mapperClass,
-                expectedActionClass: $mapperClass::getAction(),
-                actualActionClass: $action::class
-            );
+            throw new MapperActionMismatchException(mapperClass: $mapperClass, expectedActionClass: $mapperClass::getAction(), actualActionClass: $action::class);
         }
 
         return $mapperClass::map($action, $rawResponse);

@@ -19,12 +19,12 @@ final class IntegrationEngineExtension extends Extension
         // Cargar servicios base del bundle
         $loader = new YamlFileLoader(
             $container,
-            new FileLocator(__DIR__ . '/../Resources/config')
+            new FileLocator(__DIR__.'/../Resources/config')
         );
 
         $loader->load('services.yaml');
 
-        /**
+        /*
          * 🔥 SOLO CONFIGURACIÓN
          * No lógica, no wiring, no decisiones.
          * Solo pasar datos al sistema Symfony.

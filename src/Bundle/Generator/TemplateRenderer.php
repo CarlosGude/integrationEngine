@@ -20,37 +20,37 @@ final class TemplateRenderer
         $name = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $this->ctx->name));
 
         return <<<PHP
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {$this->ctx->integrationNamespace()};
+            namespace {$this->ctx->integrationNamespace()};
 
-use IntegrationEngine\Core\Registry\IntegrationName;
+            use IntegrationEngine\\Core\\Registry\\IntegrationName;
 
-final class {$this->ctx->name}Integration implements IntegrationName
-{
-    public const string NAME = '{$name}';
-}
-PHP;
+            final class {$this->ctx->name}Integration implements IntegrationName
+            {
+                public const string NAME = '{$name}';
+            }
+            PHP;
     }
 
     public function client(): string
     {
         // SymfonyHttpClientAdapter is readonly, so the subclass must also be readonly
         return <<<PHP
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {$this->ctx->integrationNamespace()};
+            namespace {$this->ctx->integrationNamespace()};
 
-use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
+            use IntegrationEngine\\Infrastructure\\Http\\SymfonyHttpClientAdapter;
 
-final readonly class {$this->ctx->name}HttpClient extends SymfonyHttpClientAdapter
-{
-}
-PHP;
+            final readonly class {$this->ctx->name}HttpClient extends SymfonyHttpClientAdapter
+            {
+            }
+            PHP;
     }
 
     /**
@@ -70,11 +70,11 @@ PHP;
         $method = strtoupper($this->ctx->method);
 
         return <<<YAML
-{$this->ctx->action}:
-    action: {$this->ctx->requestNamespace()}\\{$this->ctx->action}Action
-    method: {$method}
-    path: {$this->ctx->path}
-YAML;
+            {$this->ctx->action}:
+                action: {$this->ctx->requestNamespace()}\\{$this->ctx->action}Action
+                method: {$method}
+                path: {$this->ctx->path}
+            YAML;
     }
 
     /* =========================
@@ -83,9 +83,9 @@ YAML;
 
     public function action(): string
     {
-        $hasBody     = $this->ctx->hasBody()     ? 'true'  : 'false';
-        $hasResponse = $this->ctx->hasResponse() ? 'true'  : 'false';
-        $mapperLine  = $this->ctx->hasResponse()
+        $hasBody = $this->ctx->hasBody() ? 'true' : 'false';
+        $hasResponse = $this->ctx->hasResponse() ? 'true' : 'false';
+        $mapperLine = $this->ctx->hasResponse()
             ? "return {$this->ctx->action}Mapper::class;"
             : 'return null;';
 
@@ -93,63 +93,27 @@ YAML;
             ? "\nuse {$this->ctx->responseNamespace()}\\{$this->ctx->action}Mapper;"
             : '';
 
-        // AbstractAction is NOT readonly — this class must not be readonly either.
-        // All abstract methods must be implemented.
         return <<<PHP
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {$this->ctx->requestNamespace()};
+            namespace {$this->ctx->requestNamespace()};
 
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\ActionBodyInterface;{$mapperUse}
+            use IntegrationEngine\\Core\\Contract\\AbstractAction;{$mapperUse}
 
-final class {$this->ctx->action}Action extends AbstractAction
-{
-    private function __construct(
-        private string               \$method,
-        private string               \$path,
-        private ?ActionBodyInterface \$body,
-        private mixed                \$authorization,
-    ) {
-    }
+            final class {$this->ctx->action}Action extends AbstractAction
+            {
+                public static function getName(): string   { return '{$this->ctx->action}'; }
+                public static function hasBody(): bool     { return {$hasBody}; }
+                public static function hasResponse(): bool { return {$hasResponse}; }
 
-    public static function create(
-        string               \$method,
-        string               \$path,
-        ?ActionBodyInterface  \$body,
-        mixed                \$authorization,
-    ): static {
-        return new static(\$method, \$path, \$body, \$authorization);
-    }
-
-    public function getMethod(): string             { return \$this->method; }
-    public function getPath(): string               { return \$this->path; }
-    public function getBody(): ?ActionBodyInterface { return \$this->body; }
-    public function getAuthorization(): mixed       { return \$this->authorization; }
-
-    public static function getName(): string
-    {
-        return '{$this->ctx->action}';
-    }
-
-    public static function hasBody(): bool
-    {
-        return {$hasBody};
-    }
-
-    public static function hasResponse(): bool
-    {
-        return {$hasResponse};
-    }
-
-    public static function mapper(): ?string
-    {
-        {$mapperLine}
-    }
-}
-PHP;
+                public static function mapper(): ?string
+                {
+                    {$mapperLine}
+                }
+            }
+            PHP;
     }
 
     /**
@@ -158,22 +122,22 @@ PHP;
     public function body(): string
     {
         return <<<PHP
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {$this->ctx->requestNamespace()};
+            namespace {$this->ctx->requestNamespace()};
 
-use IntegrationEngine\Core\Contract\ActionBodyInterface;
+            use IntegrationEngine\\Core\\Contract\\ActionBodyInterface;
 
-final readonly class {$this->ctx->action}Body implements ActionBodyInterface
-{
-    public function toArray(): array
-    {
-        return [];
-    }
-}
-PHP;
+            final readonly class {$this->ctx->action}Body implements ActionBodyInterface
+            {
+                public function toArray(): array
+                {
+                    return [];
+                }
+            }
+            PHP;
     }
 
     /* =========================
@@ -186,30 +150,30 @@ PHP;
     public function mapper(): string
     {
         return <<<PHP
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {$this->ctx->responseNamespace()};
+            namespace {$this->ctx->responseNamespace()};
 
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\AbstractMapper;
-use IntegrationEngine\Core\Contract\ResponseInterface;
-use {$this->ctx->requestNamespace()}\\{$this->ctx->action}Action;
+            use IntegrationEngine\\Core\\Contract\\AbstractAction;
+            use IntegrationEngine\\Core\\Contract\\AbstractMapper;
+            use IntegrationEngine\\Core\\Contract\\ResponseInterface;
+            use {$this->ctx->requestNamespace()}\\{$this->ctx->action}Action;
 
-final class {$this->ctx->action}Mapper extends AbstractMapper
-{
-    public static function getAction(): string
-    {
-        return {$this->ctx->action}Action::class;
-    }
+            final class {$this->ctx->action}Mapper extends AbstractMapper
+            {
+                public static function getAction(): string
+                {
+                    return {$this->ctx->action}Action::class;
+                }
 
-    protected static function transform(AbstractAction \$action, array \$response): ResponseInterface
-    {
-        return new {$this->ctx->action}Response();
-    }
-}
-PHP;
+                protected static function transform(AbstractAction \$action, array \$response): ResponseInterface
+                {
+                    return new {$this->ctx->action}Response();
+                }
+            }
+            PHP;
     }
 
     /**
@@ -218,21 +182,21 @@ PHP;
     public function response(): string
     {
         return <<<PHP
-<?php
+            <?php
 
-declare(strict_types=1);
+            declare(strict_types=1);
 
-namespace {$this->ctx->responseNamespace()};
+            namespace {$this->ctx->responseNamespace()};
 
-use IntegrationEngine\Core\Contract\ResponseInterface;
+            use IntegrationEngine\\Core\\Contract\\ResponseInterface;
 
-final readonly class {$this->ctx->action}Response implements ResponseInterface
-{
-    public function toArray(): array
-    {
-        return [];
-    }
-}
-PHP;
+            final readonly class {$this->ctx->action}Response implements ResponseInterface
+            {
+                public function toArray(): array
+                {
+                    return [];
+                }
+            }
+            PHP;
     }
 }

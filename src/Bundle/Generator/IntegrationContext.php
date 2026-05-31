@@ -18,55 +18,55 @@ final readonly class IntegrationContext
 
     /**
      * Base namespace of the integration module
-     * App\Infrastructure\Integrations\Iberia
+     * App\Infrastructure\Integrations\Iberia.
      */
     public function integrationNamespace(): string
     {
-        return $this->baseNamespace . '\\' . $this->name;
+        return $this->baseNamespace.'\\'.$this->name;
     }
 
     /**
-     * Namespace of the action level
+     * Namespace of the action level.
      */
     public function actionNamespace(): string
     {
-        return $this->integrationNamespace() . '\\' . $this->action;
+        return $this->integrationNamespace().'\\'.$this->action;
     }
 
     /**
-     * Request namespace
+     * Request namespace.
      */
     public function requestNamespace(): string
     {
-        return $this->actionNamespace() . '\\Request';
+        return $this->actionNamespace().'\Request';
     }
 
     /**
-     * Response namespace
+     * Response namespace.
      */
     public function responseNamespace(): string
     {
-        return $this->actionNamespace() . '\\Response';
+        return $this->actionNamespace().'\Response';
     }
 
     public function isGet(): bool
     {
-        return strtoupper($this->method) === 'GET';
+        return 'GET' === strtoupper($this->method);
     }
 
     public function isPost(): bool
     {
-        return strtoupper($this->method) === 'POST';
+        return 'POST' === strtoupper($this->method);
     }
 
     public function isPut(): bool
     {
-        return strtoupper($this->method) === 'PUT';
+        return 'PUT' === strtoupper($this->method);
     }
 
     public function isDelete(): bool
     {
-        return strtoupper($this->method) === 'DELETE';
+        return 'DELETE' === strtoupper($this->method);
     }
 
     public function hasBody(): bool

@@ -12,13 +12,13 @@ final class IntegrationFileGenerator
      */
     public function generateIntegrationFiles(IntegrationContext $ctx): array
     {
-        $tpl  = new TemplateRenderer($ctx);
-        $root = $ctx->basePath . '/' . $ctx->name;
+        $tpl = new TemplateRenderer($ctx);
+        $root = $ctx->basePath.'/'.$ctx->name;
 
         return [
             "{$root}/{$ctx->name}Integration.php" => $tpl->integration(),
-            "{$root}/{$ctx->name}HttpClient.php"  => $tpl->client(),
-            "{$root}/{$ctx->name}.yaml"            => $tpl->yaml(),
+            "{$root}/{$ctx->name}HttpClient.php" => $tpl->client(),
+            "{$root}/{$ctx->name}.yaml" => $tpl->yaml(),
         ];
     }
 
@@ -32,8 +32,8 @@ final class IntegrationFileGenerator
      */
     public function generateActionFiles(IntegrationContext $ctx): array
     {
-        $tpl    = new TemplateRenderer($ctx);
-        $root   = $ctx->basePath . '/' . $ctx->name;
+        $tpl = new TemplateRenderer($ctx);
+        $root = $ctx->basePath.'/'.$ctx->name;
         $action = $ctx->action;
 
         $files = [];
@@ -47,7 +47,7 @@ final class IntegrationFileGenerator
 
         // ── Response layer (not for DELETE) ──────────────────────────────────
         if ($ctx->hasResponse()) {
-            $files["{$root}/{$action}/Response/{$action}Mapper.php"]   = $tpl->mapper();
+            $files["{$root}/{$action}/Response/{$action}Mapper.php"] = $tpl->mapper();
             $files["{$root}/{$action}/Response/{$action}Response.php"] = $tpl->response();
         }
 
@@ -60,13 +60,13 @@ final class IntegrationFileGenerator
      */
     public function appendActionToConfig(IntegrationContext $ctx): string
     {
-        $tpl        = new TemplateRenderer($ctx);
-        $configPath = $ctx->basePath . '/' . $ctx->name . '/' . $ctx->name . '.yaml';
+        $tpl = new TemplateRenderer($ctx);
+        $configPath = $ctx->basePath.'/'.$ctx->name.'/'.$ctx->name.'.yaml';
 
         $entry = $tpl->yamlEntry();
 
         if (file_exists($configPath)) {
-            file_put_contents($configPath, "\n" . $entry, FILE_APPEND);
+            file_put_contents($configPath, "\n".$entry, FILE_APPEND);
         } else {
             file_put_contents($configPath, $entry);
         }
@@ -76,11 +76,11 @@ final class IntegrationFileGenerator
 
     public function integrationExists(IntegrationContext $ctx): bool
     {
-        return is_dir($ctx->basePath . '/' . $ctx->name);
+        return is_dir($ctx->basePath.'/'.$ctx->name);
     }
 
     public function configPath(IntegrationContext $ctx): string
     {
-        return $ctx->basePath . '/' . $ctx->name . '/' . $ctx->name . '.yaml';
+        return $ctx->basePath.'/'.$ctx->name.'/'.$ctx->name.'.yaml';
     }
 }

@@ -4,44 +4,57 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core\Contract;
 
-abstract class AbstractAction
+abstract readonly class AbstractAction
 {
-    abstract public static function create(
+    final private function __construct(
+        private string $method,
+        private string $path,
+        private ?ActionBodyInterface $body,
+        private mixed $authorization,
+    ) {
+    }
+
+    final public static function create(
         string $method,
         string $path,
         ?ActionBodyInterface $body,
-        mixed $authorization
-    ): static;
+        mixed $authorization,
+    ): static {
+        return new static($method, $path, $body, $authorization);
+    }
 
-    abstract public function getMethod(): string;
-    abstract public function getPath(): string;
-    abstract public function getBody(): ?ActionBodyInterface;
-    abstract public function getAuthorization(): mixed;
+    final public function getMethod(): string
+    {
+        return $this->method;
+    }
 
-    /**
-     * Body exists (POST/PUT/PATCH usually)
-     */
+    final public function getPath(): string
+    {
+        return $this->path;
+    }
+
+    final public function getBody(): ?ActionBodyInterface
+    {
+        return $this->body;
+    }
+
+    final public function getAuthorization(): mixed
+    {
+        return $this->authorization;
+    }
+
+    abstract public static function getName(): string;
+
+    /** Body exists (POST/PUT) */
     abstract public static function hasBody(): bool;
 
-    /**
-     * Response exists (some actions like DELETE may not return structured response)
-     */
+    /** Response exists (DELETE returns null) */
     abstract public static function hasResponse(): bool;
 
     /**
-     * Mapper used only if hasResponse() === true
+     * Mapper used only if hasResponse() === true.
      *
      * @return class-string<AbstractMapper>|null
      */
     abstract public static function mapper(): ?string;
-
-    /**
-     * NEW: declare response type explicitly (optional but powerful)
-     *
-     * @return class-string<ResponseInterface>|null
-     */
-    public static function response(): ?string
-    {
-        return null;
-    }
 }

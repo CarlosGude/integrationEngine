@@ -14,7 +14,7 @@ readonly class SymfonyHttpClientAdapter implements ClientInterface
 {
     public function __construct(
         private HttpClientInterface $httpClient,
-        private string              $baseUrl,
+        private string $baseUrl,
     ) {
     }
 

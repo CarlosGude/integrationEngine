@@ -8,9 +8,14 @@ use IntegrationEngine\Bundle\DependencyInjection\IntegrationEngineExtension;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 final class IntegrationEngineExtensionTest extends TestCase
 {
-    public function test_it_loads_integrations_configuration(): void
+    public function testItLoadsIntegrationsConfiguration(): void
     {
         $container = new ContainerBuilder();
 
