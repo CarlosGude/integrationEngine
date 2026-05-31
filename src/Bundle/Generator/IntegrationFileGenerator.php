@@ -22,25 +22,15 @@ final class IntegrationFileGenerator
             "{$root}/{$ctx->name}Integration.php" =>
                 $tpl->integration(),
 
-            /*
-             * =========================
-             * CLIENT
-             * =========================
-             */
             "{$root}/{$ctx->name}HttpClient.php" =>
                 $tpl->client(),
 
-            /*
-             * =========================
-             * CONFIG
-             * =========================
-             */
             "{$root}/config/" . strtolower($ctx->name) . ".yaml" =>
                 $tpl->yaml(),
 
             /*
              * =========================
-             * REQUEST LAYER
+             * ACTION LAYER (ROOT PER ACTION)
              * =========================
              */
             "{$root}/{$action}/Request/{$action}Action.php" =>
@@ -49,11 +39,6 @@ final class IntegrationFileGenerator
             "{$root}/{$action}/Request/{$action}Body.php" =>
                 $tpl->body(),
 
-            /*
-             * =========================
-             * RESPONSE LAYER
-             * =========================
-             */
             "{$root}/{$action}/Response/{$action}Mapper.php" =>
                 $tpl->mapper(),
 
