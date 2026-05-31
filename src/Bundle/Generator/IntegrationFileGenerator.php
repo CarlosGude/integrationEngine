@@ -10,35 +10,55 @@ final class IntegrationFileGenerator
     {
         $tpl = new TemplateRenderer($ctx);
 
-        $base = $ctx->basePath;
+        $root = $ctx->basePath . '/' . $ctx->name;
         $action = $ctx->action;
 
         return [
-            // Integration root
-            "{$base}/{$ctx->name}Integration.php" =>
+            /*
+             * =========================
+             * INTEGRATION ROOT
+             * =========================
+             */
+            "{$root}/{$ctx->name}Integration.php" =>
                 $tpl->integration(),
 
-            // ACTION ROOT FOLDER + REQUEST
-            "{$base}/{$action}/Request/{$action}Action.php" =>
-                $tpl->action(),
-
-            "{$base}/{$action}/Request/{$action}Body.php" =>
-                $tpl->body(),
-
-            // RESPONSE LAYER
-            "{$base}/{$action}/Response/{$action}Mapper.php" =>
-                $tpl->mapper(),
-
-            "{$base}/{$action}/Response/{$action}Response.php" =>
-                $tpl->response(),
-
-            // CLIENT
-            "{$base}/{$ctx->name}HttpClient.php" =>
+            /*
+             * =========================
+             * CLIENT
+             * =========================
+             */
+            "{$root}/{$ctx->name}HttpClient.php" =>
                 $tpl->client(),
 
-            // CONFIG
-            "{$base}/config/" . strtolower($ctx->name) . ".yaml" =>
+            /*
+             * =========================
+             * CONFIG
+             * =========================
+             */
+            "{$root}/config/" . strtolower($ctx->name) . ".yaml" =>
                 $tpl->yaml(),
+
+            /*
+             * =========================
+             * REQUEST LAYER
+             * =========================
+             */
+            "{$root}/{$action}/Request/{$action}Action.php" =>
+                $tpl->action(),
+
+            "{$root}/{$action}/Request/{$action}Body.php" =>
+                $tpl->body(),
+
+            /*
+             * =========================
+             * RESPONSE LAYER
+             * =========================
+             */
+            "{$root}/{$action}/Response/{$action}Mapper.php" =>
+                $tpl->mapper(),
+
+            "{$root}/{$action}/Response/{$action}Response.php" =>
+                $tpl->response(),
         ];
     }
 }
