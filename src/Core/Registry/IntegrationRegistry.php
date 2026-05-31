@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace IntegrationEngine\Core\Registry;
 
 use IntegrationEngine\Core\Exception\IntegrationNotFoundException;
-use IntegrationEngine\Core\Integration;
+use IntegrationEngine\Core\IntegrationEngine;
 
 final class IntegrationRegistry
 {
-    /** @var array<string, Integration> */
+    /** @var array<string, IntegrationEngine> */
     private array $integrations = [];
 
-    public function register(string $name, Integration $integration): void
+    public function register(string $name, IntegrationEngine $integration): void
     {
         $this->integrations[$name] = $integration;
     }
@@ -24,7 +24,7 @@ final class IntegrationRegistry
      *
      * @throws IntegrationNotFoundException
      */
-    public function get(string $name): Integration
+    public function get(string $name): IntegrationEngine
     {
         if (!isset($this->integrations[$name])) {
             throw new IntegrationNotFoundException($name);

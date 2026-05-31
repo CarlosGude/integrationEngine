@@ -16,7 +16,7 @@ use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
 
-final readonly class Integration
+final readonly class IntegrationEngine
 {
     public function __construct(
         private ConfigPort $config,

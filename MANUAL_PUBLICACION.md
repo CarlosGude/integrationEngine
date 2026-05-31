@@ -202,7 +202,7 @@ use IntegrationEngine\Core\Contract\ClientInterface;
 use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\ResponseInterface;
 use IntegrationEngine\Core\Exception\InvalidMapperException;
-use IntegrationEngine\Core\Integration;
+use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -213,14 +213,14 @@ final class IntegrationTest extends TestCase
     private ConfigPort&MockObject    $config;
     private ClientInterface&MockObject $client;
     private CachePort&MockObject     $cache;
-    private Integration              $integration;
+    private IntegrationEngine              $integrationEngine;
 
     protected function setUp(): void
     {
         $this->config      = $this->createMock(ConfigPort::class);
         $this->client      = $this->createMock(ClientInterface::class);
         $this->cache       = $this->createMock(CachePort::class);
-        $this->integration = new Integration($this->config, $this->client, $this->cache);
+        $this->integrationEngine = new IntegrationEngine($this->config, $this->client, $this->cache);
     }
 
     public function test_send_returns_typed_response(): void
@@ -237,7 +237,7 @@ final class IntegrationTest extends TestCase
             ->with($action)
             ->willReturn(['id' => 99]);
 
-        $response = $this->integration->send('GetOrders');
+        $response = $this->integrationEngine->send('GetOrders');
 
         $this->assertInstanceOf(TestResponse::class, $response);
         $this->assertSame(['id' => 99], $response->toArray());
@@ -252,7 +252,7 @@ final class IntegrationTest extends TestCase
         $this->config->method('getAction')->willReturn($action);
         $this->client->method('send')->willReturn([]);
 
-        $this->integration->send('bad');
+        $this->integrationEngine->send('bad');
     }
 
     public function test_delete_action_returns_empty_response_without_mapper(): void
@@ -262,7 +262,7 @@ final class IntegrationTest extends TestCase
         $this->config->method('getAction')->willReturn($action);
         $this->client->expects($this->once())->method('send')->willReturn([]);
 
-        $response = $this->integration->send('DeleteOrders');
+        $response = $this->integrationEngine->send('DeleteOrders');
 
         $this->assertSame([], $response->toArray());
     }
@@ -299,8 +299,8 @@ final class IntegrationTest extends TestCase
                 ['id' => 2],
             );
 
-        $this->integration->send('GetOrders');
-        $this->integration->send('GetOrders');
+        $this->integrationEngine->send('GetOrders');
+        $this->integrationEngine->send('GetOrders');
     }
 }
 

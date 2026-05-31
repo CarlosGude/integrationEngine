@@ -6,7 +6,7 @@ namespace IntegrationEngine\Core\Contract;
 
 abstract readonly class AbstractAction
 {
-    final private function __construct(
+    final protected function __construct(
         private string $method,
         private string $path,
         private ?ActionBodyInterface $body,

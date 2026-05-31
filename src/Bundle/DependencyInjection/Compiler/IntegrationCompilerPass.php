@@ -40,7 +40,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
             $integrationId = "integration_engine.integration.{$name}";
 
             $container->setDefinition($integrationId, new Definition(
-                \IntegrationEngine\Core\Integration::class,
+                \IntegrationEngine\Core\IntegrationEngine::class,
                 [
                     new Reference($configId),
                     $clientRef,
