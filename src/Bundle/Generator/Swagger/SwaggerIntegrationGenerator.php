@@ -7,32 +7,37 @@ namespace IntegrationEngine\Bundle\Generator\Swagger;
 use IntegrationEngine\Bundle\Generator\IntegrationContext;
 use IntegrationEngine\Bundle\Generator\IntegrationFileGenerator;
 
-final class SwaggerIntegrationGenerator
+final readonly class SwaggerIntegrationGenerator
 {
     public function __construct(
-        private readonly SwaggerParser $parser,
-        private readonly OpenApiToIntegrationMapper $mapper,
-        private readonly IntegrationFileGenerator $fileGenerator,
+        private SwaggerParser              $parser,
+        private OpenApiToIntegrationMapper $mapper,
+        private IntegrationFileGenerator   $generator,
     ) {}
 
-    public function generate(IntegrationContext $baseCtx, string $source): void
+    /**
+     * @return iterable<array{string, string, IntegrationContext}>
+     * @throws \JsonException
+     */
+    public function generate(IntegrationContext $baseCtx, string $source): iterable
     {
         $spec = $this->parser->parse($source);
 
         foreach ($spec->operations as $operation) {
+
             $ctx = $this->mapper->mapOperationToContext($baseCtx, $operation);
 
-            foreach ($this->fileGenerator->generateActionFiles($ctx) as $file => $content) {
-                $this->fileGenerator->writeFile($file, $content);
+            foreach ($this->generator->generateActionFiles($ctx) as $file => $content) {
+                yield [$file, $content, $ctx];
             }
 
-            if (!$this->fileGenerator->integrationExists($ctx)) {
-                foreach ($this->fileGenerator->generateIntegrationFiles($ctx) as $file => $content) {
-                    $this->fileGenerator->writeFile($file, $content);
+            if (!$this->generator->integrationExists($ctx)) {
+                foreach ($this->generator->generateIntegrationFiles($ctx) as $file => $content) {
+                    yield [$file, $content, $ctx];
                 }
             }
 
-            $this->fileGenerator->appendActionToConfig($ctx);
+            $this->generator->appendActionToConfig($ctx);
         }
     }
 }
