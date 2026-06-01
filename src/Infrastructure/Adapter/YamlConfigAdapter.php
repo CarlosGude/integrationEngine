@@ -28,7 +28,6 @@ final class YamlConfigAdapter implements ConfigPort
         string $name,
         ?ActionBodyInterface $body = null,
     ): AbstractAction {
-
         if (!isset($this->config[$name])) {
             throw new ActionNotFoundException($name);
         }

@@ -64,8 +64,8 @@ final class TemplateRenderer
      */
     public function yamlEntry(): string
     {
-        $method     = strtoupper($this->ctx->method);
-        $actionFqcn = $this->ctx->requestNamespace() . '\\' . $this->ctx->action . 'Action';
+        $method = strtoupper($this->ctx->method);
+        $actionFqcn = $this->ctx->requestNamespace().'\\'.$this->ctx->action.'Action';
 
         return "{$this->ctx->action}:\n    action: {$actionFqcn}\n    method: {$method}\n    path: {$this->ctx->path}\n";
     }
@@ -76,9 +76,9 @@ final class TemplateRenderer
 
     public function action(): string
     {
-        $hasBody     = $this->ctx->hasBody() ? 'true' : 'false';
+        $hasBody = $this->ctx->hasBody() ? 'true' : 'false';
         $hasResponse = $this->ctx->hasResponse() ? 'true' : 'false';
-        $mapperLine  = $this->ctx->hasResponse()
+        $mapperLine = $this->ctx->hasResponse()
             ? "return {$this->ctx->action}Mapper::class;"
             : 'return null;';
 

@@ -37,7 +37,7 @@ final class MakeIntegrationCommand extends Command
                 null,
                 InputOption::VALUE_REQUIRED,
                 'Base namespace',
-                'App\\Infrastructure\\Integrations'
+                'App\Infrastructure\Integrations'
             )
             ->addOption(
                 'path',
@@ -46,23 +46,24 @@ final class MakeIntegrationCommand extends Command
                 'Base path',
                 'src/Infrastructure/Integrations'
             )
-            ->addOption('force', null, InputOption::VALUE_NONE);
+            ->addOption('force', null, InputOption::VALUE_NONE)
+        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
 
-        $name   = (string) $input->getArgument('name');
+        $name = (string) $input->getArgument('name');
         $action = (string) $input->getArgument('action');
-        $force  = (bool) $input->getOption('force');
+        $force = (bool) $input->getOption('force');
 
         $baseNamespace = rtrim((string) $input->getOption('namespace'), '\\');
-        $basePath      = rtrim((string) $input->getOption('path'), '/');
+        $basePath = rtrim((string) $input->getOption('path'), '/');
 
         // $baseNamespace is App\Infrastructure\Integrations
         // IntegrationContext::integrationNamespace() appends $name internally
-        $integrationPath = $this->projectDir . '/' . $basePath . '/' . $name;
+        $integrationPath = $this->projectDir.'/'.$basePath.'/'.$name;
 
         $ctx = new IntegrationContext(
             name: $name,
@@ -73,7 +74,7 @@ final class MakeIntegrationCommand extends Command
             basePath: $integrationPath,
         );
 
-        $io->title(sprintf('Generating integration: %s', $name));
+        $io->title(\sprintf('Generating integration: %s', $name));
 
         // 1. Integration skeleton
         foreach ($this->generator->generateIntegrationFiles($ctx) as $file => $content) {
@@ -99,10 +100,11 @@ final class MakeIntegrationCommand extends Command
         SymfonyStyle $io,
         bool $force
     ): void {
-        $dir = dirname($filePath);
+        $dir = \dirname($filePath);
 
         if (!is_dir($dir) && !mkdir($dir, 0o755, true) && !is_dir($dir)) {
             $io->error("Cannot create directory: {$dir}");
+
             return;
         }
 
@@ -110,6 +112,7 @@ final class MakeIntegrationCommand extends Command
 
         if ($exists && !$force) {
             $io->warning("Skipped (already exists): {$filePath}");
+
             return;
         }
 

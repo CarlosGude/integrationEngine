@@ -6,29 +6,21 @@ namespace IntegrationEngine\Bundle\Generator;
 
 final class IntegrationFileGenerator
 {
-    /**
-     * Root already includes the integration name.
-     */
-    private function root(IntegrationContext $ctx): string
-    {
-        return $ctx->basePath;
-    }
-
     public function generateIntegrationFiles(IntegrationContext $ctx): array
     {
-        $tpl  = new TemplateRenderer($ctx);
+        $tpl = new TemplateRenderer($ctx);
         $root = $this->root($ctx);
 
         return [
             "{$root}/{$ctx->name}Integration.php" => $tpl->integration(),
-            "{$root}/{$ctx->name}HttpClient.php"  => $tpl->client(),
+            "{$root}/{$ctx->name}HttpClient.php" => $tpl->client(),
         ];
     }
 
     public function generateActionFiles(IntegrationContext $ctx): array
     {
-        $tpl    = new TemplateRenderer($ctx);
-        $root   = $this->root($ctx);
+        $tpl = new TemplateRenderer($ctx);
+        $root = $this->root($ctx);
         $action = $ctx->action;
 
         $files = [];
@@ -42,8 +34,8 @@ final class IntegrationFileGenerator
 
         // Response
         if ($ctx->hasResponse()) {
-            $files["{$root}/{$action}/Response/{$action}Mapper.php"]    = $tpl->mapper();
-            $files["{$root}/{$action}/Response/{$action}Response.php"]  = $tpl->response();
+            $files["{$root}/{$action}/Response/{$action}Mapper.php"] = $tpl->mapper();
+            $files["{$root}/{$action}/Response/{$action}Response.php"] = $tpl->response();
         }
 
         return $files;
@@ -51,13 +43,13 @@ final class IntegrationFileGenerator
 
     public function appendActionToConfig(IntegrationContext $ctx): string
     {
-        $tpl        = new TemplateRenderer($ctx);
+        $tpl = new TemplateRenderer($ctx);
         $configPath = $this->configPath($ctx);
 
         $entry = $tpl->yamlEntry();
 
         if (file_exists($configPath)) {
-            file_put_contents($configPath, PHP_EOL . $entry, FILE_APPEND);
+            file_put_contents($configPath, PHP_EOL.$entry, FILE_APPEND);
         } else {
             file_put_contents($configPath, $entry);
         }
@@ -72,6 +64,14 @@ final class IntegrationFileGenerator
 
     public function configPath(IntegrationContext $ctx): string
     {
-        return $this->root($ctx) . '/' . $ctx->name . '.yaml';
+        return $this->root($ctx).'/'.$ctx->name.'.yaml';
+    }
+
+    /**
+     * Root already includes the integration name.
+     */
+    private function root(IntegrationContext $ctx): string
+    {
+        return $ctx->basePath;
     }
 }

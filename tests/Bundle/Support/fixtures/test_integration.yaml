@@ -1,0 +1,4 @@
+get_hello_world:
+  action: IntegrationEngine\Tests\Support\Fixtures\GetHelloWorld\Request\GetHelloWorldAction
+  method: GET
+  path: /hello
