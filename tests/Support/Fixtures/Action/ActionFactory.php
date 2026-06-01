@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Support\Fixtures\Action;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
+use IntegrationEngine\Tests\Support\Fixtures\DeleteFixture\Request\DeleteFixtureAction;
 use IntegrationEngine\Tests\Support\Fixtures\GetHelloWorld\Request\GetHelloWorldAction;
 
 final class ActionFactory
@@ -14,6 +15,16 @@ final class ActionFactory
         return GetHelloWorldAction::create(
             method: 'GET',
             path: '/hello-world',
+            body: null,
+            authorization: null,
+        );
+    }
+
+    public static function deleteFixtureAction(): AbstractAction
+    {
+        return DeleteFixtureAction::create(
+            method: 'DELETE',
+            path: '/delete-fixture',
             body: null,
             authorization: null,
         );

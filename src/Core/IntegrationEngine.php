@@ -15,6 +15,7 @@ use IntegrationEngine\Core\Exception\InvalidMapperException;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
+use IntegrationEngine\Core\Response\EmptyResponse;
 
 final readonly class IntegrationEngine
 {
@@ -113,11 +114,6 @@ final readonly class IntegrationEngine
 
     private function createEmptyResponse(): ResponseInterface
     {
-        return new class implements ResponseInterface {
-            public function toArray(): array
-            {
-                return [];
-            }
-        };
+        return new EmptyResponse();
     }
 }

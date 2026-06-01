@@ -6,6 +6,7 @@ namespace IntegrationEngine\Tests\Core;
 
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\IntegrationEngine;
+use IntegrationEngine\Core\Response\EmptyResponse;
 use IntegrationEngine\Tests\Support\FakeCache;
 use IntegrationEngine\Tests\Support\FakeClient;
 use IntegrationEngine\Tests\Support\FakeConfigPort;
@@ -43,8 +44,8 @@ final class IntegrationEngineTest extends TestCase
         $action = ActionFactory::getHelloWorld();
 
         $this->config->setAction(
-            $action::getName(),
-            $action,
+            name: $action::getName(),
+            action: $action,
         );
 
         $expectedResponse = ['hello world'];
@@ -60,6 +61,21 @@ final class IntegrationEngineTest extends TestCase
             $expectedResponse,
             $response->toArray(),
         );
+    }
+
+    public function testActionWithoutResponse(): void
+    {
+        $action = ActionFactory::deleteFixtureAction();
+
+        $this->config->setAction(
+            name: $action::getName(),
+            action: $action,
+        );
+
+        $response = $this->engine->send(actionName: $action::getName());
+
+        self::assertInstanceOf(EmptyResponse::class, $response);
+        self::assertSame([], $response->toArray());
     }
 
     public function testItHandlesActionNotFound(): void
