@@ -54,7 +54,7 @@ final class IntegrationEngineTest extends TestCase
 
         $response = $this->engine->send(actionName: $action::getName());
 
-        static::assertSame(
+        self::assertSame(
             $expectedResponse,
             $response->toArray()
         );
@@ -68,9 +68,9 @@ final class IntegrationEngineTest extends TestCase
 
         $response = $this->engine->send(actionName: $action::getName());
 
-        static::assertInstanceOf(EmptyResponse::class, $response);
+        self::assertInstanceOf(EmptyResponse::class, $response);
 
-        static::assertSame(
+        self::assertSame(
             [],
             $response->toArray()
         );
@@ -119,9 +119,9 @@ final class IntegrationEngineTest extends TestCase
 
         $lastAction = $this->client->lastAction();
 
-        static::assertNotNull($lastAction);
+        self::assertNotNull($lastAction);
 
-        static::assertInstanceOf(
+        self::assertInstanceOf(
             StaticAuthorizationConfig::class,
             $lastAction->getAuthorization()
         );

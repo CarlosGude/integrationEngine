@@ -57,7 +57,7 @@ final readonly class IntegrationEngine
 
         $token = $this->resolveToken($auth);
 
-        $isDefaultHeader = $auth->header === 'Authorization';
+        $isDefaultHeader = 'Authorization' === $auth->header;
 
         return $action::create(
             method: $action->getMethod(),
