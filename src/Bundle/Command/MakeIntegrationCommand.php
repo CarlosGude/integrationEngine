@@ -60,46 +60,32 @@ final class MakeIntegrationCommand extends Command
         $baseNamespace = rtrim((string) $input->getOption('namespace'), '\\');
         $basePath      = rtrim((string) $input->getOption('path'), '/');
 
-        /**
-         * ROOT REAL DE LA INTEGRACIÓN
-         * (NO duplicar $name en ningún otro sitio)
-         */
-        $integrationNamespace = $baseNamespace . '\\' . $name;
-
-        $integrationPath = $this->projectDir
-            . '/'
-            . $basePath
-            . '/'
-            . $name;
+        // $baseNamespace is App\Infrastructure\Integrations
+        // IntegrationContext::integrationNamespace() appends $name internally
+        $integrationPath = $this->projectDir . '/' . $basePath . '/' . $name;
 
         $ctx = new IntegrationContext(
             name: $name,
             action: $action,
             method: 'GET',
             path: '/',
-            baseNamespace: $integrationNamespace,
+            baseNamespace: $baseNamespace,
             basePath: $integrationPath,
         );
 
         $io->title(sprintf('Generating integration: %s', $name));
 
-        // ─────────────────────────────────────────────
         // 1. Integration skeleton
-        // ─────────────────────────────────────────────
         foreach ($this->generator->generateIntegrationFiles($ctx) as $file => $content) {
             $this->writeFile($file, $content, $io, $force);
         }
 
-        // ─────────────────────────────────────────────
         // 2. First action skeleton
-        // ─────────────────────────────────────────────
         foreach ($this->generator->generateActionFiles($ctx) as $file => $content) {
             $this->writeFile($file, $content, $io, $force);
         }
 
-        // ─────────────────────────────────────────────
-        // 3. YAML registry update
-        // ─────────────────────────────────────────────
+        // 3. YAML config
         $this->generator->appendActionToConfig($ctx);
 
         $io->success('Done.');
@@ -129,10 +115,6 @@ final class MakeIntegrationCommand extends Command
 
         file_put_contents($filePath, $content);
 
-        $io->text(
-            $exists
-                ? "  updated  {$filePath}"
-                : "  created  {$filePath}"
-        );
+        $io->text($exists ? "  updated  {$filePath}" : "  created  {$filePath}");
     }
 }

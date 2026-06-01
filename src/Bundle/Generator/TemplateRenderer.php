@@ -36,7 +36,6 @@ final class TemplateRenderer
 
     public function client(): string
     {
-        // SymfonyHttpClientAdapter is readonly, so the subclass must also be readonly
         return <<<PHP
             <?php
 
@@ -54,7 +53,6 @@ final class TemplateRenderer
 
     /**
      * Full yaml file — only written when the integration is created for the first time.
-     * Contains the first action entry already.
      */
     public function yaml(): string
     {
@@ -66,14 +64,10 @@ final class TemplateRenderer
      */
     public function yamlEntry(): string
     {
-        $method = strtoupper($this->ctx->method);
+        $method     = strtoupper($this->ctx->method);
+        $actionFqcn = $this->ctx->requestNamespace() . '\\' . $this->ctx->action . 'Action';
 
-        return <<<YAML
-            {$this->ctx->action}:
-                action: {$this->ctx->requestNamespace()}\\{$this->ctx->action}Action
-                method: {$method}
-                path: {$this->ctx->path}
-            YAML;
+        return "{$this->ctx->action}:\n    action: {$actionFqcn}\n    method: {$method}\n    path: {$this->ctx->path}\n";
     }
 
     /* =========================
@@ -82,9 +76,9 @@ final class TemplateRenderer
 
     public function action(): string
     {
-        $hasBody = $this->ctx->hasBody() ? 'true' : 'false';
+        $hasBody     = $this->ctx->hasBody() ? 'true' : 'false';
         $hasResponse = $this->ctx->hasResponse() ? 'true' : 'false';
-        $mapperLine = $this->ctx->hasResponse()
+        $mapperLine  = $this->ctx->hasResponse()
             ? "return {$this->ctx->action}Mapper::class;"
             : 'return null;';
 
