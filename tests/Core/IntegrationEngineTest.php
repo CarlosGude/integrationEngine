@@ -6,6 +6,7 @@ namespace IntegrationEngine\Tests\Core;
 
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\Exception\InvalidMapperException;
+use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Exception\NotMappedActionException;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Response\EmptyResponse;
@@ -103,6 +104,19 @@ final class IntegrationEngineTest extends TestCase
         );
 
         $this->expectException(InvalidMapperException::class);
+        $this->engine->send(actionName: $action::getName());
+    }
+
+    public function testMapperNotCorrespondsWithAction(): void
+    {
+        $action = ActionFactory::getMapperNotCorrespondsAction();
+
+        $this->config->setAction(
+            name: $action::getName(),
+            action: $action
+        );
+
+        $this->expectException(MapperActionMismatchException::class);
         $this->engine->send(actionName: $action::getName());
     }
 
