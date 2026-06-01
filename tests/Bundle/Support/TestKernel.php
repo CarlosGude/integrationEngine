@@ -27,7 +27,7 @@ final class TestKernel extends Kernel
 
     public function registerContainerConfiguration(LoaderInterface $loader): void
     {
-        $loader->load(function (ContainerBuilder $container) {
+        $loader->load(function (ContainerBuilder $container): void {
             $container->loadFromExtension('integration_engine', $this->integrationEngineConfig);
 
             $container->addCompilerPass(new class implements CompilerPassInterface {
@@ -50,11 +50,11 @@ final class TestKernel extends Kernel
 
     public function getCacheDir(): string
     {
-        return sys_get_temp_dir() . '/integration_engine_test/' . spl_object_id($this) . '/cache';
+        return sys_get_temp_dir().'/integration_engine_test/'.spl_object_id($this).'/cache';
     }
 
     public function getLogDir(): string
     {
-        return sys_get_temp_dir() . '/integration_engine_test/' . spl_object_id($this) . '/logs';
+        return sys_get_temp_dir().'/integration_engine_test/'.spl_object_id($this).'/logs';
     }
 }
