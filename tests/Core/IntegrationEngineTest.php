@@ -18,14 +18,10 @@ use IntegrationEngine\Tests\Support\Fixtures\Action\ActionFactory;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @internal
- */
 #[CoversNothing]
 final class IntegrationEngineTest extends TestCase
 {
     private IntegrationEngine $engine;
-
     private FakeConfigPort $config;
     private FakeClient $client;
     private FakeCache $cache;
@@ -47,10 +43,7 @@ final class IntegrationEngineTest extends TestCase
     {
         $action = ActionFactory::getHelloWorld();
 
-        $this->config->setAction(
-            name: $action::getName(),
-            action: $action,
-        );
+        $this->config->setAction($action::getName(), $action);
 
         $expectedResponse = ['hello world'];
 
@@ -61,9 +54,9 @@ final class IntegrationEngineTest extends TestCase
 
         $response = $this->engine->send(actionName: $action::getName());
 
-        self::assertSame(
+        static::assertSame(
             $expectedResponse,
-            $response->toArray(),
+            $response->toArray()
         );
     }
 
@@ -71,27 +64,26 @@ final class IntegrationEngineTest extends TestCase
     {
         $action = ActionFactory::deleteFixtureAction();
 
-        $this->config->setAction(
-            name: $action::getName(),
-            action: $action,
-        );
+        $this->config->setAction($action::getName(), $action);
 
         $response = $this->engine->send(actionName: $action::getName());
 
-        self::assertInstanceOf(EmptyResponse::class, $response);
-        self::assertSame([], $response->toArray());
+        static::assertInstanceOf(EmptyResponse::class, $response);
+
+        static::assertSame(
+            [],
+            $response->toArray()
+        );
     }
 
     public function testNotMappedActionException(): void
     {
         $action = ActionFactory::getNoMappedAction();
 
-        $this->config->setAction(
-            name: $action::getName(),
-            action: $action,
-        );
+        $this->config->setAction($action::getName(), $action);
 
         $this->expectException(NotMappedActionException::class);
+
         $this->engine->send(actionName: $action::getName());
     }
 
@@ -99,12 +91,10 @@ final class IntegrationEngineTest extends TestCase
     {
         $action = ActionFactory::getNotValidMappedAction();
 
-        $this->config->setAction(
-            name: $action::getName(),
-            action: $action,
-        );
+        $this->config->setAction($action::getName(), $action);
 
         $this->expectException(InvalidMapperException::class);
+
         $this->engine->send(actionName: $action::getName());
     }
 
@@ -112,12 +102,10 @@ final class IntegrationEngineTest extends TestCase
     {
         $action = ActionFactory::getMapperNotCorrespondsAction();
 
-        $this->config->setAction(
-            name: $action::getName(),
-            action: $action
-        );
+        $this->config->setAction($action::getName(), $action);
 
         $this->expectException(MapperActionMismatchException::class);
+
         $this->engine->send(actionName: $action::getName());
     }
 
@@ -125,27 +113,24 @@ final class IntegrationEngineTest extends TestCase
     {
         $action = ActionFactory::getGetHelloWorldWithStaticAuthAction();
 
-        $this->config->setAction(
-            name: $action::getName(),
-            action: $action,
-        );
+        $this->config->setAction($action::getName(), $action);
 
         $this->engine->send(actionName: $action::getName());
 
         $lastAction = $this->client->lastAction();
 
-        self::assertNotNull($lastAction);
+        static::assertNotNull($lastAction);
 
-        $auth = $lastAction->getAuthorization();
-
-        self::assertInstanceOf(StaticAuthorizationConfig::class, $auth);
+        static::assertInstanceOf(
+            StaticAuthorizationConfig::class,
+            $lastAction->getAuthorization()
+        );
     }
 
     public function testItHandlesActionNotFound(): void
     {
-        $actionName = 'nonexistent_action';
-
         $this->expectException(ActionNotFoundException::class);
-        $this->engine->send(actionName: $actionName);
+
+        $this->engine->send(actionName: 'nonexistent_action');
     }
 }

@@ -62,7 +62,8 @@ final class ActionFactory
             method: 'GET',
             path: '/get-hello-world-with-static-auth',
             authorization: FakeAuthorizationConfig::fromArray([
-                AuthorizationConfig::TYPE => AuthorizationConfig::STATIC_TYPE,
+                AuthorizationConfig::TYPE => 'bearer',
+                'token' => 'FAKE_TOKEN'
             ]),
         );
     }
