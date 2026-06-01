@@ -22,7 +22,7 @@ final readonly class SwaggerIntegrationGenerator
     public function generate(IntegrationContext $baseCtx, string $source): iterable
     {
         $spec = $this->parser->parse($source);
-
+        
         foreach ($spec->operations as $operation) {
 
             $ctx = $this->mapper->mapOperationToContext($baseCtx, $operation);

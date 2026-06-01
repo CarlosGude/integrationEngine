@@ -16,9 +16,15 @@ final class SwaggerSpec
         $operations = [];
 
         foreach ($data['paths'] ?? [] as $path => $methods) {
+
             foreach ($methods as $method => $operation) {
+
+                if (!is_array($operation)) {
+                    continue;
+                }
+
                 $operations[] = new SwaggerOperation(
-                    operationId: $operation['operationId'] ?? ucfirst($method).md5($path),
+                    operationId: $operation['operationId'] ?? ucfirst($method) . md5($path),
                     method: strtoupper($method),
                     path: $path,
                     requestBody: $operation['requestBody']['content']['application/json']['schema'] ?? [],

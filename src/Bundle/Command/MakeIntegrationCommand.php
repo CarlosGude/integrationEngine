@@ -45,7 +45,7 @@ final class MakeIntegrationCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-
+        
         $name = (string) $input->getArgument('name');
         $actionArg = (string) $input->getArgument('action');
 
@@ -69,7 +69,9 @@ final class MakeIntegrationCommand extends Command
         if (null !== $swagger) {
             $io->title('Swagger mode enabled');
 
-            $this->swaggerGenerator->generate($ctx, (string) $swagger);
+            foreach ($this->swaggerGenerator->generate($ctx, (string) $swagger) as [$file, $content, $operationCtx]) {
+                $this->writeFile($file, $content, $io);
+            }
 
             $io->success("Integration '{$name}' generated from Swagger.");
 
