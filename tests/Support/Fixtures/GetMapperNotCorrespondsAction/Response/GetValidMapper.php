@@ -9,7 +9,6 @@ use IntegrationEngine\Core\Contract\AbstractMapper;
 use IntegrationEngine\Core\Contract\ResponseInterface;
 use IntegrationEngine\Core\Response\EmptyResponse;
 use IntegrationEngine\Tests\Support\Fixtures\GetHelloWorld\Request\GetHelloWorldAction;
-use IntegrationEngine\Tests\Support\Fixtures\GetMapperNotCorrespondsAction\Request\GetMapperNotCorrespondsAction;
 
 class GetValidMapper extends AbstractMapper
 {

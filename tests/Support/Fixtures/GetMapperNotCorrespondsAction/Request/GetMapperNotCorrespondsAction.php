@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Support\Fixtures\GetMapperNotCorrespondsAction\Request;
 
-use App\Tests\Support\Fixtures\GetMapperNotCorrespondsAction\Response\GetValidMapper;
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Tests\Support\Fixtures\GetHelloWorld\Response\GetHelloWorldMappper;
 

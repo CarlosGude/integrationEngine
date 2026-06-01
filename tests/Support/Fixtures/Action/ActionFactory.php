@@ -18,8 +18,6 @@ final class ActionFactory
         return GetHelloWorldAction::create(
             method: 'GET',
             path: '/hello-world',
-            body: null,
-            authorization: null,
         );
     }
 
@@ -28,8 +26,6 @@ final class ActionFactory
         return DeleteFixtureAction::create(
             method: 'DELETE',
             path: '/delete-fixture',
-            body: null,
-            authorization: null,
         );
     }
 
@@ -38,8 +34,6 @@ final class ActionFactory
         return GetNoMappedAction::create(
             method: 'GET',
             path: '/get-not-mapped-action',
-            body: null,
-            authorization: null,
         );
     }
 
@@ -48,8 +42,6 @@ final class ActionFactory
         return GetNotValidMapperAction::create(
             method: 'GET',
             path: '/get-not-valid-mapped-action',
-            body: null,
-            authorization: null,
         );
     }
 
@@ -58,8 +50,6 @@ final class ActionFactory
         return GetMapperNotCorrespondsAction::create(
             method: 'GET',
             path: '/get-mapper-not-corresponds-action',
-            body: null,
-            authorization: null,
         );
     }
 }

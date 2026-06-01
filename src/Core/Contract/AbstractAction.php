@@ -10,14 +10,14 @@ abstract readonly class AbstractAction
         private string $method,
         private string $path,
         private ?ActionBodyInterface $body,
-        private mixed $authorization,
+        private ?AuthorizationConfig $authorization,
     ) {}
 
     final public static function create(
         string $method,
         string $path,
-        ?ActionBodyInterface $body,
-        mixed $authorization,
+        ?ActionBodyInterface $body = null,
+        ?AuthorizationConfig $authorization = null,
     ): static {
         return new static($method, $path, $body, $authorization);
     }
