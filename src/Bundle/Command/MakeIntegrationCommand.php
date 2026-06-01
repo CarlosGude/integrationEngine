@@ -6,7 +6,6 @@ namespace IntegrationEngine\Bundle\Command;
 
 use IntegrationEngine\Bundle\Generator\IntegrationContext;
 use IntegrationEngine\Bundle\Generator\IntegrationFileGenerator;
-use IntegrationEngine\Bundle\Generator\Swagger\SwaggerIntegrationGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -21,12 +20,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 final class MakeIntegrationCommand extends Command
 {
-    private const METHODS = ['GET', 'POST', 'PUT', 'DELETE'];
-
     public function __construct(
         private readonly string $projectDir,
         private readonly IntegrationFileGenerator $generator,
-        private readonly SwaggerIntegrationGenerator $swaggerGenerator,
     ) {
         parent::__construct();
     }
@@ -35,146 +31,87 @@ final class MakeIntegrationCommand extends Command
     {
         $this
             ->addArgument('name', InputArgument::REQUIRED, 'Integration name (e.g. Iberia)')
-            ->addArgument('action', InputArgument::REQUIRED, 'Resource name in PascalCase (e.g. Orders, FlightStatus)')
+            ->addArgument('action', InputArgument::REQUIRED, 'Resource name (e.g. Orders)')
             ->addOption('namespace', null, InputOption::VALUE_REQUIRED, 'Base namespace', 'App\Infrastructure\Integrations')
             ->addOption('path', null, InputOption::VALUE_REQUIRED, 'Base path', 'src/Infrastructure/Integrations')
-            ->addOption('from-swagger', null, InputOption::VALUE_OPTIONAL, 'Path or URL to OpenAPI spec')
-        ;
+            ->addOption('force', null, InputOption::VALUE_NONE);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        
-        $name = (string) $input->getArgument('name');
-        $actionArg = (string) $input->getArgument('action');
 
-        $namespace = rtrim((string) $input->getOption('namespace'), '\\');
+        $name = (string) $input->getArgument('name');
+        $action = (string) $input->getArgument('action');
+        $force = (bool) $input->getOption('force');
+
+        $baseNamespace = rtrim((string) $input->getOption('namespace'), '\\');
         $basePath = rtrim((string) $input->getOption('path'), '/');
 
-        $swagger = $input->getOption('from-swagger');
-
-        $ctx = new IntegrationContext(
-            name: $name,
-            action: $actionArg,
-            method: 'GET',
-            path: '/',
-            baseNamespace: $namespace,
-            basePath: $this->projectDir.'/'.$basePath,
-        );
-
-        // ───────────────────────────────────────────────
-        // 🚀 MODE SWAGGER (AUTO GENERATION)
-        // ───────────────────────────────────────────────
-        if (null !== $swagger) {
-            $io->title('Swagger mode enabled');
-
-            foreach ($this->swaggerGenerator->generate($ctx, (string) $swagger) as [$file, $content, $operationCtx]) {
-                $this->writeFile($file, $content, $io);
-            }
-
-            $io->success("Integration '{$name}' generated from Swagger.");
-
-            return Command::SUCCESS;
-        }
-
-        // ───────────────────────────────────────────────
-        // 🧑‍💻 MODE INTERACTIVO (EXISTENTE)
-        // ───────────────────────────────────────────────
-
-        $method = $io->choice(
-            question: 'HTTP method for this action',
-            choices: self::METHODS,
-            default: 'GET',
-        );
-
-        $path = null;
-        while (empty($path)) {
-            $path = trim((string) $io->ask('Action path (e.g. /orders/{id})'));
-
-            if (empty($path)) {
-                $io->error('Path is required.');
-            }
-        }
-
-        $verb = ucfirst(strtolower($method));
-        $resourceClean = preg_replace('/^'.$verb.'/i', '', $actionArg);
-        $action = $verb.ucfirst($resourceClean);
+        // 🧠 integración aislada
+        $integrationNamespace = $baseNamespace . '\\' . $name;
+        $integrationPath = $this->projectDir . '/' . $basePath . '/' . $name;
 
         $ctx = new IntegrationContext(
             name: $name,
             action: $action,
-            method: $method,
-            path: $path,
-            baseNamespace: $namespace,
-            basePath: $this->projectDir.'/'.$basePath,
+            method: 'GET',
+            path: '/',
+            baseNamespace: $integrationNamespace,
+            basePath: $integrationPath,
         );
 
-        $integrationExists = $this->generator->integrationExists($ctx);
+        $io->title("Generating integration: {$name}");
 
-        if ($integrationExists) {
-            $io->note("Integration '{$name}' already exists — skipping root files.");
-        } else {
-            $io->title("Generating integration: {$name}");
-
-            foreach ($this->generator->generateIntegrationFiles($ctx) as $file => $content) {
-                $this->writeFile($file, $content, $io);
-            }
+        // ─────────────────────────────
+        // Integration root files
+        // ─────────────────────────────
+        foreach ($this->generator->generateIntegrationFiles($ctx) as $file => $content) {
+            $this->writeFile($file, $content, $io, $force);
         }
 
-        $io->section("Generating action: {$action} [{$method}]");
-
-        $this->describeAction($ctx, $io);
+        // ─────────────────────────────
+        // Action files
+        // ─────────────────────────────
+        $io->section("Generating action: {$action}");
 
         foreach ($this->generator->generateActionFiles($ctx) as $file => $content) {
-            $this->writeFile($file, $content, $io);
+            $this->writeFile($file, $content, $io, $force);
         }
 
-        if ($integrationExists) {
-            $configPath = $this->generator->appendActionToConfig($ctx);
-            $io->text("  updated  {$configPath}");
-        }
+        $this->generator->appendActionToConfig($ctx);
 
         $io->success('Done.');
 
         return Command::SUCCESS;
     }
 
-    private function describeAction(IntegrationContext $ctx, SymfonyStyle $io): void
-    {
-        $lines = ['<info>Request/</info>'.$ctx->action.'Action.php'];
-
-        if ($ctx->hasBody()) {
-            $lines[] = '<info>Request/</info>'.$ctx->action.'Body.php';
-        }
-
-        if ($ctx->hasResponse()) {
-            $lines[] = '<info>Response/</info>'.$ctx->action.'Mapper.php';
-            $lines[] = '<info>Response/</info>'.$ctx->action.'Response.php';
-        } else {
-            $lines[] = '<comment>Response layer skipped (DELETE has no response)</comment>';
-        }
-
-        $io->listing($lines);
-    }
-
-    private function writeFile(string $filePath, string $content, SymfonyStyle $io): void
-    {
-        $dir = \dirname($filePath);
+    private function writeFile(
+        string $filePath,
+        string $content,
+        SymfonyStyle $io,
+        bool $force
+    ): void {
+        $dir = dirname($filePath);
 
         if (!is_dir($dir) && !mkdir($dir, 0o755, true) && !is_dir($dir)) {
             $io->error("Cannot create dir: {$dir}");
-
             return;
         }
 
-        if (file_exists($filePath)) {
-            $io->warning("Skipped (already exists): {$filePath}");
+        $existsBefore = file_exists($filePath);
 
+        if ($existsBefore && !$force) {
+            $io->warning("Skipped (already exists): {$filePath}");
             return;
         }
 
         file_put_contents($filePath, $content);
-        $io->text("  created  {$filePath}");
+
+        $io->text(
+            $existsBefore
+                ? "  updated  {$filePath}"
+                : "  created  {$filePath}"
+        );
     }
 }
