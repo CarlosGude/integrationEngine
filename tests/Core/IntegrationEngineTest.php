@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Core;
 
+use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\Exception\InvalidMapperException;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
@@ -118,6 +119,26 @@ final class IntegrationEngineTest extends TestCase
 
         $this->expectException(MapperActionMismatchException::class);
         $this->engine->send(actionName: $action::getName());
+    }
+
+    public function testActionWithStaticAuth(): void
+    {
+        $action = ActionFactory::getGetHelloWorldWithStaticAuthAction();
+
+        $this->config->setAction(
+            name: $action::getName(),
+            action: $action,
+        );
+
+        $this->engine->send(actionName: $action::getName());
+
+        $lastAction = $this->client->lastAction();
+
+        self::assertNotNull($lastAction);
+
+        $auth = $lastAction->getAuthorization();
+
+        self::assertInstanceOf(StaticAuthorizationConfig::class, $auth);
     }
 
     public function testItHandlesActionNotFound(): void

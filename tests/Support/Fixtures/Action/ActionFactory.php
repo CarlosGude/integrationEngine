@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Support\Fixtures\Action;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
+use IntegrationEngine\Core\Contract\AuthorizationConfig;
+use IntegrationEngine\Tests\Support\FakeAuthorizationConfig;
 use IntegrationEngine\Tests\Support\Fixtures\DeleteFixture\Request\DeleteFixtureAction;
 use IntegrationEngine\Tests\Support\Fixtures\GetHelloWorld\Request\GetHelloWorldAction;
+use IntegrationEngine\Tests\Support\Fixtures\GetHelloWorldWithStaticAuthAction\Request\GetHelloWorldWithStaticAuthAction;
 use IntegrationEngine\Tests\Support\Fixtures\GetMapperNotCorrespondsAction\Request\GetMapperNotCorrespondsAction;
 use IntegrationEngine\Tests\Support\Fixtures\GetNoMappedAction\Request\GetNoMappedAction;
 use IntegrationEngine\Tests\Support\Fixtures\GetNotValidMapperAction\Request\GetNotValidMapperAction;
@@ -50,6 +53,17 @@ final class ActionFactory
         return GetMapperNotCorrespondsAction::create(
             method: 'GET',
             path: '/get-mapper-not-corresponds-action',
+        );
+    }
+
+    public static function getGetHelloWorldWithStaticAuthAction(): AbstractAction
+    {
+        return GetHelloWorldWithStaticAuthAction::create(
+            method: 'GET',
+            path: '/get-hello-world-with-static-auth',
+            authorization: FakeAuthorizationConfig::fromArray([
+                AuthorizationConfig::TYPE => AuthorizationConfig::STATIC_TYPE,
+            ]),
         );
     }
 }

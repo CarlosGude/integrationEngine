@@ -14,6 +14,8 @@ final class FakeClient implements ClientInterface
      */
     private array $responses = [];
 
+    private ?AbstractAction $lastAction = null;
+
     public function setResponse(string $actionName, array $response): void
     {
         $this->responses[$actionName] = $response;
@@ -21,6 +23,8 @@ final class FakeClient implements ClientInterface
 
     public function send(AbstractAction $action): array
     {
+        $this->lastAction = $action;
+
         $name = $action::getName();
 
         if (!isset($this->responses[$name])) {
@@ -28,5 +32,10 @@ final class FakeClient implements ClientInterface
         }
 
         return $this->responses[$name];
+    }
+
+    public function lastAction(): ?AbstractAction
+    {
+        return $this->lastAction;
     }
 }
