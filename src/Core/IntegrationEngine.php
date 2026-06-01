@@ -13,6 +13,7 @@ use IntegrationEngine\Core\Contract\ResponseInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\InvalidMapperException;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
+use IntegrationEngine\Core\Exception\NotMappedActionException;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
 use IntegrationEngine\Core\Response\EmptyResponse;
@@ -98,7 +99,7 @@ final readonly class IntegrationEngine
         $mapperClass = $action::mapper();
 
         if (null === $mapperClass) {
-            throw new \LogicException(\sprintf('Action "%s" requires a mapper but none was defined.', $action::class));
+            throw new NotMappedActionException($action::getName());
         }
 
         if (!is_a($mapperClass, AbstractMapper::class, true)) {

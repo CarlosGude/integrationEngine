@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Core;
 
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
+use IntegrationEngine\Core\Exception\NotMappedActionException;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Response\EmptyResponse;
 use IntegrationEngine\Tests\Support\FakeCache;
@@ -76,6 +77,19 @@ final class IntegrationEngineTest extends TestCase
 
         self::assertInstanceOf(EmptyResponse::class, $response);
         self::assertSame([], $response->toArray());
+    }
+
+    public function testNotMappedActionException(): void
+    {
+        $action = ActionFactory::getNoMappedAction();
+
+        $this->config->setAction(
+            name: $action::getName(),
+            action: $action,
+        );
+
+        $this->expectException(NotMappedActionException::class);
+        $this->engine->send(actionName: $action::getName());
     }
 
     public function testItHandlesActionNotFound(): void
