@@ -8,6 +8,7 @@ use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Tests\Support\Fixtures\DeleteFixture\Request\DeleteFixtureAction;
 use IntegrationEngine\Tests\Support\Fixtures\GetHelloWorld\Request\GetHelloWorldAction;
 use IntegrationEngine\Tests\Support\Fixtures\GetNoMappedAction\Request\GetNoMappedAction;
+use IntegrationEngine\Tests\Support\Fixtures\GetNotValidMapperAction\Request\GetNotValidMapperAction;
 
 final class ActionFactory
 {
@@ -36,6 +37,16 @@ final class ActionFactory
         return GetNoMappedAction::create(
             method: 'GET',
             path: '/get-not-mapped-action',
+            body: null,
+            authorization: null,
+        );
+    }
+
+    public static function getNotValidMappedAction(): AbstractAction
+    {
+        return GetNotValidMapperAction::create(
+            method: 'GET',
+            path: '/get-not-valid-mapped-action',
             body: null,
             authorization: null,
         );
