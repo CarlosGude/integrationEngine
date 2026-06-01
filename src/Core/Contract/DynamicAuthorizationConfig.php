@@ -7,9 +7,10 @@ namespace IntegrationEngine\Core\Contract;
 final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
 {
     public function __construct(
-        public readonly string $action,
-        public readonly string $tokenField,
-        public readonly int $ttl,
+        public string $action,
+        public string $tokenField,
+        public int $ttl,
+        public string $header = 'Authorization',
     ) {
         parent::__construct('dynamic');
     }
@@ -26,6 +27,7 @@ final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
             action: $config['action'],
             tokenField: $config['token_field'],
             ttl: (int) $config['ttl'],
+            header: $config['header'] ?? 'Authorization',
         );
     }
 }

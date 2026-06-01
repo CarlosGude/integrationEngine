@@ -57,13 +57,17 @@ final readonly class IntegrationEngine
 
         $token = $this->resolveToken($auth);
 
+        $isDefaultHeader = $auth->header === 'Authorization';
+
         return $action::create(
             method: $action->getMethod(),
             path: $action->getPath(),
             body: $action->getBody(),
             authorization: new StaticAuthorizationConfig(
-                type: 'bearer',
-                params: ['token' => $token],
+                type: $isDefaultHeader ? 'bearer' : 'api_key',
+                params: $isDefaultHeader
+                    ? ['token' => $token]
+                    : ['header' => $auth->header, 'token' => $token],
             ),
         );
     }
