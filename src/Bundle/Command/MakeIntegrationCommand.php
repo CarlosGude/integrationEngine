@@ -6,6 +6,7 @@ namespace IntegrationEngine\Bundle\Command;
 
 use IntegrationEngine\Bundle\Generator\IntegrationContext;
 use IntegrationEngine\Bundle\Generator\IntegrationFileGenerator;
+use IntegrationEngine\Bundle\Generator\Swagger\SwaggerIntegrationGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -25,6 +26,7 @@ final class MakeIntegrationCommand extends Command
     public function __construct(
         private readonly string $projectDir,
         private readonly IntegrationFileGenerator $generator,
+        private readonly SwaggerIntegrationGenerator $swaggerGenerator,
     ) {
         parent::__construct();
     }
@@ -33,9 +35,10 @@ final class MakeIntegrationCommand extends Command
     {
         $this
             ->addArgument('name', InputArgument::REQUIRED, 'Integration name (e.g. Iberia)')
-            ->addArgument('action', InputArgument::REQUIRED, 'Resource name in PascalCase (e.g. Orders, FlightStatus). The HTTP verb will be prepended automatically.')
+            ->addArgument('action', InputArgument::REQUIRED, 'Resource name in PascalCase (e.g. Orders, FlightStatus)')
             ->addOption('namespace', null, InputOption::VALUE_REQUIRED, 'Base namespace', 'App\Infrastructure\Integrations')
             ->addOption('path', null, InputOption::VALUE_REQUIRED, 'Base path', 'src/Infrastructure/Integrations')
+            ->addOption('from-swagger', null, InputOption::VALUE_OPTIONAL, 'Path or URL to OpenAPI spec')
         ;
     }
 
@@ -44,29 +47,56 @@ final class MakeIntegrationCommand extends Command
         $io = new SymfonyStyle($input, $output);
 
         $name = (string) $input->getArgument('name');
+        $actionArg = (string) $input->getArgument('action');
+
         $namespace = rtrim((string) $input->getOption('namespace'), '\\');
         $basePath = rtrim((string) $input->getOption('path'), '/');
 
-        // ── Ask for HTTP method ───────────────────────────────────────────────
+        $swagger = $input->getOption('from-swagger');
+
+        $ctx = new IntegrationContext(
+            name: $name,
+            action: $actionArg,
+            method: 'GET',
+            path: '/',
+            baseNamespace: $namespace,
+            basePath: $this->projectDir.'/'.$basePath,
+        );
+
+        // ───────────────────────────────────────────────
+        // 🚀 MODE SWAGGER (AUTO GENERATION)
+        // ───────────────────────────────────────────────
+        if (null !== $swagger) {
+            $io->title('Swagger mode enabled');
+
+            $this->swaggerGenerator->generate($ctx, (string) $swagger);
+
+            $io->success("Integration '{$name}' generated from Swagger.");
+
+            return Command::SUCCESS;
+        }
+
+        // ───────────────────────────────────────────────
+        // 🧑‍💻 MODE INTERACTIVO (EXISTENTE)
+        // ───────────────────────────────────────────────
+
         $method = $io->choice(
             question: 'HTTP method for this action',
             choices: self::METHODS,
             default: 'GET',
         );
 
-        // ── Ask for URL (required) ────────────────────────────────────────────
         $path = null;
         while (empty($path)) {
             $path = trim((string) $io->ask('Action path (e.g. /orders/{id})'));
+
             if (empty($path)) {
                 $io->error('Path is required.');
             }
         }
 
-        // ── Build full action name: verb + name (e.g. Get + Orders = GetOrders)
-        $resource = (string) $input->getArgument('action');
         $verb = ucfirst(strtolower($method));
-        $resourceClean = preg_replace('/^'.$verb.'/i', '', $resource);
+        $resourceClean = preg_replace('/^'.$verb.'/i', '', $actionArg);
         $action = $verb.ucfirst($resourceClean);
 
         $ctx = new IntegrationContext(
@@ -78,19 +108,18 @@ final class MakeIntegrationCommand extends Command
             basePath: $this->projectDir.'/'.$basePath,
         );
 
-        // ── Integration root files (only if new integration) ─────────────────
         $integrationExists = $this->generator->integrationExists($ctx);
 
         if ($integrationExists) {
-            $io->note("Integration \"{$name}\" already exists — skipping root files.");
+            $io->note("Integration '{$name}' already exists — skipping root files.");
         } else {
             $io->title("Generating integration: {$name}");
+
             foreach ($this->generator->generateIntegrationFiles($ctx) as $file => $content) {
                 $this->writeFile($file, $content, $io);
             }
         }
 
-        // ── Action files ─────────────────────────────────────────────────────
         $io->section("Generating action: {$action} [{$method}]");
 
         $this->describeAction($ctx, $io);
@@ -99,9 +128,6 @@ final class MakeIntegrationCommand extends Command
             $this->writeFile($file, $content, $io);
         }
 
-        // ── Append entry to config yaml (only for existing integrations) ──────
-        // When the integration is new, generateIntegrationFiles() already wrote
-        // the yaml with the first action entry — no need to append again.
         if ($integrationExists) {
             $configPath = $this->generator->appendActionToConfig($ctx);
             $io->text("  updated  {$configPath}");

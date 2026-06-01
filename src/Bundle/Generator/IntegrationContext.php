@@ -77,4 +77,21 @@ final readonly class IntegrationContext
     {
         return !$this->isDelete();
     }
+
+    public function with(
+        ?string $action = null,
+        ?string $method = null,
+        ?string $path = null,
+        ?array $requestSchema = null,
+        ?array $responseSchema = null,
+    ): self {
+        return new self(
+            name: $this->name,
+            action: $action ?? $this->action,
+            method: $method ?? $this->method,
+            path: $path ?? $this->path,
+            baseNamespace: $this->baseNamespace,
+            basePath: $this->basePath,
+        );
+    }
 }
