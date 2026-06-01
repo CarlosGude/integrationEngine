@@ -74,7 +74,7 @@ final readonly class IntegrationEngine
 
     private function resolveToken(DynamicAuthorizationConfig $authConfig): string
     {
-        $cacheKey = \sprintf('integration_engine.token.%s', $authConfig->action);
+        $cacheKey = sprintf('integration_engine.token.%s', $authConfig->action);
 
         if ($this->cache->has($cacheKey)) {
             return $this->cache->get($cacheKey);
@@ -88,7 +88,7 @@ final readonly class IntegrationEngine
         $responseArray = $authResponse->toArray();
 
         if (!isset($responseArray[$authConfig->tokenField])) {
-            throw new \RuntimeException(\sprintf('Dynamic auth action "%s" response does not contain field "%s".', $authConfig->action, $authConfig->tokenField));
+            throw new \RuntimeException(sprintf('Dynamic auth action "%s" response does not contain field "%s".', $authConfig->action, $authConfig->tokenField));
         }
 
         $token = $responseArray[$authConfig->tokenField];

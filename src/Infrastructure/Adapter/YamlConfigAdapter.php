@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Infrastructure\Adapter;
 
-use App\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\ActionBodyInterface;
 use IntegrationEngine\Core\Contract\AuthorizationConfig;
+use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\Port\ConfigPort;
 use Symfony\Component\Yaml\Yaml;
 
@@ -28,6 +28,7 @@ final class YamlConfigAdapter implements ConfigPort
         string $name,
         ?ActionBodyInterface $body = null,
     ): AbstractAction {
+
         if (!isset($this->config[$name])) {
             throw new ActionNotFoundException($name);
         }

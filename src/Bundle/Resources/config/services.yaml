@@ -7,3 +7,10 @@ services:
 
     IntegrationEngine\:
         resource: '../../../'
+        exclude:
+            - '../../../Infrastructure/Adapter/YamlConfigAdapter.php'
+            - '../../../Infrastructure/Http/SymfonyHttpClientAdapter.php'
+            - '../../../Core/IntegrationEngine.php'
+
+    integration_engine.cache.default:
+        class: IntegrationEngine\Infrastructure\Cache\InMemoryCacheAdapter

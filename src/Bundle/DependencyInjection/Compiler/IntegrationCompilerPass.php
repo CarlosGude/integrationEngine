@@ -6,6 +6,7 @@ namespace IntegrationEngine\Bundle\DependencyInjection\Compiler;
 
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
+use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
@@ -31,9 +32,21 @@ final class IntegrationCompilerPass implements CompilerPassInterface
                 [$config['config_path']]
             ));
 
-            $clientRef = $config['client_service']
-                ? new Reference($config['client_service'])
-                : new Reference('integration_engine.http_client.default');
+            if ($config['client_service']) {
+                $clientRef = new Reference($config['client_service']);
+            } else {
+                $httpClientId = "integration_engine.http_client.{$name}";
+
+                $container->setDefinition($httpClientId, new Definition(
+                    SymfonyHttpClientAdapter::class,
+                    [
+                        new Reference('http_client'),
+                        $config['base_url'],
+                    ]
+                ));
+
+                $clientRef = new Reference($httpClientId);
+            }
 
             $cacheRef = new Reference(
                 $config['cache_service'] ?? 'integration_engine.cache.default'
