@@ -41,7 +41,7 @@ final readonly class IntegrationEngine
         $rawResponse = $this->client->send($action);
 
         if (!$action::hasResponse()) {
-            return $this->createEmptyResponse();
+            return new EmptyResponse();
         }
 
         return $this->applyMapper($action, $rawResponse);
@@ -111,10 +111,5 @@ final readonly class IntegrationEngine
         }
 
         return $mapperClass::map($action, $rawResponse);
-    }
-
-    private function createEmptyResponse(): ResponseInterface
-    {
-        return new EmptyResponse();
     }
 }
