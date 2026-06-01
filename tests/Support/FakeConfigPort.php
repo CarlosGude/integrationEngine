@@ -6,6 +6,7 @@ namespace IntegrationEngine\Tests\Support;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\ActionBodyInterface;
+use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\Port\ConfigPort;
 
 final class FakeConfigPort implements ConfigPort
@@ -23,7 +24,7 @@ final class FakeConfigPort implements ConfigPort
     public function getAction(string $name, ?ActionBodyInterface $body = null): AbstractAction
     {
         if (!isset($this->actions[$name])) {
-            throw new \RuntimeException("Action [{$name}] not found in FakeConfigPort.");
+            throw new ActionNotFoundException($name);
         }
 
         return $this->actions[$name];

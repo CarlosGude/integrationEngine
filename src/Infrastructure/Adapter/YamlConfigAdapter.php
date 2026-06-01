@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Infrastructure\Adapter;
 
+use App\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\ActionBodyInterface;
 use IntegrationEngine\Core\Contract\AuthorizationConfig;
@@ -28,7 +29,7 @@ final class YamlConfigAdapter implements ConfigPort
         ?ActionBodyInterface $body = null,
     ): AbstractAction {
         if (!isset($this->config[$name])) {
-            throw new \InvalidArgumentException(\sprintf('Action "%s" not found in integration config.', $name));
+            throw new ActionNotFoundException($name);
         }
 
         $actionConfig = $this->config[$name];

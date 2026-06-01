@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Core;
 
+use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Tests\Support\FakeCache;
 use IntegrationEngine\Tests\Support\FakeClient;
@@ -59,5 +60,13 @@ final class IntegrationEngineTest extends TestCase
             $expectedResponse,
             $response->toArray(),
         );
+    }
+
+    public function testItHandlesActionNotFound(): void
+    {
+        $actionName = 'nonexistent_action';
+
+        $this->expectException(ActionNotFoundException::class);
+        $this->engine->send(actionName: $actionName);
     }
 }
