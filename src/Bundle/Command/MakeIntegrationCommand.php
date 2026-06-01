@@ -16,7 +16,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'make:integration',
-    description: 'Generates the skeleton for a new integration or adds an action to an existing one',
+    description: 'Generates a new integration skeleton'
 )]
 final class MakeIntegrationCommand extends Command
 {
@@ -30,10 +30,22 @@ final class MakeIntegrationCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('name', InputArgument::REQUIRED, 'Integration name (e.g. Iberia)')
-            ->addArgument('action', InputArgument::REQUIRED, 'Resource name (e.g. Orders)')
-            ->addOption('namespace', null, InputOption::VALUE_REQUIRED, 'Base namespace', 'App\Infrastructure\Integrations')
-            ->addOption('path', null, InputOption::VALUE_REQUIRED, 'Base path', 'src/Infrastructure/Integrations')
+            ->addArgument('name', InputArgument::REQUIRED)
+            ->addArgument('action', InputArgument::REQUIRED)
+            ->addOption(
+                'namespace',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Base namespace',
+                'App\\Infrastructure\\Integrations'
+            )
+            ->addOption(
+                'path',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Base path',
+                'src/Infrastructure/Integrations'
+            )
             ->addOption('force', null, InputOption::VALUE_NONE);
     }
 
@@ -41,16 +53,24 @@ final class MakeIntegrationCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $name = (string) $input->getArgument('name');
+        $name   = (string) $input->getArgument('name');
         $action = (string) $input->getArgument('action');
-        $force = (bool) $input->getOption('force');
+        $force  = (bool) $input->getOption('force');
 
         $baseNamespace = rtrim((string) $input->getOption('namespace'), '\\');
-        $basePath = rtrim((string) $input->getOption('path'), '/');
+        $basePath      = rtrim((string) $input->getOption('path'), '/');
 
-        // 🧠 integración aislada
+        /**
+         * ROOT REAL DE LA INTEGRACIÓN
+         * (NO duplicar $name en ningún otro sitio)
+         */
         $integrationNamespace = $baseNamespace . '\\' . $name;
-        $integrationPath = $this->projectDir . '/' . $basePath . '/' . $name;
+
+        $integrationPath = $this->projectDir
+            . '/'
+            . $basePath
+            . '/'
+            . $name;
 
         $ctx = new IntegrationContext(
             name: $name,
@@ -61,24 +81,25 @@ final class MakeIntegrationCommand extends Command
             basePath: $integrationPath,
         );
 
-        $io->title("Generating integration: {$name}");
+        $io->title(sprintf('Generating integration: %s', $name));
 
-        // ─────────────────────────────
-        // Integration root files
-        // ─────────────────────────────
+        // ─────────────────────────────────────────────
+        // 1. Integration skeleton
+        // ─────────────────────────────────────────────
         foreach ($this->generator->generateIntegrationFiles($ctx) as $file => $content) {
             $this->writeFile($file, $content, $io, $force);
         }
 
-        // ─────────────────────────────
-        // Action files
-        // ─────────────────────────────
-        $io->section("Generating action: {$action}");
-
+        // ─────────────────────────────────────────────
+        // 2. First action skeleton
+        // ─────────────────────────────────────────────
         foreach ($this->generator->generateActionFiles($ctx) as $file => $content) {
             $this->writeFile($file, $content, $io, $force);
         }
 
+        // ─────────────────────────────────────────────
+        // 3. YAML registry update
+        // ─────────────────────────────────────────────
         $this->generator->appendActionToConfig($ctx);
 
         $io->success('Done.');
@@ -95,13 +116,13 @@ final class MakeIntegrationCommand extends Command
         $dir = dirname($filePath);
 
         if (!is_dir($dir) && !mkdir($dir, 0o755, true) && !is_dir($dir)) {
-            $io->error("Cannot create dir: {$dir}");
+            $io->error("Cannot create directory: {$dir}");
             return;
         }
 
-        $existsBefore = file_exists($filePath);
+        $exists = file_exists($filePath);
 
-        if ($existsBefore && !$force) {
+        if ($exists && !$force) {
             $io->warning("Skipped (already exists): {$filePath}");
             return;
         }
@@ -109,7 +130,7 @@ final class MakeIntegrationCommand extends Command
         file_put_contents($filePath, $content);
 
         $io->text(
-            $existsBefore
+            $exists
                 ? "  updated  {$filePath}"
                 : "  created  {$filePath}"
         );
