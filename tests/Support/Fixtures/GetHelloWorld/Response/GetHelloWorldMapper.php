@@ -9,7 +9,7 @@ use IntegrationEngine\Core\Contract\AbstractMapper;
 use IntegrationEngine\Core\Contract\ResponseInterface;
 use IntegrationEngine\Tests\Support\Fixtures\GetHelloWorld\Request\GetHelloWorldAction;
 
-final class GetHelloWorldMappper extends AbstractMapper
+final class GetHelloWorldMapper extends AbstractMapper
 {
     public static function getAction(): string
     {

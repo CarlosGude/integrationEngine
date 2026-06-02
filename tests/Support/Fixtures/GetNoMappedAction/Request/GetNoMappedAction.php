@@ -6,7 +6,7 @@ namespace IntegrationEngine\Tests\Support\Fixtures\GetNoMappedAction\Request;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
 
-final readonly class GetNoMappedAction extends AbstractAction
+final class GetNoMappedAction extends AbstractAction
 {
     public static function getName(): string
     {

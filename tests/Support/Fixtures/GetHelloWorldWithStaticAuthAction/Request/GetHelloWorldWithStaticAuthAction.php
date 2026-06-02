@@ -7,7 +7,7 @@ namespace IntegrationEngine\Tests\Support\Fixtures\GetHelloWorldWithStaticAuthAc
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Tests\Support\Fixtures\GetHelloWorldWithStaticAuthAction\Response\GetHelloWorldWithStaticAuthMapper;
 
-final readonly class GetHelloWorldWithStaticAuthAction extends AbstractAction
+final class GetHelloWorldWithStaticAuthAction extends AbstractAction
 {
     public static function getName(): string
     {

@@ -6,7 +6,7 @@ namespace IntegrationEngine\Tests\Support\Fixtures\GetNotValidMapperAction\Reque
 
 use IntegrationEngine\Core\Contract\AbstractAction;
 
-final readonly class GetNotValidMapperAction extends AbstractAction
+final class GetNotValidMapperAction extends AbstractAction
 {
     public static function getName(): string
     {

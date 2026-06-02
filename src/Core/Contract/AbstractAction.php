@@ -41,43 +41,11 @@ abstract class AbstractAction
     {
         $resolver = $this->resolvePathCallback();
 
-        if ($resolver !== null) {
+        if (null !== $resolver) {
             return $resolver($this->path, $this->context);
         }
 
         return $this->defaultResolvePath($this->path, $this->context);
-    }
-
-    protected function resolvePathCallback(): ?callable
-    {
-        return null;
-    }
-
-    final protected function defaultResolvePath(string $path, array $context): string
-    {
-        if ($context === []) {
-            return $path;
-        }
-
-        return preg_replace_callback(
-            '/\{(\w+)\}/',
-            static function (array $matches) use ($context, $path) {
-                $key = $matches[1];
-
-                if (!array_key_exists($key, $context)) {
-                    throw new \RuntimeException(
-                        sprintf(
-                            'Missing path parameter "%s" for path "%s"',
-                            $key,
-                            $path
-                        )
-                    );
-                }
-
-                return (string) $context[$key];
-            },
-            $path
-        );
     }
 
     final public function getBody(): ?ActionBodyInterface
@@ -100,4 +68,36 @@ abstract class AbstractAction
      * @return null|class-string<AbstractMapper>
      */
     abstract public static function mapper(): ?string;
+
+    protected function resolvePathCallback(): ?callable
+    {
+        return null;
+    }
+
+    final protected function defaultResolvePath(string $path, array $context): string
+    {
+        if ([] === $context) {
+            return $path;
+        }
+
+        return preg_replace_callback(
+            '/\{(\w+)\}/',
+            static function (array $matches) use ($context, $path) {
+                $key = $matches[1];
+
+                if (!\array_key_exists($key, $context)) {
+                    throw new \RuntimeException(
+                        \sprintf(
+                            'Missing path parameter "%s" for path "%s"',
+                            $key,
+                            $path
+                        )
+                    );
+                }
+
+                return (string) $context[$key];
+            },
+            $path
+        );
+    }
 }

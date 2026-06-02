@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Support\Fixtures\GetMapperNotCorrespondsAction\Request;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Tests\Support\Fixtures\GetHelloWorld\Response\GetHelloWorldMappper;
+use IntegrationEngine\Tests\Support\Fixtures\GetHelloWorld\Response\GetHelloWorldMapper;
 
-final readonly class GetMapperNotCorrespondsAction extends AbstractAction
+final class GetMapperNotCorrespondsAction extends AbstractAction
 {
     public static function getName(): string
     {
@@ -26,6 +26,6 @@ final readonly class GetMapperNotCorrespondsAction extends AbstractAction
 
     public static function mapper(): ?string
     {
-        return GetHelloWorldMappper::class;
+        return GetHelloWorldMapper::class;
     }
 }

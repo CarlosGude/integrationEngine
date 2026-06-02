@@ -6,7 +6,7 @@ namespace IntegrationEngine\Tests\Support\Fixtures\DeleteFixture\Request;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
 
-final readonly class DeleteFixtureAction extends AbstractAction
+final class DeleteFixtureAction extends AbstractAction
 {
     public static function getName(): string
     {

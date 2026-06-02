@@ -7,7 +7,6 @@ namespace IntegrationEngine\Core;
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\AbstractMapper;
 use IntegrationEngine\Core\Contract\ActionBodyInterface;
-use IntegrationEngine\Core\Contract\ActionContextInterface;
 use IntegrationEngine\Core\Contract\ClientInterface;
 use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\ResponseInterface;
@@ -83,7 +82,7 @@ final readonly class IntegrationEngine
 
     private function resolveToken(DynamicAuthorizationConfig $authConfig): string
     {
-        $cacheKey = sprintf('integration_engine.token.%s', $authConfig->action);
+        $cacheKey = \sprintf('integration_engine.token.%s', $authConfig->action);
 
         if ($this->cache->has($cacheKey)) {
             return $this->cache->get($cacheKey);
@@ -97,7 +96,7 @@ final readonly class IntegrationEngine
         $responseArray = $authResponse->toArray();
 
         if (!isset($responseArray[$authConfig->tokenField])) {
-            throw new \RuntimeException(sprintf(
+            throw new \RuntimeException(\sprintf(
                 'Dynamic auth action "%s" response does not contain field "%s".',
                 $authConfig->action,
                 $authConfig->tokenField
