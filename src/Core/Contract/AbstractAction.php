@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core\Contract;
 
-abstract readonly class AbstractAction
+abstract class AbstractAction
 {
+    private array $context = [];
+
     final protected function __construct(
         private string $method,
         private string $path,
@@ -22,6 +24,14 @@ abstract readonly class AbstractAction
         return new static($method, $path, $body, $authorization);
     }
 
+    final public function withContext(array $context): static
+    {
+        $clone = clone $this;
+        $clone->context = $context;
+
+        return $clone;
+    }
+
     final public function getMethod(): string
     {
         return $this->method;
@@ -29,7 +39,45 @@ abstract readonly class AbstractAction
 
     final public function getPath(): string
     {
-        return $this->path;
+        $resolver = $this->resolvePathCallback();
+
+        if ($resolver !== null) {
+            return $resolver($this->path, $this->context);
+        }
+
+        return $this->defaultResolvePath($this->path, $this->context);
+    }
+
+    protected function resolvePathCallback(): ?callable
+    {
+        return null;
+    }
+
+    final protected function defaultResolvePath(string $path, array $context): string
+    {
+        if ($context === []) {
+            return $path;
+        }
+
+        return preg_replace_callback(
+            '/\{(\w+)\}/',
+            static function (array $matches) use ($context, $path) {
+                $key = $matches[1];
+
+                if (!array_key_exists($key, $context)) {
+                    throw new \RuntimeException(
+                        sprintf(
+                            'Missing path parameter "%s" for path "%s"',
+                            $key,
+                            $path
+                        )
+                    );
+                }
+
+                return (string) $context[$key];
+            },
+            $path
+        );
     }
 
     final public function getBody(): ?ActionBodyInterface
@@ -44,15 +92,11 @@ abstract readonly class AbstractAction
 
     abstract public static function getName(): string;
 
-    /** Body exists (POST/PUT) */
     abstract public static function hasBody(): bool;
 
-    /** Response exists (DELETE returns null) */
     abstract public static function hasResponse(): bool;
 
     /**
-     * Mapper used only if hasResponse() === true.
-     *
      * @return null|class-string<AbstractMapper>
      */
     abstract public static function mapper(): ?string;

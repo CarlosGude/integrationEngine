@@ -9,5 +9,5 @@ use IntegrationEngine\Core\Contract\ActionBodyInterface;
 
 interface ConfigPort
 {
-    public function getAction(string $name, ?ActionBodyInterface $body = null): AbstractAction;
+    public function getAction(string $name): AbstractAction;
 }

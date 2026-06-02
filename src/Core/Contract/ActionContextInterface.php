@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core\Contract;
 
-interface ActionBodyInterface
+interface ActionContextInterface
 {
     public static function create(array $data): self;
-
-    public static function keys(): array;
 
     public function toArray(): array;
 }

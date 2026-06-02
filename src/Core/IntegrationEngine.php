@@ -7,6 +7,7 @@ namespace IntegrationEngine\Core;
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\AbstractMapper;
 use IntegrationEngine\Core\Contract\ActionBodyInterface;
+use IntegrationEngine\Core\Contract\ActionContextInterface;
 use IntegrationEngine\Core\Contract\ClientInterface;
 use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\ResponseInterface;
@@ -26,15 +27,14 @@ final readonly class IntegrationEngine
         private CachePort $cache,
     ) {}
 
-    /**
-     * @throws \InvalidArgumentException
-     * @throws InvalidMapperException
-     * @throws MapperActionMismatchException
-     * @throws \RuntimeException
-     */
-    public function send(string $actionName, ?ActionBodyInterface $body = null): ResponseInterface
-    {
+    public function send(
+        string $actionName,
+        ?array $context = null,
+        ?ActionBodyInterface $body = null,
+    ): ResponseInterface {
         $action = $this->config->getAction($actionName, $body);
+
+        $action = $this->applyContext($action, $context);
 
         $action = $this->applyAuthorization($action);
 
@@ -45,6 +45,15 @@ final readonly class IntegrationEngine
         }
 
         return $this->applyMapper($action, $rawResponse);
+    }
+
+    private function applyContext(AbstractAction $action, ?array $context): AbstractAction
+    {
+        if (empty($context)) {
+            return $action;
+        }
+
+        return $action->withContext($context);
     }
 
     private function applyAuthorization(AbstractAction $action): AbstractAction
@@ -74,7 +83,7 @@ final readonly class IntegrationEngine
 
     private function resolveToken(DynamicAuthorizationConfig $authConfig): string
     {
-        $cacheKey = \sprintf('integration_engine.token.%s', $authConfig->action);
+        $cacheKey = sprintf('integration_engine.token.%s', $authConfig->action);
 
         if ($this->cache->has($cacheKey)) {
             return $this->cache->get($cacheKey);
@@ -88,7 +97,11 @@ final readonly class IntegrationEngine
         $responseArray = $authResponse->toArray();
 
         if (!isset($responseArray[$authConfig->tokenField])) {
-            throw new \RuntimeException(\sprintf('Dynamic auth action "%s" response does not contain field "%s".', $authConfig->action, $authConfig->tokenField));
+            throw new \RuntimeException(sprintf(
+                'Dynamic auth action "%s" response does not contain field "%s".',
+                $authConfig->action,
+                $authConfig->tokenField
+            ));
         }
 
         $token = $responseArray[$authConfig->tokenField];
@@ -111,7 +124,11 @@ final readonly class IntegrationEngine
         }
 
         if ($mapperClass::getAction() !== $action::class) {
-            throw new MapperActionMismatchException(mapperClass: $mapperClass, expectedActionClass: $mapperClass::getAction(), actualActionClass: $action::class);
+            throw new MapperActionMismatchException(
+                mapperClass: $mapperClass,
+                expectedActionClass: $mapperClass::getAction(),
+                actualActionClass: $action::class
+            );
         }
 
         return $mapperClass::map($action, $rawResponse);

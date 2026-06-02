@@ -18,16 +18,14 @@ final class YamlConfigAdapter implements ConfigPort
     public function __construct(string $configPath)
     {
         if (!file_exists($configPath)) {
-            throw new \InvalidArgumentException(\sprintf('Integration config file not found: %s', $configPath));
+            throw new \InvalidArgumentException(sprintf('Integration config file not found: %s', $configPath));
         }
 
         $this->config = Yaml::parseFile($configPath);
     }
 
-    public function getAction(
-        string $name,
-        ?ActionBodyInterface $body = null,
-    ): AbstractAction {
+    public function getAction(string $name, array $bodyData = []): AbstractAction
+    {
         if (!isset($this->config[$name])) {
             throw new ActionNotFoundException($name);
         }
@@ -36,13 +34,25 @@ final class YamlConfigAdapter implements ConfigPort
 
         foreach (['action', 'method', 'path'] as $key) {
             if (!isset($actionConfig[$key])) {
-                throw new \InvalidArgumentException(\sprintf('Action "%s" is missing required key: "%s".', $name, $key));
+                throw new \InvalidArgumentException(sprintf('Action "%s" is missing required key: "%s".', $name, $key));
             }
         }
 
         $authorization = isset($actionConfig['authorization'])
             ? AuthorizationConfig::fromArray($actionConfig['authorization'])
             : null;
+
+        $body = null;
+
+        if (isset($actionConfig['body'])) {
+            $bodyClass = $actionConfig['body'];
+
+            if (!is_a($bodyClass, ActionBodyInterface::class, true)) {
+                throw new \InvalidArgumentException(sprintf('Body "%s" must implement %s', $bodyClass, ActionBodyInterface::class));
+            }
+
+            $body = $bodyClass::create($bodyData);
+        }
 
         return $actionConfig['action']::create(
             method: $actionConfig['method'],
