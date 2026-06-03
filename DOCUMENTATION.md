@@ -259,6 +259,31 @@ Generates:
 - `GetUsersResponse.php`
 - `my_api.yaml` (or appends to existing)
 
+The scaffolding command is the recommended way to create integrations. It
+fills in all required values — including the integration name — so that the
+generated classes are immediately valid and registered correctly.
+
+### Creating integrations manually
+
+If you create an integration class by hand without using the command, you must
+override the `NAME` constant in your class:
+
+```php
+final class StripeIntegration implements IntegrationName
+{
+    public const string NAME = 'stripe'; // must be declared explicitly
+}
+```
+
+The interface declares `NAME = '__MUST_OVERRIDE__'` as a sentinel value. PHP
+does not enforce constant overriding at the language level, so the bundle
+cannot detect a missing override at compile time. If `NAME` is not declared,
+the integration will be registered under `'__MUST_OVERRIDE__'` and will not
+resolve correctly from the registry.
+
+This is a one-time declaration per integration. The scaffolding handles it
+automatically; manual creation requires it explicitly.
+
 ## 11. Extensibility
 
 Every infrastructure component is replaceable via interfaces:
