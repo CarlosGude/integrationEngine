@@ -6,11 +6,11 @@ namespace IntegrationEngine\Core\Contract;
 
 abstract class AbstractAction
 {
-    private ActionContextInterface $context;
+    private ?ActionContextInterface $context = null;
 
     final protected function __construct(
         private readonly string $method,
-        private string $path,
+        private readonly string $path,
         private readonly ?ActionBodyInterface $body,
         private readonly ?AuthorizationConfig $authorization,
     ) {}
@@ -72,8 +72,9 @@ abstract class AbstractAction
         return null;
     }
 
-    final protected function defaultResolvePath(string $path, array $context): string
+    final protected function defaultResolvePath(string $path, ActionContextInterface $context): string
     {
+        $context = $context?->toArray() ?? [];
         if ([] === $context) {
             return $path;
         }

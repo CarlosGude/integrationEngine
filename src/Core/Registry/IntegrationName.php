@@ -19,5 +19,5 @@ namespace IntegrationEngine\Core\Registry;
  */
 interface IntegrationName
 {
-    public const  NAME = '';
+    public const  NAME = '__MUST_OVERRIDE__';
 }

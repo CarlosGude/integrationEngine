@@ -36,7 +36,7 @@ final readonly class IntegrationEngine
 
         $action = $this->applyContext($action, $context);
 
-        $action = $this->applyAuthorization($action);
+        $action = $this->applyAuthorization($action, $context);
 
         $rawResponse = $this->client->send($action);
 
@@ -56,7 +56,7 @@ final readonly class IntegrationEngine
         return $action->withContext($context);
     }
 
-    private function applyAuthorization(AbstractAction $action): AbstractAction
+    private function applyAuthorization(AbstractAction $action, ?ActionContextInterface $context = null): AbstractAction
     {
         $auth = $action->getAuthorization();
 
@@ -78,7 +78,7 @@ final readonly class IntegrationEngine
                     ? ['token' => $token]
                     : ['header' => $auth->header, 'token' => $token],
             ),
-        );
+        )->withContext($context);
     }
 
     private function resolveToken(DynamicAuthorizationConfig $authConfig): string
