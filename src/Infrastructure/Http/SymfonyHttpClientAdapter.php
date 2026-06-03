@@ -16,6 +16,8 @@ final readonly class SymfonyHttpClientAdapter implements ClientInterface
     public function __construct(
         private HttpClientInterface $httpClient,
         private string $baseUrl,
+        /** @var array<string, string> */
+        private array $defaultHeaders = [],
     ) {}
 
     /**
@@ -26,7 +28,11 @@ final readonly class SymfonyHttpClientAdapter implements ClientInterface
     public function send(AbstractAction $action, ?RequestHeadersInterface $headers = null): array
     {
         $options = [
-            'headers' => array_merge($this->resolveHeaders($action), $headers?->toArray() ?? []),
+            'headers' => array_merge(
+                $this->defaultHeaders,
+                $this->resolveHeaders($action),
+                $headers?->toArray() ?? []
+            ),
         ];
 
         $body = $action->getBody();

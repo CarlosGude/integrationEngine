@@ -44,6 +44,12 @@ final class Configuration implements ConfigurationInterface
             ->defaultNull()
             ->info('Custom CachePort service ID. Defaults to InMemoryCacheAdapter.')
             ->end()
+            ->arrayNode('headers')
+            ->info('Default HTTP headers sent with every request for this integration. Auth headers are merged on top.')
+            ->useAttributeAsKey('name')
+            ->scalarPrototype()->end()
+            ->defaultValue([])
+            ->end()
             ->end()
             ->validate()
             ->ifTrue(static function (mixed $v): bool {

@@ -23,7 +23,7 @@ final class IntegrationEngineExtension extends Extension
 
         $loader->load('services.yaml');
 
-        /** @var array<string, array{config_path: null|string, base_path: null|string, base_url: null|string, client_service: null|string, cache_service: null|string}> $integrations */
+        /** @var array<string, array{config_path: null|string, base_path: null|string, base_url: null|string, client_service: null|string, cache_service: null|string, headers: array<string, string>}> $integrations */
         $integrations = $config['integrations'];
 
         $container->setParameter(
