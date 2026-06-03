@@ -13,10 +13,6 @@ final class DeleteFixtureAction extends AbstractAction
         return 'delete_fixture';
     }
 
-    public static function hasBody(): bool
-    {
-        return false;
-    }
 
     public static function hasResponse(): bool
     {

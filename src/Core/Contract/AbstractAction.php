@@ -6,7 +6,7 @@ namespace IntegrationEngine\Core\Contract;
 
 abstract class AbstractAction
 {
-    private array $context = [];
+    private ActionContextInterface $context;
 
     final protected function __construct(
         private readonly string $method,
@@ -24,7 +24,7 @@ abstract class AbstractAction
         return new static($method, $path, $body, $authorization);
     }
 
-    final public function withContext(array $context): static
+    final public function withContext(?ActionContextInterface $context = null): static
     {
         $clone = clone $this;
         $clone->context = $context;
@@ -59,8 +59,6 @@ abstract class AbstractAction
     }
 
     abstract public static function getName(): string;
-
-    abstract public static function hasBody(): bool;
 
     abstract public static function hasResponse(): bool;
 

@@ -10,7 +10,7 @@ use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
-readonly class SymfonyHttpClientAdapter implements ClientInterface
+final readonly class SymfonyHttpClientAdapter implements ClientInterface
 {
     public function __construct(
         private HttpClientInterface $httpClient,

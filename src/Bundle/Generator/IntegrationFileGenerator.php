@@ -28,10 +28,6 @@ final class IntegrationFileGenerator
         // Request
         $files["{$root}/{$action}/Request/{$action}Action.php"] = $tpl->action();
 
-        if ($ctx->hasBody()) {
-            $files["{$root}/{$action}/Request/{$action}Body.php"] = $tpl->body();
-        }
-
         // Response
         if ($ctx->hasResponse()) {
             $files["{$root}/{$action}/Response/{$action}Mapper.php"] = $tpl->mapper();

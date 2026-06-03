@@ -14,11 +14,6 @@ final class GetHelloWorldWithStaticAuthAction extends AbstractAction
         return 'get_hello_world';
     }
 
-    public static function hasBody(): bool
-    {
-        return false;
-    }
-
     public static function hasResponse(): bool
     {
         return true;

@@ -7,6 +7,7 @@ namespace IntegrationEngine\Core;
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\AbstractMapper;
 use IntegrationEngine\Core\Contract\ActionBodyInterface;
+use IntegrationEngine\Core\Contract\ActionContextInterface;
 use IntegrationEngine\Core\Contract\ClientInterface;
 use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\ResponseInterface;
@@ -28,7 +29,7 @@ final readonly class IntegrationEngine
 
     public function send(
         string $actionName,
-        ?array $context = null,
+        ?ActionContextInterface $context = null,
         ?ActionBodyInterface $body = null,
     ): ResponseInterface {
         $action = $this->config->getAction($actionName, $body);
@@ -46,7 +47,7 @@ final readonly class IntegrationEngine
         return $this->applyMapper($action, $rawResponse);
     }
 
-    private function applyContext(AbstractAction $action, ?array $context): AbstractAction
+    private function applyContext(AbstractAction $action, ?ActionContextInterface $context): AbstractAction
     {
         if (empty($context)) {
             return $action;

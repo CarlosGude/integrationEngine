@@ -68,11 +68,6 @@ final readonly class IntegrationContext
         return 'DELETE' === strtoupper($this->method);
     }
 
-    public function hasBody(): bool
-    {
-        return $this->isPost() || $this->isPut();
-    }
-
     public function hasResponse(): bool
     {
         return !$this->isDelete();

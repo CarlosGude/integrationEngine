@@ -19,5 +19,5 @@ namespace IntegrationEngine\Core\Registry;
  */
 interface IntegrationName
 {
-    public const string NAME = '';
+    public const  NAME = '';
 }

@@ -13,10 +13,6 @@ final class GetNoMappedAction extends AbstractAction
         return 'get_not_mapped_action';
     }
 
-    public static function hasBody(): bool
-    {
-        return false;
-    }
 
     public static function hasResponse(): bool
     {

@@ -14,10 +14,6 @@ final class GetMapperNotCorrespondsAction extends AbstractAction
         return 'get_mapper_not_corresponds_with_the_action';
     }
 
-    public static function hasBody(): bool
-    {
-        return false;
-    }
 
     public static function hasResponse(): bool
     {

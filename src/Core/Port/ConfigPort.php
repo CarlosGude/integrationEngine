@@ -8,5 +8,5 @@ use IntegrationEngine\Core\Contract\AbstractAction;
 
 interface ConfigPort
 {
-    public function getAction(string $name): AbstractAction;
+    public function getAction(string $name, array $bodyData = []): AbstractAction;
 }
