@@ -84,17 +84,14 @@ abstract class AbstractAction
 
     final protected function defaultResolvePath(string $path, ?ActionContextInterface $context): string
     {
-        $context = $context?->toArray() ?? [];
-        if ([] === $context) {
-            return $path;
-        }
+        $contextData = $context?->toArray() ?? [];
 
         return preg_replace_callback(
             '/\{(\w+)\}/',
-            static function (array $matches) use ($context, $path) {
+            static function (array $matches) use ($contextData, $path) {
                 $key = $matches[1];
 
-                if (!\array_key_exists($key, $context)) {
+                if (!\array_key_exists($key, $contextData)) {
                     throw new \RuntimeException(
                         \sprintf(
                             'Missing path parameter "%s" for path "%s"',
@@ -104,7 +101,7 @@ abstract class AbstractAction
                     );
                 }
 
-                $value = $context[$key];
+                $value = $contextData[$key];
                 if (!\is_scalar($value)) {
                     throw new \RuntimeException(
                         \sprintf('Path parameter "%s" must be a scalar value.', $key)
