@@ -9,10 +9,10 @@ abstract class AbstractAction
     private array $context = [];
 
     final protected function __construct(
-        private string $method,
+        private readonly string $method,
         private string $path,
-        private ?ActionBodyInterface $body,
-        private ?AuthorizationConfig $authorization,
+        private readonly ?ActionBodyInterface $body,
+        private readonly ?AuthorizationConfig $authorization,
     ) {}
 
     final public static function create(
