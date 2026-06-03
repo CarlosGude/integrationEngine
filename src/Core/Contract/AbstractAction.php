@@ -53,7 +53,7 @@ abstract class AbstractAction
         return $this->body;
     }
 
-    final public function getAuthorization(): mixed
+    final public function getAuthorization(): ?AuthorizationConfig
     {
         return $this->authorization;
     }
