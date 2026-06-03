@@ -303,3 +303,101 @@ Every infrastructure component is replaceable via interfaces:
 - Mapping is explicit via mappers
 - Headers have a defined precedence: YAML → auth → caller
 - The call site is uniform regardless of integration complexity
+
+## 13. Recommended usage pattern
+
+The bundle can be used by calling `IntegrationRegistry` directly from any
+Symfony service. However, the recommended pattern is to wrap each integration
+in a dedicated facade class. This is not the only correct way to use the
+bundle, but it is the one that best expresses its intent.
+
+### The facade pattern
+
+Create one class per external integration. That class resolves the engine
+once in the constructor and exposes named methods for each operation:
+
+```php
+final class OrdersApiIntegration implements IntegrationName
+{
+    public const string NAME = 'orders_api';
+
+    private IntegrationEngine $engine;
+
+    public function __construct(IntegrationRegistry $registry)
+    {
+        $this->engine = $registry->get(self::NAME);
+    }
+
+    public function getOrder(int $id): GetOrderResponse
+    {
+        return $this->engine->send(
+            GetOrderAction::getName(),
+            context: GetOrderContext::create(['id' => $id]),
+        );
+    }
+
+    public function createOrder(CreateOrderBody $body): CreateOrderResponse
+    {
+        return $this->engine->send(
+            CreateOrderAction::getName(),
+            body: $body,
+        );
+    }
+}
+```
+
+The consumer — a controller, a command, another service — only depends on
+`OrdersApiIntegration`. It has no knowledge of the registry, the engine,
+the HTTP client, or the auth mechanism:
+
+```php
+final class OrderController extends AbstractController
+{
+    public function __construct(
+        private readonly OrdersApiIntegration $ordersApi,
+    ) {}
+
+    #[Route('/orders/{id}')]
+    public function show(int $id): JsonResponse
+    {
+        $order = $this->ordersApi->getOrder($id);
+
+        return $this->json([
+            'id'     => $order->getId(),
+            'status' => $order->getStatus(),
+        ]);
+    }
+}
+```
+
+### Why this pattern
+
+**The bundle disappears from the consumer.** The controller imports nothing
+from `IntegrationEngine\`. The external dependency is invisible above the
+integration layer.
+
+**The facade is the domain boundary.** Method names speak business language
+(`getOrder`, `createOrder`), not transport language (`send`, `GET`, `POST`).
+If the external API changes its contract, only the facade and its Actions
+change — nothing above it.
+
+**One engine resolution, many calls.** The registry lookup happens once in
+the constructor. Subsequent calls to `getOrder()` or `createOrder()` go
+directly to the engine without re-resolving the service.
+
+**Testability.** Any consumer that depends on `OrdersApiIntegration` can be
+tested by replacing it with a fake or a mock. No need to stub the registry,
+the engine, or the HTTP client.
+
+### When this pattern does not apply
+
+A dedicated facade adds a layer that is not always justified. Direct use of
+the registry is acceptable when:
+
+- The integration is called from a single place and is unlikely to grow.
+- The project is a small script or a CLI command with no test requirements.
+- You are prototyping and the facade would slow you down.
+
+The goal is not to follow the pattern for its own sake, but to keep external
+complexity out of the domain. Use the facade when that separation has value;
+skip it when it does not.
