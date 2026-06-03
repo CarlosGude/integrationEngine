@@ -17,8 +17,8 @@
   },
   "require": {
     "php": ">=8.2",
-    "symfony/console": "^8.1",
-    "symfony/dependency-injection": "^8.1",
+    "symfony/console": "^7.0|^8.0",
+    "symfony/dependency-injection": "^7.0|^8.0",
     "symfony/http-client": "^6.4|^7.0|^8.0",
     "symfony/yaml": "^6.4|^7.0|^8.0"
   },
