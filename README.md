@@ -2,6 +2,10 @@
 
 A Symfony bundle for centralising external API integrations behind a consistent, hexagonal architecture.
 
+> **Full documentation** → [DOCUMENTATION.md](./DOCUMENTATION.md)
+
+---
+
 ## Motivation and differentiation
 
 ### The problem
@@ -52,6 +56,8 @@ IntegrationEngine is not a general-purpose HTTP client. It does not handle strea
 - PHP 8.4+
 - Symfony 7.x or 8.x
 
+---
+
 ## Installation
 
 ```bash
@@ -65,6 +71,8 @@ return [
     IntegrationEngine\Bundle\IntegrationEngineBundle::class => ['all' => true],
 ];
 ```
+
+---
 
 ## Quick start
 
@@ -80,7 +88,7 @@ php bin/console make:integration Acme GetUsers
 final class UserService
 {
     public function __construct(
-        private readonly IntegrationEngine\Core\Registry\IntegrationRegistry $registry,
+        private readonly IntegrationRegistry $registry,
     ) {}
 
     public function getUsers(): array
@@ -93,6 +101,8 @@ final class UserService
 }
 ```
 
+---
+
 ## Usage patterns
 
 ### Simple GET
@@ -101,25 +111,21 @@ final class UserService
 ->send('ListUsers')
 ```
 
-### With body (POST/PUT)
+### With body (POST / PUT)
 
 ```php
 ->send(
     actionName: 'CreateUser',
-    body: CreateUserBody::create([
-        'name' => 'Rick',
-    ])
+    body: CreateUserBody::create(['name' => 'Rick']),
 )
 ```
 
-### With context (path/query parameters)
+### With context (path parameters)
 
 ```php
 ->send(
     actionName: 'GetUser',
-    context: GetUserContext::create([
-        'id' => 1,
-    ])
+    context: GetUserContext::create(['id' => 1]),
 )
 ```
 
@@ -128,10 +134,12 @@ final class UserService
 ```php
 ->send(
     actionName: 'UpdateUser',
-    body: UpdateUserBody::create([...]),
     context: UpdateUserContext::create(['id' => 1]),
+    body: UpdateUserBody::create([...]),
 )
 ```
+
+---
 
 ## Configuration reference
 
@@ -139,6 +147,23 @@ final class UserService
 integration_engine:
   integrations:
     my_api:
-      config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MyApi/MyApi.yaml'
       base_url: '%env(MY_API_BASE_URL)%'
+      config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MyApi/MyApi.yaml'
+      headers:
+        X-Api-Version: '2'
+      cache_service: ~     # defaults to InMemoryCacheAdapter — replace in production
+      client_service: ~    # custom ClientInterface service ID
 ```
+
+> **Warning**: The default `InMemoryCacheAdapter` is process-scoped and does not
+> persist between requests under PHP-FPM. Configure a `cache_service` backed by
+> Redis or APCu for dynamic auth in production.
+
+---
+
+## Further reading
+
+Architecture, authorization, headers, error reference, extensibility and recommended
+patterns are covered in the full documentation:
+
+**[→ DOCUMENTATION.md](./DOCUMENTATION.md)**

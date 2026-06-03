@@ -1,5 +1,54 @@
 # IntegrationEngine Bundle — Documentation
 
+## Quick start
+
+### 1. Install
+
+```bash
+composer require carlosgude/integration-engine
+```
+
+Register the bundle in `config/bundles.php`:
+
+```php
+return [
+    // ...
+    IntegrationEngine\Bundle\IntegrationEngineBundle::class => ['all' => true],
+];
+```
+
+### 2. Configure the bundle
+
+Create `config/packages/integration_engine.yaml`:
+
+```yaml
+integration_engine:
+  integrations:
+    orders_api:
+      base_url: '%env(ORDERS_API_BASE_URL)%'
+      config_path: '%kernel.project_dir%/src/Integration/OrdersApi/OrdersApi.yaml'
+```
+
+### 3. Generate the integration structure
+
+```bash
+php bin/console make:integration OrdersApi GetOrder
+```
+
+This creates `GetOrderAction.php`, `GetOrderMapper.php`, `GetOrderResponse.php`
+and `OrdersApi.yaml` ready to fill in.
+
+### 4. Call it
+
+```php
+$registry->get('orders_api')->send('GetOrder', context: GetOrderContext::create(['id' => 42]));
+```
+
+That is all the bundle requires. Everything else in this document is optional
+depth.
+
+---
+
 ## 1. Architecture overview
 
 The bundle implements a hexagonal integration engine:
@@ -9,6 +58,11 @@ The bundle implements a hexagonal integration engine:
 - **Bundle**: Symfony wiring
 
 ## 2. Core execution model
+
+The caller never talks to the HTTP layer directly. Every request goes through
+the engine, which is responsible for resolving auth, applying context, and
+mapping the response. The caller only knows the action name and gets back a
+typed object.
 
 ```text
 Registry
@@ -79,7 +133,7 @@ protected function resolvePathCallback(): ?callable
 Bodies are explicit objects implementing `ActionBodyInterface`:
 
 ```php
-final class CreateUserBody implements ActionBodyInterface
+final class CreateOrderBody implements ActionBodyInterface
 {
     public static function create(array $data): self {}
 
@@ -142,10 +196,10 @@ Fixed headers sent with every request for an integration. Declared in
 ```yaml
 integration_engine:
   integrations:
-    stripe:
-      base_url: 'https://api.stripe.com'
+    orders_api:
+      base_url: 'https://api.example.com'
       headers:
-        X-Api-Version: '2023-10-16'
+        X-Api-Version: '2'
         X-Client-Name: 'my-app'
 ```
 
@@ -173,9 +227,8 @@ final class CorrelationHeaders implements RequestHeadersInterface
     }
 }
 
-$registry->get('stripe')->send(
-    'ChargeCard',
-    context: $context,
+$registry->get('orders_api')->send(
+    'CreateOrder',
     body: $body,
     headers: new CorrelationHeaders($requestId),
 );
@@ -207,7 +260,14 @@ send(
 
 ## 9. YAML configuration
 
-### Bundle configuration (`integration_engine.yaml`)
+These are two separate files with different responsibilities. The bundle
+configuration registers integrations in the Symfony container. The action
+configuration declares the operations available for each integration.
+
+### Bundle configuration (`config/packages/integration_engine.yaml`)
+
+Registers integrations in the Symfony container and configures their
+transport layer:
 
 ```yaml
 integration_engine:
@@ -227,7 +287,10 @@ Either `base_url` or `client_service` is required per integration.
 > not persist between requests under PHP-FPM. Configure a `cache_service`
 > backed by Redis or APCu for dynamic auth in production.
 
-### Action configuration (`MyApi.yaml`)
+### Action configuration (`src/Integration/MyApi/MyApi.yaml`)
+
+Declares the operations available for a specific integration. No logic lives
+here — YAML declares intent; Actions and Mappers implement behaviour:
 
 ```yaml
 GetUsers:
@@ -242,9 +305,6 @@ CreateUser:
   method: POST
   path: /users
 ```
-
-No logic lives in YAML. YAML declares intent; Actions and Mappers implement
-behaviour.
 
 ## 10. Scaffolding
 
@@ -269,9 +329,9 @@ If you create an integration class by hand without using the command, you must
 override the `NAME` constant in your class:
 
 ```php
-final class StripeIntegration implements IntegrationName
+final class MyApiIntegration implements IntegrationName
 {
-    public const string NAME = 'stripe'; // must be declared explicitly
+    public const string NAME = 'my_api'; // must be declared explicitly
 }
 ```
 
@@ -294,7 +354,21 @@ Every infrastructure component is replaceable via interfaces:
 | `CachePort`         | `InMemoryCacheAdapter`         | `cache_service`       |
 | `ConfigPort`        | `YamlConfigAdapter`            | custom CompilerPass   |
 
-## 12. Design principles
+## 12. Error reference
+
+The bundle throws named exceptions. All are catchable at the call site.
+
+| Exception                        | When it is thrown                                                                 | Recommended action                                              |
+|----------------------------------|-----------------------------------------------------------------------------------|-----------------------------------------------------------------|
+| `ActionNotFoundException`        | `send()` is called with an action name not declared in the YAML config            | Verify the action name matches the YAML key exactly             |
+| `NotMappedActionException`       | The action's `mapper()` returns `null` but `hasResponse()` is `true`             | Declare a mapper class in the Action or set `hasResponse: false`|
+| `InvalidMapperException`         | `mapper()` returns a class that does not extend `AbstractMapper`                  | Check the mapper class declaration                              |
+| `MapperActionMismatchException`  | The mapper's `getAction()` does not match the action being executed               | Ensure each mapper declares the correct Action class            |
+| `RequestResponseException`       | The HTTP request returns a 4xx/5xx status, or a network error occurs              | Inspect `getStatusCode()` and `getContext()` for details        |
+| `RuntimeException`               | A path parameter declared in the template is missing from the context             | Ensure all `{param}` placeholders are covered by the context    |
+| `RuntimeException`               | A dynamic auth response does not contain the expected `token_field`               | Verify the auth action response structure matches the config    |
+
+## 13. Design principles
 
 - No magic outside the engine
 - Actions are immutable
@@ -304,7 +378,7 @@ Every infrastructure component is replaceable via interfaces:
 - Headers have a defined precedence: YAML → auth → caller
 - The call site is uniform regardless of integration complexity
 
-## 13. Recommended usage pattern
+## 14. Recommended usage pattern
 
 The bundle can be used by calling `IntegrationRegistry` directly from any
 Symfony service. However, the recommended pattern is to wrap each integration
