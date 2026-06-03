@@ -12,6 +12,7 @@ qa: cs test
 # -----------------------------
 pre-commit: cs-fix
 	./vendor/bin/phpstan analyse src --level=8
+	./vendor/bin/phpstan analyse tests --level=8
 	./vendor/bin/phpunit
 	@echo "✔ Pre-commit OK"
 # -----------------------------

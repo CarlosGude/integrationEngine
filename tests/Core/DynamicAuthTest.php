@@ -295,7 +295,7 @@ final class DynFakeConfigPort implements ConfigPort
 
 final class DynTokenResponse implements ResponseInterface
 {
-    /** @param array<mixed> $data */
+    /** @param array<string, mixed> $data */
     public function __construct(private readonly array $data) {}
 
     /** @return array<string, mixed> */
@@ -314,6 +314,7 @@ final class DynTokenMapper extends AbstractMapper
 
     protected static function transform(AbstractAction $action, array $response): ResponseInterface
     {
+        /** @var array<string, mixed> $response */
         return new DynTokenResponse($response);
     }
 }
@@ -330,7 +331,7 @@ final class DynTokenAction extends AbstractAction
         return true;
     }
 
-    public static function mapper(): ?string
+    public static function mapper(): string
     {
         return DynTokenMapper::class;
     }
@@ -370,7 +371,7 @@ final class DynProtectedAction extends AbstractAction
         return true;
     }
 
-    public static function mapper(): ?string
+    public static function mapper(): string
     {
         return DynProtectedMapper::class;
     }
@@ -410,7 +411,7 @@ final class DynPathAction extends AbstractAction
         return true;
     }
 
-    public static function mapper(): ?string
+    public static function mapper(): string
     {
         return DynPathMapper::class;
     }

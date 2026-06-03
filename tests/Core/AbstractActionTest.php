@@ -220,7 +220,7 @@ final class AbstractActionWithResolver extends AbstractAction
         return null;
     }
 
-    protected function resolvePathCallback(): ?callable
+    protected function resolvePathCallback(): callable
     {
         return static fn (string $path, mixed $ctx): string => '/custom-resolved';
     }
@@ -243,7 +243,7 @@ final class AbstractActionWithBadResolver extends AbstractAction
         return null;
     }
 
-    protected function resolvePathCallback(): ?callable
+    protected function resolvePathCallback(): callable
     {
         return static fn (): int => 42;
     }
