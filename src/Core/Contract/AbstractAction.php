@@ -72,7 +72,7 @@ abstract class AbstractAction
         return null;
     }
 
-    final protected function defaultResolvePath(string $path, ActionContextInterface $context): string
+    final protected function defaultResolvePath(string $path, ?ActionContextInterface $context): string
     {
         $context = $context?->toArray() ?? [];
         if ([] === $context) {

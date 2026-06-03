@@ -104,7 +104,7 @@ final readonly class IntegrationEngine
             ));
         }
 
-        $token = $responseArray[$authConfig->tokenField];
+        $token = (string) $responseArray[$authConfig->tokenField];
 
         $this->cache->set($cacheKey, $token, $authConfig->ttl);
 
