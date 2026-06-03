@@ -6,6 +6,7 @@ namespace IntegrationEngine\Infrastructure\Http;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\ClientInterface;
+use IntegrationEngine\Core\Contract\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -22,10 +23,10 @@ final readonly class SymfonyHttpClientAdapter implements ClientInterface
      *
      * @throws RequestResponseException on HTTP 4xx/5xx or network errors
      */
-    public function send(AbstractAction $action): array
+    public function send(AbstractAction $action, ?RequestHeadersInterface $headers = null): array
     {
         $options = [
-            'headers' => $this->resolveHeaders($action),
+            'headers' => array_merge($this->resolveHeaders($action), $headers?->toArray() ?? []),
         ];
 
         $body = $action->getBody();

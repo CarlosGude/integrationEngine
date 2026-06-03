@@ -10,6 +10,7 @@ use IntegrationEngine\Core\Contract\ActionBodyInterface;
 use IntegrationEngine\Core\Contract\ActionContextInterface;
 use IntegrationEngine\Core\Contract\ClientInterface;
 use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
+use IntegrationEngine\Core\Contract\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\ResponseInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
@@ -260,7 +261,7 @@ final class DynFakeClient implements ClientInterface
     }
 
     /** @return array<mixed> */
-    public function send(AbstractAction $action): array
+    public function send(AbstractAction $action, ?RequestHeadersInterface $headers = null): array
     {
         $this->last = $action;
         $this->callCount[$action::getName()] = ($this->callCount[$action::getName()] ?? 0) + 1;

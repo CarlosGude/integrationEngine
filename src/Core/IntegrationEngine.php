@@ -9,6 +9,7 @@ use IntegrationEngine\Core\Contract\ActionBodyInterface;
 use IntegrationEngine\Core\Contract\ActionContextInterface;
 use IntegrationEngine\Core\Contract\ClientInterface;
 use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
+use IntegrationEngine\Core\Contract\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\ResponseInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
@@ -29,6 +30,7 @@ final readonly class IntegrationEngine
         string $actionName,
         ?ActionContextInterface $context = null,
         ?ActionBodyInterface $body = null,
+        ?RequestHeadersInterface $headers = null
     ): ResponseInterface {
         $action = $this->config->getAction($actionName, $body);
 
@@ -36,7 +38,7 @@ final readonly class IntegrationEngine
 
         $action = $this->applyAuthorization($action, $context);
 
-        $rawResponse = $this->client->send($action);
+        $rawResponse = $this->client->send($action, $headers);
 
         if (!$action::hasResponse()) {
             return new EmptyResponse();
