@@ -46,7 +46,9 @@ final class Configuration implements ConfigurationInterface
             ->end()
             ->end()
             ->validate()
-            ->ifTrue(static fn ($v) => null === $v['base_url'] && null === $v['client_service'])
+            ->ifTrue(static function (mixed $v): bool {
+                return \is_array($v) && null === $v['base_url'] && null === $v['client_service'];
+            })
             ->thenInvalid('Each integration must define either "base_url" or "client_service".')
             ->end()
             ->end()

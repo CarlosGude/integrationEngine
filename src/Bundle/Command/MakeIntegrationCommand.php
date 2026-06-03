@@ -54,15 +54,23 @@ final class MakeIntegrationCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $name = (string) $input->getArgument('name');
-        $action = (string) $input->getArgument('action');
+        $nameArg = $input->getArgument('name');
+        $actionArg = $input->getArgument('action');
+        $namespaceOpt = $input->getOption('namespace');
+        $pathOpt = $input->getOption('path');
+
+        if (!\is_string($nameArg) || !\is_string($actionArg) || !\is_string($namespaceOpt) || !\is_string($pathOpt)) {
+            $io->error('Invalid arguments provided.');
+
+            return Command::FAILURE;
+        }
+
+        $name = $nameArg;
+        $action = $actionArg;
         $force = (bool) $input->getOption('force');
+        $baseNamespace = rtrim($namespaceOpt, '\\');
+        $basePath = rtrim($pathOpt, '/');
 
-        $baseNamespace = rtrim((string) $input->getOption('namespace'), '\\');
-        $basePath = rtrim((string) $input->getOption('path'), '/');
-
-        // $baseNamespace is App\Infrastructure\Integrations
-        // IntegrationContext::integrationNamespace() appends $name internally
         $integrationPath = $this->projectDir.'/'.$basePath.'/'.$name;
 
         $ctx = new IntegrationContext(

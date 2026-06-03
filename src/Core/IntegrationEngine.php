@@ -86,7 +86,12 @@ final readonly class IntegrationEngine
         $cacheKey = \sprintf('integration_engine.token.%s', $authConfig->action);
 
         if ($this->cache->has($cacheKey)) {
-            return $this->cache->get($cacheKey);
+            $cached = $this->cache->get($cacheKey);
+            if (!\is_string($cached)) {
+                throw new \RuntimeException(\sprintf('Cached token for "%s" is not a string.', $authConfig->action));
+            }
+
+            return $cached;
         }
 
         $authAction = $this->config->getAction($authConfig->action, null);
@@ -104,7 +109,12 @@ final readonly class IntegrationEngine
             ));
         }
 
-        $token = (string) $responseArray[$authConfig->tokenField];
+        $tokenValue = $responseArray[$authConfig->tokenField];
+        if (!\is_scalar($tokenValue)) {
+            throw new \RuntimeException(\sprintf('Token field "%s" must be a scalar value.', $authConfig->tokenField));
+        }
+
+        $token = (string) $tokenValue;
 
         $this->cache->set($cacheKey, $token, $authConfig->ttl);
 

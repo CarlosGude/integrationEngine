@@ -19,7 +19,11 @@ final readonly class StaticAuthorizationConfig extends AuthorizationConfig
     /** @param array<string, mixed> $config */
     public static function fromArray(array $config): self
     {
-        $type = (string) $config['type'];
+        if (!isset($config['type']) || !\is_string($config['type'])) {
+            throw new \InvalidArgumentException('Static authorization config must define a string "type".');
+        }
+
+        $type = $config['type'];
         unset($config['type']);
 
         return new self(type: $type, params: $config);

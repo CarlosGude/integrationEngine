@@ -24,11 +24,15 @@ final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
             }
         }
 
+        if (!\is_string($config['action']) || !\is_string($config['token_field']) || !\is_scalar($config['ttl'])) {
+            throw new \InvalidArgumentException('Dynamic authorization config fields "action", "token_field" must be strings and "ttl" must be scalar.');
+        }
+
         return new self(
-            action: (string) $config['action'],
-            tokenField: (string) $config['token_field'],
+            action: $config['action'],
+            tokenField: $config['token_field'],
             ttl: (int) $config['ttl'],
-            header: isset($config['header']) ? (string) $config['header'] : 'Authorization',
+            header: isset($config['header']) && \is_string($config['header']) ? $config['header'] : 'Authorization',
         );
     }
 }

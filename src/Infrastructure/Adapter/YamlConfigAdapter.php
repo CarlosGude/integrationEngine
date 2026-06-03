@@ -13,7 +13,7 @@ use Symfony\Component\Yaml\Yaml;
 
 final class YamlConfigAdapter implements ConfigPort
 {
-    /** @var array<string, array{action: class-string, method: string, path: string, body?: class-string, authorization?: array<string, mixed>}> */
+    /** @var array<string, array{action: class-string<AbstractAction>, method: string, path: string, body?: class-string, authorization?: array<string, mixed>}> */
     private array $config;
 
     public function __construct(string $configPath)
@@ -22,7 +22,7 @@ final class YamlConfigAdapter implements ConfigPort
             throw new \InvalidArgumentException(\sprintf('Integration config file not found: %s', $configPath));
         }
 
-        /** @var array<string, array{action: class-string, method: string, path: string, body?: class-string, authorization?: array<string, mixed>}> $parsed */
+        /** @var array<string, array{action: class-string<AbstractAction>, method: string, path: string, body?: class-string, authorization?: array<string, mixed>}> $parsed */
         $parsed = Yaml::parseFile($configPath);
         $this->config = $parsed;
     }

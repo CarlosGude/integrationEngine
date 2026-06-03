@@ -16,7 +16,6 @@ final class IntegrationEngineExtension extends Extension
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
-        // Cargar servicios base del bundle
         $loader = new YamlFileLoader(
             $container,
             new FileLocator(__DIR__.'/../Resources/config')
@@ -24,14 +23,12 @@ final class IntegrationEngineExtension extends Extension
 
         $loader->load('services.yaml');
 
-        /*
-         * 🔥 SOLO CONFIGURACIÓN
-         * No lógica, no wiring, no decisiones.
-         * Solo pasar datos al sistema Symfony.
-         */
+        /** @var array<string, array{config_path: null|string, base_path: null|string, base_url: null|string, client_service: null|string, cache_service: null|string}> $integrations */
+        $integrations = $config['integrations'];
+
         $container->setParameter(
             'integration_engine.integrations',
-            $config['integrations']
+            $integrations
         );
     }
 }

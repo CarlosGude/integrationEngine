@@ -65,13 +65,15 @@ final readonly class SymfonyHttpClientAdapter implements ClientInterface
             return $headers;
         }
 
+        $token = isset($auth->params['token']) && \is_string($auth->params['token']) ? $auth->params['token'] : '';
+        $username = isset($auth->params['username']) && \is_string($auth->params['username']) ? $auth->params['username'] : '';
+        $password = isset($auth->params['password']) && \is_string($auth->params['password']) ? $auth->params['password'] : '';
+        $headerKey = isset($auth->params['header']) && \is_string($auth->params['header']) ? $auth->params['header'] : 'X-Api-Key';
+
         $headers += match ($auth->type) {
-            'bearer' => ['Authorization' => \sprintf('Bearer %s', $auth->params['token'] ?? '')],
-            'basic' => ['Authorization' => \sprintf(
-                'Basic %s',
-                base64_encode(($auth->params['username'] ?? '').':'.($auth->params['password'] ?? ''))
-            )],
-            'api_key' => [($auth->params['header'] ?? 'X-Api-Key') => $auth->params['token'] ?? ''],
+            'bearer' => ['Authorization' => \sprintf('Bearer %s', $token)],
+            'basic' => ['Authorization' => \sprintf('Basic %s', base64_encode($username.':'.$password))],
+            'api_key' => [$headerKey => $token],
             default => [],
         };
 
