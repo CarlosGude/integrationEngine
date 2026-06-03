@@ -40,5 +40,13 @@
   },
   "config": {
     "sort-packages": true
+  },
+  "extra": {
+    "symfony": {
+      "require": ">=7.0",
+      "bundles": {
+        "IntegrationEngine\\Bundle\\IntegrationEngineBundle": ["all"]
+      }
+    }
   }
 }
