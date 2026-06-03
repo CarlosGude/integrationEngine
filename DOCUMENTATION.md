@@ -16,7 +16,8 @@ Registry
       -> ConfigPort (YAML / custom source)
       -> Action (immutable)
       -> Context binding (path resolution)
-      -> HTTP Client
+      -> Authorization (static or dynamic with cache)
+      -> HTTP Client (YAML headers + auth headers + caller headers)
       -> Mapper
       -> Response DTO
 ```
@@ -26,33 +27,51 @@ Registry
 An Action defines:
 
 - HTTP method
-- Path template
+- Path template (supports `{param}` placeholders)
 - Optional body
+- Optional authorization config
 - Optional mapper
 
-Actions are immutable and created by the engine.
+Actions are immutable. The engine clones them when applying context or
+reconstructing them after dynamic auth resolution.
 
 ## 4. Context system
 
-Context is used to resolve dynamic URL segments:
+Context resolves dynamic URL path segments at call time:
 
 ```php
-/character/{id}
+/orders/{id}
 ```
 
 becomes:
 
 ```php
-/character/1
+/orders/42
 ```
 
-The context is provided at runtime:
+The context is provided at runtime via `ActionContextInterface`:
 
 ```php
 ->send(
-    'GetCharacter',
-    context: GetCharacterContext::create(['id' => 1])
+    'GetOrder',
+    context: GetOrderContext::create(['id' => 42])
 )
+```
+
+Missing parameters throw a `RuntimeException` at resolution time, not at HTTP
+time. Non-scalar values throw immediately.
+
+A custom resolver can be provided by overriding `resolvePathCallback()` in the
+Action:
+
+```php
+protected function resolvePathCallback(): ?callable
+{
+    return function (string $path, ?ActionContextInterface $context): string {
+        // custom resolution logic
+        return $resolvedPath;
+    };
+}
 ```
 
 ## 5. Body system
@@ -68,13 +87,111 @@ final class CreateUserBody implements ActionBodyInterface
 }
 ```
 
-## 6. Engine API
+Bodies are serialised as JSON and sent for `POST`, `PUT`, `PATCH`, and
+`DELETE` requests.
+
+## 6. Authorization system
+
+### Static authorization
+
+Declared in the integration YAML or directly in the Action. Supported types:
+
+| Type      | Header produced                     |
+|-----------|-------------------------------------|
+| `bearer`  | `Authorization: Bearer {token}`     |
+| `basic`   | `Authorization: Basic {b64}`        |
+| `api_key` | `{header}: {token}` (custom header) |
+
+### Dynamic authorization
+
+For APIs that require a pre-flight token request (OAuth client credentials,
+session tokens, API key exchanges):
+
+```yaml
+authorization:
+  type: dynamic
+  action: FetchToken
+  token_field: access_token
+  ttl: 3600
+```
+
+The engine:
+
+1. Checks the cache for `integration_engine.token.{action}`.
+2. If absent, executes the auth action and extracts `token_field` from the
+   response.
+3. Caches the token for `ttl` seconds.
+4. Substitutes a `StaticAuthorizationConfig` transparently before the actual
+   request.
+
+The integration author writes no caching logic.
+
+## 7. Headers system
+
+Headers are resolved in three layers. Each layer overrides the previous:
+
+```
+YAML defaults  →  Auth headers  →  Caller headers
+```
+
+### Layer 1 — YAML defaults
+
+Fixed headers sent with every request for an integration. Declared in
+`integration_engine.yaml`:
+
+```yaml
+integration_engine:
+  integrations:
+    stripe:
+      base_url: 'https://api.stripe.com'
+      headers:
+        X-Api-Version: '2023-10-16'
+        X-Client-Name: 'my-app'
+```
+
+Use for API versioning headers, client identification, or any header that is
+fixed for the integration but not part of the auth contract.
+
+### Layer 2 — Auth headers
+
+Resolved by the engine from the Action's `AuthorizationConfig`. Always
+override YAML defaults.
+
+### Layer 3 — Caller headers
+
+Per-request headers provided at call time. Implement `RequestHeadersInterface`
+and pass as the `headers` parameter:
+
+```php
+final class CorrelationHeaders implements RequestHeadersInterface
+{
+    public function __construct(private readonly string $requestId) {}
+
+    public function toArray(): array
+    {
+        return ['X-Correlation-ID' => $this->requestId];
+    }
+}
+
+$registry->get('stripe')->send(
+    'ChargeCard',
+    context: $context,
+    body: $body,
+    headers: new CorrelationHeaders($requestId),
+);
+```
+
+Use for correlation IDs, tenant identifiers, or any header that varies per
+request.
+
+## 8. Engine API
 
 ```php
 send(
     string $actionName,
+    ?ActionContextInterface $context = null,
     ?ActionBodyInterface $body = null,
-    ?ActionContextInterface $context = null
+    ?RequestHeadersInterface $headers = null,
 ): ResponseInterface
 ```
 
@@ -82,42 +199,82 @@ send(
 
 1. Load action from ConfigPort
 2. Apply context (path resolution)
-3. Attach body
-4. Apply authorization
-5. Execute HTTP request
-6. Map response
-7. Return typed response
+3. Apply authorization (static injection or dynamic token resolution)
+4. Execute HTTP request (YAML headers + auth headers + caller headers)
+5. Return `EmptyResponse` if `hasResponse()` is false
+6. Map response via mapper
+7. Return typed `ResponseInterface`
 
-## 7. YAML configuration
+## 9. YAML configuration
+
+### Bundle configuration (`integration_engine.yaml`)
+
+```yaml
+integration_engine:
+  integrations:
+    my_api:
+      base_url: '%env(MY_API_BASE_URL)%'
+      config_path: '%kernel.project_dir%/src/Integration/MyApi/MyApi.yaml'
+      headers:
+        X-Api-Version: '2'
+      cache_service: ~       # defaults to InMemoryCacheAdapter (dev only)
+      client_service: ~      # custom ClientInterface service ID
+```
+
+Either `base_url` or `client_service` is required per integration.
+
+> **Warning**: The default `InMemoryCacheAdapter` is process-scoped and does
+> not persist between requests under PHP-FPM. Configure a `cache_service`
+> backed by Redis or APCu for dynamic auth in production.
+
+### Action configuration (`MyApi.yaml`)
 
 ```yaml
 GetUsers:
-    action: App\Integration\GetUsersAction
-    method: GET
-    path: /users
+  method: GET
+  path: /users
+
+GetUser:
+  method: GET
+  path: /users/{id}
 
 CreateUser:
-    action: App\Integration\CreateUserAction
-    method: POST
-    path: /users
+  method: POST
+  path: /users
 ```
 
-No logic lives in YAML.
+No logic lives in YAML. YAML declares intent; Actions and Mappers implement
+behaviour.
 
-## 8. Extensibility
+## 10. Scaffolding
 
-You can extend:
+```bash
+php bin/console make:integration MyApi GetUsers
+```
 
-- HTTP client
-- Cache layer
-- Config source
+Generates:
 
-Everything is replaceable via interfaces.
+- `GetUsersAction.php`
+- `GetUsersMapper.php`
+- `GetUsersResponse.php`
+- `my_api.yaml` (or appends to existing)
 
-## 9. Design principles
+## 11. Extensibility
 
-- No magic outside engine
+Every infrastructure component is replaceable via interfaces:
+
+| Contract            | Default implementation         | Override via          |
+|---------------------|--------------------------------|-----------------------|
+| `ClientInterface`   | `SymfonyHttpClientAdapter`     | `client_service`      |
+| `CachePort`         | `InMemoryCacheAdapter`         | `cache_service`       |
+| `ConfigPort`        | `YamlConfigAdapter`            | custom CompilerPass   |
+
+## 12. Design principles
+
+- No magic outside the engine
 - Actions are immutable
-- Context is explicit
+- Context is explicit and validated at resolution time
 - Bodies are typed objects
 - Mapping is explicit via mappers
+- Headers have a defined precedence: YAML → auth → caller
+- The call site is uniform regardless of integration complexity
