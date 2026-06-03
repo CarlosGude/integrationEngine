@@ -12,6 +12,7 @@ final class GetNotValidMapperAction extends AbstractAction
     {
         return 'get_not_valid_mapped_action';
     }
+
     public static function hasResponse(): bool
     {
         return true;

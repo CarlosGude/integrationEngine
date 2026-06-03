@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Support\Fixtures\Action;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\AuthorizationConfig;
-use IntegrationEngine\Tests\Support\FakeAuthorizationConfig;
+use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Tests\Support\Fixtures\DeleteFixture\Request\DeleteFixtureAction;
 use IntegrationEngine\Tests\Support\Fixtures\GetHelloWorld\Request\GetHelloWorldAction;
 use IntegrationEngine\Tests\Support\Fixtures\GetHelloWorldWithStaticAuthAction\Request\GetHelloWorldWithStaticAuthAction;
@@ -61,10 +60,10 @@ final class ActionFactory
         return GetHelloWorldWithStaticAuthAction::create(
             method: 'GET',
             path: '/get-hello-world-with-static-auth',
-            authorization: FakeAuthorizationConfig::fromArray([
-                AuthorizationConfig::TYPE => 'bearer',
-                'token' => 'FAKE_TOKEN',
-            ]),
+            authorization: new StaticAuthorizationConfig(
+                type: 'bearer',
+                params: ['token' => 'FAKE_TOKEN'],
+            ),
         );
     }
 }

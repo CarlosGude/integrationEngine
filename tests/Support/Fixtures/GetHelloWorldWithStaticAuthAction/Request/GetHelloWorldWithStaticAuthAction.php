@@ -11,7 +11,7 @@ final class GetHelloWorldWithStaticAuthAction extends AbstractAction
 {
     public static function getName(): string
     {
-        return 'get_hello_world';
+        return 'get_hello_world_with_static_auth';
     }
 
     public static function hasResponse(): bool

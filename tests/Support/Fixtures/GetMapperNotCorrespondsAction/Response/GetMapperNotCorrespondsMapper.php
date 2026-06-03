@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Support\Fixtures\GetMapperNotCorrespondsAction\Response;
+namespace IntegrationEngine\Tests\Support\Fixtures\GetMapperNotCorrespondsAction\Response;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\AbstractMapper;
@@ -14,7 +14,7 @@ class GetMapperNotCorrespondsMapper extends AbstractMapper
 {
     public static function getAction(): string
     {
-        return GetMapperNotCorrespondsAction::getName();
+        return GetMapperNotCorrespondsAction::class;
     }
 
     protected static function transform(AbstractAction $action, array $response): ResponseInterface
