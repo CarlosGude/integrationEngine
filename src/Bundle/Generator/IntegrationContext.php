@@ -87,8 +87,6 @@ final readonly class IntegrationContext
         ?string $action = null,
         ?string $method = null,
         ?string $path = null,
-        ?array $requestSchema = null,
-        ?array $responseSchema = null,
     ): self {
         return new self(
             name: $this->name,

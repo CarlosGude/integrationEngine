@@ -20,6 +20,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
             return;
         }
 
+        /** @var array<string, array{config_path: string, client_service: null|string, base_url: null|string, cache_service: null|string}> $integrations */
         $integrations = $container->getParameter('integration_engine.integrations');
 
         $registry = $container->findDefinition('IntegrationEngine\Core\Registry\IntegrationRegistry');

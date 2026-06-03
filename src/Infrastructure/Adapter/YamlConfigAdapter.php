@@ -13,6 +13,7 @@ use Symfony\Component\Yaml\Yaml;
 
 final class YamlConfigAdapter implements ConfigPort
 {
+    /** @var array<string, array{action: class-string, method: string, path: string, body?: class-string, authorization?: array<string, mixed>}> */
     private array $config;
 
     public function __construct(string $configPath)
@@ -21,7 +22,9 @@ final class YamlConfigAdapter implements ConfigPort
             throw new \InvalidArgumentException(\sprintf('Integration config file not found: %s', $configPath));
         }
 
-        $this->config = Yaml::parseFile($configPath);
+        /** @var array<string, array{action: class-string, method: string, path: string, body?: class-string, authorization?: array<string, mixed>}> $parsed */
+        $parsed = Yaml::parseFile($configPath);
+        $this->config = $parsed;
     }
 
     public function getAction(string $name, ?ActionBodyInterface $bodyData = null): AbstractAction
@@ -31,12 +34,6 @@ final class YamlConfigAdapter implements ConfigPort
         }
 
         $actionConfig = $this->config[$name];
-
-        foreach (['action', 'method', 'path'] as $key) {
-            if (!isset($actionConfig[$key])) {
-                throw new \InvalidArgumentException(\sprintf('Action "%s" is missing required key: "%s".', $name, $key));
-            }
-        }
 
         $authorization = isset($actionConfig['authorization'])
             ? AuthorizationConfig::fromArray($actionConfig['authorization'])
@@ -51,7 +48,7 @@ final class YamlConfigAdapter implements ConfigPort
                 throw new \InvalidArgumentException(\sprintf('Body "%s" must implement %s', $bodyClass, ActionBodyInterface::class));
             }
 
-            $body = $bodyClass::create($bodyData);
+            $body = $bodyData ?? $bodyClass::create([]);
         }
 
         return $actionConfig['action']::create(

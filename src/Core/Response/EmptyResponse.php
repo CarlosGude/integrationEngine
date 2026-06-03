@@ -8,6 +8,7 @@ use IntegrationEngine\Core\Contract\ResponseInterface;
 
 final readonly class EmptyResponse implements ResponseInterface
 {
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [];

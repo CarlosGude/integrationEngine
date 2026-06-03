@@ -15,6 +15,7 @@ abstract readonly class AuthorizationConfig
         public readonly string $type,
     ) {}
 
+    /** @param array<string, mixed> $config */
     public static function fromArray(array $config): self
     {
         if (!isset($config[self::TYPE])) {

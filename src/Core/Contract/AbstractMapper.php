@@ -20,6 +20,8 @@ abstract class AbstractMapper
      * Validates the action and delegates to transform().
      * Called automatically by the engine — do not override.
      *
+     * @param array<mixed> $response
+     *
      * @throws MapperActionMismatchException
      */
     final public static function map(
@@ -37,14 +39,7 @@ abstract class AbstractMapper
      * Transforms the raw response array into a typed ResponseInterface.
      * Implement this in your mapper — the action type is guaranteed to match getAction().
      *
-     * Example:
-     *   protected static function transform(AbstractAction $action, array $response): ResponseInterface
-     *   {
-     *       return new GetOrdersResponse(
-     *           orders: $response['data'],
-     *           total:  $response['meta']['total'],
-     *       );
-     *   }
+     * @param array<mixed> $response
      */
     abstract protected static function transform(
         AbstractAction $action,

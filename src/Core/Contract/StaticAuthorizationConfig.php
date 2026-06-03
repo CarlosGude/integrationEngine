@@ -16,9 +16,10 @@ final readonly class StaticAuthorizationConfig extends AuthorizationConfig
         parent::__construct($type);
     }
 
+    /** @param array<string, mixed> $config */
     public static function fromArray(array $config): self
     {
-        $type = $config['type'];
+        $type = (string) $config['type'];
         unset($config['type']);
 
         return new self(type: $type, params: $config);

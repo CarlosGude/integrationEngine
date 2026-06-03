@@ -9,6 +9,8 @@ interface ClientInterface
     /**
      * Executes the HTTP request and returns the raw response payload.
      * The engine will pass this array to the action's mapper.
+     *
+     * @return array<mixed>
      */
     public function send(AbstractAction $action): array;
 }

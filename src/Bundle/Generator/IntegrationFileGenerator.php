@@ -6,6 +6,7 @@ namespace IntegrationEngine\Bundle\Generator;
 
 final class IntegrationFileGenerator
 {
+    /** @return array<string, string> */
     public function generateIntegrationFiles(IntegrationContext $ctx): array
     {
         $tpl = new TemplateRenderer($ctx);
@@ -17,6 +18,7 @@ final class IntegrationFileGenerator
         ];
     }
 
+    /** @return array<string, string> */
     public function generateActionFiles(IntegrationContext $ctx): array
     {
         $tpl = new TemplateRenderer($ctx);

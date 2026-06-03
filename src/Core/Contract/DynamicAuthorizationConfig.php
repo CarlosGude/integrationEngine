@@ -15,6 +15,7 @@ final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
         parent::__construct('dynamic');
     }
 
+    /** @param array<string, mixed> $config */
     public static function fromArray(array $config): self
     {
         foreach (['action', 'token_field', 'ttl'] as $key) {
@@ -24,10 +25,10 @@ final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
         }
 
         return new self(
-            action: $config['action'],
-            tokenField: $config['token_field'],
+            action: (string) $config['action'],
+            tokenField: (string) $config['token_field'],
             ttl: (int) $config['ttl'],
-            header: $config['header'] ?? 'Authorization',
+            header: isset($config['header']) ? (string) $config['header'] : 'Authorization',
         );
     }
 }

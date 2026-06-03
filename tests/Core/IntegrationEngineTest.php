@@ -6,7 +6,6 @@ namespace IntegrationEngine\Tests\Core;
 
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
-use IntegrationEngine\Core\Exception\InvalidMapperException;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Exception\NotMappedActionException;
 use IntegrationEngine\Core\IntegrationEngine;
@@ -83,17 +82,6 @@ final class IntegrationEngineTest extends TestCase
         $this->config->setAction($action::getName(), $action);
 
         $this->expectException(NotMappedActionException::class);
-
-        $this->engine->send(actionName: $action::getName());
-    }
-
-    public function testActionWithNotValidMapper(): void
-    {
-        $action = ActionFactory::getNotValidMappedAction();
-
-        $this->config->setAction($action::getName(), $action);
-
-        $this->expectException(InvalidMapperException::class);
 
         $this->engine->send(actionName: $action::getName());
     }

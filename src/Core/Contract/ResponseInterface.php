@@ -6,5 +6,6 @@ namespace IntegrationEngine\Core\Contract;
 
 interface ResponseInterface
 {
+    /** @return array<string, mixed> */
     public function toArray(): array;
 }

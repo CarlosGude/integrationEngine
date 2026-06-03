@@ -42,7 +42,12 @@ abstract class AbstractAction
         $resolver = $this->resolvePathCallback();
 
         if (null !== $resolver) {
-            return $resolver($this->path, $this->context);
+            $result = $resolver($this->path, $this->context);
+            if (!\is_string($result)) {
+                throw new \RuntimeException('Path resolver must return a string.');
+            }
+
+            return $result;
         }
 
         return $this->defaultResolvePath($this->path, $this->context);
@@ -99,9 +104,16 @@ abstract class AbstractAction
                     );
                 }
 
-                return (string) $context[$key];
+                $value = $context[$key];
+                if (!\is_scalar($value)) {
+                    throw new \RuntimeException(
+                        \sprintf('Path parameter "%s" must be a scalar value.', $key)
+                    );
+                }
+
+                return (string) $value;
             },
             $path
-        );
+        ) ?? $path;
     }
 }

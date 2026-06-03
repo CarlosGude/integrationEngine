@@ -6,7 +6,9 @@ namespace IntegrationEngine\Core\Contract;
 
 interface ActionContextInterface
 {
+    /** @param array<string, mixed> $data */
     public static function create(array $data): self;
 
+    /** @return array<string, mixed> */
     public function toArray(): array;
 }

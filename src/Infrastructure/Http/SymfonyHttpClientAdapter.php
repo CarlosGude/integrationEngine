@@ -18,6 +18,8 @@ final readonly class SymfonyHttpClientAdapter implements ClientInterface
     ) {}
 
     /**
+     * @return array<mixed>
+     *
      * @throws RequestResponseException on HTTP 4xx/5xx or network errors
      */
     public function send(AbstractAction $action): array
@@ -52,6 +54,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientInterface
         }
     }
 
+    /** @return array<string, string> */
     private function resolveHeaders(AbstractAction $action): array
     {
         $headers = ['Accept' => 'application/json'];

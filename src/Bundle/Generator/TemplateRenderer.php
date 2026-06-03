@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Bundle\Generator;
 
-final class TemplateRenderer
+final readonly class TemplateRenderer
 {
     public function __construct(
-        private readonly IntegrationContext $ctx,
+        private IntegrationContext $ctx,
     ) {}
 
     /* =========================
@@ -16,7 +16,7 @@ final class TemplateRenderer
 
     public function integration(): string
     {
-        $name = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $this->ctx->name));
+        $name = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $this->ctx->name) ?? $this->ctx->name);
 
         return <<<PHP
             <?php
