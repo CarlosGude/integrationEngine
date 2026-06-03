@@ -13,7 +13,17 @@ final class InMemoryCacheAdapter implements CachePort
 
     public function get(string $key): mixed
     {
-        return $this->store[$key]['value'] ?? null;
+        if (!isset($this->store[$key])) {
+            return null;
+        }
+
+        if (time() >= $this->store[$key]['expires_at']) {
+            unset($this->store[$key]);
+
+            return null;
+        }
+
+        return $this->store[$key]['value'];
     }
 
     public function set(string $key, mixed $value, int $ttl): void

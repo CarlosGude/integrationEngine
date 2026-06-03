@@ -67,7 +67,15 @@ final readonly class IntegrationContext
     {
         return 'DELETE' === strtoupper($this->method);
     }
+    public function hasBody(): bool
+    {
+        return $this->isPost() || $this->isPut() || $this->isPatch();
+    }
 
+    public function isPatch(): bool
+    {
+        return 'PATCH' === strtoupper($this->method);
+    }
     public function hasResponse(): bool
     {
         return !$this->isDelete();

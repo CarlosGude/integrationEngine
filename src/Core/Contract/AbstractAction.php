@@ -53,6 +53,11 @@ abstract class AbstractAction
         return $this->body;
     }
 
+    final public function getActionContext(): ?ActionContextInterface
+    {
+        return $this->context;
+    }
+
     final public function getAuthorization(): ?AuthorizationConfig
     {
         return $this->authorization;

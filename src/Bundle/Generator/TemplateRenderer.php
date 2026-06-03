@@ -76,7 +76,6 @@ final class TemplateRenderer
 
     public function action(): string
     {
-        $hasBody = $this->ctx->hasBody() ? 'true' : 'false';
         $hasResponse = $this->ctx->hasResponse() ? 'true' : 'false';
         $mapperLine = $this->ctx->hasResponse()
             ? "return {$this->ctx->action}Mapper::class;"
@@ -102,11 +101,6 @@ final class TemplateRenderer
                     return '{$this->ctx->action}';
                 }
 
-                public static function hasBody(): bool
-                {
-                    return {$hasBody};
-                }
-
                 public static function hasResponse(): bool
                 {
                     return {$hasResponse};
@@ -126,22 +120,34 @@ final class TemplateRenderer
     public function body(): string
     {
         return <<<PHP
-            <?php
+        <?php
 
-            declare(strict_types=1);
+        declare(strict_types=1);
 
-            namespace {$this->ctx->requestNamespace()};
+        namespace {$this->ctx->requestNamespace()};
 
-            use IntegrationEngine\\Core\\Contract\\ActionBodyInterface;
+        use IntegrationEngine\\Core\\Contract\\ActionBodyInterface;
 
-            final readonly class {$this->ctx->action}Body implements ActionBodyInterface
+        final readonly class {$this->ctx->action}Body implements ActionBodyInterface
+        {
+            public function __construct() {}
+
+            public static function create(array \$data): static
             {
-                public function toArray(): array
-                {
-                    return [];
-                }
+                return new static();
             }
-            PHP;
+
+            public static function keys(): array
+            {
+                return [];
+            }
+
+            public function toArray(): array
+            {
+                return [];
+            }
+        }
+        PHP;
     }
 
     /* =========================

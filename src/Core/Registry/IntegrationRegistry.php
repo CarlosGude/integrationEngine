@@ -15,7 +15,7 @@ final class IntegrationRegistry
     public function register(string $name, IntegrationEngine $integration): void
     {
         if ($name === '__MUST_OVERRIDE__' || $name === '') {
-            throw new \Exception('The name of the integration must be declarative');
+            throw new \InvalidArgumentException('The name of the integration must be declarative');
         }
         $this->integrations[$name] = $integration;
     }

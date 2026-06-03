@@ -24,7 +24,7 @@ final class YamlConfigAdapter implements ConfigPort
         $this->config = Yaml::parseFile($configPath);
     }
 
-    public function getAction(string $name, array $bodyData = []): AbstractAction
+    public function getAction(string $name, ?ActionBodyInterface $bodyData = null): AbstractAction
     {
         if (!isset($this->config[$name])) {
             throw new ActionNotFoundException($name);

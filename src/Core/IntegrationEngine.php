@@ -68,17 +68,19 @@ final readonly class IntegrationEngine
 
         $isDefaultHeader = 'Authorization' === $auth->header;
 
+        $staticAuth = new StaticAuthorizationConfig(
+            type: $isDefaultHeader ? 'bearer' : 'api_key',
+            params: $isDefaultHeader
+                ? ['token' => $token]
+                : ['header' => $auth->header, 'token' => $token],
+        );
+
         return $action::create(
             method: $action->getMethod(),
             path: $action->getPath(),
             body: $action->getBody(),
-            authorization: new StaticAuthorizationConfig(
-                type: $isDefaultHeader ? 'bearer' : 'api_key',
-                params: $isDefaultHeader
-                    ? ['token' => $token]
-                    : ['header' => $auth->header, 'token' => $token],
-            ),
-        )->withContext($context);
+            authorization: $staticAuth,
+        )->withContext($context ?? $action->getActionContext());
     }
 
     private function resolveToken(DynamicAuthorizationConfig $authConfig): string
