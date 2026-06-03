@@ -8,6 +8,13 @@ qa: cs test
 	@echo "✔ QA OK — el código no ha explotado"
 
 # -----------------------------
+# PRE-COMMIT
+# -----------------------------
+pre-commit: cs-fix
+	./vendor/bin/phpstan analyse src --level=8
+	./vendor/bin/phpunit
+	@echo "✔ Pre-commit OK"
+# -----------------------------
 # CODE STYLE
 # -----------------------------
 cs:
