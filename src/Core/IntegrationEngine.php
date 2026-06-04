@@ -30,15 +30,12 @@ final readonly class IntegrationEngine
         string $actionName,
         ?ActionContextInterface $context = null,
         ?ActionBodyInterface $body = null,
-        ?RequestHeadersInterface $headers = null
+        ?RequestHeadersInterface $headers = null,
     ): ResponseInterface {
         $action = $this->config->getAction($actionName, $body);
-
-        $action = $this->applyContext($action, $context);
-
         $action = $this->applyAuthorization($action, $context);
 
-        $rawResponse = $this->client->send($action, $headers);
+        $rawResponse = $this->client->send($action, $context, $headers);
 
         if (!$action::hasResponse()) {
             return new EmptyResponse();
@@ -47,17 +44,10 @@ final readonly class IntegrationEngine
         return $this->applyMapper($action, $rawResponse);
     }
 
-    private function applyContext(AbstractAction $action, ?ActionContextInterface $context): AbstractAction
-    {
-        if (empty($context)) {
-            return $action;
-        }
-
-        return $action->withContext($context);
-    }
-
-    private function applyAuthorization(AbstractAction $action, ?ActionContextInterface $context = null): AbstractAction
-    {
+    private function applyAuthorization(
+        AbstractAction $action,
+        ?ActionContextInterface $context,
+    ): AbstractAction {
         $auth = $action->getAuthorization();
 
         if (!$auth instanceof DynamicAuthorizationConfig) {
@@ -68,19 +58,17 @@ final readonly class IntegrationEngine
 
         $isDefaultHeader = 'Authorization' === $auth->header;
 
-        $staticAuth = new StaticAuthorizationConfig(
-            type: $isDefaultHeader ? 'bearer' : 'api_key',
-            params: $isDefaultHeader
-                ? ['token' => $token]
-                : ['header' => $auth->header, 'token' => $token],
-        );
-
         return $action::create(
             method: $action->getMethod(),
-            path: $action->getPath(),
+            path: $action->getPath($context),
             body: $action->getBody(),
-            authorization: $staticAuth,
-        )->withContext($context ?? $action->getActionContext());
+            authorization: new StaticAuthorizationConfig(
+                type: $isDefaultHeader ? 'bearer' : 'api_key',
+                params: $isDefaultHeader
+                    ? ['token' => $token]
+                    : ['header' => $auth->header, 'token' => $token],
+            ),
+        );
     }
 
     private function resolveToken(DynamicAuthorizationConfig $authConfig): string
@@ -90,7 +78,9 @@ final readonly class IntegrationEngine
         if ($this->cache->has($cacheKey)) {
             $cached = $this->cache->get($cacheKey);
             if (!\is_string($cached)) {
-                throw new \RuntimeException(\sprintf('Cached token for "%s" is not a string.', $authConfig->action));
+                throw new \RuntimeException(
+                    \sprintf('Cached token for "%s" is not a string.', $authConfig->action)
+                );
             }
 
             return $cached;
@@ -100,7 +90,6 @@ final readonly class IntegrationEngine
         $rawResponse = $this->client->send($authAction);
 
         $authResponse = $this->applyMapper($authAction, $rawResponse);
-
         $responseArray = $authResponse->toArray();
 
         if (!isset($responseArray[$authConfig->tokenField])) {
@@ -113,7 +102,9 @@ final readonly class IntegrationEngine
 
         $tokenValue = $responseArray[$authConfig->tokenField];
         if (!\is_scalar($tokenValue)) {
-            throw new \RuntimeException(\sprintf('Token field "%s" must be a scalar value.', $authConfig->tokenField));
+            throw new \RuntimeException(
+                \sprintf('Token field "%s" must be a scalar value.', $authConfig->tokenField)
+            );
         }
 
         $token = (string) $tokenValue;

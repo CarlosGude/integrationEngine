@@ -45,24 +45,18 @@ final class DynamicAuthTest extends TestCase
     #[Test]
     public function dynamicAuthResolvesTokenAndSetsStaticAuth(): void
     {
-        $tokenAction = DynTokenAction::create('GET', '/token');
-        $protectedAction = DynProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
+        $this->config->setAction(DynTokenAction::getName(), DynTokenAction::create('GET', '/token'));
+        $this->config->setAction(DynProtectedAction::getName(), DynProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
             action: DynTokenAction::getName(),
             tokenField: 'access_token',
             ttl: 60,
-        ));
-
-        $this->config->setAction(DynTokenAction::getName(), $tokenAction);
-        $this->config->setAction(DynProtectedAction::getName(), $protectedAction);
+        )));
         $this->client->setResponse(DynTokenAction::getName(), ['access_token' => 'resolved_token']);
         $this->client->setResponse(DynProtectedAction::getName(), []);
 
         $this->engine->send(DynProtectedAction::getName());
 
-        $lastAction = $this->client->lastAction();
-        self::assertNotNull($lastAction);
-
-        $auth = $lastAction->getAuthorization();
+        $auth = $this->client->lastAction()?->getAuthorization();
         self::assertInstanceOf(StaticAuthorizationConfig::class, $auth);
         self::assertSame('bearer', $auth->type);
         self::assertSame('resolved_token', $auth->params['token']);
@@ -71,25 +65,19 @@ final class DynamicAuthTest extends TestCase
     #[Test]
     public function dynamicAuthUsesApiKeyForCustomHeader(): void
     {
-        $tokenAction = DynTokenAction::create('GET', '/token');
-        $protectedAction = DynProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
+        $this->config->setAction(DynTokenAction::getName(), DynTokenAction::create('GET', '/token'));
+        $this->config->setAction(DynProtectedAction::getName(), DynProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
             action: DynTokenAction::getName(),
             tokenField: 'access_token',
             ttl: 60,
             header: 'X-Custom-Token',
-        ));
-
-        $this->config->setAction(DynTokenAction::getName(), $tokenAction);
-        $this->config->setAction(DynProtectedAction::getName(), $protectedAction);
+        )));
         $this->client->setResponse(DynTokenAction::getName(), ['access_token' => 'my_token']);
         $this->client->setResponse(DynProtectedAction::getName(), []);
 
         $this->engine->send(DynProtectedAction::getName());
 
-        $lastAction = $this->client->lastAction();
-        self::assertNotNull($lastAction);
-
-        $auth = $lastAction->getAuthorization();
+        $auth = $this->client->lastAction()?->getAuthorization();
         self::assertInstanceOf(StaticAuthorizationConfig::class, $auth);
         self::assertSame('api_key', $auth->type);
         self::assertSame('X-Custom-Token', $auth->params['header']);
@@ -98,15 +86,12 @@ final class DynamicAuthTest extends TestCase
     #[Test]
     public function dynamicAuthCachesTokenOnFirstCall(): void
     {
-        $tokenAction = DynTokenAction::create('GET', '/token');
-        $protectedAction = DynProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
+        $this->config->setAction(DynTokenAction::getName(), DynTokenAction::create('GET', '/token'));
+        $this->config->setAction(DynProtectedAction::getName(), DynProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
             action: DynTokenAction::getName(),
             tokenField: 'access_token',
             ttl: 60,
-        ));
-
-        $this->config->setAction(DynTokenAction::getName(), $tokenAction);
-        $this->config->setAction(DynProtectedAction::getName(), $protectedAction);
+        )));
         $this->client->setResponse(DynTokenAction::getName(), ['access_token' => 'cached_token']);
         $this->client->setResponse(DynProtectedAction::getName(), []);
 
@@ -120,15 +105,12 @@ final class DynamicAuthTest extends TestCase
     #[Test]
     public function dynamicAuthThrowsWhenTokenFieldMissing(): void
     {
-        $tokenAction = DynTokenAction::create('GET', '/token');
-        $protectedAction = DynProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
+        $this->config->setAction(DynTokenAction::getName(), DynTokenAction::create('GET', '/token'));
+        $this->config->setAction(DynProtectedAction::getName(), DynProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
             action: DynTokenAction::getName(),
             tokenField: 'access_token',
             ttl: 60,
-        ));
-
-        $this->config->setAction(DynTokenAction::getName(), $tokenAction);
-        $this->config->setAction(DynProtectedAction::getName(), $protectedAction);
+        )));
         $this->client->setResponse(DynTokenAction::getName(), ['wrong_field' => 'token']);
 
         $this->expectException(\RuntimeException::class);
@@ -142,44 +124,34 @@ final class DynamicAuthTest extends TestCase
     {
         $this->cache->set('integration_engine.token.'.DynTokenAction::getName(), 'pre_cached_token', 60);
 
-        $protectedAction = DynProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
+        $this->config->setAction(DynProtectedAction::getName(), DynProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
             action: DynTokenAction::getName(),
             tokenField: 'access_token',
             ttl: 60,
-        ));
-
-        $this->config->setAction(DynProtectedAction::getName(), $protectedAction);
+        )));
         $this->client->setResponse(DynProtectedAction::getName(), []);
 
         $this->engine->send(DynProtectedAction::getName());
 
-        $lastAction = $this->client->lastAction();
-        self::assertNotNull($lastAction);
-
-        $auth = $lastAction->getAuthorization();
+        $auth = $this->client->lastAction()?->getAuthorization();
         self::assertInstanceOf(StaticAuthorizationConfig::class, $auth);
         self::assertSame('pre_cached_token', $auth->params['token']);
     }
 
     /**
-     * Regression test for the bug where applyAuthorization() called ->withContext(null)
-     * unconditionally, losing the context that applyContext() had already applied.
-     *
-     * Scenario: action with {id} placeholder in path + dynamic auth simultaneously.
-     * The path must resolve correctly even after auth reconstruction.
+     * Regression: context must reach the client even when dynamic auth
+     * reconstructs the action. The client receives the context directly
+     * from the engine — the action no longer stores it.
      */
     #[Test]
-    public function contextIsPreservedAfterDynamicAuthReconstruction(): void
+    public function contextReachesClientAfterDynamicAuthReconstruction(): void
     {
-        $tokenAction = DynTokenAction::create('GET', '/token');
-        $protectedAction = DynPathAction::create('GET', '/orders/{id}', null, new DynamicAuthorizationConfig(
+        $this->config->setAction(DynTokenAction::getName(), DynTokenAction::create('GET', '/token'));
+        $this->config->setAction(DynPathAction::getName(), DynPathAction::create('GET', '/orders/{id}', null, new DynamicAuthorizationConfig(
             action: DynTokenAction::getName(),
             tokenField: 'access_token',
             ttl: 60,
-        ));
-
-        $this->config->setAction(DynTokenAction::getName(), $tokenAction);
-        $this->config->setAction(DynPathAction::getName(), $protectedAction);
+        )));
         $this->client->setResponse(DynTokenAction::getName(), ['access_token' => 'token_xyz']);
         $this->client->setResponse(DynPathAction::getName(), []);
 
@@ -197,16 +169,57 @@ final class DynamicAuthTest extends TestCase
 
         $this->engine->send(DynPathAction::getName(), $context);
 
-        $lastAction = $this->client->lastAction();
-        self::assertNotNull($lastAction);
+        $receivedContext = $this->client->lastContext();
+        self::assertNotNull($receivedContext);
+        self::assertSame(['id' => '99'], $receivedContext->toArray());
 
-        // Path must be resolved with the context even after dynamic auth reconstruction
-        self::assertSame('/orders/99', $lastAction->getPath());
-
-        // Auth must also be set correctly
-        $auth = $lastAction->getAuthorization();
+        $auth = $this->client->lastAction()?->getAuthorization();
         self::assertInstanceOf(StaticAuthorizationConfig::class, $auth);
         self::assertSame('token_xyz', $auth->params['token']);
+    }
+
+    /**
+     * The action must not store context — same instance resolves
+     * different paths across multiple calls.
+     */
+    #[Test]
+    public function actionRemainsStatelessAcrossMultipleSendCalls(): void
+    {
+        $this->config->setAction(DynPathAction::getName(), DynPathAction::create('GET', '/orders/{id}'));
+        $this->client->setResponse(DynPathAction::getName(), []);
+
+        $ctx1 = new class implements ActionContextInterface {
+            public static function create(array $data): self
+            {
+                return new self();
+            }
+
+            public function toArray(): array
+            {
+                return ['id' => '1'];
+            }
+        };
+        $ctx2 = new class implements ActionContextInterface {
+            public static function create(array $data): self
+            {
+                return new self();
+            }
+
+            public function toArray(): array
+            {
+                return ['id' => '2'];
+            }
+        };
+
+        $this->engine->send(DynPathAction::getName(), $ctx1);
+        $receivedCtx1 = $this->client->lastContext();
+        self::assertNotNull($receivedCtx1);
+        self::assertSame(['id' => '1'], $receivedCtx1->toArray());
+
+        $this->engine->send(DynPathAction::getName(), $ctx2);
+        $receivedCtx2 = $this->client->lastContext();
+        self::assertNotNull($receivedCtx2);
+        self::assertSame(['id' => '2'], $receivedCtx2->toArray());
     }
 }
 
@@ -224,14 +237,14 @@ final class DynFakeCache implements CachePort
         return $this->data[$key] ?? null;
     }
 
-    public function set(string $key, mixed $value, int $ttl): void
-    {
-        $this->data[$key] = $value;
-    }
-
     public function has(string $key): bool
     {
         return \array_key_exists($key, $this->data);
+    }
+
+    public function set(string $key, mixed $value, int $ttl): void
+    {
+        $this->data[$key] = $value;
     }
 }
 
@@ -240,6 +253,7 @@ final class DynFakeClient implements ClientInterface
     /** @var array<string, array<mixed>> */
     private array $responses = [];
     private ?AbstractAction $last = null;
+    private ?ActionContextInterface $lastContext = null;
 
     /** @var array<string, int> */
     private array $callCount = [];
@@ -255,15 +269,24 @@ final class DynFakeClient implements ClientInterface
         return $this->last;
     }
 
+    public function lastContext(): ?ActionContextInterface
+    {
+        return $this->lastContext;
+    }
+
     public function callCount(string $name): int
     {
         return $this->callCount[$name] ?? 0;
     }
 
     /** @return array<mixed> */
-    public function send(AbstractAction $action, ?RequestHeadersInterface $headers = null): array
-    {
+    public function send(
+        AbstractAction $action,
+        ?ActionContextInterface $context = null,
+        ?RequestHeadersInterface $headers = null,
+    ): array {
         $this->last = $action;
+        $this->lastContext = $context;
         $this->callCount[$action::getName()] = ($this->callCount[$action::getName()] ?? 0) + 1;
 
         return $this->responses[$action::getName()] ?? [];
@@ -291,7 +314,7 @@ final class DynFakeConfigPort implements ConfigPort
 }
 
 // ──────────────────────────────────────────────
-// Inline action + mapper fixtures
+// Action + mapper fixtures
 // ──────────────────────────────────────────────
 
 final class DynTokenResponse implements ResponseInterface

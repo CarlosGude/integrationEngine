@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Infrastructure;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
+use IntegrationEngine\Core\Contract\ActionContextInterface;
 use IntegrationEngine\Core\Contract\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
@@ -89,7 +90,7 @@ final class SymfonyHttpClientAdapterHeadersTest extends TestCase
             }
         };
 
-        $adapter->send($action, $callerHeaders);
+        $adapter->send($action, null, $callerHeaders);
 
         self::assertSame(
             'Bearer caller-token',
@@ -98,7 +99,7 @@ final class SymfonyHttpClientAdapterHeadersTest extends TestCase
     }
 
     #[Test]
-    public function noDefaultHeadersSendsOnlyAuthAndAccept(): void
+    public function noDefaultHeadersSendsOnlyAccept(): void
     {
         $httpClient = new SpyHttpClient();
 
@@ -145,12 +146,44 @@ final class SymfonyHttpClientAdapterHeadersTest extends TestCase
             }
         };
 
-        $adapter->send($action, $callerHeaders);
+        $adapter->send($action, null, $callerHeaders);
 
-        // Caller gana sobre auth, auth gana sobre yaml
+        // Caller overrides auth, auth overrides YAML
         self::assertSame('caller', $httpClient->lastOptions()['headers']['X-Layer']);
-        // X-Api-Version viene del YAML, nadie lo sobreescribe
+        // X-Api-Version comes from YAML, nobody overrides it
         self::assertSame('1', $httpClient->lastOptions()['headers']['X-Api-Version']);
+    }
+
+    #[Test]
+    public function contextIsPassedToGetPath(): void
+    {
+        $httpClient = new SpyHttpClient();
+
+        $adapter = new SymfonyHttpClientAdapter(
+            httpClient: $httpClient,
+            baseUrl: 'https://api.example.com',
+        );
+
+        $action = HeadersTestAction::create('GET', '/orders/{id}');
+
+        $context = new class implements ActionContextInterface {
+            public static function create(array $data): self
+            {
+                return new self();
+            }
+
+            public function toArray(): array
+            {
+                return ['id' => '42'];
+            }
+        };
+
+        $adapter->send($action, $context);
+
+        self::assertSame(
+            'https://api.example.com/orders/42',
+            $httpClient->lastUrl()
+        );
     }
 }
 
@@ -162,6 +195,7 @@ final class SpyHttpClient implements HttpClientInterface
 {
     /** @var array<string, mixed> */
     private array $lastOptions = [];
+    private string $lastUrl = '';
 
     /** @return array<string, mixed> */
     public function lastOptions(): array
@@ -169,10 +203,16 @@ final class SpyHttpClient implements HttpClientInterface
         return $this->lastOptions;
     }
 
+    public function lastUrl(): string
+    {
+        return $this->lastUrl;
+    }
+
     /** @param array<string, mixed> $options */
     public function request(string $method, string $url, array $options = []): HttpResponseInterface
     {
         $this->lastOptions = $options;
+        $this->lastUrl = $url;
 
         return new class implements HttpResponseInterface {
             public function getStatusCode(): int
@@ -180,6 +220,7 @@ final class SpyHttpClient implements HttpClientInterface
                 return 200;
             }
 
+            /** @return array<string, array<int, string>> */
             public function getHeaders(bool $throw = true): array
             {
                 return [];

@@ -12,5 +12,9 @@ interface ClientInterface
      *
      * @return array<mixed>
      */
-    public function send(AbstractAction $action, ?RequestHeadersInterface $headers = null): array;
+    public function send(
+        AbstractAction $action,
+        ?ActionContextInterface $context = null,
+        ?RequestHeadersInterface $headers = null,
+    ): array;
 }

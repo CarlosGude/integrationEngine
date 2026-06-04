@@ -100,8 +100,10 @@ An Action defines:
 - Optional authorization config
 - Optional mapper
 
-Actions are not `readonly` — the engine clones them when applying context or
-reconstructing them after dynamic auth resolution.
+Actions are stateless and immutable. All constructor properties are `readonly`.
+The engine passes context directly to `getPath()` at call time — the action
+never stores execution state. The same action instance can be called with
+different contexts in successive requests without any mutation.
 
 ## 4. Context system
 
@@ -223,10 +225,10 @@ session tokens, API key exchanges):
 
 ```yaml
 authorization:
-  type: dynamic
-  action: FetchToken
-  token_field: access_token
-  ttl: 3600
+   type: dynamic
+   action: FetchToken
+   token_field: access_token
+   ttl: 3600
 ```
 
 The engine:
@@ -255,12 +257,12 @@ Fixed headers sent with every request for an integration. Declared in
 
 ```yaml
 integration_engine:
-  integrations:
-    orders_api:
-      base_url: 'https://api.example.com'
-      headers:
-        X-Api-Version: '2'
-        X-Client-Name: 'my-app'
+   integrations:
+      orders_api:
+         base_url: 'https://api.example.com'
+         headers:
+            X-Api-Version: '2'
+            X-Client-Name: 'my-app'
 ```
 
 Use for API versioning headers, client identification, or any header that is
@@ -351,14 +353,14 @@ on first run.** No need to create it manually.
 
 ```yaml
 integration_engine:
-  integrations:
-    my_api:
-      base_url: '%env(MY_API_BASE_URL)%'
-      config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MyApi/MyApi.yaml'
-      headers:
-        X-Api-Version: '2'
-      cache_service: ~       # defaults to InMemoryCacheAdapter (dev only)
-      client_service: ~      # custom ClientInterface service ID
+   integrations:
+      my_api:
+         base_url: '%env(MY_API_BASE_URL)%'
+         config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MyApi/MyApi.yaml'
+         headers:
+            X-Api-Version: '2'
+         cache_service: ~       # defaults to InMemoryCacheAdapter (dev only)
+         client_service: ~      # custom ClientInterface service ID
 ```
 
 Either `base_url` or `client_service` is required per integration. The
@@ -377,19 +379,19 @@ qualified class name of the Action:
 
 ```yaml
 GetUsers:
-  action: App\Infrastructure\Integrations\MyApi\GetUsers\Request\GetUsersAction
-  method: GET
-  path: /users
+   action: App\Infrastructure\Integrations\MyApi\GetUsers\Request\GetUsersAction
+   method: GET
+   path: /users
 
 GetUser:
-  action: App\Infrastructure\Integrations\MyApi\GetUser\Request\GetUserAction
-  method: GET
-  path: /users/{id}
+   action: App\Infrastructure\Integrations\MyApi\GetUser\Request\GetUserAction
+   method: GET
+   path: /users/{id}
 
 CreateUser:
-  action: App\Infrastructure\Integrations\MyApi\CreateUser\Request\CreateUserAction
-  method: POST
-  path: /users
+   action: App\Infrastructure\Integrations\MyApi\CreateUser\Request\CreateUserAction
+   method: POST
+   path: /users
 ```
 
 The `action` key is how the engine resolves which PHP class to instantiate
@@ -425,9 +427,9 @@ Generates this entry in `DummyRestApi.yaml`:
 
 ```yaml
 GetEmployees:
-  action: App\Infrastructure\Integrations\DummyRestApi\GetEmployees\Request\GetEmployeesAction
-  method: GET
-  path: /api/v1/employees
+   action: App\Infrastructure\Integrations\DummyRestApi\GetEmployees\Request\GetEmployeesAction
+   method: GET
+   path: /api/v1/employees
 ```
 
 ### Adding a second action to an existing integration

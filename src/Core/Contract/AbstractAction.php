@@ -6,8 +6,6 @@ namespace IntegrationEngine\Core\Contract;
 
 abstract class AbstractAction
 {
-    private ?ActionContextInterface $context = null;
-
     final protected function __construct(
         private readonly string $method,
         private readonly string $path,
@@ -24,25 +22,17 @@ abstract class AbstractAction
         return new static($method, $path, $body, $authorization);
     }
 
-    final public function withContext(?ActionContextInterface $context = null): static
-    {
-        $clone = clone $this;
-        $clone->context = $context;
-
-        return $clone;
-    }
-
     final public function getMethod(): string
     {
         return $this->method;
     }
 
-    final public function getPath(): string
+    final public function getPath(?ActionContextInterface $context = null): string
     {
         $resolver = $this->resolvePathCallback();
 
         if (null !== $resolver) {
-            $result = $resolver($this->path, $this->context);
+            $result = $resolver($this->path, $context);
             if (!\is_string($result)) {
                 throw new \RuntimeException('Path resolver must return a string.');
             }
@@ -50,17 +40,12 @@ abstract class AbstractAction
             return $result;
         }
 
-        return $this->defaultResolvePath($this->path, $this->context);
+        return $this->defaultResolvePath($this->path, $context);
     }
 
     final public function getBody(): ?ActionBodyInterface
     {
         return $this->body;
-    }
-
-    final public function getActionContext(): ?ActionContextInterface
-    {
-        return $this->context;
     }
 
     final public function getAuthorization(): ?AuthorizationConfig

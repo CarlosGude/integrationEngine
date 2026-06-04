@@ -14,6 +14,8 @@ use PHPUnit\Framework\TestCase;
 #[CoversNothing]
 final class AbstractActionTest extends TestCase
 {
+    // ── getMethod ────────────────────────────────────────────────────────────
+
     #[Test]
     public function getMethodReturnsConstructedMethod(): void
     {
@@ -22,8 +24,10 @@ final class AbstractActionTest extends TestCase
         self::assertSame('POST', $action->getMethod());
     }
 
+    // ── getPath — static ─────────────────────────────────────────────────────
+
     #[Test]
-    public function getPathReturnsStaticPath(): void
+    public function getPathReturnsStaticPathWithoutContext(): void
     {
         $action = AbstractActionTestFixture::create(method: 'GET', path: '/hello');
 
@@ -31,10 +35,19 @@ final class AbstractActionTest extends TestCase
     }
 
     #[Test]
+    public function getPathReturnsStaticPathWhenContextIsNull(): void
+    {
+        $action = AbstractActionTestFixture::create(method: 'GET', path: '/hello');
+
+        self::assertSame('/hello', $action->getPath(null));
+    }
+
+    // ── getPath — context resolution ─────────────────────────────────────────
+
+    #[Test]
     public function getPathResolvesPlaceholderFromContext(): void
     {
         $action = AbstractActionTestFixture::create(method: 'GET', path: '/orders/{id}');
-
         $context = new class implements ActionContextInterface {
             public static function create(array $data): self
             {
@@ -47,14 +60,32 @@ final class AbstractActionTest extends TestCase
             }
         };
 
-        self::assertSame('/orders/42', $action->withContext($context)->getPath());
+        self::assertSame('/orders/42', $action->getPath($context));
+    }
+
+    #[Test]
+    public function getPathResolvesMultiplePlaceholders(): void
+    {
+        $action = AbstractActionTestFixture::create(method: 'GET', path: '/users/{userId}/orders/{orderId}');
+        $context = new class implements ActionContextInterface {
+            public static function create(array $data): self
+            {
+                return new self();
+            }
+
+            public function toArray(): array
+            {
+                return ['userId' => '1', 'orderId' => '99'];
+            }
+        };
+
+        self::assertSame('/users/1/orders/99', $action->getPath($context));
     }
 
     #[Test]
     public function getPathThrowsForMissingPlaceholder(): void
     {
         $action = AbstractActionTestFixture::create(method: 'GET', path: '/orders/{id}');
-
         $context = new class implements ActionContextInterface {
             public static function create(array $data): self
             {
@@ -70,14 +101,13 @@ final class AbstractActionTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessageMatches('/Missing path parameter/');
 
-        $action->withContext($context)->getPath();
+        $action->getPath($context);
     }
 
     #[Test]
     public function getPathThrowsForNonScalarPlaceholderValue(): void
     {
         $action = AbstractActionTestFixture::create(method: 'GET', path: '/orders/{id}');
-
         $context = new class implements ActionContextInterface {
             public static function create(array $data): self
             {
@@ -93,14 +123,15 @@ final class AbstractActionTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessageMatches('/must be a scalar/');
 
-        $action->withContext($context)->getPath();
+        $action->getPath($context);
     }
 
-    #[Test]
-    public function withContextReturnsCloneNotSameInstance(): void
-    {
-        $action = AbstractActionTestFixture::create(method: 'GET', path: '/hello');
+    // ── getPath — action is stateless (no context stored) ────────────────────
 
+    #[Test]
+    public function actionDoesNotStoreContext(): void
+    {
+        $action = AbstractActionTestFixture::create(method: 'GET', path: '/orders/{id}');
         $context = new class implements ActionContextInterface {
             public static function create(array $data): self
             {
@@ -109,25 +140,15 @@ final class AbstractActionTest extends TestCase
 
             public function toArray(): array
             {
-                return [];
+                return ['id' => '7'];
             }
         };
 
-        self::assertNotSame($action, $action->withContext($context));
-    }
+        // Primera llamada con context — resuelve correctamente
+        self::assertSame('/orders/7', $action->getPath($context));
 
-    #[Test]
-    public function getActionContextReturnsNullByDefault(): void
-    {
-        $action = AbstractActionTestFixture::create(method: 'GET', path: '/hello');
-
-        self::assertNull($action->getActionContext());
-    }
-
-    #[Test]
-    public function getActionContextReturnsInjectedContext(): void
-    {
-        $context = new class implements ActionContextInterface {
+        // Segunda llamada con context distinto — resuelve con el nuevo, no con el anterior
+        $context2 = new class implements ActionContextInterface {
             public static function create(array $data): self
             {
                 return new self();
@@ -135,14 +156,46 @@ final class AbstractActionTest extends TestCase
 
             public function toArray(): array
             {
-                return [];
+                return ['id' => '99'];
             }
         };
 
-        $action = AbstractActionTestFixture::create(method: 'GET', path: '/hello')->withContext($context);
-
-        self::assertSame($context, $action->getActionContext());
+        self::assertSame('/orders/99', $action->getPath($context2));
     }
+
+    #[Test]
+    public function sameActionInstanceCanBeCalledWithDifferentContexts(): void
+    {
+        $action = AbstractActionTestFixture::create(method: 'GET', path: '/orders/{id}');
+
+        $ctx1 = new class implements ActionContextInterface {
+            public static function create(array $data): self
+            {
+                return new self();
+            }
+
+            public function toArray(): array
+            {
+                return ['id' => '1'];
+            }
+        };
+        $ctx2 = new class implements ActionContextInterface {
+            public static function create(array $data): self
+            {
+                return new self();
+            }
+
+            public function toArray(): array
+            {
+                return ['id' => '2'];
+            }
+        };
+
+        self::assertSame('/orders/1', $action->getPath($ctx1));
+        self::assertSame('/orders/2', $action->getPath($ctx2));
+    }
+
+    // ── getAuthorization ──────────────────────────────────────────────────────
 
     #[Test]
     public function getAuthorizationReturnsNullByDefault(): void
@@ -161,12 +214,33 @@ final class AbstractActionTest extends TestCase
         self::assertSame($auth, $action->getAuthorization());
     }
 
+    // ── custom resolvePathCallback ────────────────────────────────────────────
+
     #[Test]
     public function customPathResolverIsUsedWhenProvided(): void
     {
         $action = AbstractActionWithResolver::create(method: 'GET', path: '/original');
 
         self::assertSame('/custom-resolved', $action->getPath());
+    }
+
+    #[Test]
+    public function customPathResolverReceivesContext(): void
+    {
+        $action = AbstractActionWithContextAwareResolver::create(method: 'GET', path: '/base');
+        $context = new class implements ActionContextInterface {
+            public static function create(array $data): self
+            {
+                return new self();
+            }
+
+            public function toArray(): array
+            {
+                return ['suffix' => 'xyz'];
+            }
+        };
+
+        self::assertSame('/base/xyz', $action->getPath($context));
     }
 
     #[Test]
@@ -223,6 +297,34 @@ final class AbstractActionWithResolver extends AbstractAction
     protected function resolvePathCallback(): callable
     {
         return static fn (string $path, mixed $ctx): string => '/custom-resolved';
+    }
+}
+
+final class AbstractActionWithContextAwareResolver extends AbstractAction
+{
+    public static function getName(): string
+    {
+        return 'context_aware_resolver';
+    }
+
+    public static function hasResponse(): bool
+    {
+        return true;
+    }
+
+    public static function mapper(): ?string
+    {
+        return null;
+    }
+
+    protected function resolvePathCallback(): callable
+    {
+        return static function (string $path, ?ActionContextInterface $ctx): string {
+            $data = $ctx?->toArray() ?? [];
+            $suffix = $data['suffix'] ?? '';
+
+            return $path.'/'.$suffix;
+        };
     }
 }
 

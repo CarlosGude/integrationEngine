@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IntegrationEngine\Infrastructure\Http;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
+use IntegrationEngine\Core\Contract\ActionContextInterface;
 use IntegrationEngine\Core\Contract\ClientInterface;
 use IntegrationEngine\Core\Contract\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
@@ -25,8 +26,13 @@ final readonly class SymfonyHttpClientAdapter implements ClientInterface
      *
      * @throws RequestResponseException on HTTP 4xx/5xx or network errors
      */
-    public function send(AbstractAction $action, ?RequestHeadersInterface $headers = null): array
-    {
+    public function send(
+        AbstractAction $action,
+        ?ActionContextInterface $context = null,
+        ?RequestHeadersInterface $headers = null,
+    ): array {
+        $path = $action->getPath($context);
+
         $options = [
             'headers' => array_merge(
                 $this->defaultHeaders,
@@ -43,21 +49,38 @@ final readonly class SymfonyHttpClientAdapter implements ClientInterface
         try {
             $response = $this->httpClient->request(
                 $action->getMethod(),
-                $this->baseUrl.$action->getPath(),
+                $this->baseUrl.$path,
                 $options,
             );
 
             $statusCode = $response->getStatusCode();
 
             if ($statusCode >= 400) {
-                throw new RequestResponseException(statusCode: $statusCode, context: \sprintf('%s %s returned HTTP %d: %s', $action->getMethod(), $action->getPath(), $statusCode, $response->getContent(throw: false)));
+                throw new RequestResponseException(
+                    statusCode: $statusCode,
+                    context: \sprintf(
+                        '%s %s returned HTTP %d: %s',
+                        $action->getMethod(),
+                        $path,
+                        $statusCode,
+                        $response->getContent(throw: false)
+                    )
+                );
             }
 
             return $response->toArray();
         } catch (RequestResponseException $e) {
             throw $e;
         } catch (\Throwable $e) {
-            throw new RequestResponseException(statusCode: 0, context: \sprintf('Network error on %s %s: %s', $action->getMethod(), $action->getPath(), $e->getMessage()));
+            throw new RequestResponseException(
+                statusCode: 0,
+                context: \sprintf(
+                    'Network error on %s %s: %s',
+                    $action->getMethod(),
+                    $path,
+                    $e->getMessage()
+                )
+            );
         }
     }
 
