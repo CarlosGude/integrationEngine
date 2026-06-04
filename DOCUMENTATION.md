@@ -52,8 +52,8 @@ src/Infrastructure/Integrations/DummyRestApi/
 ```php
 use IntegrationEngine\Core\Contract\DefaultActionContext;
 
-$registry->get('dummy_rest_api')->send(
-    actionName: 'GetEmployee',
+$registry->get(DummyRestApiIntegration::NAME)->send(
+    actionName: GetEmployeeAction::getName(),
     context: DefaultActionContext::create(['id' => 1]),
 );
 ```
@@ -128,7 +128,7 @@ of `ActionContextInterface` that covers the vast majority of cases:
 use IntegrationEngine\Core\Contract\DefaultActionContext;
 
 ->send(
-    actionName: 'GetOrder',
+    actionName: GetOrderAction::getName(),
     context: DefaultActionContext::create(['id' => 42]),
 )
 ```
@@ -225,10 +225,10 @@ session tokens, API key exchanges):
 
 ```yaml
 authorization:
-   type: dynamic
-   action: FetchToken
-   token_field: access_token
-   ttl: 3600
+  type: dynamic
+  action: FetchToken
+  token_field: access_token
+  ttl: 3600
 ```
 
 The engine:
@@ -289,8 +289,8 @@ final class CorrelationHeaders implements RequestHeadersInterface
     }
 }
 
-$registry->get('orders_api')->send(
-    'CreateOrder',
+$registry->get(OrdersApiIntegration::NAME)->send(
+    actionName: CreateOrderAction::getName(),
     body: $body,
     headers: new CorrelationHeaders($requestId),
 );

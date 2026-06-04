@@ -40,7 +40,7 @@ Three problems that none of the above address together:
 **3. A uniform call site regardless of integration complexity.** Whether the integration has no auth, static bearer auth, or dynamic OAuth — whether it has a body or no body, path parameters or no parameters — the call site is always:
 
 ```php
-$registry->get('acme')->send('GetUsers', context: ..., body: ...);
+$registry->get(AcmeIntegration::NAME)->send(GetUsersAction::getName(), context: ..., body: ...);
 ```
 
 This uniformity means services that call integrations are decoupled from the authentication and transport complexity of each integration. A service does not know or care whether fetching a token is involved.
@@ -118,9 +118,9 @@ final class EmployeeService
     public function getEmployee(int $id): array
     {
         return $this->registry
-            ->get('dummy_rest_api')
+            ->get(DummyRestApiIntegration::NAME)
             ->send(
-                actionName: 'GetEmployee',
+                actionName: GetEmployeeAction::getName(),
                 context: DefaultActionContext::create(['id' => $id]),
             )
             ->toArray();
@@ -135,14 +135,14 @@ final class EmployeeService
 ### Simple GET
 
 ```php
-->send('ListUsers')
+->send(GetUsersAction::getName())
 ```
 
 ### With body (POST / PUT)
 
 ```php
 ->send(
-    actionName: 'CreateUser',
+    actionName: CreateUserAction::getName(),
     body: CreateUserBody::create(['name' => 'Rick']),
 )
 ```
@@ -155,7 +155,7 @@ Use `DefaultActionContext` for simple path parameter resolution:
 use IntegrationEngine\Core\Contract\DefaultActionContext;
 
 ->send(
-    actionName: 'GetUser',
+    actionName: GetUserAction::getName(),
     context: DefaultActionContext::create(['id' => 1]),
 )
 ```
@@ -167,7 +167,7 @@ implement `ActionContextInterface` directly:
 
 ```php
 ->send(
-    actionName: 'GetOrder',
+    actionName: GetOrderAction::getName(),
     context: GetOrderContext::create(['id' => $id, 'warehouse' => $warehouseId]),
 )
 ```
@@ -176,7 +176,7 @@ implement `ActionContextInterface` directly:
 
 ```php
 ->send(
-    actionName: 'UpdateUser',
+    actionName: UpdateUserAction::getName(),
     context: DefaultActionContext::create(['id' => 1]),
     body: UpdateUserBody::create([...]),
 )
