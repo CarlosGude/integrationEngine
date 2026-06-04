@@ -209,3 +209,15 @@ Architecture, authorization, headers, error reference, extensibility and recomme
 patterns are covered in the full documentation:
 
 **[→ DOCUMENTATION.md](./DOCUMENTATION.md)**
+
+---
+
+## Demo project
+
+A working Symfony application demonstrating the bundle against the public
+[Dummy REST API](https://dummy.restapiexample.com):
+
+**[github.com/CarlosGude/integrationEngine-use-example](https://github.com/CarlosGude/integrationEngine-use-example)**
+
+Clone it, run `composer install` and `symfony server:start` — no database,
+no environment variables required.
