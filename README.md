@@ -53,7 +53,7 @@ IntegrationEngine is not a general-purpose HTTP client. It does not handle strea
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.2+
 - Symfony 7.x or 8.x
 
 ---
@@ -64,7 +64,8 @@ IntegrationEngine is not a general-purpose HTTP client. It does not handle strea
 composer require carlosgude/integration-engine
 ```
 
-Register the bundle in `config/bundles.php`:
+If Symfony Flex does not auto-register the bundle, add it manually to
+`config/bundles.php`:
 
 ```php
 return [
@@ -76,26 +77,47 @@ return [
 
 ## Quick start
 
-### 1. Generate an integration
+### 1. Generate your first integration
+
+No config file needed beforehand — the command creates everything:
 
 ```bash
-php bin/console make:integration Acme GetUsers
+php bin/console make:integration DummyRestApi GetEmployees
+```
+
+The command asks:
+
+1. **Base URL** (first run only): `https://dummy.restapiexample.com`
+2. **Path**: `/api/v1/employees`
+3. **Method**: `GET`
+
+Generated files:
+
+```
+config/packages/integration_engine.yaml
+src/Infrastructure/Integrations/DummyRestApi/
+    DummyRestApiIntegration.php
+    DummyRestApi.yaml
+    GetEmployees/
+        Request/GetEmployeesAction.php
+        Response/GetEmployeesMapper.php
+        Response/GetEmployeesResponse.php
 ```
 
 ### 2. Use it from a service
 
 ```php
-final class UserService
+final class EmployeeService
 {
     public function __construct(
         private readonly IntegrationRegistry $registry,
     ) {}
 
-    public function getUsers(): array
+    public function getEmployees(): array
     {
         return $this->registry
-            ->get('acme')
-            ->send('GetUsers')
+            ->get('dummy_rest_api')
+            ->send('GetEmployees')
             ->toArray();
     }
 }
@@ -143,6 +165,8 @@ final class UserService
 
 ## Configuration reference
 
+### Bundle config (`config/packages/integration_engine.yaml`)
+
 ```yaml
 integration_engine:
   integrations:
@@ -158,6 +182,24 @@ integration_engine:
 > **Warning**: The default `InMemoryCacheAdapter` is process-scoped and does not
 > persist between requests under PHP-FPM. Configure a `cache_service` backed by
 > Redis or APCu for dynamic auth in production.
+
+### Action config (`MyApi.yaml`)
+
+Each action must declare its fully qualified class name:
+
+```yaml
+GetUsers:
+  action: App\Infrastructure\Integrations\MyApi\GetUsers\Request\GetUsersAction
+  method: GET
+  path: /users
+
+GetUser:
+  action: App\Infrastructure\Integrations\MyApi\GetUser\Request\GetUserAction
+  method: GET
+  path: /users/{id}
+```
+
+The `make:integration` command fills the `action` field automatically.
 
 ---
 
