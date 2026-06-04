@@ -50,7 +50,12 @@ src/Infrastructure/Integrations/DummyRestApi/
 ### 3. Call it
 
 ```php
-$registry->get('dummy_rest_api')->send('GetEmployees');
+use IntegrationEngine\Core\Contract\DefaultActionContext;
+
+$registry->get('dummy_rest_api')->send(
+    actionName: 'GetEmployee',
+    context: DefaultActionContext::create(['id' => 1]),
+);
 ```
 
 That is all the bundle requires. Everything else in this document is optional
@@ -112,20 +117,66 @@ becomes:
 /orders/42
 ```
 
-The context is provided at runtime via `ActionContextInterface`:
+### DefaultActionContext — built-in implementation
+
+The bundle ships with `DefaultActionContext`, a general-purpose implementation
+of `ActionContextInterface` that covers the vast majority of cases:
 
 ```php
+use IntegrationEngine\Core\Contract\DefaultActionContext;
+
 ->send(
-    'GetOrder',
-    context: GetOrderContext::create(['id' => 42])
+    actionName: 'GetOrder',
+    context: DefaultActionContext::create(['id' => 42]),
 )
 ```
 
-Missing parameters throw a `RuntimeException` at resolution time, not at HTTP
-time. Non-scalar values throw immediately.
+No custom class needed. No boilerplate. The contract stays uniform —
+`DefaultActionContext` implements `ActionContextInterface` — while keeping
+the call site as simple as possible.
 
-A custom resolver can be provided by overriding `resolvePathCallback()` in the
-Action:
+### Custom context classes
+
+For contexts with validation, domain semantics, or complex resolution logic,
+implement `ActionContextInterface` directly:
+
+```php
+final readonly class GetOrderContext implements ActionContextInterface
+{
+    private function __construct(
+        private int $orderId,
+        private string $warehouseId,
+    ) {}
+
+    public static function create(array $data): self
+    {
+        return new self(
+            orderId: (int) $data['id'],
+            warehouseId: (string) $data['warehouse'],
+        );
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'id'        => $this->orderId,
+            'warehouse' => $this->warehouseId,
+        ];
+    }
+}
+```
+
+Use a custom class when the context has logic beyond key-value storage:
+validation, type coercion, or domain rules. For everything else,
+`DefaultActionContext` is sufficient.
+
+### Path resolution
+
+Missing parameters throw a `RuntimeException` at resolution time, not at
+HTTP time. Non-scalar values throw immediately.
+
+A custom resolver can be provided by overriding `resolvePathCallback()` in
+the Action:
 
 ```php
 protected function resolvePathCallback(): ?callable
@@ -172,10 +223,10 @@ session tokens, API key exchanges):
 
 ```yaml
 authorization:
-   type: dynamic
-   action: FetchToken
-   token_field: access_token
-   ttl: 3600
+  type: dynamic
+  action: FetchToken
+  token_field: access_token
+  ttl: 3600
 ```
 
 The engine:
@@ -204,12 +255,12 @@ Fixed headers sent with every request for an integration. Declared in
 
 ```yaml
 integration_engine:
-   integrations:
-      orders_api:
-         base_url: 'https://api.example.com'
-         headers:
-            X-Api-Version: '2'
-            X-Client-Name: 'my-app'
+  integrations:
+    orders_api:
+      base_url: 'https://api.example.com'
+      headers:
+        X-Api-Version: '2'
+        X-Client-Name: 'my-app'
 ```
 
 Use for API versioning headers, client identification, or any header that is
@@ -267,6 +318,25 @@ send(
 6. Map response via mapper
 7. Return typed `ResponseInterface`
 
+### Getting a typed response
+
+`send()` returns `ResponseInterface`. Use `assert()` to narrow the type for
+PHPStan without adding runtime overhead:
+
+```php
+public function getOrder(int $id): GetOrderResponse
+{
+    $response = $this->engine->send(
+        actionName: GetOrderAction::getName(),
+        context: DefaultActionContext::create(['id' => $id]),
+    );
+
+    \assert($response instanceof GetOrderResponse);
+
+    return $response;
+}
+```
+
 ## 9. YAML configuration
 
 These are two separate files with different responsibilities. The bundle
@@ -281,14 +351,14 @@ on first run.** No need to create it manually.
 
 ```yaml
 integration_engine:
-   integrations:
-      my_api:
-         base_url: '%env(MY_API_BASE_URL)%'
-         config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MyApi/MyApi.yaml'
-         headers:
-            X-Api-Version: '2'
-         cache_service: ~       # defaults to InMemoryCacheAdapter (dev only)
-         client_service: ~      # custom ClientInterface service ID
+  integrations:
+    my_api:
+      base_url: '%env(MY_API_BASE_URL)%'
+      config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MyApi/MyApi.yaml'
+      headers:
+        X-Api-Version: '2'
+      cache_service: ~       # defaults to InMemoryCacheAdapter (dev only)
+      client_service: ~      # custom ClientInterface service ID
 ```
 
 Either `base_url` or `client_service` is required per integration. The
@@ -307,19 +377,19 @@ qualified class name of the Action:
 
 ```yaml
 GetUsers:
-   action: App\Infrastructure\Integrations\MyApi\GetUsers\Request\GetUsersAction
-   method: GET
-   path: /users
+  action: App\Infrastructure\Integrations\MyApi\GetUsers\Request\GetUsersAction
+  method: GET
+  path: /users
 
 GetUser:
-   action: App\Infrastructure\Integrations\MyApi\GetUser\Request\GetUserAction
-   method: GET
-   path: /users/{id}
+  action: App\Infrastructure\Integrations\MyApi\GetUser\Request\GetUserAction
+  method: GET
+  path: /users/{id}
 
 CreateUser:
-   action: App\Infrastructure\Integrations\MyApi\CreateUser\Request\CreateUserAction
-   method: POST
-   path: /users
+  action: App\Infrastructure\Integrations\MyApi\CreateUser\Request\CreateUserAction
+  method: POST
+  path: /users
 ```
 
 The `action` key is how the engine resolves which PHP class to instantiate
@@ -355,9 +425,9 @@ Generates this entry in `DummyRestApi.yaml`:
 
 ```yaml
 GetEmployees:
-   action: App\Infrastructure\Integrations\DummyRestApi\GetEmployees\Request\GetEmployeesAction
-   method: GET
-   path: /api/v1/employees
+  action: App\Infrastructure\Integrations\DummyRestApi\GetEmployees\Request\GetEmployeesAction
+  method: GET
+  path: /api/v1/employees
 ```
 
 ### Adding a second action to an existing integration
@@ -440,6 +510,8 @@ Create one class per external integration. That class resolves the engine
 once in the constructor and exposes named methods for each operation:
 
 ```php
+use IntegrationEngine\Core\Contract\DefaultActionContext;
+
 final class OrdersApiIntegration implements IntegrationName
 {
     public const string NAME = 'orders_api';
@@ -453,18 +525,26 @@ final class OrdersApiIntegration implements IntegrationName
 
     public function getOrder(int $id): GetOrderResponse
     {
-        return $this->engine->send(
-            GetOrderAction::getName(),
-            context: GetOrderContext::create(['id' => $id]),
+        $response = $this->engine->send(
+            actionName: GetOrderAction::getName(),
+            context: DefaultActionContext::create(['id' => $id]),
         );
+
+        \assert($response instanceof GetOrderResponse);
+
+        return $response;
     }
 
     public function createOrder(CreateOrderBody $body): CreateOrderResponse
     {
-        return $this->engine->send(
-            CreateOrderAction::getName(),
+        $response = $this->engine->send(
+            actionName: CreateOrderAction::getName(),
             body: $body,
         );
+
+        \assert($response instanceof CreateOrderResponse);
+
+        return $response;
     }
 }
 ```
@@ -505,8 +585,8 @@ If the external API changes its contract, only the facade and its Actions
 change — nothing above it.
 
 **One engine resolution, many calls.** The registry lookup happens once in
-the constructor. Subsequent calls to `getOrder()` or `createOrder()` go
-directly to the engine without re-resolving the service.
+the constructor. Subsequent calls go directly to the engine without
+re-resolving the service.
 
 **Testability.** Any consumer that depends on `OrdersApiIntegration` can be
 tested by replacing it with a fake or a mock. No need to stub the registry,

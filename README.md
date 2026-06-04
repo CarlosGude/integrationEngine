@@ -107,17 +107,22 @@ src/Infrastructure/Integrations/DummyRestApi/
 ### 2. Use it from a service
 
 ```php
+use IntegrationEngine\Core\Contract\DefaultActionContext;
+
 final class EmployeeService
 {
     public function __construct(
         private readonly IntegrationRegistry $registry,
     ) {}
 
-    public function getEmployees(): array
+    public function getEmployee(int $id): array
     {
         return $this->registry
             ->get('dummy_rest_api')
-            ->send('GetEmployees')
+            ->send(
+                actionName: 'GetEmployee',
+                context: DefaultActionContext::create(['id' => $id]),
+            )
             ->toArray();
     }
 }
@@ -142,12 +147,28 @@ final class EmployeeService
 )
 ```
 
-### With context (path parameters)
+### With context — built-in (most cases)
+
+Use `DefaultActionContext` for simple path parameter resolution:
+
+```php
+use IntegrationEngine\Core\Contract\DefaultActionContext;
+
+->send(
+    actionName: 'GetUser',
+    context: DefaultActionContext::create(['id' => 1]),
+)
+```
+
+### With context — custom class
+
+For contexts with validation, domain semantics, or complex resolution,
+implement `ActionContextInterface` directly:
 
 ```php
 ->send(
-    actionName: 'GetUser',
-    context: GetUserContext::create(['id' => 1]),
+    actionName: 'GetOrder',
+    context: GetOrderContext::create(['id' => $id, 'warehouse' => $warehouseId]),
 )
 ```
 
@@ -156,7 +177,7 @@ final class EmployeeService
 ```php
 ->send(
     actionName: 'UpdateUser',
-    context: UpdateUserContext::create(['id' => 1]),
+    context: DefaultActionContext::create(['id' => 1]),
     body: UpdateUserBody::create([...]),
 )
 ```
