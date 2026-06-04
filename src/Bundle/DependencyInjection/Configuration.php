@@ -16,7 +16,7 @@ final class Configuration implements ConfigurationInterface
         $treeBuilder->getRootNode()
             ->children()
             ->arrayNode('integrations')
-            ->isRequired()
+            ->defaultValue([])
             ->useAttributeAsKey('name')
             ->arrayPrototype()
             ->children()

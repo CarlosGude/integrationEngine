@@ -40,8 +40,9 @@ final readonly class TemplateRenderer
     public function yamlEntry(): string
     {
         $method = strtoupper($this->ctx->method);
+        $actionFqcn = $this->ctx->requestNamespace().'\\'.$this->ctx->action.'Action';
 
-        return "{$this->ctx->action}:\n    method: {$method}\n    path: {$this->ctx->path}\n";
+        return "{$this->ctx->action}:\n    action: {$actionFqcn}\n    method: {$method}\n    path: {$this->ctx->path}\n";
     }
 
     /* =========================
