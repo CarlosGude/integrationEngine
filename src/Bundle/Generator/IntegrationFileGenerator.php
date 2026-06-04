@@ -14,7 +14,7 @@ final class IntegrationFileGenerator
 
         return [
             "{$root}/{$ctx->name}Integration.php" => $tpl->integration(),
-            "{$root}/{$ctx->name}HttpClient.php" => $tpl->client(),
+            // HttpClient removed — the bundle's default client is used
         ];
     }
 
@@ -27,10 +27,8 @@ final class IntegrationFileGenerator
 
         $files = [];
 
-        // Request
         $files["{$root}/{$action}/Request/{$action}Action.php"] = $tpl->action();
 
-        // Response
         if ($ctx->hasResponse()) {
             $files["{$root}/{$action}/Response/{$action}Mapper.php"] = $tpl->mapper();
             $files["{$root}/{$action}/Response/{$action}Response.php"] = $tpl->response();
@@ -65,9 +63,6 @@ final class IntegrationFileGenerator
         return $this->root($ctx).'/'.$ctx->name.'.yaml';
     }
 
-    /**
-     * Root already includes the integration name.
-     */
     private function root(IntegrationContext $ctx): string
     {
         return $ctx->basePath;

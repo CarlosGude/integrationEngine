@@ -73,33 +73,108 @@ final class MakeIntegrationCommand extends Command
 
         $integrationPath = $this->projectDir.'/'.$basePath.'/'.$name;
 
+        // ── Ask for base URL if the bundle config does not exist yet ──────────
+        $bundleConfigPath = $this->projectDir.'/config/packages/integration_engine.yaml';
+        $bundleConfigExists = file_exists($bundleConfigPath);
+
+        $baseUrl = null;
+        if (!$bundleConfigExists) {
+            $baseUrl = $io->ask(
+                \sprintf('Base URL for the "%s" integration (e.g. https://api.example.com)', $name),
+                null,
+                static function (?string $value): string {
+                    if (null === $value || '' === trim($value)) {
+                        throw new \RuntimeException('Base URL cannot be empty.');
+                    }
+
+                    return trim($value);
+                }
+            );
+        }
+
+        // ── Ask for the action path ───────────────────────────────────────────
+        $actionPath = $io->ask(
+            \sprintf('Path for action "%s" (e.g. /employees or /employees/{id})', $action),
+            '/',
+            static function (?string $value): string {
+                $value = trim((string) $value);
+
+                return '' === $value ? '/' : $value;
+            }
+        );
+
+        // ── Ask for HTTP method ───────────────────────────────────────────────
+        $method = $io->choice(
+            'HTTP method',
+            ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+            'GET'
+        );
+
         $ctx = new IntegrationContext(
             name: $name,
             action: $action,
-            method: 'GET',
-            path: '/',
+            method: $method,
+            path: $actionPath,
             baseNamespace: $baseNamespace,
             basePath: $integrationPath,
         );
 
-        $io->title(\sprintf('Generating integration: %s', $name));
+        $io->title(\sprintf('Generating integration: %s / %s', $name, $action));
 
-        // 1. Integration skeleton
-        foreach ($this->generator->generateIntegrationFiles($ctx) as $file => $content) {
-            $this->writeFile($file, $content, $io, $force);
+        // ── 1. Create bundle config if it does not exist ──────────────────────
+        if (!$bundleConfigExists && null !== $baseUrl) {
+            $this->createBundleConfig($bundleConfigPath, $name, $baseUrl, $integrationPath, $io);
         }
 
-        // 2. First action skeleton
+        // ── 2. Integration skeleton (only if first time) ──────────────────────
+        if (!$this->generator->integrationExists($ctx)) {
+            foreach ($this->generator->generateIntegrationFiles($ctx) as $file => $content) {
+                $this->writeFile($file, $content, $io, $force);
+            }
+        }
+
+        // ── 3. Action skeleton ────────────────────────────────────────────────
         foreach ($this->generator->generateActionFiles($ctx) as $file => $content) {
             $this->writeFile($file, $content, $io, $force);
         }
 
-        // 3. YAML config
-        $this->generator->appendActionToConfig($ctx);
+        // ── 4. Append action to YAML config ───────────────────────────────────
+        $configPath = $this->generator->appendActionToConfig($ctx);
+        $io->text("  updated  {$configPath}");
 
         $io->success('Done.');
 
         return Command::SUCCESS;
+    }
+
+    private function createBundleConfig(
+        string $configPath,
+        string $name,
+        string $baseUrl,
+        string $integrationPath,
+        SymfonyStyle $io,
+    ): void {
+        $dir = \dirname($configPath);
+
+        if (!is_dir($dir) && !mkdir($dir, 0o755, true) && !is_dir($dir)) {
+            $io->warning("Could not create config directory: {$dir}");
+
+            return;
+        }
+
+        $snakeName = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $name) ?? $name);
+        $configFile = $integrationPath.'/'.$name.'.yaml';
+
+        $content = <<<YAML
+integration_engine:
+    integrations:
+        {$snakeName}:
+            base_url: '{$baseUrl}'
+            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/{$name}/{$name}.yaml'
+YAML;
+
+        file_put_contents($configPath, $content.PHP_EOL);
+        $io->text("  created  {$configPath}");
     }
 
     private function writeFile(
@@ -125,7 +200,6 @@ final class MakeIntegrationCommand extends Command
         }
 
         file_put_contents($filePath, $content);
-
         $io->text($exists ? "  updated  {$filePath}" : "  created  {$filePath}");
     }
 }

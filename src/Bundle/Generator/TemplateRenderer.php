@@ -34,40 +34,14 @@ final readonly class TemplateRenderer
             PHP;
     }
 
-    public function client(): string
-    {
-        return <<<PHP
-            <?php
-
-            declare(strict_types=1);
-
-            namespace {$this->ctx->integrationNamespace()};
-
-            use IntegrationEngine\\Infrastructure\\Http\\SymfonyHttpClientAdapter;
-
-            final readonly class {$this->ctx->name}HttpClient extends SymfonyHttpClientAdapter
-            {
-            }
-            PHP;
-    }
-
-    /**
-     * Full yaml file — only written when the integration is created for the first time.
-     */
-    public function yaml(): string
-    {
-        return $this->yamlEntry();
-    }
-
     /**
      * A single action entry — appended to the yaml on every new action.
      */
     public function yamlEntry(): string
     {
         $method = strtoupper($this->ctx->method);
-        $actionFqcn = $this->ctx->requestNamespace().'\\'.$this->ctx->action.'Action';
 
-        return "{$this->ctx->action}:\n    action: {$actionFqcn}\n    method: {$method}\n    path: {$this->ctx->path}\n";
+        return "{$this->ctx->action}:\n    method: {$method}\n    path: {$this->ctx->path}\n";
     }
 
     /* =========================
@@ -94,7 +68,7 @@ final readonly class TemplateRenderer
 
             use IntegrationEngine\\Core\\Contract\\AbstractAction;{$mapperUse}
 
-            final readonly class {$this->ctx->action}Action extends AbstractAction
+            final class {$this->ctx->action}Action extends AbstractAction
             {
                 public static function getName(): string
                 {
@@ -115,7 +89,7 @@ final readonly class TemplateRenderer
     }
 
     /**
-     * Only generated for POST and PUT.
+     * Only generated for POST, PUT, PATCH.
      */
     public function body(): string
     {
@@ -135,11 +109,6 @@ final readonly class TemplateRenderer
             public static function create(array \$data): static
             {
                 return new static();
-            }
-
-            public static function keys(): array
-            {
-                return [];
             }
 
             public function toArray(): array
