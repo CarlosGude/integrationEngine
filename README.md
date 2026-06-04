@@ -224,6 +224,51 @@ The `make:integration` command fills the `action` field automatically.
 
 ---
 
+## The bundle proposes, it does not impose
+
+IntegrationEngine defines contracts. What you build on top is entirely yours.
+
+The most powerful pattern it enables without knowing about it is the
+**integration base class**: if a group of actions shares auth, a path prefix,
+or common configuration, extract it into an abstract class:
+
+```php
+abstract class StripeAction extends AbstractAction
+{
+    public static function create(string $method, string $path, ?ActionBodyInterface $body = null): static
+    {
+        return parent::create(
+            method: $method,
+            path: '/v1'.$path,
+            body: $body,
+            authorization: new StaticAuthorizationConfig(
+                type: 'bearer',
+                params: ['token' => '%env(STRIPE_SECRET_KEY)%'],
+            ),
+        );
+    }
+}
+```
+
+Each action then extends the base and only declares what makes it unique:
+
+```php
+final class CreateChargeAction extends StripeAction
+{
+    public static function getName(): string { return 'CreateCharge'; }
+    public static function hasResponse(): bool { return true; }
+    public static function mapper(): string { return CreateChargeMapper::class; }
+}
+```
+
+The bundle sees `AbstractAction`. Your domain sees `StripeAction`. Three
+levels of design — bundle contract, integration base, operation — with zero
+coupling between them.
+
+Full details in [DOCUMENTATION.md — Section 15](./DOCUMENTATION.md#15-the-bundle-proposes-it-does-not-impose).
+
+---
+
 ## Further reading
 
 Architecture, authorization, headers, error reference, extensibility and recommended

@@ -257,12 +257,12 @@ Fixed headers sent with every request for an integration. Declared in
 
 ```yaml
 integration_engine:
-   integrations:
-      orders_api:
-         base_url: 'https://api.example.com'
-         headers:
-            X-Api-Version: '2'
-            X-Client-Name: 'my-app'
+  integrations:
+    orders_api:
+      base_url: 'https://api.example.com'
+      headers:
+        X-Api-Version: '2'
+        X-Client-Name: 'my-app'
 ```
 
 Use for API versioning headers, client identification, or any header that is
@@ -353,14 +353,14 @@ on first run.** No need to create it manually.
 
 ```yaml
 integration_engine:
-   integrations:
-      my_api:
-         base_url: '%env(MY_API_BASE_URL)%'
-         config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MyApi/MyApi.yaml'
-         headers:
-            X-Api-Version: '2'
-         cache_service: ~       # defaults to InMemoryCacheAdapter (dev only)
-         client_service: ~      # custom ClientInterface service ID
+  integrations:
+    my_api:
+      base_url: '%env(MY_API_BASE_URL)%'
+      config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MyApi/MyApi.yaml'
+      headers:
+        X-Api-Version: '2'
+      cache_service: ~       # defaults to InMemoryCacheAdapter (dev only)
+      client_service: ~      # custom ClientInterface service ID
 ```
 
 Either `base_url` or `client_service` is required per integration. The
@@ -379,19 +379,19 @@ qualified class name of the Action:
 
 ```yaml
 GetUsers:
-   action: App\Infrastructure\Integrations\MyApi\GetUsers\Request\GetUsersAction
-   method: GET
-   path: /users
+  action: App\Infrastructure\Integrations\MyApi\GetUsers\Request\GetUsersAction
+  method: GET
+  path: /users
 
 GetUser:
-   action: App\Infrastructure\Integrations\MyApi\GetUser\Request\GetUserAction
-   method: GET
-   path: /users/{id}
+  action: App\Infrastructure\Integrations\MyApi\GetUser\Request\GetUserAction
+  method: GET
+  path: /users/{id}
 
 CreateUser:
-   action: App\Infrastructure\Integrations\MyApi\CreateUser\Request\CreateUserAction
-   method: POST
-   path: /users
+  action: App\Infrastructure\Integrations\MyApi\CreateUser\Request\CreateUserAction
+  method: POST
+  path: /users
 ```
 
 The `action` key is how the engine resolves which PHP class to instantiate
@@ -427,9 +427,9 @@ Generates this entry in `DummyRestApi.yaml`:
 
 ```yaml
 GetEmployees:
-   action: App\Infrastructure\Integrations\DummyRestApi\GetEmployees\Request\GetEmployeesAction
-   method: GET
-   path: /api/v1/employees
+  action: App\Infrastructure\Integrations\DummyRestApi\GetEmployees\Request\GetEmployeesAction
+  method: GET
+  path: /api/v1/employees
 ```
 
 ### Adding a second action to an existing integration
@@ -607,7 +607,98 @@ The goal is not to follow the pattern for its own sake, but to keep external
 complexity out of the domain. Use the facade when that separation has value;
 skip it when it does not.
 
-## 15. Demo project
+## 15. The bundle proposes, it does not impose
+
+IntegrationEngine defines contracts. What you build on top of them is entirely
+up to you.
+
+Every piece of the bundle is a suggestion, not a requirement:
+
+- Use `DefaultActionContext` for simple path parameters, or implement
+  `ActionContextInterface` for validation and domain logic.
+- Declare auth in YAML for simple cases, use `DynamicAuthorizationConfig`
+  for token flows, or centralise it in a base action class.
+- Use the generated scaffold as-is, or extend it with value objects,
+  typed collections, and domain facades.
+- Replace any infrastructure component — client, cache, config source —
+  via a single config key.
+
+The bundle never sees beyond `AbstractAction`, `ActionContextInterface`, and
+`ResponseInterface`. Everything else is your domain.
+
+### Integration base classes
+
+The most powerful pattern the bundle enables without knowing about it is the
+integration base class. If a group of actions shares configuration — auth,
+a path prefix, common headers — extract it into an abstract class that extends
+`AbstractAction`:
+
+```php
+abstract class StripeAction extends AbstractAction
+{
+    public static function create(
+        string $method,
+        string $path,
+        ?ActionBodyInterface $body = null,
+    ): static {
+        return parent::create(
+            method: $method,
+            path: '/v1'.$path,
+            body: $body,
+            authorization: new StaticAuthorizationConfig(
+                type: 'bearer',
+                params: ['token' => '%env(STRIPE_SECRET_KEY)%'],
+            ),
+        );
+    }
+}
+```
+
+Every Stripe action then extends this base. Auth and path prefix are declared
+once. Each action only declares what makes it unique:
+
+```php
+final class CreateChargeAction extends StripeAction
+{
+    public static function getName(): string { return 'CreateCharge'; }
+    public static function hasResponse(): bool { return true; }
+    public static function mapper(): string { return CreateChargeMapper::class; }
+}
+
+final class ListCustomersAction extends StripeAction
+{
+    public static function getName(): string { return 'ListCustomers'; }
+    public static function hasResponse(): bool { return true; }
+    public static function mapper(): string { return ListCustomersMapper::class; }
+}
+```
+
+The bundle sees `AbstractAction`. Your domain sees `StripeAction`. The
+abstraction holds at both levels without any coupling between them.
+
+### The three levels of action design
+
+| Level | Class | Responsibility |
+|-------|-------|----------------|
+| Bundle | `AbstractAction` | Contract: method, path, auth, mapper |
+| Integration | `StripeAction` | Shared config: auth, prefix, defaults |
+| Operation | `CreateChargeAction` | Identity: name, response, mapper |
+
+Use one level, two, or all three. The bundle works the same either way.
+
+### What this means in practice
+
+A junior developer on your team can write a new Stripe action in three lines
+without knowing anything about authentication, HTTP clients, or token caching.
+A senior can replace the entire HTTP layer without touching a single action.
+The architect can define contracts that the whole team follows without writing
+a framework.
+
+That is the goal: a tool that gives structure without restricting freedom.
+
+---
+
+## 16. Demo project
 
 A working Symfony application demonstrating the bundle against the public
 [Dummy REST API](https://dummy.restapiexample.com) is available at:
