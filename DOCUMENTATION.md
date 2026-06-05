@@ -20,21 +20,17 @@ return [
 
 ### 2. Generate your first integration
 
-The `make:integration` command is all you need. No config file required
-beforehand — the command creates it for you:
-
 ```bash
 php bin/console make:integration DummyRestApi GetEmployees
 ```
 
-The command asks three questions:
+The command asks three questions on first run:
 
-1. **Base URL** (only on first run, when no config exists yet):
-   `https://dummy.restapiexample.com`
+1. **Base URL**: `https://dummy.restapiexample.com`
 2. **Path for the action**: `/api/v1/employees`
 3. **HTTP method**: `GET`
 
-It then generates everything:
+It generates everything — config, classes, and YAML:
 
 ```
 config/packages/integration_engine.yaml          ← created on first run
@@ -47,11 +43,23 @@ src/Infrastructure/Integrations/DummyRestApi/
         Response/GetEmployeesResponse.php
 ```
 
+The same command adds new actions to an existing integration. It detects
+what already exists and only generates what is missing:
+
+```bash
+php bin/console make:integration DummyRestApi GetEmployee
+# > Path: /api/v1/employee/{id}
+# > Method: GET
+# → creates GetEmployee/ files and appends entry to DummyRestApi.yaml
+# → skips DummyRestApiIntegration.php (already exists)
+```
+
+`make:integration` is not just for getting started — it is the command you
+run every time you add an operation. See section 3 for the full reference.
+
 ### 3. Call it
 
 ```php
-use IntegrationEngine\Core\Contract\DefaultActionContext;
-
 $registry->get(DummyRestApiIntegration::NAME)->send(
     actionName: GetEmployeeAction::getName(),
     context: DefaultActionContext::create(['id' => 1]),
@@ -61,22 +69,194 @@ $registry->get(DummyRestApiIntegration::NAME)->send(
 That is all the bundle requires. Everything else in this document is optional
 depth.
 
+### 4. See it in action
+
+A working Symfony application demonstrating the full stack against the public
+[Dummy REST API](https://dummy.restapiexample.com) is available at:
+
+**[github.com/CarlosGude/integrationEngine-use-example](https://github.com/CarlosGude/integrationEngine-use-example)**
+
+It is the recommended starting point before reading further.
+
 ---
 
-## 1. Architecture overview
+## 1. Ideal usage
 
-The bundle implements a hexagonal integration engine:
+The bundle generates the integration layer. What you build on top of it
+follows a pattern that keeps the external API isolated from your domain.
 
-- **Core**: contracts + engine logic
-- **Infrastructure**: HTTP, YAML, cache adapters
-- **Bundle**: Symfony wiring
+### The full stack
 
-## 2. Core execution model
+```
+External API
+    → Action (declares the request)
+        → Mapper (transforms raw response into integration DTO)
+            → Integration facade (exposes named methods, hides the engine)
+                → Application service (translates DTO into domain object)
+                    → Controller / Command / Queue processor / ...
+```
 
-The caller never talks to the HTTP layer directly. Every request goes through
-the engine, which is responsible for resolving auth, applying context, and
-mapping the response. The caller only knows the action name and gets back a
-typed object.
+Each layer knows only the layer immediately below it. The domain never
+imports anything from `IntegrationEngine\` or from your integration classes.
+
+### What you actually need to touch
+
+Most integrations only require three things:
+
+| When | What |
+|------|------|
+| Always | Action, Mapper, Response DTO |
+| Sometimes | Context (dynamic path params), Body (request payload) |
+| Rarely | Custom auth, custom cache, custom HTTP client, custom config source |
+
+The scaffolding generates all three always-required files. For the majority
+of integrations, that is all you will ever write.
+
+### The integration facade
+
+The scaffolded `DummyRestApiIntegration` class is the facade. It resolves
+the engine once and exposes typed methods:
+
+```php
+final class DummyRestApiIntegration
+{
+    public const string NAME = 'dummy_rest_api';
+
+    private IntegrationEngine $engine;
+
+    public function __construct(IntegrationRegistry $registry)
+    {
+        $this->engine = $registry->get(self::NAME);
+    }
+
+    public function getEmployee(int $id): GetEmployeeResponse
+    {
+        $response = $this->engine->send(
+            actionName: GetEmployeeAction::getName(),
+            context: DefaultActionContext::create(['id' => $id]),
+        );
+
+        \assert($response instanceof GetEmployeeResponse);
+
+        return $response;
+    }
+}
+```
+
+`GetEmployeeResponse` is an integration DTO — it reflects the external API,
+not your domain.
+
+### The application service
+
+The translation from integration DTO to domain object happens in an
+injectable service. Not in the controller, not in the domain. The service
+does not know how its result will be consumed — controller, command, event
+listener, queue processor — so it stays decoupled from the delivery
+mechanism:
+
+```php
+final class EmployeeService
+{
+    public function __construct(
+        private readonly DummyRestApiIntegration $integration,
+    ) {}
+
+    public function getEmployee(int $id): Employee
+    {
+        $dummyEmployee = $this->integration->getEmployee($id);
+
+        // The service translates. Not the domain, not the controller.
+        return new Employee(
+            id:     $dummyEmployee->id,
+            name:   $dummyEmployee->employeeName,
+            salary: $dummyEmployee->employeeSalary,
+        );
+    }
+}
+```
+
+Any consumer depends only on `EmployeeService` and works exclusively with
+domain objects:
+
+```php
+final class EmployeeController extends AbstractController
+{
+    public function __construct(
+        private readonly EmployeeService $employeeService,
+    ) {}
+
+    #[Route('/employees/{id}')]
+    public function show(int $id): JsonResponse
+    {
+        return $this->json(
+            $this->employeeService->getEmployee($id)
+        );
+    }
+}
+```
+
+### What not to do
+
+```php
+// ❌ Wrong: the domain now depends on an infrastructure DTO
+return Employee::fromDummyEmployee($dummyEmployee);
+```
+
+If `Employee` knows what a `GetEmployeeResponse` is, the domain has a
+dependency on the integration layer. When the external API changes, the
+change propagates into the domain. The separation collapses.
+
+### Why this matters
+
+This is the Anti-Corruption Layer pattern applied at the integration boundary.
+The bundle enforces the left side: the mapper must produce a
+`ResponseInterface`, and it must correspond to the correct action. The right
+side — keeping the integration DTO out of the domain — is your
+responsibility. It is the most important convention the bundle asks of you.
+
+---
+
+## 2. Philosophy
+
+### The bundle proposes, it does not impose
+
+IntegrationEngine defines contracts. What you build on top of them is
+entirely up to you.
+
+Every piece of the bundle is a suggestion, not a requirement:
+
+- Use `DefaultActionContext` for simple path parameters, or implement
+  `ActionContextInterface` for validation and domain logic.
+- Declare auth in YAML for simple cases, use `DynamicAuthorizationConfig`
+  for token flows, or centralise it in a base action class.
+- Use the generated scaffold as-is, or extend it with value objects,
+  typed collections, and domain facades.
+- Replace any infrastructure component — client, cache, config source —
+  via a single config key.
+
+The bundle never sees beyond `AbstractAction`, `ActionContextInterface`, and
+`ResponseInterface`. Everything else is your domain.
+
+### Design principles
+
+- No magic outside the engine
+- Actions are immutable
+- Context is explicit and validated at resolution time
+- Bodies are typed objects
+- Mapping is explicit via mappers
+- Headers have a defined precedence: YAML → auth → caller
+- The call site is uniform regardless of integration complexity
+- The response boundary is an Anti-Corruption Layer: mappers produce
+  integration DTOs, never domain objects. Domain transformation happens
+  outside the bundle
+
+### Architecture overview
+
+- **Core**: contracts + engine logic. No framework dependencies.
+- **Infrastructure**: HTTP, YAML, and cache adapters. Implements Core ports.
+- **Bundle**: Symfony wiring. DI, compiler pass, scaffolding command.
+
+### Core execution model
 
 ```text
 Registry
@@ -90,52 +270,261 @@ Registry
       -> Response DTO
 ```
 
-## 3. Actions
+### Integration base classes
 
-An Action defines:
+If a group of actions shares configuration — auth, a path prefix, common
+headers — extract it into an abstract class that extends `AbstractAction`:
 
-- HTTP method
-- Path template (supports `{param}` placeholders)
-- Optional body
-- Optional authorization config
-- Optional mapper
+```php
+abstract class StripeAction extends AbstractAction
+{
+    public static function create(
+        string $method,
+        string $path,
+        ?ActionBodyInterface $body = null,
+    ): static {
+        return parent::create(
+            method: $method,
+            path: '/v1'.$path,
+            body: $body,
+            authorization: new StaticAuthorizationConfig(
+                type: 'bearer',
+                params: ['token' => '%env(STRIPE_SECRET_KEY)%'],
+            ),
+        );
+    }
+}
+```
 
-Actions are stateless and immutable. All constructor properties are `readonly`.
-The engine passes context directly to `getPath()` at call time — the action
-never stores execution state. The same action instance can be called with
-different contexts in successive requests without any mutation.
+Each concrete action only declares what makes it unique:
 
-## 4. Context system
+```php
+final class CreateChargeAction extends StripeAction
+{
+    public static function getName(): string { return 'CreateCharge'; }
+    public static function hasResponse(): bool { return true; }
+    public static function mapper(): string { return CreateChargeMapper::class; }
+}
+```
+
+| Level | Class | Responsibility |
+|-------|-------|----------------|
+| Bundle | `AbstractAction` | Contract: method, path, auth, mapper |
+| Integration | `StripeAction` | Shared config: auth, prefix, defaults |
+| Operation | `CreateChargeAction` | Identity: name, response, mapper |
+
+Use one level, two, or all three. The bundle works the same either way.
+
+---
+
+## 3. Scaffolding
+
+```bash
+php bin/console make:integration {IntegrationName} {ActionName}
+```
+
+### What the command does
+
+| Step | What happens |
+|------|-------------|
+| First run only | Asks for the base URL and creates `config/packages/integration_engine.yaml` |
+| Always | Asks for the action path and HTTP method |
+| First run only | Creates `{Name}Integration.php` |
+| Always | Creates `{Action}Action.php`, `{Action}Mapper.php`, `{Action}Response.php` |
+| Always | Appends the action entry to `{Name}.yaml` (creates it if absent) |
+
+### Creating integrations manually
+
+If you create an integration class by hand without using the command, you must
+override the `NAME` constant:
+
+```php
+final class MyApiIntegration implements IntegrationName
+{
+    public const string NAME = 'my_api'; // must be declared explicitly
+}
+```
+
+The interface declares `NAME = '__MUST_OVERRIDE__'` as a sentinel value. PHP
+does not enforce constant overriding at the language level. If `NAME` is not
+declared, the integration will be registered under `'__MUST_OVERRIDE__'` and
+will not resolve correctly from the registry.
+
+---
+
+## 4. YAML configuration
+
+There are two separate files with different responsibilities.
+
+### Bundle configuration (`config/packages/integration_engine.yaml`)
+
+Registers integrations in the Symfony container and configures their
+transport layer. Created automatically by `make:integration` on first run.
+
+```yaml
+integration_engine:
+  integrations:
+    my_api:
+      base_url: '%env(MY_API_BASE_URL)%'
+      config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MyApi/MyApi.yaml'
+      headers:
+        X-Api-Version: '2'
+      cache_service: ~       # defaults to InMemoryCacheAdapter (dev only)
+      client_service: ~      # custom ClientInterface service ID
+```
+
+Either `base_url` or `client_service` is required per integration.
+
+> **Warning**: The default `InMemoryCacheAdapter` is process-scoped and does
+> not persist between requests under PHP-FPM. Configure a `cache_service`
+> backed by Redis or APCu for dynamic auth in production.
+
+### Integration configuration (`src/Infrastructure/Integrations/MyApi/MyApi.yaml`)
+
+Declares the operations available for a specific integration. Generated and
+updated automatically by `make:integration`.
+
+```yaml
+GetUsers:
+  action: App\Infrastructure\Integrations\MyApi\GetUsers\Request\GetUsersAction
+  method: GET
+  path: /users
+
+GetUser:
+  action: App\Infrastructure\Integrations\MyApi\GetUser\Request\GetUserAction
+  method: GET
+  path: /users/{id}
+
+CreateUser:
+  action: App\Infrastructure\Integrations\MyApi\CreateUser\Request\CreateUserAction
+  method: POST
+  path: /users
+```
+
+No logic lives in YAML — YAML declares intent; Actions and Mappers implement
+behaviour.
+
+---
+
+## 5. Actions
+
+### YAML vs Action — why both exist
+
+The YAML config and the Action class both mention method and path. They serve
+different purposes:
+
+- **YAML** is the source of truth at boot time. The engine reads it to know
+  which Action class to instantiate and with which method and path.
+- **The Action class** is the object in memory at runtime. It carries
+  behaviour that YAML cannot express: which mapper to use, whether a response
+  is expected, custom path resolution logic, shared auth configuration.
+
+YAML declares intent. The Action implements behaviour. Neither replaces the
+other.
+
+### Lifecycle
+
+```
+YAML config
+    → engine reads method, path, action class, authorization
+        → instantiates the Action via Action::create(method, path, ...)
+            → passes it to the HTTP client and mapper
+```
+
+The developer never instantiates an Action directly. The engine does it.
+
+### What an Action declares
+
+An Action defines the HTTP method, the path template, an optional body, and
+optional authorization. Actions are stateless and immutable — all constructor
+properties are `readonly`. The engine passes context directly to `getPath()`
+at call time. The action never stores execution state. The same instance can
+be called with different contexts in successive requests without mutation.
+
+### Generated classes — complete example
+
+`make:integration DummyRestApi GetEmployee` produces three files. Here is
+what a complete implementation looks like after filling them in:
+
+```php
+// Request/GetEmployeeAction.php
+final class GetEmployeeAction extends AbstractAction
+{
+    public static function getName(): string { return 'GetEmployee'; }
+    public static function hasResponse(): bool { return true; }
+    public static function mapper(): string { return GetEmployeeMapper::class; }
+}
+```
+
+```php
+// Response/GetEmployeeResponse.php
+// Integration DTO — mirrors the external API, not your domain.
+final class GetEmployeeResponse implements ResponseInterface
+{
+    public function __construct(
+        public readonly int    $id,
+        public readonly string $employeeName,
+        public readonly string $employeeSalary,
+        public readonly string $employeeAge,
+    ) {}
+
+    public function toArray(): array
+    {
+        return [
+            'id'              => $this->id,
+            'employee_name'   => $this->employeeName,
+            'employee_salary' => $this->employeeSalary,
+            'employee_age'    => $this->employeeAge,
+        ];
+    }
+}
+```
+
+```php
+// Response/GetEmployeeMapper.php
+// Receives the raw array from the server and builds the integration DTO.
+// The engine verifies at runtime that this mapper belongs to GetEmployeeAction.
+final class GetEmployeeMapper extends AbstractMapper
+{
+    public static function getAction(): string
+    {
+        return GetEmployeeAction::class;
+    }
+
+    protected static function transform(
+        AbstractAction $action,
+        array $response,
+    ): ResponseInterface {
+        $data = $response['data'];
+
+        return new GetEmployeeResponse(
+            id:             (int) $data['id'],
+            employeeName:   (string) $data['employee_name'],
+            employeeSalary: (string) $data['employee_salary'],
+            employeeAge:    (string) $data['employee_age'],
+        );
+    }
+}
+```
+
+## 6. Context system
 
 Context resolves dynamic URL path segments at call time:
 
 ```php
-/orders/{id}
+/orders/{id}  →  /orders/42
 ```
 
-becomes:
+### DefaultActionContext
+
+General-purpose implementation that covers the vast majority of cases:
 
 ```php
-/orders/42
-```
-
-### DefaultActionContext — built-in implementation
-
-The bundle ships with `DefaultActionContext`, a general-purpose implementation
-of `ActionContextInterface` that covers the vast majority of cases:
-
-```php
-use IntegrationEngine\Core\Contract\DefaultActionContext;
-
 ->send(
     actionName: GetOrderAction::getName(),
     context: DefaultActionContext::create(['id' => 42]),
 )
 ```
-
-No custom class needed. No boilerplate. The contract stays uniform —
-`DefaultActionContext` implements `ActionContextInterface` — while keeping
-the call site as simple as possible.
 
 ### Custom context classes
 
@@ -168,29 +557,22 @@ final readonly class GetOrderContext implements ActionContextInterface
 }
 ```
 
-Use a custom class when the context has logic beyond key-value storage:
-validation, type coercion, or domain rules. For everything else,
-`DefaultActionContext` is sufficient.
-
 ### Path resolution
 
 Missing parameters throw a `RuntimeException` at resolution time, not at
-HTTP time. Non-scalar values throw immediately.
-
-A custom resolver can be provided by overriding `resolvePathCallback()` in
-the Action:
+HTTP time. A custom resolver can be provided by overriding
+`resolvePathCallback()` in the Action:
 
 ```php
 protected function resolvePathCallback(): ?callable
 {
     return function (string $path, ?ActionContextInterface $context): string {
-        // custom resolution logic
         return $resolvedPath;
     };
 }
 ```
 
-## 5. Body system
+## 7. Body system
 
 Bodies are explicit objects implementing `ActionBodyInterface`:
 
@@ -198,7 +580,6 @@ Bodies are explicit objects implementing `ActionBodyInterface`:
 final class CreateOrderBody implements ActionBodyInterface
 {
     public static function create(array $data): self {}
-
     public function toArray(): array {}
 }
 ```
@@ -206,11 +587,9 @@ final class CreateOrderBody implements ActionBodyInterface
 Bodies are serialised as JSON and sent for `POST`, `PUT`, `PATCH`, and
 `DELETE` requests.
 
-## 6. Authorization system
+## 8. Authorization system
 
 ### Static authorization
-
-Declared in the integration YAML or directly in the Action. Supported types:
 
 | Type      | Header produced                     |
 |-----------|-------------------------------------|
@@ -218,31 +597,88 @@ Declared in the integration YAML or directly in the Action. Supported types:
 | `basic`   | `Authorization: Basic {b64}`        |
 | `api_key` | `{header}: {token}` (custom header) |
 
-### Dynamic authorization
+### Dynamic authorization — complete example
 
-For APIs that require a pre-flight token request (OAuth client credentials,
-session tokens, API key exchanges):
+For APIs that require a pre-flight token request (OAuth, session tokens,
+API key exchanges), the auth action is a regular action like any other.
+The engine executes it, extracts the token, caches it, and substitutes
+a static auth transparently before the actual request.
 
-```yaml
-authorization:
-  type: dynamic
-  action: FetchToken
-  token_field: access_token
-  ttl: 3600
+**Step 1 — Declare the token action and its response:**
+
+```php
+// FetchTokenAction.php
+final class FetchTokenAction extends AbstractAction
+{
+    public static function getName(): string { return 'FetchToken'; }
+    public static function hasResponse(): bool { return true; }
+    public static function mapper(): string { return FetchTokenMapper::class; }
+}
+
+// FetchTokenResponse.php
+final class FetchTokenResponse implements ResponseInterface
+{
+    public function __construct(
+        public readonly string $accessToken,
+    ) {}
+
+    public function toArray(): array
+    {
+        return ['access_token' => $this->accessToken];
+    }
+}
+
+// FetchTokenMapper.php
+final class FetchTokenMapper extends AbstractMapper
+{
+    public static function getAction(): string { return FetchTokenAction::class; }
+
+    protected static function transform(
+        AbstractAction $action,
+        array $response,
+    ): ResponseInterface {
+        return new FetchTokenResponse(
+            accessToken: (string) $response['access_token'],
+        );
+    }
+}
 ```
 
-The engine:
+**Step 2 — Register both actions in the integration YAML:**
 
-1. Checks the cache for `integration_engine.token.{action}`.
-2. If absent, executes the auth action and extracts `token_field` from the
-   response.
-3. Caches the token for `ttl` seconds.
-4. Substitutes a `StaticAuthorizationConfig` transparently before the actual
-   request.
+```yaml
+FetchToken:
+  action: App\Infrastructure\Integrations\MyApi\FetchToken\Request\FetchTokenAction
+  method: POST
+  path: /oauth/token
 
-The integration author writes no caching logic.
+GetOrders:
+  action: App\Infrastructure\Integrations\MyApi\GetOrders\Request\GetOrdersAction
+  method: GET
+  path: /orders
+  authorization:
+    type: dynamic
+    action: FetchToken
+    token_field: access_token
+    ttl: 3600
+```
 
-## 7. Headers system
+**What happens at runtime:**
+
+1. `engine->send('GetOrders')` is called.
+2. The engine detects `authorization.type: dynamic`.
+3. It checks the cache for `integration_engine.token.FetchToken`.
+4. Cache miss → executes `FetchTokenAction`, maps the response via
+   `FetchTokenMapper`, extracts `access_token`.
+5. Stores the token in cache for 3600 seconds.
+6. Reconstructs `GetOrdersAction` with a `StaticAuthorizationConfig`
+   carrying the token as a Bearer header.
+7. Executes the actual request.
+
+On subsequent calls within the TTL, step 4 is skipped entirely. The
+integration author writes no caching logic.
+
+## 9. Headers system
 
 Headers are resolved in three layers. Each layer overrides the previous:
 
@@ -250,33 +686,14 @@ Headers are resolved in three layers. Each layer overrides the previous:
 YAML defaults  →  Auth headers  →  Caller headers
 ```
 
-### Layer 1 — YAML defaults
+**Layer 1 — YAML defaults**: fixed headers for the integration, declared in
+`integration_engine.yaml`. Use for API versioning, client identification.
 
-Fixed headers sent with every request for an integration. Declared in
-`integration_engine.yaml`:
+**Layer 2 — Auth headers**: resolved from the Action's `AuthorizationConfig`.
+Always override YAML defaults.
 
-```yaml
-integration_engine:
-  integrations:
-    orders_api:
-      base_url: 'https://api.example.com'
-      headers:
-        X-Api-Version: '2'
-        X-Client-Name: 'my-app'
-```
-
-Use for API versioning headers, client identification, or any header that is
-fixed for the integration but not part of the auth contract.
-
-### Layer 2 — Auth headers
-
-Resolved by the engine from the Action's `AuthorizationConfig`. Always
-override YAML defaults.
-
-### Layer 3 — Caller headers
-
-Per-request headers provided at call time. Implement `RequestHeadersInterface`
-and pass as the `headers` parameter:
+**Layer 3 — Caller headers**: per-request headers passed at call time.
+Implement `RequestHeadersInterface`:
 
 ```php
 final class CorrelationHeaders implements RequestHeadersInterface
@@ -288,18 +705,9 @@ final class CorrelationHeaders implements RequestHeadersInterface
         return ['X-Correlation-ID' => $this->requestId];
     }
 }
-
-$registry->get(OrdersApiIntegration::NAME)->send(
-    actionName: CreateOrderAction::getName(),
-    body: $body,
-    headers: new CorrelationHeaders($requestId),
-);
 ```
 
-Use for correlation IDs, tenant identifiers, or any header that varies per
-request.
-
-## 8. Engine API
+## 10. Engine API
 
 ```php
 send(
@@ -310,164 +718,36 @@ send(
 ): ResponseInterface
 ```
 
-### Flow
+**Flow**: load action → resolve context → resolve auth → execute HTTP →
+map response → return `ResponseInterface`.
 
-1. Load action from ConfigPort
-2. Apply context (path resolution)
-3. Apply authorization (static injection or dynamic token resolution)
-4. Execute HTTP request (YAML headers + auth headers + caller headers)
-5. Return `EmptyResponse` if `hasResponse()` is false
-6. Map response via mapper
-7. Return typed `ResponseInterface`
-
-### Getting a typed response
-
-`send()` returns `ResponseInterface`. Use `assert()` to narrow the type for
-PHPStan without adding runtime overhead:
+Use `assert()` to narrow the return type for PHPStan without runtime cost:
 
 ```php
-public function getOrder(int $id): GetOrderResponse
-{
-    $response = $this->engine->send(
-        actionName: GetOrderAction::getName(),
-        context: DefaultActionContext::create(['id' => $id]),
-    );
-
-    \assert($response instanceof GetOrderResponse);
-
-    return $response;
-}
+$response = $this->engine->send(...);
+\assert($response instanceof GetEmployeeResponse);
+return $response;
 ```
 
-## 9. YAML configuration
+## 11. The response boundary
 
-These are two separate files with different responsibilities. The bundle
-configuration registers integrations in the Symfony container. The action
-configuration declares the operations available for each integration.
+`ResponseInterface` requires only `toArray()`. This is intentional — it is
+the point where the bundle's responsibility ends and yours begins. See
+section 1 for the full usage pattern.
 
-### Bundle configuration (`config/packages/integration_engine.yaml`)
+`toArray()` exists for one internal reason: the engine uses it to extract
+tokens in dynamic auth flows. It is not the public API of your integration
+DTO. Expose typed fields on the concrete class; the domain consumes those
+fields and builds its own objects.
 
-Registers integrations in the Symfony container and configures their
-transport layer. **This file is created automatically by `make:integration`
-on first run.** No need to create it manually.
+The Mapper is the structural guarantee: it receives a raw array, must return
+a `ResponseInterface`, and the engine verifies at runtime that the mapper
+corresponds to the correct action. What the response object contains beyond
+that is entirely up to you.
 
-```yaml
-integration_engine:
-  integrations:
-    my_api:
-      base_url: '%env(MY_API_BASE_URL)%'
-      config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MyApi/MyApi.yaml'
-      headers:
-        X-Api-Version: '2'
-      cache_service: ~       # defaults to InMemoryCacheAdapter (dev only)
-      client_service: ~      # custom ClientInterface service ID
-```
+## 12. Extensibility
 
-Either `base_url` or `client_service` is required per integration. The
-`integrations` key is optional — the bundle boots without it and fails only
-when an integration is actually requested.
-
-> **Warning**: The default `InMemoryCacheAdapter` is process-scoped and does
-> not persist between requests under PHP-FPM. Configure a `cache_service`
-> backed by Redis or APCu for dynamic auth in production.
-
-### Action configuration (`src/Infrastructure/Integrations/MyApi/MyApi.yaml`)
-
-Declares the operations available for a specific integration. **This file is
-also generated by `make:integration`.** Each entry must include the fully
-qualified class name of the Action:
-
-```yaml
-GetUsers:
-  action: App\Infrastructure\Integrations\MyApi\GetUsers\Request\GetUsersAction
-  method: GET
-  path: /users
-
-GetUser:
-  action: App\Infrastructure\Integrations\MyApi\GetUser\Request\GetUserAction
-  method: GET
-  path: /users/{id}
-
-CreateUser:
-  action: App\Infrastructure\Integrations\MyApi\CreateUser\Request\CreateUserAction
-  method: POST
-  path: /users
-```
-
-The `action` key is how the engine resolves which PHP class to instantiate
-for each named operation. No logic lives in YAML — YAML declares intent;
-Actions and Mappers implement behaviour.
-
-## 10. Scaffolding
-
-```bash
-php bin/console make:integration {IntegrationName} {ActionName}
-```
-
-### What the command does
-
-| Step | What happens |
-|------|-------------|
-| First run only | Asks for the base URL and creates `config/packages/integration_engine.yaml` |
-| Always | Asks for the action path and HTTP method |
-| First run only | Creates `{Name}Integration.php` |
-| Always | Creates `{Action}Action.php`, `{Action}Mapper.php`, `{Action}Response.php` |
-| Always | Appends the action entry to `{Name}.yaml` (creates it if absent) |
-
-### Example
-
-```bash
-php bin/console make:integration DummyRestApi GetEmployees
-# > Base URL: https://dummy.restapiexample.com
-# > Path: /api/v1/employees
-# > Method: GET
-```
-
-Generates this entry in `DummyRestApi.yaml`:
-
-```yaml
-GetEmployees:
-  action: App\Infrastructure\Integrations\DummyRestApi\GetEmployees\Request\GetEmployeesAction
-  method: GET
-  path: /api/v1/employees
-```
-
-### Adding a second action to an existing integration
-
-```bash
-php bin/console make:integration DummyRestApi GetEmployee
-# > Path: /api/v1/employee/{id}
-# > Method: GET
-```
-
-The command detects that `DummyRestApiIntegration.php` already exists and
-skips generating it. Only the new action files are created and the YAML
-entry is appended.
-
-### Creating integrations manually
-
-If you create an integration class by hand without using the command, you must
-override the `NAME` constant in your class:
-
-```php
-final class MyApiIntegration implements IntegrationName
-{
-    public const string NAME = 'my_api'; // must be declared explicitly
-}
-```
-
-The interface declares `NAME = '__MUST_OVERRIDE__'` as a sentinel value. PHP
-does not enforce constant overriding at the language level, so the bundle
-cannot detect a missing override at compile time. If `NAME` is not declared,
-the integration will be registered under `'__MUST_OVERRIDE__'` and will not
-resolve correctly from the registry.
-
-The scaffolding handles this automatically; manual creation requires it
-explicitly.
-
-## 11. Extensibility
-
-Every infrastructure component is replaceable via interfaces:
+Every infrastructure component is replaceable via a single config key:
 
 | Contract            | Default implementation         | Override via          |
 |---------------------|--------------------------------|-----------------------|
@@ -475,243 +755,14 @@ Every infrastructure component is replaceable via interfaces:
 | `CachePort`         | `InMemoryCacheAdapter`         | `cache_service`       |
 | `ConfigPort`        | `YamlConfigAdapter`            | custom CompilerPass   |
 
-## 12. Error reference
+## 13. Error reference
 
-The bundle throws named exceptions. All are catchable at the call site.
-
-| Exception                        | When it is thrown                                                                 | Recommended action                                              |
+| Exception                        | When                                                                              | Action                                                          |
 |----------------------------------|-----------------------------------------------------------------------------------|-----------------------------------------------------------------|
-| `ActionNotFoundException`        | `send()` is called with an action name not declared in the YAML config            | Verify the action name matches the YAML key exactly             |
-| `NotMappedActionException`       | The action's `mapper()` returns `null` but `hasResponse()` is `true`             | Declare a mapper class in the Action or set `hasResponse: false`|
+| `ActionNotFoundException`        | `send()` called with an action name not in the YAML config                        | Verify the action name matches the YAML key exactly             |
+| `NotMappedActionException`       | `mapper()` returns `null` but `hasResponse()` is `true`                          | Declare a mapper class or set `hasResponse: false`              |
 | `InvalidMapperException`         | `mapper()` returns a class that does not extend `AbstractMapper`                  | Check the mapper class declaration                              |
 | `MapperActionMismatchException`  | The mapper's `getAction()` does not match the action being executed               | Ensure each mapper declares the correct Action class            |
-| `RequestResponseException`       | The HTTP request returns a 4xx/5xx status, or a network error occurs              | Inspect `getStatusCode()` and `getContext()` for details        |
-| `RuntimeException`               | A path parameter declared in the template is missing from the context             | Ensure all `{param}` placeholders are covered by the context    |
-| `RuntimeException`               | A dynamic auth response does not contain the expected `token_field`               | Verify the auth action response structure matches the config    |
-
-## 13. Design principles
-
-- No magic outside the engine
-- Actions are immutable
-- Context is explicit and validated at resolution time
-- Bodies are typed objects
-- Mapping is explicit via mappers
-- Headers have a defined precedence: YAML → auth → caller
-- The call site is uniform regardless of integration complexity
-
-## 14. Recommended usage pattern
-
-The bundle can be used by calling `IntegrationRegistry` directly from any
-Symfony service. However, the recommended pattern is to wrap each integration
-in a dedicated facade class. This is not the only correct way to use the
-bundle, but it is the one that best expresses its intent.
-
-### The facade pattern
-
-Create one class per external integration. That class resolves the engine
-once in the constructor and exposes named methods for each operation:
-
-```php
-use IntegrationEngine\Core\Contract\DefaultActionContext;
-
-final class OrdersApiIntegration implements IntegrationName
-{
-    public const string NAME = 'orders_api';
-
-    private IntegrationEngine $engine;
-
-    public function __construct(IntegrationRegistry $registry)
-    {
-        $this->engine = $registry->get(self::NAME);
-    }
-
-    public function getOrder(int $id): GetOrderResponse
-    {
-        $response = $this->engine->send(
-            actionName: GetOrderAction::getName(),
-            context: DefaultActionContext::create(['id' => $id]),
-        );
-
-        \assert($response instanceof GetOrderResponse);
-
-        return $response;
-    }
-
-    public function createOrder(CreateOrderBody $body): CreateOrderResponse
-    {
-        $response = $this->engine->send(
-            actionName: CreateOrderAction::getName(),
-            body: $body,
-        );
-
-        \assert($response instanceof CreateOrderResponse);
-
-        return $response;
-    }
-}
-```
-
-The consumer — a controller, a command, another service — only depends on
-`OrdersApiIntegration`. It has no knowledge of the registry, the engine,
-the HTTP client, or the auth mechanism:
-
-```php
-final class OrderController extends AbstractController
-{
-    public function __construct(
-        private readonly OrdersApiIntegration $ordersApi,
-    ) {}
-
-    #[Route('/orders/{id}')]
-    public function show(int $id): JsonResponse
-    {
-        $order = $this->ordersApi->getOrder($id);
-
-        return $this->json([
-            'id'     => $order->getId(),
-            'status' => $order->getStatus(),
-        ]);
-    }
-}
-```
-
-### Why this pattern
-
-**The bundle disappears from the consumer.** The controller imports nothing
-from `IntegrationEngine\`. The external dependency is invisible above the
-integration layer.
-
-**The facade is the domain boundary.** Method names speak business language
-(`getOrder`, `createOrder`), not transport language (`send`, `GET`, `POST`).
-If the external API changes its contract, only the facade and its Actions
-change — nothing above it.
-
-**One engine resolution, many calls.** The registry lookup happens once in
-the constructor. Subsequent calls go directly to the engine without
-re-resolving the service.
-
-**Testability.** Any consumer that depends on `OrdersApiIntegration` can be
-tested by replacing it with a fake or a mock. No need to stub the registry,
-the engine, or the HTTP client.
-
-### When this pattern does not apply
-
-A dedicated facade adds a layer that is not always justified. Direct use of
-the registry is acceptable when:
-
-- The integration is called from a single place and is unlikely to grow.
-- The project is a small script or a CLI command with no test requirements.
-- You are prototyping and the facade would slow you down.
-
-The goal is not to follow the pattern for its own sake, but to keep external
-complexity out of the domain. Use the facade when that separation has value;
-skip it when it does not.
-
-## 15. The bundle proposes, it does not impose
-
-IntegrationEngine defines contracts. What you build on top of them is entirely
-up to you.
-
-Every piece of the bundle is a suggestion, not a requirement:
-
-- Use `DefaultActionContext` for simple path parameters, or implement
-  `ActionContextInterface` for validation and domain logic.
-- Declare auth in YAML for simple cases, use `DynamicAuthorizationConfig`
-  for token flows, or centralise it in a base action class.
-- Use the generated scaffold as-is, or extend it with value objects,
-  typed collections, and domain facades.
-- Replace any infrastructure component — client, cache, config source —
-  via a single config key.
-
-The bundle never sees beyond `AbstractAction`, `ActionContextInterface`, and
-`ResponseInterface`. Everything else is your domain.
-
-### Integration base classes
-
-The most powerful pattern the bundle enables without knowing about it is the
-integration base class. If a group of actions shares configuration — auth,
-a path prefix, common headers — extract it into an abstract class that extends
-`AbstractAction`:
-
-```php
-abstract class StripeAction extends AbstractAction
-{
-    public static function create(
-        string $method,
-        string $path,
-        ?ActionBodyInterface $body = null,
-    ): static {
-        return parent::create(
-            method: $method,
-            path: '/v1'.$path,
-            body: $body,
-            authorization: new StaticAuthorizationConfig(
-                type: 'bearer',
-                params: ['token' => '%env(STRIPE_SECRET_KEY)%'],
-            ),
-        );
-    }
-}
-```
-
-Every Stripe action then extends this base. Auth and path prefix are declared
-once. Each action only declares what makes it unique:
-
-```php
-final class CreateChargeAction extends StripeAction
-{
-    public static function getName(): string { return 'CreateCharge'; }
-    public static function hasResponse(): bool { return true; }
-    public static function mapper(): string { return CreateChargeMapper::class; }
-}
-
-final class ListCustomersAction extends StripeAction
-{
-    public static function getName(): string { return 'ListCustomers'; }
-    public static function hasResponse(): bool { return true; }
-    public static function mapper(): string { return ListCustomersMapper::class; }
-}
-```
-
-The bundle sees `AbstractAction`. Your domain sees `StripeAction`. The
-abstraction holds at both levels without any coupling between them.
-
-### The three levels of action design
-
-| Level | Class | Responsibility |
-|-------|-------|----------------|
-| Bundle | `AbstractAction` | Contract: method, path, auth, mapper |
-| Integration | `StripeAction` | Shared config: auth, prefix, defaults |
-| Operation | `CreateChargeAction` | Identity: name, response, mapper |
-
-Use one level, two, or all three. The bundle works the same either way.
-
-### What this means in practice
-
-A junior developer on your team can write a new Stripe action in three lines
-without knowing anything about authentication, HTTP clients, or token caching.
-A senior can replace the entire HTTP layer without touching a single action.
-The architect can define contracts that the whole team follows without writing
-a framework.
-
-That is the goal: a tool that gives structure without restricting freedom.
-
----
-
-## 16. Demo project
-
-A working Symfony application demonstrating the bundle against the public
-[Dummy REST API](https://dummy.restapiexample.com) is available at:
-
-**[github.com/CarlosGude/integrationEngine-use-example](https://github.com/CarlosGude/integrationEngine-use-example)**
-
-The demo implements two endpoints (`GET /employees` and `GET /employee/{id}`)
-and shows the full stack in practice:
-
-- Bundle configuration generated by `make:integration`
-- Value objects and typed collections built on top of the scaffold
-- Facade pattern wrapping the engine
-- Thin controllers with no knowledge of the HTTP layer
-
-It is the recommended starting point for understanding how the bundle fits
-into a real Symfony application.
+| `RequestResponseException`       | HTTP 4xx/5xx or network error                                                     | Inspect `getStatusCode()` and `getContext()`                    |
+| `RuntimeException`               | A path parameter is missing from the context                                      | Ensure all `{param}` placeholders are covered                   |
+| `RuntimeException`               | Dynamic auth response does not contain the expected `token_field`                 | Verify the auth action response structure matches the config    |
