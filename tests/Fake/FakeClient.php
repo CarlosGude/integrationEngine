@@ -16,7 +16,6 @@ final class FakeClient implements ClientInterface
 
     /** @var array<string, int> */
     private array $callCount = [];
-
     private ?AbstractAction $lastAction = null;
     private ?ActionContextInterface $lastContext = null;
 

@@ -276,6 +276,10 @@ patterns are covered in the full documentation:
 
 **[→ DOCUMENTATION.md](./DOCUMENTATION.md)**
 
+Test suite structure, fakes, and the rationale behind each test:
+
+**[→ TESTING.md](./TESTING.md)**
+
 ---
 
 ## Demo project

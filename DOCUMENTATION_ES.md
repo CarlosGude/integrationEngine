@@ -332,6 +332,8 @@ php bin/console make:integration {NombreIntegración} {NombreAcción}
 | Siempre | Crea `{Acción}Action.php`, `{Acción}Mapper.php`, `{Acción}Response.php` |
 | Siempre | Añade la entrada de la acción a `{Nombre}.yaml` (lo crea si no existe) |
 
+> **Convención**: `DELETE` no genera Mapper ni Response — `hasResponse` se establece a `false`. `HEAD` y `OPTIONS` no están soportados por el scaffolding.
+
 ### Crear integraciones manualmente
 
 Si creas una clase de integración a mano sin usar el comando, debes
@@ -773,3 +775,5 @@ configuración:
 | `RequestResponseException`       | HTTP 4xx/5xx o error de red                                                       | Inspecciona `getStatusCode()` y `getContext()`                  |
 | `RuntimeException`               | Un parámetro de path no está en el contexto                                       | Asegúrate de que todos los `{param}` están cubiertos            |
 | `RuntimeException`               | La respuesta de auth dinámica no contiene el `token_field` esperado               | Verifica que la estructura de la acción de auth coincide        |
+| `InvalidArgumentException`       | El fichero YAML de integración está vacío o no es un mapa YAML válido             | Comprueba que el fichero no está vacío y tiene la estructura correcta |
+| `InvalidArgumentException`       | La clase Action del YAML no existe o no extiende `AbstractAction`               | Verifica el FQCN en el campo `action` y ejecuta `composer dump-autoload` |

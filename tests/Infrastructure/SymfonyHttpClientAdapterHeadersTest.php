@@ -21,7 +21,6 @@ final class SymfonyHttpClientAdapterHeadersTest extends TestCase
     public function defaultHeadersFromYamlAreSent(): void
     {
         $httpClient = new SpyHttpClient();
-
         $adapter = new SymfonyHttpClientAdapter(
             httpClient: $httpClient,
             baseUrl: 'https://api.example.com',
@@ -38,7 +37,6 @@ final class SymfonyHttpClientAdapterHeadersTest extends TestCase
     public function authHeaderOverridesDefaultHeader(): void
     {
         $httpClient = new SpyHttpClient();
-
         $adapter = new SymfonyHttpClientAdapter(
             httpClient: $httpClient,
             baseUrl: 'https://api.example.com',
@@ -48,25 +46,18 @@ final class SymfonyHttpClientAdapterHeadersTest extends TestCase
         $action = HeadersTestAction::create(
             method: 'GET',
             path: '/test',
-            authorization: new StaticAuthorizationConfig(
-                type: 'bearer',
-                params: ['token' => 'new-token'],
-            ),
+            authorization: new StaticAuthorizationConfig(type: 'bearer', params: ['token' => 'new-token']),
         );
 
         $adapter->send($action);
 
-        self::assertSame(
-            'Bearer new-token',
-            $httpClient->lastOptions()['headers']['Authorization']
-        );
+        self::assertSame('Bearer new-token', $httpClient->lastOptions()['headers']['Authorization']);
     }
 
     #[Test]
     public function callerHeaderOverridesAuthHeader(): void
     {
         $httpClient = new SpyHttpClient();
-
         $adapter = new SymfonyHttpClientAdapter(
             httpClient: $httpClient,
             baseUrl: 'https://api.example.com',
@@ -75,10 +66,7 @@ final class SymfonyHttpClientAdapterHeadersTest extends TestCase
         $action = HeadersTestAction::create(
             method: 'GET',
             path: '/test',
-            authorization: new StaticAuthorizationConfig(
-                type: 'bearer',
-                params: ['token' => 'engine-token'],
-            ),
+            authorization: new StaticAuthorizationConfig(type: 'bearer', params: ['token' => 'engine-token']),
         );
 
         $callerHeaders = new class implements RequestHeadersInterface {
@@ -90,42 +78,28 @@ final class SymfonyHttpClientAdapterHeadersTest extends TestCase
 
         $adapter->send($action, null, $callerHeaders);
 
-        self::assertSame(
-            'Bearer caller-token',
-            $httpClient->lastOptions()['headers']['Authorization']
-        );
+        self::assertSame('Bearer caller-token', $httpClient->lastOptions()['headers']['Authorization']);
     }
 
     #[Test]
     public function noDefaultHeadersSendsOnlyAccept(): void
     {
         $httpClient = new SpyHttpClient();
-
-        $adapter = new SymfonyHttpClientAdapter(
-            httpClient: $httpClient,
-            baseUrl: 'https://api.example.com',
-        );
+        $adapter = new SymfonyHttpClientAdapter(httpClient: $httpClient, baseUrl: 'https://api.example.com');
 
         $adapter->send(HeadersTestAction::create('GET', '/test'));
 
-        self::assertSame(
-            ['Accept' => 'application/json'],
-            $httpClient->lastOptions()['headers']
-        );
+        self::assertSame(['Accept' => 'application/json'], $httpClient->lastOptions()['headers']);
     }
 
     #[Test]
     public function allThreeLayersMergeInCorrectOrder(): void
     {
         $httpClient = new SpyHttpClient();
-
         $adapter = new SymfonyHttpClientAdapter(
             httpClient: $httpClient,
             baseUrl: 'https://api.example.com',
-            defaultHeaders: [
-                'X-Layer' => 'yaml',
-                'X-Api-Version' => '1',
-            ],
+            defaultHeaders: ['X-Layer' => 'yaml', 'X-Api-Version' => '1'],
         );
 
         $action = HeadersTestAction::create(
@@ -146,9 +120,7 @@ final class SymfonyHttpClientAdapterHeadersTest extends TestCase
 
         $adapter->send($action, null, $callerHeaders);
 
-        // Caller overrides auth, auth overrides YAML
         self::assertSame('caller', $httpClient->lastOptions()['headers']['X-Layer']);
-        // X-Api-Version comes from YAML, nobody overrides it
         self::assertSame('1', $httpClient->lastOptions()['headers']['X-Api-Version']);
     }
 
@@ -156,22 +128,11 @@ final class SymfonyHttpClientAdapterHeadersTest extends TestCase
     public function contextIsPassedToGetPath(): void
     {
         $httpClient = new SpyHttpClient();
+        $adapter = new SymfonyHttpClientAdapter(httpClient: $httpClient, baseUrl: 'https://api.example.com');
 
-        $adapter = new SymfonyHttpClientAdapter(
-            httpClient: $httpClient,
-            baseUrl: 'https://api.example.com',
-        );
+        $adapter->send(HeadersTestAction::create('GET', '/orders/{id}'), FakeContext::create(['id' => '42']));
 
-        $action = HeadersTestAction::create('GET', '/orders/{id}');
-
-        $context = FakeContext::create(['id' => '42']);
-
-        $adapter->send($action, $context);
-
-        self::assertSame(
-            'https://api.example.com/orders/42',
-            $httpClient->lastUrl()
-        );
+        self::assertSame('https://api.example.com/orders/42', $httpClient->lastUrl());
     }
 }
 
