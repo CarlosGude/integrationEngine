@@ -7,36 +7,14 @@ namespace IntegrationEngine\Tests\Core;
 use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\DynamicAuthException;
-use IntegrationEngine\Core\IntegrationEngine;
-use IntegrationEngine\Tests\Fake\FakeCache;
-use IntegrationEngine\Tests\Fake\FakeClient;
-use IntegrationEngine\Tests\Fake\FakeConfigPort;
 use IntegrationEngine\Tests\Fake\FakeContext;
 use IntegrationEngine\Tests\Fake\FakePathAction;
 use IntegrationEngine\Tests\Fake\FakeProtectedAction;
 use IntegrationEngine\Tests\Fake\FakeTokenAction;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 
-final class DynamicAuthTest extends TestCase
+final class DynamicAuthTest extends IntegrationEngineTestCase
 {
-    private IntegrationEngine $engine;
-    private FakeConfigPort $config;
-    private FakeClient $client;
-    private FakeCache $cache;
-
-    protected function setUp(): void
-    {
-        $this->config = new FakeConfigPort();
-        $this->client = new FakeClient();
-        $this->cache = new FakeCache();
-
-        $this->engine = new IntegrationEngine(
-            config: $this->config,
-            client: $this->client,
-            cache: $this->cache,
-        );
-    }
 
     #[Test]
     public function dynamicAuthResolvesTokenAndSetsStaticAuth(): void

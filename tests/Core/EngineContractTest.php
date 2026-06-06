@@ -10,34 +10,12 @@ use IntegrationEngine\Core\Contract\ResponseInterface;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Exception\NotMappedActionException;
-use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Response\EmptyResponse;
-use IntegrationEngine\Tests\Fake\FakeCache;
-use IntegrationEngine\Tests\Fake\FakeClient;
-use IntegrationEngine\Tests\Fake\FakeConfigPort;
 use IntegrationEngine\Tests\Fake\FakeContext;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 
-final class EngineContractTest extends TestCase
+final class EngineContractTest extends IntegrationEngineTestCase
 {
-    private IntegrationEngine $engine;
-    private FakeConfigPort $config;
-    private FakeClient $client;
-    private FakeCache $cache;
-
-    protected function setUp(): void
-    {
-        $this->config = new FakeConfigPort();
-        $this->client = new FakeClient();
-        $this->cache = new FakeCache();
-
-        $this->engine = new IntegrationEngine(
-            config: $this->config,
-            client: $this->client,
-            cache: $this->cache,
-        );
-    }
 
     // ── Flujo completo ────────────────────────────────────────────────────────
 

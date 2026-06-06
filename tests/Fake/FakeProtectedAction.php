@@ -8,18 +8,7 @@ use IntegrationEngine\Core\Contract\AbstractAction;
 
 final class FakeProtectedAction extends AbstractAction
 {
-    public static function getName(): string
-    {
-        return 'fake_get_protected';
-    }
-
-    public static function hasResponse(): bool
-    {
-        return false;
-    }
-
-    public static function mapper(): ?string
-    {
-        return null;
-    }
+    public static function getName(): string   { return 'fake_get_protected'; }
+    public static function hasResponse(): bool { return false; }
+    public static function mapper(): ?string   { return null; }
 }
