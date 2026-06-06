@@ -207,4 +207,3 @@ YAML;
         return strtolower(preg_replace('/(?<!^)[A-Z]/u', '_$0', $value) ?? $value);
     }
 }
-
