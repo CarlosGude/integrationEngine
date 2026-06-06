@@ -16,7 +16,6 @@ use PHPUnit\Framework\Attributes\Test;
 
 final class EngineContractTest extends IntegrationEngineTestCase
 {
-
     // ── Flujo completo ────────────────────────────────────────────────────────
 
     #[Test]

@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Infrastructure;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\ActionContextInterface;
-use IntegrationEngine\Tests\Fake\FakeContext;
 use IntegrationEngine\Core\Contract\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
+use IntegrationEngine\Tests\Fake\FakeContext;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\HttpClient\HttpClientInterface;

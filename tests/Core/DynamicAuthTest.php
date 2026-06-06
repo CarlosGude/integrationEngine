@@ -15,7 +15,6 @@ use PHPUnit\Framework\Attributes\Test;
 
 final class DynamicAuthTest extends IntegrationEngineTestCase
 {
-
     #[Test]
     public function dynamicAuthResolvesTokenAndSetsStaticAuth(): void
     {
