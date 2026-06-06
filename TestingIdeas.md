@@ -1,260 +1,118 @@
-# IntegrationEngine — Testing Strategy Guide (Target: 90%+ meaningful coverage)
+# IntegrationEngine — Testing Strategy
 
-Este documento define la estrategia de testing del `IntegrationEngine` con un objetivo claro:  
-**alta cobertura real del comportamiento del sistema sin depender de mocks complejos ni tests frágiles.**
+The goal is not coverage. The goal is:
 
-La prioridad no es “cubrir líneas”, sino **garantizar que el engine nunca rompe el contrato de integración**.
+> No integration can break the engine contract without being detected immediately.
 
----
-
-# 🧠 Principios de la estrategia
-
-- Los tests validan comportamiento, no implementación.
-- El `IntegrationEngine` es el único punto crítico del sistema.
-- Se usan fakes simples en los bordes (Config, Client, Cache).
-- Evitar spies y mocks complejos.
-- Cada test debe representar un escenario real de integración.
-- El objetivo es detectar roturas del contrato, no microdetalles.
+Tests validate behaviour, not implementation. Fakes replace real infrastructure
+at the ports. No mocks, no spies, no coupling to internal details.
 
 ---
 
-# 🧪 Fase 1 — Core Flow (contrato base del engine)
+## What exists
 
-## Test 1 — Ejecución básica de una acción válida
+### `AbstractActionTest`
+Covers `AbstractAction` fully:
+- `getMethod()` returns constructed method
+- `getPath()` static path, with and without context
+- `getPath()` resolves single and multiple placeholders
+- `getPath()` throws `RuntimeException` for missing placeholder
+- `getPath()` throws `RuntimeException` for non-scalar placeholder value
+- Action does not store context between calls (statelessness regression)
+- Same instance resolves different contexts across calls
+- `getAuthorization()` returns null by default and injected config
+- Custom `resolvePathCallback()` is used when provided
+- Custom resolver receives context
+- Custom resolver throws if it does not return a string
 
-**Qué valida:**
-- El flujo completo del engine funciona de extremo a extremo.
+### `DynamicAuthTest`
+Covers the full dynamic auth flow via the engine:
+- Token resolved and substituted as `StaticAuthorizationConfig` (bearer)
+- Custom header resolves as `api_key`
+- Token cached on first call — auth action not called again
+- Token missing from auth response throws `RuntimeException`
+- Pre-cached token used without calling auth action
+- Context reaches client after dynamic auth reconstructs the action (regression)
+- Action remains stateless across multiple `send()` calls with different contexts
 
-**Qué cubre:**
-- ConfigPort → resolución de Action
-- Client → ejecución HTTP
-- Mapper → transformación de respuesta
-- Response final
+### `SymfonyHttpClientAdapterHeadersTest`
+Covers header precedence in `SymfonyHttpClientAdapter`:
+- YAML default headers are sent
+- Auth header overrides YAML default
+- Caller header overrides auth header
+- No defaults sends only `Accept: application/json`
+- All three layers merge in correct order
+- Context is passed to `getPath()` and resolves the URL
 
-**Qué se espera:**
-- El engine devuelve una `ResponseInterface` válida.
-- No se lanzan excepciones.
-
----
-
-## Test 2 — Acción sin response devuelve respuesta vacía
-
-**Qué valida:**
-- El comportamiento de acciones que no devuelven payload (ej: DELETE).
-
-**Qué cubre:**
-- Rama `hasResponse() === false`
-
-**Qué se espera:**
-- Se devuelve una respuesta vacía consistente.
-- No se invoca mapper.
-
----
-
-## Test 3 — Acción sin mapper definido
-
-**Qué valida:**
-- El sistema protege el contrato de transformación.
-
-**Qué cubre:**
-- Validación de `mapper() === null`
-
-**Qué se espera:**
-- Se lanza una excepción de tipo lógica.
-- El engine no intenta procesar la respuesta.
-
----
-
-# 🧪 Fase 2 — Mapper system (integridad de transformación)
-
-## Test 4 — Mapper inválido
-
-**Qué valida:**
-- El sistema rechaza mappers mal definidos.
-
-**Qué cubre:**
-- Verificación de clase inválida
-
-**Qué se espera:**
-- Se lanza `InvalidMapperException`.
+### `EngineContractTest`
+Covers the core engine contract:
+- Full flow: Config → Client → Mapper → Response
+- Mapper receives raw response and builds typed object
+- `hasResponse: false` returns `EmptyResponse`
+- `hasResponse: false` still calls the client
+- Unknown action name throws `ActionNotFoundException`
+- `hasResponse: true` with `mapper: null` throws `NotMappedActionException`
+- Mapper `getAction()` mismatch throws `MapperActionMismatchException`
+- Context is passed through to the client
 
 ---
 
-## Test 5 — Mapper no corresponde a la acción
+## What is not tested yet
 
-**Qué valida:**
-- Integridad entre Action ↔ Mapper.
+### `YamlConfigAdapter`
+The declarative config system — the primary developer-facing surface — has no
+tests. Priority:
+- Valid YAML with GET action resolves correctly
+- Path with `{param}` placeholder is preserved as-is (resolved at call time)
+- Action class not found throws `ActionNotFoundException`
+- Malformed YAML (missing `method`, missing `path`, missing `action`) throws
+  with a descriptive message
+- Auth block (static and dynamic) is parsed into the correct config objects
 
-**Qué cubre:**
-- `getAction()` del mapper vs clase real del Action
+### `IntegrationRegistry`
+- `get()` with a registered name returns the engine
+- `get()` with an unknown name throws `IntegrationNotFoundException`
 
-**Qué se espera:**
-- Se lanza `MapperActionMismatchException`.
-
----
-
-## Test 6 — Mapper correcto transforma correctamente
-
-**Qué valida:**
-- Transformación correcta de la respuesta raw.
-
-**Qué cubre:**
-- Pipeline completo de mapping
-
-**Qué se espera:**
-- La respuesta final contiene los datos transformados esperados.
+### `DefaultActionContext`
+- `create()` builds context from array
+- `toArray()` returns the original data
 
 ---
 
-# 🧪 Fase 3 — Authorization system (dinámico y estático)
+## Known exceptions and where they are thrown
 
-## Test 7 — Authorization estática no modifica la acción
-
-**Qué valida:**
-- Flujo sin resolución dinámica de tokens.
-
-**Qué cubre:**
-- StaticAuthorizationConfig bypass
-
-**Qué se espera:**
-- El engine ejecuta la acción sin modificarla.
-- No se accede a cache ni client adicional.
+| Exception | Thrown in |
+|---|---|
+| `ActionNotFoundException` | `YamlConfigAdapter::getAction()` |
+| `IntegrationNotFoundException` | `IntegrationRegistry::get()` |
+| `MapperActionMismatchException` | `IntegrationEngine::applyMapper()`, `AbstractMapper::map()` |
+| `NotMappedActionException` | `IntegrationEngine::applyMapper()` |
+| `RequestResponseException` | `SymfonyHttpClientAdapter::send()` |
+| `RuntimeException` | `AbstractAction::getPath()` (missing/non-scalar param, bad resolver) |
+| `RuntimeException` | `IntegrationEngine::resolveToken()` (missing token field, non-scalar token) |
 
 ---
 
-## Test 8 — Authorization dinámica resuelve token correctamente
+## Fakes available for reuse
 
-**Qué valida:**
-- Resolución de autenticación basada en acción secundaria.
+All fakes live inline in their test files. Extract to a shared `tests/Fake/`
+directory when the test count justifies it.
 
-**Qué cubre:**
-- DynamicAuthorizationConfig flow
-- ejecución de acción de auth
-
-**Qué se espera:**
-- Se genera un token válido.
-- Se reemplaza la autorización en la acción.
-
----
-
-## Test 9 — Cache evita recalcular token
-
-**Qué valida:**
-- Optimización del sistema de autenticación.
-
-**Qué cubre:**
-- Cache hit en tokens
-
-**Qué se espera:**
-- No se ejecuta la acción de auth de nuevo.
-- Se reutiliza el token cacheado.
+| Fake | File | What it does |
+|---|---|---|
+| `DynFakeCache` | `DynamicAuthTest` | In-memory CachePort |
+| `DynFakeClient` | `DynamicAuthTest` | Records last action, last context, call count per action |
+| `DynFakeConfigPort` | `DynamicAuthTest` | Registers actions by name |
+| `EngFakeCache` | `EngineContractTest` | In-memory CachePort |
+| `EngFakeClient` | `EngineContractTest` | Records last context, call count per action |
+| `EngFakeConfigPort` | `EngineContractTest` | Registers actions by name |
+| `SpyHttpClient` | `SymfonyHttpClientAdapterHeadersTest` | Records last options and URL |
 
 ---
 
-## Test 10 — Fallo de auth por campo inexistente
+## Philosophy
 
-**Qué valida:**
-- Robustez ante APIs externas inconsistentes.
-
-**Qué cubre:**
-- Falta de `tokenField` en respuesta de auth
-
-**Qué se espera:**
-- Se lanza RuntimeException.
-- El sistema no cachea valores inválidos.
-
----
-
-# 🧪 Fase 4 — Integridad del sistema (comportamiento global)
-
-## Test 11 — Flujo completo con cache miss y auth dinámica
-
-**Qué valida:**
-- Integración completa del sistema bajo condiciones reales.
-
-**Qué cubre:**
-- Config → Auth → Client → Mapper → Cache
-
-**Qué se espera:**
-- Se ejecuta auth.
-- Se guarda token en cache.
-- Se completa la ejecución de la acción.
-
----
-
-## Test 12 — Reutilización de token en múltiples ejecuciones
-
-**Qué valida:**
-- Estabilidad del sistema en múltiples llamadas.
-
-**Qué cubre:**
-- Persistencia del cache entre ejecuciones
-
-**Qué se espera:**
-- El auth flow solo ocurre una vez.
-- Las siguientes ejecuciones reutilizan token.
-
----
-
-# 🧪 Fase 5 — Robustez del sistema (edge cases críticos)
-
-## Test 13 — Mapper missing en acción con response requerido
-
-**Qué valida:**
-- Consistencia estricta del contrato.
-
-**Qué se espera:**
-- El sistema falla de forma explícita.
-
----
-
-## Test 14 — Acción inválida en ConfigPort
-
-**Qué valida:**
-- Protección ante configuración corrupta o mal definida.
-
-**Qué se espera:**
-- Excepción controlada.
-
----
-
-## Test 15 — Respuesta raw vacía con mapper requerido
-
-**Qué valida:**
-- Robustez del mapping ante APIs inconsistentes.
-
-**Qué se espera:**
-- El mapper gestiona o lanza error controlado.
-
----
-
-# 🧠 Resultado esperado de esta estrategia
-
-Si esta suite se implementa correctamente:
-
-- 60–70% coverage real en fase inicial
-- 80%+ tras edge cases
-- 90%+ con ampliación por dominios reales
-- Sin dependencia de mocks complejos
-- Sin tests frágiles ligados a implementación interna
-
----
-
-# ⚖️ Filosofía final
-
-El objetivo no es probar el código.
-
-El objetivo es garantizar esto:
-
-> “ninguna integración puede romper el contrato del engine sin ser detectada inmediatamente”
-
----
-
-# 🚀 Evolución futura (no necesaria ahora)
-
-- contract suites por dominio (Iberia, Stripe, etc.)
-- simulación de APIs legacy
-- escenarios de resiliencia (timeouts, retries, circuit breakers)
-- test de comportamiento bajo degradación
-
----
+The engine has one job: given a name, produce a typed response. Every test
+validates a variation of that contract. If a test cannot be expressed as
+"given this input to `send()`, the output or exception matches expectation",
+it is testing implementation, not behaviour.

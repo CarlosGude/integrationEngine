@@ -7,6 +7,7 @@ use PhpCsFixer\Finder;
 
 return (new Config())
     ->setRiskyAllowed(true)
+    ->setUnsupportedPhpVersionAllowed(true)
     ->setRules([
         // Base moderna y segura (sin Symfony opinionado)
         '@PhpCsFixer' => true,

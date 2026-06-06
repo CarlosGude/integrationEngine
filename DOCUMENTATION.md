@@ -761,7 +761,6 @@ Every infrastructure component is replaceable via a single config key:
 |----------------------------------|-----------------------------------------------------------------------------------|-----------------------------------------------------------------|
 | `ActionNotFoundException`        | `send()` called with an action name not in the YAML config                        | Verify the action name matches the YAML key exactly             |
 | `NotMappedActionException`       | `mapper()` returns `null` but `hasResponse()` is `true`                          | Declare a mapper class or set `hasResponse: false`              |
-| `InvalidMapperException`         | `mapper()` returns a class that does not extend `AbstractMapper`                  | Check the mapper class declaration                              |
 | `MapperActionMismatchException`  | The mapper's `getAction()` does not match the action being executed               | Ensure each mapper declares the correct Action class            |
 | `RequestResponseException`       | HTTP 4xx/5xx or network error                                                     | Inspect `getStatusCode()` and `getContext()`                    |
 | `RuntimeException`               | A path parameter is missing from the context                                      | Ensure all `{param}` placeholders are covered                   |

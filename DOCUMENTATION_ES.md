@@ -769,7 +769,6 @@ configuración:
 |----------------------------------|-----------------------------------------------------------------------------------|-----------------------------------------------------------------|
 | `ActionNotFoundException`        | `send()` llamado con un nombre de acción no declarado en la config YAML           | Verifica que el nombre coincide exactamente con la clave YAML   |
 | `NotMappedActionException`       | `mapper()` devuelve `null` pero `hasResponse()` es `true`                        | Declara una clase mapper o establece `hasResponse: false`       |
-| `InvalidMapperException`         | `mapper()` devuelve una clase que no extiende `AbstractMapper`                    | Comprueba la declaración de la clase mapper                     |
 | `MapperActionMismatchException`  | El `getAction()` del mapper no coincide con la acción que se está ejecutando      | Asegúrate de que cada mapper declara la clase Action correcta   |
 | `RequestResponseException`       | HTTP 4xx/5xx o error de red                                                       | Inspecciona `getStatusCode()` y `getContext()`                  |
 | `RuntimeException`               | Un parámetro de path no está en el contexto                                       | Asegúrate de que todos los `{param}` están cubiertos            |
