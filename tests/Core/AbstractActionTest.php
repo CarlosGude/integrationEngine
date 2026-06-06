@@ -7,6 +7,7 @@ namespace IntegrationEngine\Tests\Core;
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\ActionContextInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
+use IntegrationEngine\Core\Exception\PathResolutionException;
 use IntegrationEngine\Tests\Fake\FakeContext;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -67,7 +68,7 @@ final class AbstractActionTest extends TestCase
         $action = AbstractActionTestFixture::create(method: 'GET', path: '/orders/{id}');
         $context = FakeContext::create([]);
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(PathResolutionException::class);
         $this->expectExceptionMessageMatches('/Missing path parameter/');
 
         $action->getPath($context);
@@ -79,7 +80,7 @@ final class AbstractActionTest extends TestCase
         $action = AbstractActionTestFixture::create(method: 'GET', path: '/orders/{id}');
         $context = FakeContext::create(['id' => ['not', 'scalar']]);
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(PathResolutionException::class);
         $this->expectExceptionMessageMatches('/must be a scalar/');
 
         $action->getPath($context);
@@ -157,7 +158,7 @@ final class AbstractActionTest extends TestCase
     {
         $action = AbstractActionWithBadResolver::create(method: 'GET', path: '/original');
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(PathResolutionException::class);
         $this->expectExceptionMessageMatches('/must return a string/');
 
         $action->getPath();

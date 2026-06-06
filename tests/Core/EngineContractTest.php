@@ -12,6 +12,7 @@ use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Exception\NotMappedActionException;
 use IntegrationEngine\Core\Response\EmptyResponse;
 use IntegrationEngine\Tests\Fake\FakeContext;
+use IntegrationEngine\Tests\Fake\FakeTokenResponse;
 use PHPUnit\Framework\Attributes\Test;
 
 final class EngineContractTest extends IntegrationEngineTestCase
@@ -26,7 +27,7 @@ final class EngineContractTest extends IntegrationEngineTestCase
 
         $response = $this->engine->send(EngBasicAction::getName());
 
-        self::assertInstanceOf(EngBasicResponse::class, $response);
+        self::assertInstanceOf(FakeTokenResponse::class, $response);
         self::assertSame(['id' => 1, 'name' => 'item-one'], $response->toArray());
     }
 
@@ -38,7 +39,7 @@ final class EngineContractTest extends IntegrationEngineTestCase
 
         $response = $this->engine->send(EngBasicAction::getName());
 
-        self::assertInstanceOf(EngBasicResponse::class, $response);
+        self::assertInstanceOf(FakeTokenResponse::class, $response);
         self::assertSame(42, $response->toArray()['id']);
         self::assertSame('widget', $response->toArray()['name']);
     }
@@ -120,18 +121,6 @@ final class EngineContractTest extends IntegrationEngineTestCase
 // Fixtures
 // ──────────────────────────────────────────────
 
-final class EngBasicResponse implements ResponseInterface
-{
-    /** @param array<string, mixed> $data */
-    public function __construct(private readonly array $data) {}
-
-    /** @return array<string, mixed> */
-    public function toArray(): array
-    {
-        return $this->data;
-    }
-}
-
 final class EngBasicMapper extends AbstractMapper
 {
     public static function getAction(): string
@@ -141,7 +130,7 @@ final class EngBasicMapper extends AbstractMapper
 
     protected static function transform(AbstractAction $action, array $response): ResponseInterface
     {
-        return new EngBasicResponse($response);
+        return new FakeTokenResponse($response);
     }
 }
 
@@ -208,7 +197,7 @@ final class EngMismatchMapper extends AbstractMapper
 
     protected static function transform(AbstractAction $action, array $response): ResponseInterface
     {
-        return new EngBasicResponse($response);
+        return new FakeTokenResponse($response);
     }
 }
 
