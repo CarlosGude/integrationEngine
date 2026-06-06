@@ -6,33 +6,31 @@ namespace IntegrationEngine\Tests\Core;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\AbstractMapper;
-use IntegrationEngine\Core\Contract\ActionBodyInterface;
 use IntegrationEngine\Core\Contract\ActionContextInterface;
-use IntegrationEngine\Core\Contract\ClientInterface;
-use IntegrationEngine\Core\Contract\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\ResponseInterface;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Exception\NotMappedActionException;
 use IntegrationEngine\Core\IntegrationEngine;
-use IntegrationEngine\Core\Port\CachePort;
-use IntegrationEngine\Core\Port\ConfigPort;
 use IntegrationEngine\Core\Response\EmptyResponse;
+use IntegrationEngine\Tests\Fake\FakeCache;
+use IntegrationEngine\Tests\Fake\FakeClient;
+use IntegrationEngine\Tests\Fake\FakeConfigPort;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 final class EngineContractTest extends TestCase
 {
     private IntegrationEngine $engine;
-    private EngFakeConfigPort $config;
-    private EngFakeClient $client;
-    private EngFakeCache $cache;
+    private FakeConfigPort $config;
+    private FakeClient $client;
+    private FakeCache $cache;
 
     protected function setUp(): void
     {
-        $this->config = new EngFakeConfigPort();
-        $this->client = new EngFakeClient();
-        $this->cache = new EngFakeCache();
+        $this->config = new FakeConfigPort();
+        $this->client = new FakeClient();
+        $this->cache = new FakeCache();
 
         $this->engine = new IntegrationEngine(
             config: $this->config,
@@ -148,89 +146,6 @@ final class EngineContractTest extends TestCase
         $this->engine->send(EngBasicAction::getName(), $context);
 
         self::assertSame(['id' => '7'], $this->client->lastContext()?->toArray());
-    }
-}
-
-// ──────────────────────────────────────────────
-// Fakes
-// ──────────────────────────────────────────────
-
-final class EngFakeCache implements CachePort
-{
-    /** @var array<string, mixed> */
-    private array $data = [];
-
-    public function get(string $key): mixed
-    {
-        return $this->data[$key] ?? null;
-    }
-
-    public function has(string $key): bool
-    {
-        return \array_key_exists($key, $this->data);
-    }
-
-    public function set(string $key, mixed $value, int $ttl): void
-    {
-        $this->data[$key] = $value;
-    }
-}
-
-final class EngFakeClient implements ClientInterface
-{
-    /** @var array<string, array<mixed>> */
-    private array $responses = [];
-
-    /** @var array<string, int> */
-    private array $calls = [];
-    private ?ActionContextInterface $lastContext = null;
-
-    /** @param array<mixed> $response */
-    public function setResponse(string $name, array $response): void
-    {
-        $this->responses[$name] = $response;
-    }
-
-    public function callCount(string $name): int
-    {
-        return $this->calls[$name] ?? 0;
-    }
-
-    public function lastContext(): ?ActionContextInterface
-    {
-        return $this->lastContext;
-    }
-
-    /** @return array<mixed> */
-    public function send(
-        AbstractAction $action,
-        ?ActionContextInterface $context = null,
-        ?RequestHeadersInterface $headers = null,
-    ): array {
-        $this->calls[$action::getName()] = ($this->calls[$action::getName()] ?? 0) + 1;
-        $this->lastContext = $context;
-
-        return $this->responses[$action::getName()] ?? [];
-    }
-}
-
-final class EngFakeConfigPort implements ConfigPort
-{
-    /** @var array<string, AbstractAction> */
-    private array $actions = [];
-
-    public function register(string $name, AbstractAction $action): void
-    {
-        $this->actions[$name] = $action;
-    }
-
-    public function getAction(string $name, ?ActionBodyInterface $bodyData = null): AbstractAction
-    {
-        if (!isset($this->actions[$name])) {
-            throw new ActionNotFoundException($name);
-        }
-
-        return $this->actions[$name];
     }
 }
 
