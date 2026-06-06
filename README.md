@@ -6,51 +6,6 @@ A Symfony bundle for centralising external API integrations behind a consistent,
 
 ---
 
-## Motivation and differentiation
-
-### The problem
-
-Every Symfony application that consumes external APIs faces the same structural decision: where does the HTTP integration logic live, and how does it stay testable, replaceable, and consistent as the number of integrations grows?
-
-The typical answer evolves through three stages. First, `HttpClient` calls are made inline inside services — fast to write, impossible to test in isolation, and impossible to replace. Second, a dedicated client class is introduced per integration — better, but the shape of each client is invented from scratch each time, and authentication, caching, and mapping logic accumulates inside those classes without a shared contract. Third, the team adopts a library or writes a framework.
-
-This bundle addresses the third stage.
-
-### Existing alternatives
-
-**Saloon (PHP)**
-Saloon is the most complete PHP HTTP integration library available. It provides connectors, requests, plugins, and response handling with a mature ecosystem. It is the right choice for projects that need maximum flexibility, plugin extensibility, and a large community. IntegrationEngine is not a competitor to Saloon in scope — it is narrower by design.
-
-The specific difference is architectural: Saloon encourages extending base classes to define connectors and requests, which places integration logic inside class hierarchies that are defined by the developer. IntegrationEngine inverts this — the engine drives the flow, and integrations are configuration plus thin POPOs. The developer never writes a method that calls `$this->send()`. The result is a more constrained surface that is easier to reason about in a hexagonal architecture, at the cost of the flexibility Saloon provides.
-
-**Symfony HttpClient with scopes**
-Symfony's HttpClient supports scoped clients via `framework.http_client.scoped_clients`, which bind a base URL, headers, and auth to a named service. This solves the base URL and static auth problem well. It does not solve the action-level contract problem: there is no shared interface that a service calls to trigger a named operation, no mapper contract that enforces response shaping, no dynamic auth flow, and no context system for path parameter resolution. Scoped clients are infrastructure; IntegrationEngine is an application-layer contract on top of infrastructure.
-
-**Handwritten clients with discipline**
-A skilled team can write HTTP client classes that implement an interface, use a mapper, and inject cache and auth manually. This works. The cost is that every client is a unique snowflake — the auth caching logic is reimplemented, the mapper pattern is reinvented, the YAML configuration is hand-parsed. IntegrationEngine codifies those decisions once and makes the pattern enforced rather than conventional.
-
-### What this bundle specifically solves
-
-Three problems that none of the above address together:
-
-**1. Dynamic authorization with transparent caching.** Many APIs require a pre-flight token request — OAuth client credentials, session tokens, API key exchanges. In handwritten clients this logic is duplicated per integration or pulled into a shared service that all clients depend on. In IntegrationEngine, `DynamicAuthorizationConfig` declares which action fetches the token and which field contains it. The engine handles the request, caches the result for the declared TTL, and substitutes a `StaticAuthorizationConfig` transparently before the actual request. The integration author writes no caching logic.
-
-**2. Path context as a first-class concept.** URL path parameters (`/orders/{id}`) are not query parameters and are not body fields. They require resolution at call time with caller-supplied data. IntegrationEngine's `ActionContextInterface` makes this contract explicit: the caller declares what parameters they are providing, and the engine resolves the path. A missing parameter throws at resolution time, not at HTTP time. A non-scalar parameter throws at resolution time, not silently passes a stringified array.
-
-**3. A uniform call site regardless of integration complexity.** Whether the integration has no auth, static bearer auth, or dynamic OAuth — whether it has a body or no body, path parameters or no parameters — the call site is always:
-
-```php
-$registry->get(AcmeIntegration::NAME)->send(GetUsersAction::getName(), context: ..., body: ...);
-```
-
-This uniformity means services that call integrations are decoupled from the authentication and transport complexity of each integration. A service does not know or care whether fetching a token is involved.
-
-### What this bundle deliberately does not solve
-
-IntegrationEngine is not a general-purpose HTTP client. It does not handle streaming responses, multipart uploads, retry logic, circuit breaking, or webhook ingestion. For those needs, Saloon or a custom HttpClient adapter is the correct tool. IntegrationEngine is scoped to the request-response call pattern where the caller knows the operation, provides typed input, and expects a typed output.
-
----
-
 ## Requirements
 
 - PHP 8.2+
@@ -104,29 +59,58 @@ src/Infrastructure/Integrations/DummyRestApi/
         Response/GetEmployeesResponse.php
 ```
 
-### 2. Use it from a service
+The same command adds new actions to an existing integration — it detects
+what already exists and only generates what is missing.
+
+### 2. The correct usage pattern
+
+The integration facade wraps the engine. An application service translates
+the integration DTO to a domain object. The controller depends only on the
+service:
 
 ```php
-use IntegrationEngine\Core\Contract\DefaultActionContext;
+// 1. Fill in the generated facade
+public function getEmployee(int $id): GetEmployeeResponse
+{
+    $response = $this->engine->send(
+        actionName: GetEmployeeAction::getName(),
+        context: DefaultActionContext::create(['id' => $id]),
+    );
 
+    \assert($response instanceof GetEmployeeResponse);
+    return $response;
+}
+
+// 2. Translate to domain in an application service
 final class EmployeeService
 {
     public function __construct(
-        private readonly IntegrationRegistry $registry,
+        private readonly DummyRestApiIntegration $integration,
     ) {}
 
-    public function getEmployee(int $id): array
+    public function getEmployee(int $id): Employee
     {
-        return $this->registry
-            ->get(DummyRestApiIntegration::NAME)
-            ->send(
-                actionName: GetEmployeeAction::getName(),
-                context: DefaultActionContext::create(['id' => $id]),
-            )
-            ->toArray();
+        $dto = $this->integration->getEmployee($id);
+
+        return new Employee(
+            id:     $dto->id,
+            name:   $dto->employeeName,
+            salary: $dto->employeeSalary,
+        );
     }
 }
 ```
+
+The integration DTO never reaches the domain. See [section 1 of DOCUMENTATION.md](./DOCUMENTATION.md#1-ideal-usage) for the full pattern and the Anti-Corruption Layer explanation.
+
+### 3. Demo project
+
+A working Symfony application demonstrating the full stack:
+
+**[github.com/CarlosGude/integrationEngine-use-example](https://github.com/CarlosGude/integrationEngine-use-example)**
+
+Clone it, run `composer install` and `symfony server:start` — no database,
+no environment variables required.
 
 ---
 
@@ -135,50 +119,36 @@ final class EmployeeService
 ### Simple GET
 
 ```php
-->send(GetUsersAction::getName())
+$this->engine->send(GetOrdersAction::getName())
+```
+
+### With context — path parameters
+
+```php
+use IntegrationEngine\Core\Contract\DefaultActionContext;
+
+$this->engine->send(
+    actionName: GetOrderAction::getName(),
+    context: DefaultActionContext::create(['id' => $id]),
+)
 ```
 
 ### With body (POST / PUT)
 
 ```php
-->send(
-    actionName: CreateUserAction::getName(),
-    body: CreateUserBody::create(['name' => 'Rick']),
+$this->engine->send(
+    actionName: CreateOrderAction::getName(),
+    body: CreateOrderBody::create(['reference' => 'ORD-001']),
 )
 ```
 
-### With context — built-in (most cases)
-
-Use `DefaultActionContext` for simple path parameter resolution:
+### With context and body
 
 ```php
-use IntegrationEngine\Core\Contract\DefaultActionContext;
-
-->send(
-    actionName: GetUserAction::getName(),
-    context: DefaultActionContext::create(['id' => 1]),
-)
-```
-
-### With context — custom class
-
-For contexts with validation, domain semantics, or complex resolution,
-implement `ActionContextInterface` directly:
-
-```php
-->send(
-    actionName: GetOrderAction::getName(),
-    context: GetOrderContext::create(['id' => $id, 'warehouse' => $warehouseId]),
-)
-```
-
-### Mixed (most common)
-
-```php
-->send(
-    actionName: UpdateUserAction::getName(),
-    context: DefaultActionContext::create(['id' => 1]),
-    body: UpdateUserBody::create([...]),
+$this->engine->send(
+    actionName: UpdateOrderAction::getName(),
+    context: DefaultActionContext::create(['id' => $id]),
+    body: UpdateOrderBody::create([...]),
 )
 ```
 
@@ -206,18 +176,16 @@ integration_engine:
 
 ### Action config (`MyApi.yaml`)
 
-Each action must declare its fully qualified class name:
-
 ```yaml
-GetUsers:
-  action: App\Infrastructure\Integrations\MyApi\GetUsers\Request\GetUsersAction
+GetOrders:
+  action: App\Infrastructure\Integrations\MyApi\GetOrders\Request\GetOrdersAction
   method: GET
-  path: /users
+  path: /orders
 
-GetUser:
-  action: App\Infrastructure\Integrations\MyApi\GetUser\Request\GetUserAction
+GetOrder:
+  action: App\Infrastructure\Integrations\MyApi\GetOrder\Request\GetOrderAction
   method: GET
-  path: /users/{id}
+  path: /orders/{id}
 ```
 
 The `make:integration` command fills the `action` field automatically.
@@ -255,39 +223,34 @@ Each action then extends the base and only declares what makes it unique:
 ```php
 final class CreateChargeAction extends StripeAction
 {
-    public static function getName(): string { return 'CreateCharge'; }
+    public static function getName(): string   { return 'CreateCharge'; }
     public static function hasResponse(): bool { return true; }
-    public static function mapper(): string { return CreateChargeMapper::class; }
+    public static function mapper(): string    { return CreateChargeMapper::class; }
 }
 ```
 
-The bundle sees `AbstractAction`. Your domain sees `StripeAction`. Three
-levels of design — bundle contract, integration base, operation — with zero
-coupling between them.
+Full details in [DOCUMENTATION.md — Section 2](./DOCUMENTATION.md#2-philosophy).
 
-Full details in [DOCUMENTATION.md — Section 15](./DOCUMENTATION.md#15-the-bundle-proposes-it-does-not-impose).
+---
+
+## What this bundle deliberately does not solve
+
+IntegrationEngine is not a general-purpose HTTP client. It does not handle
+streaming responses, multipart uploads, retry logic, circuit breaking, or
+webhook ingestion. For those needs, Saloon or a custom `ClientInterface`
+adapter is the correct tool. IntegrationEngine is scoped to the
+request-response call pattern where the caller knows the operation, provides
+typed input, and expects a typed output.
 
 ---
 
 ## Further reading
 
-Architecture, authorization, headers, error reference, extensibility and recommended
-patterns are covered in the full documentation:
+Architecture, authorization, headers, error reference, extensibility and
+recommended patterns:
 
 **[→ DOCUMENTATION.md](./DOCUMENTATION.md)**
 
 Test suite structure, fakes, and the rationale behind each test:
 
 **[→ TESTING.md](./TESTING.md)**
-
----
-
-## Demo project
-
-A working Symfony application demonstrating the bundle against the public
-[Dummy REST API](https://dummy.restapiexample.com):
-
-**[github.com/CarlosGude/integrationEngine-use-example](https://github.com/CarlosGude/integrationEngine-use-example)**
-
-Clone it, run `composer install` and `symfony server:start` — no database,
-no environment variables required.
