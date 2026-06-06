@@ -235,7 +235,10 @@ final class SpyHttpClient implements HttpClientInterface
                 return [];
             }
 
-            public function cancel(): void {}
+            public function cancel(): void
+            {
+                // Not implemented — test spy does not need to cancel requests
+            }
 
             public function getInfo(?string $type = null): mixed
             {
