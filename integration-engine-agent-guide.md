@@ -176,7 +176,54 @@ interface ResponseInterface
 It is not the public API of the DTO — expose typed properties on the concrete
 class instead.
 
-### 3.7 `RequestHeadersInterface`
+### 3.7 `ClientAdapterInterface`
+
+Implement this to register a custom HTTP adapter (SOAP, XML-RPC, etc.).
+Extends `ClientInterface` so it also requires `send()`.
+
+```php
+interface ClientAdapterInterface extends ClientInterface
+{
+    // Identifier used in integration_engine.yaml client: key
+    public static function getClientType(): string;
+
+    // Whether the scaffolding should ask for a path (REST: true, GraphQL/SOAP: false)
+    public static function requiresPath(): bool;
+
+    // Whether the scaffolding should ask for an HTTP method (REST: true, GraphQL/SOAP: false)
+    public static function requiresMethod(): bool;
+}
+```
+
+Register in `services.yaml`:
+
+```yaml
+App\Infrastructure\Http\SoapClientAdapter:
+    tags:
+        - { name: integration_engine.client_adapter }
+```
+
+Project adapters override bundle built-ins for the same `getClientType()`.
+
+### 3.8 `GraphQLBodyInterface`
+
+Implement for GraphQL queries and mutations. Extends `ActionBodyInterface`.
+
+```php
+final class GetUserBody implements GraphQLBodyInterface
+{
+    public function getQuery(): string
+    {
+        return file_get_contents(__DIR__ . '/queries/get_user.graphql');
+    }
+
+    public function getVariables(): array { return ['login' => $this->login]; }
+    public function toArray(): array { return ['query' => $this->getQuery(), 'variables' => $this->getVariables()]; }
+    public static function create(array $data): self { return new self((string) $data['login']); }
+}
+```
+
+### 3.9 `RequestHeadersInterface`
 
 Optional per-request headers (correlation IDs, tenant identifiers, etc.).
 
@@ -745,6 +792,10 @@ Yes. Each top-level key in `{Name}.yaml` is a separate action.
 **What if the API returns no body (DELETE, 204)?**
 `hasResponse()` must return `false` and `mapper()` must return `null`.
 No Mapper or Response class is needed.
+
+**When should I use `client:` vs `client_service:`?**
+Use `client:` to select a registered protocol adapter (rest, graphql, soap, etc.) — the bundle manages wiring.
+Use `client_service:` for a fully custom client (retries, circuit breaking, custom logging) where you want total control.
 
 **Should I call the registry directly from a controller?**
 No. Always wrap registry calls in an integration facade, and translate DTOs

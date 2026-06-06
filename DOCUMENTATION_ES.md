@@ -46,6 +46,17 @@ src/Infrastructure/Integrations/DummyRestApi/
 El mismo comando añade nuevas acciones a una integración existente. Detecta
 lo que ya existe y solo genera lo que falta:
 
+Para integraciones GraphQL, el comando omite path y método — siempre son
+`POST /graphql`:
+
+```bash
+php bin/console make:integration GitHubGraphQL GetUser
+# > Base URL: https://api.github.com/graphql
+# > Client type [rest]: graphql
+# > Nombre de la primera acción/query: GetUser
+# → crea GitHubGraphQL/ con client: graphql en integration_engine.yaml
+```
+
 ```bash
 php bin/console make:integration DummyRestApi GetEmployee
 # > Path: /api/v1/employee/{id}
@@ -374,8 +385,9 @@ integration_engine:
       config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MyApi/MyApi.yaml'
       headers:
         X-Api-Version: '2'
+      client: rest           # "rest" (por defecto), "graphql" o cualquier tipo registrado
       cache_service: ~       # por defecto InMemoryCacheAdapter (solo dev)
-      client_service: ~      # ID de servicio ClientInterface personalizado
+      client_service: ~      # ID de servicio ClientInterface — sobreescribe client
 ```
 
 Se requiere `base_url` o `client_service` por integración.
@@ -756,14 +768,55 @@ contiene más allá de eso es completamente decisión tuya.
 
 ## 12. Extensibilidad
 
-Cada componente de infraestructura es reemplazable con una sola clave de
-configuración:
+Cada componente de infraestructura es reemplazable:
 
-| Contrato            | Implementación por defecto     | Sobreescribir con     |
-|---------------------|--------------------------------|-----------------------|
-| `ClientInterface`   | `SymfonyHttpClientAdapter`     | `client_service`      |
-| `CachePort`         | `InMemoryCacheAdapter`         | `cache_service`       |
-| `ConfigPort`        | `YamlConfigAdapter`            | CompilerPass custom   |
+| Contrato            | Implementación por defecto     | Sobreescribir con               |
+|---------------------|--------------------------------|---------------------------------|
+| `ClientInterface`   | `SymfonyHttpClientAdapter`     | `client_service` o `client`     |
+| `CachePort`         | `InMemoryCacheAdapter`         | `cache_service`                 |
+| `ConfigPort`        | `YamlConfigAdapter`            | CompilerPass personalizado      |
+
+### Adapters HTTP personalizados
+
+Implementa `ClientAdapterInterface` para crear un nuevo tipo de adapter
+(por ejemplo SOAP, XML-RPC o un protocolo personalizado):
+
+```php
+final readonly class SoapClientAdapter implements ClientAdapterInterface
+{
+    public static function getClientType(): string  { return 'soap'; }
+    public static function requiresPath(): bool     { return false; }
+    public static function requiresMethod(): bool   { return false; }
+
+    public function send(
+        AbstractAction $action,
+        ?ActionContextInterface $context = null,
+        ?RequestHeadersInterface $headers = null,
+    ): array {
+        // tu implementación
+    }
+}
+```
+
+Regístralo en el `services.yaml` de tu proyecto:
+
+```yaml
+App\Infrastructure\Http\SoapClientAdapter:
+  tags:
+    - { name: integration_engine.client_adapter }
+```
+
+Y úsalo en la config de la integración:
+
+```yaml
+integration_engine:
+  integrations:
+    my_soap_api:
+      base_url: 'https://api.example.com/soap'
+      client: soap
+```
+
+Los adapters del proyecto siempre tienen prioridad sobre los built-ins del bundle.
 
 ## 13. Errores
 
@@ -777,3 +830,5 @@ configuración:
 | `RuntimeException`               | La respuesta de auth dinámica no contiene el `token_field` esperado               | Verifica que la estructura de la acción de auth coincide        |
 | `InvalidArgumentException`       | El fichero YAML de integración está vacío o no es un mapa YAML válido             | Comprueba que el fichero no está vacío y tiene la estructura correcta |
 | `InvalidArgumentException`       | La clase Action del YAML no existe o no extiende `AbstractAction`               | Verifica el FQCN en el campo `action` y ejecuta `composer dump-autoload` |
+| `InvalidArgumentException`       | El valor de `client` en el YAML no está registrado (e.g. `client: soap` sin adapter) | Registra el adapter con el tag `integration_engine.client_adapter` |
+| `RequestResponseException`       | La respuesta GraphQL contiene `errors` (HTTP 200 con payload de error)          | Inspecciona `getContext()` para ver el mensaje de error GraphQL          |

@@ -6,14 +6,17 @@ namespace IntegrationEngine\Infrastructure\Http;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\ActionContextInterface;
-use IntegrationEngine\Core\Contract\ClientInterface;
+use IntegrationEngine\Core\Contract\ClientAdapterInterface;
 use IntegrationEngine\Core\Contract\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
-final readonly class SymfonyHttpClientAdapter implements ClientInterface
+final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface
 {
+    public static function getClientType(): string  { return 'rest'; }
+    public static function requiresPath(): bool     { return true; }
+    public static function requiresMethod(): bool   { return true; }
     public function __construct(
         private HttpClientInterface $httpClient,
         private string $baseUrl,

@@ -142,6 +142,18 @@ $this->engine->send(
 )
 ```
 
+### GraphQL
+
+```php
+$this->engine->send(
+    actionName: GetUserAction::getName(),
+    body: GetUserBody::create(['login' => 'CarlosGude']),
+)
+```
+
+`GetUserBody` implements `GraphQLBodyInterface` — declares `getQuery()` and
+`getVariables()`. The adapter handles the rest.
+
 ### With context and body
 
 ```php

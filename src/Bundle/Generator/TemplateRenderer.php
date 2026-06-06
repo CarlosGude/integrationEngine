@@ -39,10 +39,16 @@ final readonly class TemplateRenderer
      */
     public function yamlEntry(): string
     {
-        $method = strtoupper($this->ctx->method);
         $actionFqcn = $this->ctx->requestNamespace().'\\'.$this->ctx->action.'Action';
 
-        return "{$this->ctx->action}:\n    action: {$actionFqcn}\n    method: {$method}\n    path: {$this->ctx->path}\n";
+        if (!$this->ctx->adapterRequiresPath && !$this->ctx->adapterRequiresMethod) {
+            return "{$this->ctx->action}:\n    action: {$actionFqcn}\n    method: POST\n    path: /\n";
+        }
+
+        $method = $this->ctx->adapterRequiresMethod ? strtoupper($this->ctx->method) : 'POST';
+        $path   = $this->ctx->adapterRequiresPath   ? $this->ctx->path               : '/';
+
+        return "{$this->ctx->action}:\n    action: {$actionFqcn}\n    method: {$method}\n    path: {$path}\n";
     }
 
     /* =========================
@@ -60,6 +66,14 @@ final readonly class TemplateRenderer
             ? "\nuse {$this->ctx->responseNamespace()}\\{$this->ctx->action}Mapper;"
             : '';
 
+        $graphqlBodyUse = $this->ctx->needsGraphQLBodyHint()
+            ? "\nuse IntegrationEngine\\Core\\Contract\\GraphQLBodyInterface;"
+            : '';
+
+        $graphqlBodyHint = $this->ctx->needsGraphQLBodyHint()
+            ? "\n    // Attach a GraphQLBodyInterface implementation when calling send()."
+            : '';
+
         return <<<PHP
             <?php
 
@@ -67,10 +81,10 @@ final readonly class TemplateRenderer
 
             namespace {$this->ctx->requestNamespace()};
 
-            use IntegrationEngine\\Core\\Contract\\AbstractAction;{$mapperUse}
+            use IntegrationEngine\\Core\\Contract\\AbstractAction;{$mapperUse}{$graphqlBodyUse}
 
             final class {$this->ctx->action}Action extends AbstractAction
-            {
+            {{$graphqlBodyHint}
                 public static function getName(): string
                 {
                     return '{$this->ctx->action}';

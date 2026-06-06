@@ -10,7 +10,26 @@ services:
         exclude:
             - '../../../Infrastructure/Adapter/YamlConfigAdapter.php'
             - '../../../Infrastructure/Http/SymfonyHttpClientAdapter.php'
+            - '../../../Infrastructure/Http/GraphQLClientAdapter.php'
             - '../../../Core/IntegrationEngine.php'
+
+    # Built-in adapters — explicitly registered.
+    # To add a custom adapter, tag your service with integration_engine.client_adapter
+    # in your project's services.yaml:
+    #
+    #   App\Infrastructure\Http\SoapClientAdapter:
+    #       tags:
+    #           - { name: integration_engine.client_adapter }
+    IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter:
+        tags:
+            - { name: integration_engine.client_adapter }
+
+    IntegrationEngine\Infrastructure\Http\GraphQLClientAdapter:
+        tags:
+            - { name: integration_engine.client_adapter }
 
     integration_engine.cache.default:
         class: IntegrationEngine\Infrastructure\Cache\InMemoryCacheAdapter
+
+    IntegrationEngine\Infrastructure\Http\ClientAdapterResolver:
+        public: true

@@ -54,6 +54,17 @@ php bin/console make:integration DummyRestApi GetEmployee
 # → skips DummyRestApiIntegration.php (already exists)
 ```
 
+For GraphQL integrations, the command skips path and method — they are
+always `POST /graphql`:
+
+```bash
+php bin/console make:integration GitHubGraphQL GetUser
+# > Base URL: https://api.github.com/graphql
+# > Client type [rest]: graphql
+# > Name of the first action/query: GetUser
+# → creates GitHubGraphQL/ with client: graphql in integration_engine.yaml
+```
+
 `make:integration` is not just for getting started — it is the command you
 run every time you add an operation. See section 3 for the full reference.
 
@@ -325,15 +336,18 @@ php bin/console make:integration {IntegrationName} {ActionName}
 
 ### What the command does
 
-| Step | What happens |
-|------|-------------|
-| First run only | Asks for the base URL and creates `config/packages/integration_engine.yaml` |
-| Always | Asks for the action path and HTTP method |
-| First run only | Creates `{Name}Integration.php` |
-| Always | Creates `{Action}Action.php`, `{Action}Mapper.php`, `{Action}Response.php` |
-| Always | Appends the action entry to `{Name}.yaml` (creates it if absent) |
+The `action` argument is optional. If omitted, the command asks for it interactively.
 
-> **Convention**: `DELETE` generates no Mapper or Response — `hasResponse` is set to `false`. `HEAD` and `OPTIONS` are not supported by the scaffolding.
+| Step | REST | GraphQL |
+|------|------|---------|
+| First run | Asks base URL + client type | Asks base URL + client type |
+| First run | Asks first action name | Asks first action name |
+| REST only | Asks path and HTTP method | — skipped, always `POST /graphql` |
+| Always | Creates `{Name}Integration.php` | Creates `{Name}Integration.php` |
+| Always | Creates Action, Mapper, Response | Creates Action, Mapper, Response |
+| Always | Appends entry to `{Name}.yaml` | Appends entry to `{Name}.yaml` |
+
+> **Convention**: `DELETE` generates no Mapper or Response — `hasResponse` is set to `false`. `HEAD` and `OPTIONS` are not supported by the scaffolding. GraphQL actions always have `hasResponse: true`.
 
 ### Creating integrations manually
 
@@ -371,8 +385,9 @@ integration_engine:
       config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MyApi/MyApi.yaml'
       headers:
         X-Api-Version: '2'
+      client: rest           # "rest" (default), "graphql", or any registered custom type
       cache_service: ~       # defaults to InMemoryCacheAdapter (dev only)
-      client_service: ~      # custom ClientInterface service ID
+      client_service: ~      # custom ClientInterface service ID — overrides client
 ```
 
 Either `base_url` or `client_service` is required per integration.
@@ -589,6 +604,44 @@ final class CreateOrderBody implements ActionBodyInterface
 Bodies are serialised as JSON and sent for `POST`, `PUT`, `PATCH`, and
 `DELETE` requests.
 
+### GraphQL bodies
+
+For GraphQL integrations, implement `GraphQLBodyInterface` instead of
+`ActionBodyInterface`. It adds two methods: `getQuery()` and `getVariables()`.
+
+```php
+final class GetUserBody implements GraphQLBodyInterface
+{
+    public function __construct(private readonly string $login) {}
+
+    public function getQuery(): string
+    {
+        // Inline or loaded from a .graphql file
+        return file_get_contents(__DIR__ . '/../queries/get_user.graphql');
+    }
+
+    public function getVariables(): array
+    {
+        return ['login' => $this->login];
+    }
+
+    public function toArray(): array
+    {
+        return ['query' => $this->getQuery(), 'variables' => $this->getVariables()];
+    }
+
+    public static function create(array $data): self
+    {
+        return new self((string) $data['login']);
+    }
+}
+```
+
+The `GraphQLClientAdapter` serialises this as `{ "query": "...", "variables": {...} }`
+and sends it as `POST` to the configured endpoint. The mapper receives only
+the `data` key of the GraphQL response — errors are detected automatically
+and thrown as `RequestResponseException`.
+
 ## 8. Authorization system
 
 ### Static authorization
@@ -749,13 +802,58 @@ that is entirely up to you.
 
 ## 12. Extensibility
 
-Every infrastructure component is replaceable via a single config key:
+Every infrastructure component is replaceable:
 
-| Contract            | Default implementation         | Override via          |
-|---------------------|--------------------------------|-----------------------|
-| `ClientInterface`   | `SymfonyHttpClientAdapter`     | `client_service`      |
-| `CachePort`         | `InMemoryCacheAdapter`         | `cache_service`       |
-| `ConfigPort`        | `YamlConfigAdapter`            | custom CompilerPass   |
+| Contract            | Default implementation         | Override via                    |
+|---------------------|--------------------------------|---------------------------------|
+| `ClientInterface`   | `SymfonyHttpClientAdapter`     | `client_service` or `client`    |
+| `CachePort`         | `InMemoryCacheAdapter`         | `cache_service`                 |
+| `ConfigPort`        | `YamlConfigAdapter`            | custom CompilerPass             |
+
+### Custom HTTP adapters
+
+Implement `ClientAdapterInterface` to create a new adapter type (e.g. SOAP,
+XML-RPC, or a custom protocol). The interface extends `ClientInterface` and
+adds one static method:
+
+```php
+final readonly class SoapClientAdapter implements ClientAdapterInterface
+{
+    public static function getClientType(): string  { return 'soap'; }
+    public static function requiresPath(): bool     { return false; }
+    public static function requiresMethod(): bool   { return false; }
+
+    public function send(
+        AbstractAction $action,
+        ?ActionContextInterface $context = null,
+        ?RequestHeadersInterface $headers = null,
+    ): array {
+        // your implementation
+    }
+}
+```
+
+Register it in your project's `services.yaml`:
+
+```yaml
+App\Infrastructure\Http\SoapClientAdapter:
+  tags:
+    - { name: integration_engine.client_adapter }
+```
+
+Then use it in your integration config:
+
+```yaml
+integration_engine:
+  integrations:
+    my_soap_api:
+      base_url: 'https://api.example.com/soap'
+      client: soap
+```
+
+Project adapters always take precedence over bundle built-ins. Registering
+an adapter with `client: rest` replaces `SymfonyHttpClientAdapter` for that
+integration.
 
 ## 13. Error reference
 
@@ -769,3 +867,5 @@ Every infrastructure component is replaceable via a single config key:
 | `RuntimeException`               | Dynamic auth response does not contain the expected `token_field`                 | Verify the auth action response structure matches the config    |
 | `InvalidArgumentException`       | Integration YAML file is empty or its content is not a valid YAML map             | Check the YAML file is not empty and has the correct structure  |
 | `InvalidArgumentException`       | Action class declared in YAML does not exist or does not extend `AbstractAction`  | Verify the FQCN in the `action` field and run `composer dump-autoload` |
+| `InvalidArgumentException`       | `client` value in YAML is not registered (e.g. `client: soap` with no adapter)  | Register the adapter with the `integration_engine.client_adapter` tag  |
+| `RequestResponseException`       | GraphQL response contains `errors` (HTTP 200 with error payload)                  | Inspect `getContext()` for the GraphQL error message                    |
