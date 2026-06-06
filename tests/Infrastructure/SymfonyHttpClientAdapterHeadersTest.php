@@ -9,14 +9,12 @@ use IntegrationEngine\Core\Contract\ActionContextInterface;
 use IntegrationEngine\Core\Contract\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
-use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface as HttpResponseInterface;
 use Symfony\Contracts\HttpClient\ResponseStreamInterface;
 
-#[CoversNothing]
 final class SymfonyHttpClientAdapterHeadersTest extends TestCase
 {
     #[Test]

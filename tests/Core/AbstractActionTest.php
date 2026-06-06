@@ -7,11 +7,9 @@ namespace IntegrationEngine\Tests\Core;
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\ActionContextInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
-use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-#[CoversNothing]
 final class AbstractActionTest extends TestCase
 {
     // ── getMethod ────────────────────────────────────────────────────────────

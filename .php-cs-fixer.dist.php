@@ -18,6 +18,9 @@ return (new Config())
         'php_unit_test_annotation' => false,
         'php_unit_internal_class' => false,
 
+        // Evita que el fixer añada #[CoversNothing] — deprecated en PHPUnit 11
+        'php_unit_test_class_requires_covers' => false,
+
         // Evita docblocks heredados de PHPUnit legacy
         'phpdoc_to_comment' => false,
 

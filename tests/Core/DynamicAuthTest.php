@@ -17,11 +17,9 @@ use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
-use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-#[CoversNothing]
 final class DynamicAuthTest extends TestCase
 {
     private IntegrationEngine $engine;
