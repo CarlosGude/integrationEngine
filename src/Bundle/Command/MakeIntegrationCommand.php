@@ -84,7 +84,7 @@ final class MakeIntegrationCommand extends Command
                 null,
                 static function (?string $value): string {
                     if (null === $value || '' === trim($value)) {
-                        throw new \RuntimeException('Base URL cannot be empty.');
+                        throw new \InvalidArgumentException('Base URL cannot be empty.');
                     }
 
                     return trim($value);
@@ -123,7 +123,7 @@ final class MakeIntegrationCommand extends Command
 
         // ── 1. Create bundle config if it does not exist ──────────────────────
         if (!$bundleConfigExists && null !== $baseUrl) {
-            $this->createBundleConfig($bundleConfigPath, $name, $baseUrl, $integrationPath, $io);
+            $this->createBundleConfig($bundleConfigPath, $name, $baseUrl, $io);
         }
 
         // ── 2. Integration skeleton (only if first time) ──────────────────────
@@ -151,7 +151,6 @@ final class MakeIntegrationCommand extends Command
         string $configPath,
         string $name,
         string $baseUrl,
-        string $integrationPath,
         SymfonyStyle $io,
     ): void {
         $dir = \dirname($configPath);
