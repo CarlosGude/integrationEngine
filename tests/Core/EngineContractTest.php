@@ -6,7 +6,6 @@ namespace IntegrationEngine\Tests\Core;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\AbstractMapper;
-use IntegrationEngine\Core\Contract\ActionContextInterface;
 use IntegrationEngine\Core\Contract\ResponseInterface;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
@@ -16,6 +15,7 @@ use IntegrationEngine\Core\Response\EmptyResponse;
 use IntegrationEngine\Tests\Fake\FakeCache;
 use IntegrationEngine\Tests\Fake\FakeClient;
 use IntegrationEngine\Tests\Fake\FakeConfigPort;
+use IntegrationEngine\Tests\Fake\FakeContext;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -131,17 +131,7 @@ final class EngineContractTest extends TestCase
         $this->config->register(EngBasicAction::getName(), EngBasicAction::create('GET', '/items/{id}'));
         $this->client->setResponse(EngBasicAction::getName(), []);
 
-        $context = new class implements ActionContextInterface {
-            public static function create(array $data): self
-            {
-                return new self();
-            }
-
-            public function toArray(): array
-            {
-                return ['id' => '7'];
-            }
-        };
+        $context = FakeContext::create(['id' => '7']);
 
         $this->engine->send(EngBasicAction::getName(), $context);
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Core;
 
-use IntegrationEngine\Core\Contract\ActionContextInterface;
 use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\DynamicAuthException;
@@ -12,6 +11,7 @@ use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Tests\Fake\FakeCache;
 use IntegrationEngine\Tests\Fake\FakeClient;
 use IntegrationEngine\Tests\Fake\FakeConfigPort;
+use IntegrationEngine\Tests\Fake\FakeContext;
 use IntegrationEngine\Tests\Fake\FakePathAction;
 use IntegrationEngine\Tests\Fake\FakeProtectedAction;
 use IntegrationEngine\Tests\Fake\FakeTokenAction;
@@ -151,17 +151,7 @@ final class DynamicAuthTest extends TestCase
         $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'token_xyz']);
         $this->client->setResponse(FakePathAction::getName(), []);
 
-        $context = new class implements ActionContextInterface {
-            public static function create(array $data): self
-            {
-                return new self();
-            }
-
-            public function toArray(): array
-            {
-                return ['id' => '99'];
-            }
-        };
+        $context = FakeContext::create(['id' => '99']);
 
         $this->engine->send(FakePathAction::getName(), $context);
 
@@ -184,28 +174,8 @@ final class DynamicAuthTest extends TestCase
         $this->config->register(FakePathAction::getName(), FakePathAction::create('GET', '/orders/{id}'));
         $this->client->setResponse(FakePathAction::getName(), []);
 
-        $ctx1 = new class implements ActionContextInterface {
-            public static function create(array $data): self
-            {
-                return new self();
-            }
-
-            public function toArray(): array
-            {
-                return ['id' => '1'];
-            }
-        };
-        $ctx2 = new class implements ActionContextInterface {
-            public static function create(array $data): self
-            {
-                return new self();
-            }
-
-            public function toArray(): array
-            {
-                return ['id' => '2'];
-            }
-        };
+        $ctx1 = FakeContext::create(['id' => '1']);
+        $ctx2 = FakeContext::create(['id' => '2']);
 
         $this->engine->send(FakePathAction::getName(), $ctx1);
         $receivedCtx1 = $this->client->lastContext();
