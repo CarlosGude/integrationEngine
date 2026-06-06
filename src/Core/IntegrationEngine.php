@@ -12,6 +12,7 @@ use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\ResponseInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
+use IntegrationEngine\Core\Exception\DynamicAuthException;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Exception\NotMappedActionException;
 use IntegrationEngine\Core\Port\CachePort;
@@ -87,18 +88,12 @@ final readonly class IntegrationEngine
         $responseArray = $authResponse->toArray();
 
         if (!isset($responseArray[$authConfig->tokenField])) {
-            throw new \RuntimeException(\sprintf(
-                'Dynamic auth action "%s" response does not contain field "%s".',
-                $authConfig->action,
-                $authConfig->tokenField
-            ));
+            throw DynamicAuthException::missingTokenField($authConfig->action, $authConfig->tokenField);
         }
 
         $tokenValue = $responseArray[$authConfig->tokenField];
         if (!\is_scalar($tokenValue)) {
-            throw new \RuntimeException(
-                \sprintf('Token field "%s" must be a scalar value.', $authConfig->tokenField)
-            );
+            throw DynamicAuthException::nonScalarTokenField($authConfig->tokenField);
         }
 
         $token = (string) $tokenValue;

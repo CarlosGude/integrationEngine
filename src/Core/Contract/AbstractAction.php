@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core\Contract;
 
+use IntegrationEngine\Core\Exception\PathResolutionException;
+
 abstract class AbstractAction
 {
     final protected function __construct(
@@ -34,7 +36,7 @@ abstract class AbstractAction
         if (null !== $resolver) {
             $result = $resolver($this->path, $context);
             if (!\is_string($result)) {
-                throw new \RuntimeException('Path resolver must return a string.');
+                throw PathResolutionException::resolverDidNotReturnString();
             }
 
             return $result;
@@ -77,20 +79,12 @@ abstract class AbstractAction
                 $key = $matches[1];
 
                 if (!\array_key_exists($key, $contextData)) {
-                    throw new \RuntimeException(
-                        \sprintf(
-                            'Missing path parameter "%s" for path "%s"',
-                            $key,
-                            $path
-                        )
-                    );
+                    throw PathResolutionException::missingParameter($key, $path);
                 }
 
                 $value = $contextData[$key];
                 if (!\is_scalar($value)) {
-                    throw new \RuntimeException(
-                        \sprintf('Path parameter "%s" must be a scalar value.', $key)
-                    );
+                    throw PathResolutionException::nonScalarParameter($key);
                 }
 
                 return (string) $value;

@@ -163,7 +163,6 @@ final class MakeIntegrationCommand extends Command
         }
 
         $snakeName = $this->toSnakeCase($name);
-        $configFile = $integrationPath.'/'.$name.'.yaml';
 
         $content = <<<YAML
 integration_engine:
