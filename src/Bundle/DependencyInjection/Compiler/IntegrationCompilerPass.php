@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IntegrationEngine\Bundle\DependencyInjection\Compiler;
 
 use IntegrationEngine\Core\IntegrationEngine;
+use IntegrationEngine\Core\Registry\IntegrationRegistry;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
@@ -23,7 +24,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         /** @var array<string, array{config_path: string, client_service: null|string, base_url: null|string, cache_service: null|string, headers: array<string, string>}> $integrations */
         $integrations = $container->getParameter('integration_engine.integrations');
 
-        $registry = $container->findDefinition('IntegrationEngine\Core\Registry\IntegrationRegistry');
+        $registry = $container->findDefinition(IntegrationRegistry::class);
 
         foreach ($integrations as $name => $config) {
             $configId = "integration_engine.config.{$name}";

@@ -162,7 +162,7 @@ final class MakeIntegrationCommand extends Command
             return;
         }
 
-        $snakeName = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $name) ?? $name);
+        $snakeName = $this->toSnakeCase($name);
         $configFile = $integrationPath.'/'.$name.'.yaml';
 
         $content = <<<YAML
@@ -201,5 +201,10 @@ YAML;
 
         file_put_contents($filePath, $content);
         $io->text($exists ? "  updated  {$filePath}" : "  created  {$filePath}");
+    }
+
+    private function toSnakeCase(string $value): string
+    {
+        return strtolower(preg_replace('/(?<!^)[A-Z]/u', '_$0', $value) ?? $value);
     }
 }

@@ -75,14 +75,8 @@ final readonly class IntegrationEngine
     {
         $cacheKey = \sprintf('integration_engine.token.%s', $authConfig->action);
 
-        if ($this->cache->has($cacheKey)) {
-            $cached = $this->cache->get($cacheKey);
-            if (!\is_string($cached)) {
-                throw new \RuntimeException(
-                    \sprintf('Cached token for "%s" is not a string.', $authConfig->action)
-                );
-            }
-
+        $cached = $this->cache->get($cacheKey);
+        if (\is_string($cached)) {
             return $cached;
         }
 

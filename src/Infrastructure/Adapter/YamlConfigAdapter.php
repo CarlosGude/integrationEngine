@@ -22,8 +22,15 @@ final class YamlConfigAdapter implements ConfigPort
             throw new \InvalidArgumentException(\sprintf('Integration config file not found: %s', $configPath));
         }
 
-        /** @var array<string, array{action: class-string<AbstractAction>, method: string, path: string, body?: class-string, authorization?: array<string, mixed>}> $parsed */
         $parsed = Yaml::parseFile($configPath);
+
+        if (!\is_array($parsed)) {
+            throw new \InvalidArgumentException(
+                \sprintf('Integration config file "%s" is empty or invalid.', $configPath)
+            );
+        }
+
+        /** @var array<string, array{action: class-string<AbstractAction>, method: string, path: string, body?: class-string, authorization?: array<string, mixed>}> $parsed */
         $this->config = $parsed;
     }
 
@@ -51,7 +58,16 @@ final class YamlConfigAdapter implements ConfigPort
             $body = $bodyData ?? $bodyClass::create([]);
         }
 
-        return $actionConfig['action']::create(
+        /** @var string $actionClass */
+        $actionClass = $actionConfig['action'];
+
+        if (!class_exists($actionClass) || !is_a($actionClass, AbstractAction::class, true)) {
+            throw new \InvalidArgumentException(
+                \sprintf('Action class "%s" does not exist or does not extend %s. Check the "action" entry in your integration YAML.', $actionClass, AbstractAction::class)
+            );
+        }
+
+        return $actionClass::create(
             method: $actionConfig['method'],
             path: $actionConfig['path'],
             body: $body,

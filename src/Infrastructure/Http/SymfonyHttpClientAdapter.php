@@ -68,6 +68,12 @@ final readonly class SymfonyHttpClientAdapter implements ClientInterface
                 );
             }
 
+            $content = $response->getContent(throw: false);
+
+            if (204 === $statusCode || '' === trim($content)) {
+                return [];
+            }
+
             return $response->toArray();
         } catch (RequestResponseException $e) {
             throw $e;
