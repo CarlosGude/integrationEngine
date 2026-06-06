@@ -10,10 +10,7 @@ use IntegrationEngine\Core\Contract\ResponseInterface;
 
 final class FakeTokenMapper extends AbstractMapper
 {
-    public static function getAction(): string
-    {
-        return FakeTokenAction::class;
-    }
+    public static function getAction(): string { return FakeTokenAction::class; }
 
     protected static function transform(AbstractAction $action, array $response): ResponseInterface
     {

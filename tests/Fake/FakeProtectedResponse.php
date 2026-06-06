@@ -9,8 +9,5 @@ use IntegrationEngine\Core\Contract\ResponseInterface;
 final class FakeProtectedResponse implements ResponseInterface
 {
     /** @return array<string, mixed> */
-    public function toArray(): array
-    {
-        return [];
-    }
+    public function toArray(): array { return []; }
 }
