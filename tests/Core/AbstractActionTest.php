@@ -7,6 +7,7 @@ namespace IntegrationEngine\Tests\Core;
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\ActionContextInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
+use IntegrationEngine\Tests\Fake\FakeContext;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -46,17 +47,7 @@ final class AbstractActionTest extends TestCase
     public function getPathResolvesPlaceholderFromContext(): void
     {
         $action = AbstractActionTestFixture::create(method: 'GET', path: '/orders/{id}');
-        $context = new class implements ActionContextInterface {
-            public static function create(array $data): self
-            {
-                return new self();
-            }
-
-            public function toArray(): array
-            {
-                return ['id' => '42'];
-            }
-        };
+        $context = FakeContext::create(['id' => '42']);
 
         self::assertSame('/orders/42', $action->getPath($context));
     }
@@ -65,17 +56,7 @@ final class AbstractActionTest extends TestCase
     public function getPathResolvesMultiplePlaceholders(): void
     {
         $action = AbstractActionTestFixture::create(method: 'GET', path: '/users/{userId}/orders/{orderId}');
-        $context = new class implements ActionContextInterface {
-            public static function create(array $data): self
-            {
-                return new self();
-            }
-
-            public function toArray(): array
-            {
-                return ['userId' => '1', 'orderId' => '99'];
-            }
-        };
+        $context = FakeContext::create(['userId' => '1', 'orderId' => '99']);
 
         self::assertSame('/users/1/orders/99', $action->getPath($context));
     }
@@ -84,17 +65,7 @@ final class AbstractActionTest extends TestCase
     public function getPathThrowsForMissingPlaceholder(): void
     {
         $action = AbstractActionTestFixture::create(method: 'GET', path: '/orders/{id}');
-        $context = new class implements ActionContextInterface {
-            public static function create(array $data): self
-            {
-                return new self();
-            }
-
-            public function toArray(): array
-            {
-                return [];
-            }
-        };
+        $context = FakeContext::create([]);
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessageMatches('/Missing path parameter/');
@@ -106,17 +77,7 @@ final class AbstractActionTest extends TestCase
     public function getPathThrowsForNonScalarPlaceholderValue(): void
     {
         $action = AbstractActionTestFixture::create(method: 'GET', path: '/orders/{id}');
-        $context = new class implements ActionContextInterface {
-            public static function create(array $data): self
-            {
-                return new self();
-            }
-
-            public function toArray(): array
-            {
-                return ['id' => ['not', 'scalar']];
-            }
-        };
+        $context = FakeContext::create(['id' => ['not', 'scalar']]);
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessageMatches('/must be a scalar/');
@@ -130,33 +91,13 @@ final class AbstractActionTest extends TestCase
     public function actionDoesNotStoreContext(): void
     {
         $action = AbstractActionTestFixture::create(method: 'GET', path: '/orders/{id}');
-        $context = new class implements ActionContextInterface {
-            public static function create(array $data): self
-            {
-                return new self();
-            }
-
-            public function toArray(): array
-            {
-                return ['id' => '7'];
-            }
-        };
+        $context = FakeContext::create(['id' => '7']);
 
         // Primera llamada con context — resuelve correctamente
         self::assertSame('/orders/7', $action->getPath($context));
 
         // Segunda llamada con context distinto — resuelve con el nuevo, no con el anterior
-        $context2 = new class implements ActionContextInterface {
-            public static function create(array $data): self
-            {
-                return new self();
-            }
-
-            public function toArray(): array
-            {
-                return ['id' => '99'];
-            }
-        };
+        $context2 = FakeContext::create(['id' => '99']);
 
         self::assertSame('/orders/99', $action->getPath($context2));
     }
@@ -166,28 +107,8 @@ final class AbstractActionTest extends TestCase
     {
         $action = AbstractActionTestFixture::create(method: 'GET', path: '/orders/{id}');
 
-        $ctx1 = new class implements ActionContextInterface {
-            public static function create(array $data): self
-            {
-                return new self();
-            }
-
-            public function toArray(): array
-            {
-                return ['id' => '1'];
-            }
-        };
-        $ctx2 = new class implements ActionContextInterface {
-            public static function create(array $data): self
-            {
-                return new self();
-            }
-
-            public function toArray(): array
-            {
-                return ['id' => '2'];
-            }
-        };
+        $ctx1 = FakeContext::create(['id' => '1']);
+        $ctx2 = FakeContext::create(['id' => '2']);
 
         self::assertSame('/orders/1', $action->getPath($ctx1));
         self::assertSame('/orders/2', $action->getPath($ctx2));
@@ -226,17 +147,7 @@ final class AbstractActionTest extends TestCase
     public function customPathResolverReceivesContext(): void
     {
         $action = AbstractActionWithContextAwareResolver::create(method: 'GET', path: '/base');
-        $context = new class implements ActionContextInterface {
-            public static function create(array $data): self
-            {
-                return new self();
-            }
-
-            public function toArray(): array
-            {
-                return ['suffix' => 'xyz'];
-            }
-        };
+        $context = FakeContext::create(['suffix' => 'xyz']);
 
         self::assertSame('/base/xyz', $action->getPath($context));
     }

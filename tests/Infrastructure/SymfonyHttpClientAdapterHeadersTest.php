@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Infrastructure;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\ActionContextInterface;
 use IntegrationEngine\Core\Contract\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
+use IntegrationEngine\Tests\Fake\FakeContext;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -164,17 +164,7 @@ final class SymfonyHttpClientAdapterHeadersTest extends TestCase
 
         $action = HeadersTestAction::create('GET', '/orders/{id}');
 
-        $context = new class implements ActionContextInterface {
-            public static function create(array $data): self
-            {
-                return new self();
-            }
-
-            public function toArray(): array
-            {
-                return ['id' => '42'];
-            }
-        };
+        $context = FakeContext::create(['id' => '42']);
 
         $adapter->send($action, $context);
 
