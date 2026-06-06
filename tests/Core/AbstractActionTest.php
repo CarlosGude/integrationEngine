@@ -6,8 +6,8 @@ namespace IntegrationEngine\Tests\Core;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\ActionContextInterface;
-use IntegrationEngine\Tests\Fake\FakeContext;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
+use IntegrationEngine\Tests\Fake\FakeContext;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 

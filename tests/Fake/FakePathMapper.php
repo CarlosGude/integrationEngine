@@ -10,7 +10,10 @@ use IntegrationEngine\Core\Contract\ResponseInterface;
 
 final class FakePathMapper extends AbstractMapper
 {
-    public static function getAction(): string { return FakePathAction::class; }
+    public static function getAction(): string
+    {
+        return FakePathAction::class;
+    }
 
     protected static function transform(AbstractAction $action, array $response): ResponseInterface
     {
