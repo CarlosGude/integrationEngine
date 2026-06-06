@@ -97,9 +97,20 @@ final class ClientAdapterResolverTest extends TestCase
 
 final readonly class ResolverTestCustomAdapter implements ClientAdapterInterface
 {
-    public static function getClientType(): string  { return 'custom'; }
-    public static function requiresPath(): bool     { return false; }
-    public static function requiresMethod(): bool   { return false; }
+    public static function getClientType(): string
+    {
+        return 'custom';
+    }
+
+    public static function requiresPath(): bool
+    {
+        return false;
+    }
+
+    public static function requiresMethod(): bool
+    {
+        return false;
+    }
 
     public function send(
         AbstractAction $action,

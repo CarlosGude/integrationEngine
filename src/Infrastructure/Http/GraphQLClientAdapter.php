@@ -15,15 +15,27 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final readonly class GraphQLClientAdapter implements ClientAdapterInterface
 {
-    public static function getClientType(): string  { return 'graphql'; }
-    public static function requiresPath(): bool     { return false; }
-    public static function requiresMethod(): bool   { return false; }
     public function __construct(
         private HttpClientInterface $httpClient,
         private string $endpointUrl,
         /** @var array<string, string> */
         private array $defaultHeaders = [],
     ) {}
+
+    public static function getClientType(): string
+    {
+        return 'graphql';
+    }
+
+    public static function requiresPath(): bool
+    {
+        return false;
+    }
+
+    public static function requiresMethod(): bool
+    {
+        return false;
+    }
 
     /**
      * @return array<mixed>
@@ -42,7 +54,7 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface
                 statusCode: 0,
                 context: \sprintf(
                     'GraphQLClientAdapter requires a GraphQLBodyInterface body. Got %s for action "%s".',
-                    $body !== null ? $body::class : 'null',
+                    null !== $body ? $body::class : 'null',
                     $action::getName(),
                 )
             );
@@ -56,7 +68,7 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface
                 $headers?->toArray() ?? [],
             ),
             'json' => [
-                'query'     => $body->getQuery(),
+                'query' => $body->getQuery(),
                 'variables' => $body->getVariables(),
             ],
         ];
@@ -122,16 +134,16 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface
             return $headers;
         }
 
-        $token    = isset($auth->params['token'])    && \is_string($auth->params['token'])    ? $auth->params['token']    : '';
+        $token = isset($auth->params['token']) && \is_string($auth->params['token']) ? $auth->params['token'] : '';
         $username = isset($auth->params['username']) && \is_string($auth->params['username']) ? $auth->params['username'] : '';
         $password = isset($auth->params['password']) && \is_string($auth->params['password']) ? $auth->params['password'] : '';
-        $headerKey = isset($auth->params['header'])  && \is_string($auth->params['header'])   ? $auth->params['header']   : 'X-Api-Key';
+        $headerKey = isset($auth->params['header']) && \is_string($auth->params['header']) ? $auth->params['header'] : 'X-Api-Key';
 
         $headers += match ($auth->type) {
-            'bearer'  => ['Authorization' => \sprintf('Bearer %s', $token)],
-            'basic'   => ['Authorization' => \sprintf('Basic %s', base64_encode($username.':'.$password))],
+            'bearer' => ['Authorization' => \sprintf('Bearer %s', $token)],
+            'basic' => ['Authorization' => \sprintf('Basic %s', base64_encode($username.':'.$password))],
             'api_key' => [$headerKey => $token],
-            default   => [],
+            default => [],
         };
 
         return $headers;

@@ -14,15 +14,27 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface
 {
-    public static function getClientType(): string  { return 'rest'; }
-    public static function requiresPath(): bool     { return true; }
-    public static function requiresMethod(): bool   { return true; }
     public function __construct(
         private HttpClientInterface $httpClient,
         private string $baseUrl,
         /** @var array<string, string> */
         private array $defaultHeaders = [],
     ) {}
+
+    public static function getClientType(): string
+    {
+        return 'rest';
+    }
+
+    public static function requiresPath(): bool
+    {
+        return true;
+    }
+
+    public static function requiresMethod(): bool
+    {
+        return true;
+    }
 
     /**
      * @return array<mixed>

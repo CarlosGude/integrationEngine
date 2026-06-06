@@ -36,7 +36,7 @@ final class MakeIntegrationCommand extends Command
         $this
             ->addArgument('name', InputArgument::REQUIRED)
             ->addArgument('action', InputArgument::OPTIONAL)
-            ->addOption('namespace', null, InputOption::VALUE_REQUIRED, 'Base namespace', 'App\\Infrastructure\\Integrations')
+            ->addOption('namespace', null, InputOption::VALUE_REQUIRED, 'Base namespace', 'App\Infrastructure\Integrations')
             ->addOption('path', null, InputOption::VALUE_REQUIRED, 'Base path', 'src/Infrastructure/Integrations')
             ->addOption('force', null, InputOption::VALUE_NONE)
         ;
@@ -46,10 +46,10 @@ final class MakeIntegrationCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $nameArg      = $input->getArgument('name');
-        $actionArg    = $input->getArgument('action');
+        $nameArg = $input->getArgument('name');
+        $actionArg = $input->getArgument('action');
         $namespaceOpt = $input->getOption('namespace');
-        $pathOpt      = $input->getOption('path');
+        $pathOpt = $input->getOption('path');
 
         if (!\is_string($nameArg) || !\is_string($namespaceOpt) || !\is_string($pathOpt)) {
             $io->error('Invalid arguments provided.');
@@ -57,13 +57,13 @@ final class MakeIntegrationCommand extends Command
             return Command::FAILURE;
         }
 
-        $name            = $nameArg;
-        $force           = (bool) $input->getOption('force');
-        $baseNamespace   = rtrim($namespaceOpt, '\\');
-        $basePath        = rtrim($pathOpt, '/');
+        $name = $nameArg;
+        $force = (bool) $input->getOption('force');
+        $baseNamespace = rtrim($namespaceOpt, '\\');
+        $basePath = rtrim($pathOpt, '/');
         $integrationPath = $this->projectDir.'/'.$basePath.'/'.$name;
 
-        $bundleConfigPath   = $this->projectDir.'/config/packages/integration_engine.yaml';
+        $bundleConfigPath = $this->projectDir.'/config/packages/integration_engine.yaml';
         $bundleConfigExists = file_exists($bundleConfigPath);
 
         // ── Detect or ask client type ─────────────────────────────────────
@@ -97,7 +97,7 @@ final class MakeIntegrationCommand extends Command
         }
 
         /** @var class-string<ClientAdapterInterface> $adapterClass */
-        $requiresPath   = $adapterClass::requiresPath();
+        $requiresPath = $adapterClass::requiresPath();
         $requiresMethod = $adapterClass::requiresMethod();
 
         // ── Resolve action name ───────────────────────────────────────────
@@ -119,7 +119,7 @@ final class MakeIntegrationCommand extends Command
 
         // ── Ask path and method only if adapter requires them ─────────────
         $actionPath = '/';
-        $method     = 'POST';
+        $method = 'POST';
 
         if ($requiresPath) {
             $actionPath = $io->ask(
@@ -208,7 +208,7 @@ final class MakeIntegrationCommand extends Command
             return;
         }
 
-        $snakeName  = $this->toSnakeCase($name);
+        $snakeName = $this->toSnakeCase($name);
         $clientLine = 'rest' !== $clientType ? "\n            client: {$clientType}" : '';
 
         $content = <<<YAML

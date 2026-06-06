@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Bundle\DependencyInjection\Compiler;
 
+use IntegrationEngine\Core\Contract\ClientAdapterInterface;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Registry\IntegrationRegistry;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
@@ -39,7 +40,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
                 continue;
             }
 
-            if (!is_a($class, \IntegrationEngine\Core\Contract\ClientAdapterInterface::class, true)) {
+            if (!is_a($class, ClientAdapterInterface::class, true)) {
                 continue;
             }
 

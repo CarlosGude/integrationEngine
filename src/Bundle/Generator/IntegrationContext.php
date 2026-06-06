@@ -30,19 +30,38 @@ final readonly class IntegrationContext
 
     public function requestNamespace(): string
     {
-        return $this->actionNamespace().'\\Request';
+        return $this->actionNamespace().'\Request';
     }
 
     public function responseNamespace(): string
     {
-        return $this->actionNamespace().'\\Response';
+        return $this->actionNamespace().'\Response';
     }
 
-    public function isGet(): bool    { return 'GET'    === strtoupper($this->method); }
-    public function isPost(): bool   { return 'POST'   === strtoupper($this->method); }
-    public function isPut(): bool    { return 'PUT'    === strtoupper($this->method); }
-    public function isDelete(): bool { return 'DELETE' === strtoupper($this->method); }
-    public function isPatch(): bool  { return 'PATCH'  === strtoupper($this->method); }
+    public function isGet(): bool
+    {
+        return 'GET' === strtoupper($this->method);
+    }
+
+    public function isPost(): bool
+    {
+        return 'POST' === strtoupper($this->method);
+    }
+
+    public function isPut(): bool
+    {
+        return 'PUT' === strtoupper($this->method);
+    }
+
+    public function isDelete(): bool
+    {
+        return 'DELETE' === strtoupper($this->method);
+    }
+
+    public function isPatch(): bool
+    {
+        return 'PATCH' === strtoupper($this->method);
+    }
 
     public function hasBody(): bool
     {

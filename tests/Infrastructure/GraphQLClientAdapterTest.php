@@ -86,7 +86,7 @@ final class GraphQLClientAdapterTest extends TestCase
     {
         $spy = new GQLSpyHttpClient(responseBody: [
             'errors' => [['message' => 'Field "user" not found']],
-            'data'   => null,
+            'data' => null,
         ]);
         $adapter = new GraphQLClientAdapter(httpClient: $spy, endpointUrl: 'https://api.example.com/graphql');
 
@@ -195,7 +195,10 @@ final class GraphQLClientAdapterTest extends TestCase
         );
 
         $callerHeaders = new class implements RequestHeadersInterface {
-            public function toArray(): array { return ['Authorization' => 'Bearer caller-token']; }
+            public function toArray(): array
+            {
+                return ['Authorization' => 'Bearer caller-token'];
+            }
         };
 
         $adapter->send($action, null, $callerHeaders);
@@ -232,6 +235,7 @@ final class GQLSpyHttpClient implements HttpClientInterface
 {
     private string $lastMethod = '';
     private string $lastUrl = '';
+
     /** @var array<string, mixed> */
     private array $lastOptions = [];
 
@@ -241,39 +245,70 @@ final class GQLSpyHttpClient implements HttpClientInterface
         private readonly int $statusCode = 200,
     ) {}
 
-    public function lastMethod(): string { return $this->lastMethod; }
-    public function lastUrl(): string { return $this->lastUrl; }
+    public function lastMethod(): string
+    {
+        return $this->lastMethod;
+    }
+
+    public function lastUrl(): string
+    {
+        return $this->lastUrl;
+    }
+
     /** @return array<string, mixed> */
-    public function lastOptions(): array { return $this->lastOptions; }
+    public function lastOptions(): array
+    {
+        return $this->lastOptions;
+    }
 
     /** @param array<string, mixed> $options */
     public function request(string $method, string $url, array $options = []): HttpResponseInterface
     {
-        $this->lastMethod  = $method;
-        $this->lastUrl     = $url;
+        $this->lastMethod = $method;
+        $this->lastUrl = $url;
         $this->lastOptions = $options;
 
-        $statusCode   = $this->statusCode;
+        $statusCode = $this->statusCode;
         $responseBody = $this->responseBody;
 
-        return new class ($statusCode, $responseBody) implements HttpResponseInterface {
+        return new class($statusCode, $responseBody) implements HttpResponseInterface {
             /** @param array<string, mixed> $body */
             public function __construct(
                 private readonly int $statusCode,
                 private readonly array $body,
             ) {}
 
-            public function getStatusCode(): int { return $this->statusCode; }
+            public function getStatusCode(): int
+            {
+                return $this->statusCode;
+            }
+
             /** @return array<string, array<int, string>> */
-            public function getHeaders(bool $throw = true): array { return []; }
-            public function getContent(bool $throw = true): string { return json_encode($this->body) ?: '{}'; }
+            public function getHeaders(bool $throw = true): array
+            {
+                return [];
+            }
+
+            public function getContent(bool $throw = true): string
+            {
+                return json_encode($this->body) ?: '{}';
+            }
+
             /** @return array<mixed> */
-            public function toArray(bool $throw = true): array { return $this->body; }
+            public function toArray(bool $throw = true): array
+            {
+                return $this->body;
+            }
+
             public function cancel(): void
             {
                 // Not implemented — test spy does not need to cancel requests
             }
-            public function getInfo(?string $type = null): mixed { return null; }
+
+            public function getInfo(?string $type = null): mixed
+            {
+                return null;
+            }
         };
     }
 
@@ -283,32 +318,69 @@ final class GQLSpyHttpClient implements HttpClientInterface
     }
 
     /** @param array<string, mixed> $options */
-    public function withOptions(array $options): static { return $this; }
+    public function withOptions(array $options): static
+    {
+        return $this;
+    }
 }
 
 final class GQLTestBody implements GraphQLBodyInterface
 {
     private function __construct() {}
 
-    public static function create(array $data): self { return new self(); }
-    public function getQuery(): string { return 'query { user { id } }'; }
+    public static function create(array $data): self
+    {
+        return new self();
+    }
+
+    public function getQuery(): string
+    {
+        return 'query { user { id } }';
+    }
+
     /** @return array<string, mixed> */
-    public function getVariables(): array { return ['login' => 'test']; }
+    public function getVariables(): array
+    {
+        return ['login' => 'test'];
+    }
+
     /** @return array<string, mixed> */
-    public function toArray(): array { return ['query' => $this->getQuery(), 'variables' => $this->getVariables()]; }
+    public function toArray(): array
+    {
+        return ['query' => $this->getQuery(), 'variables' => $this->getVariables()];
+    }
 }
 
 final class GQLNonGraphQLBody implements ActionBodyInterface
 {
     private function __construct() {}
-    public static function create(array $data): self { return new self(); }
+
+    public static function create(array $data): self
+    {
+        return new self();
+    }
+
     /** @return array<string, mixed> */
-    public function toArray(): array { return []; }
+    public function toArray(): array
+    {
+        return [];
+    }
 }
 
 final class GQLTestAction extends AbstractAction
 {
-    public static function getName(): string   { return 'gql_test'; }
-    public static function hasResponse(): bool { return true; }
-    public static function mapper(): ?string   { return null; }
+    public static function getName(): string
+    {
+        return 'gql_test';
+    }
+
+    public static function hasResponse(): bool
+    {
+        return true;
+    }
+
+    public static function mapper(): ?string
+    {
+        return null;
+    }
 }

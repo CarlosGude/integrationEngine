@@ -46,7 +46,7 @@ final readonly class TemplateRenderer
         }
 
         $method = $this->ctx->adapterRequiresMethod ? strtoupper($this->ctx->method) : 'POST';
-        $path   = $this->ctx->adapterRequiresPath   ? $this->ctx->path               : '/';
+        $path = $this->ctx->adapterRequiresPath ? $this->ctx->path : '/';
 
         return "{$this->ctx->action}:\n    action: {$actionFqcn}\n    method: {$method}\n    path: {$path}\n";
     }
