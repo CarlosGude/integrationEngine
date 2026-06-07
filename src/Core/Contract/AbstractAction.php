@@ -45,6 +45,11 @@ abstract class AbstractAction
         return $this->defaultResolvePath($this->path, $context);
     }
 
+    final public function getRawPath(): string
+    {
+        return $this->path;
+    }
+
     final public function getBody(): ?ActionBodyInterface
     {
         return $this->body;

@@ -34,7 +34,7 @@ final readonly class IntegrationEngine
         ?RequestHeadersInterface $headers = null,
     ): ResponseInterface {
         $action = $this->config->getAction($actionName, $body);
-        $action = $this->applyAuthorization($action, $context);
+        $action = $this->applyAuthorization($action);
 
         $rawResponse = $this->client->send($action, $context, $headers);
 
@@ -47,7 +47,6 @@ final readonly class IntegrationEngine
 
     private function applyAuthorization(
         AbstractAction $action,
-        ?ActionContextInterface $context,
     ): AbstractAction {
         $auth = $action->getAuthorization();
 
@@ -61,7 +60,7 @@ final readonly class IntegrationEngine
 
         return $action::create(
             method: $action->getMethod(),
-            path: $action->getPath($context),
+            path: $action->getRawPath(),
             body: $action->getBody(),
             authorization: new StaticAuthorizationConfig(
                 type: $isDefaultHeader ? 'bearer' : 'api_key',
