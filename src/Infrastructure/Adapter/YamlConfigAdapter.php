@@ -13,7 +13,7 @@ use Symfony\Component\Yaml\Yaml;
 
 final class YamlConfigAdapter implements ConfigPort
 {
-    /** @var array<string, array{action: class-string<AbstractAction>, method: string, path: string, body?: class-string, authorization?: array<string, mixed>}> */
+    /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>}> */
     private array $config;
 
     public function __construct(string $configPath)
@@ -30,7 +30,7 @@ final class YamlConfigAdapter implements ConfigPort
             );
         }
 
-        /** @var array<string, array{action: class-string<AbstractAction>, method: string, path: string, body?: class-string, authorization?: array<string, mixed>}> $parsed */
+        /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>}> $parsed */
         $this->config = $parsed;
     }
 
@@ -56,6 +56,12 @@ final class YamlConfigAdapter implements ConfigPort
             }
 
             $body = $bodyData ?? $bodyClass::create([]);
+        } elseif (null !== $bodyData) {
+            throw new \InvalidArgumentException(\sprintf(
+                'Action "%s" does not declare a body in its YAML config, but a body was provided (%s).',
+                $name,
+                $bodyData::class,
+            ));
         }
 
         /** @var string $actionClass */
@@ -68,8 +74,8 @@ final class YamlConfigAdapter implements ConfigPort
         }
 
         return $actionClass::create(
-            method: $actionConfig['method'],
-            path: $actionConfig['path'],
+            method: $actionConfig['method'] ?? 'POST',
+            path: $actionConfig['path'] ?? '/',
             body: $body,
             authorization: $authorization,
         );

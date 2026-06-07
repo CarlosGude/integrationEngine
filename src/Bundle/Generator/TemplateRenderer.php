@@ -42,7 +42,7 @@ final readonly class TemplateRenderer
         $actionFqcn = $this->ctx->requestNamespace().'\\'.$this->ctx->action.'Action';
 
         if (!$this->ctx->adapterRequiresPath && !$this->ctx->adapterRequiresMethod) {
-            return "{$this->ctx->action}:\n    action: {$actionFqcn}\n    method: POST\n    path: /\n";
+            return "{$this->ctx->action}:\n    action: {$actionFqcn}\n";
         }
 
         $method = $this->ctx->adapterRequiresMethod ? strtoupper($this->ctx->method) : 'POST';

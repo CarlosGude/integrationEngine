@@ -28,8 +28,12 @@ services:
         tags:
             - { name: integration_engine.client_adapter }
 
+    # Default cache adapter — wraps Symfony's cache.app (PSR-6) into CachePort.
+    # Override per-integration with cache_service: my_cache_service in integration_engine.yaml.
     integration_engine.cache.default:
-        class: IntegrationEngine\Infrastructure\Cache\InMemoryCacheAdapter
+        class: IntegrationEngine\Infrastructure\Cache\Psr6CacheAdapter
+        arguments:
+            - '@cache.app'
 
     IntegrationEngine\Infrastructure\Http\ClientAdapterResolver:
         public: true
