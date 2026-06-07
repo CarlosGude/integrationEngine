@@ -16,7 +16,7 @@ const T = {
     es: {
         htmlLang: 'es',
         pageTitle: 'IntegrationEngine — Symfony Bundle',
-        otherLang: 'en', otherFlag: '🇬🇧', otherLabel: 'English',
+        metaDesc:  'Un motor de integración para Symfony que centraliza tus APIs externas bajo contratos claros.',
         heroBadge: 'Symfony Bundle · PHP 8.2+ · Packagist',
         heroH1:    'Deja de escribir el mismo cliente HTTP una y otra vez',
         heroP:     'Un motor de integración para Symfony que centraliza tus APIs externas bajo contratos claros.',
@@ -26,7 +26,23 @@ const T = {
             { label: 'Documentación', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION_ES.md' },
             { label: 'Demo',          href: 'https://github.com/CarlosGude/integrationEngine-use-example' },
         ],
-        copyHint: '¡Copiado!',
+        whyLabel: '¿Por qué no HttpClient?',
+        whyH2:    'HttpClient envía peticiones. IntegrationEngine estructura integraciones.',
+        whySub:   'Usa HttpClient cuando necesitas una o dos llamadas simples. Usa IntegrationEngine cuando la API forma parte de tu arquitectura y quieres contratos claros, respuestas tipadas y una Anti-Corruption Layer entre el proveedor y tu dominio.',
+        makeLabel: 'Un comando lo genera todo',
+        makeH2:   'De cero a integración tipada en segundos.',
+        makeSub:  'El comando hace las preguntas. Tú solo escribes la lógica.',
+        makeCmd:  '$ php bin/console make:integration Github GetUser',
+        makeFiles: [
+            'config/packages/integration_engine.yaml',
+            'src/Infrastructure/Integrations/Github/GithubIntegration.php',
+            'src/Infrastructure/Integrations/Github/Github.yaml',
+            'src/Infrastructure/Integrations/Github/GetUser/Request/GetUserAction.php',
+            'src/Infrastructure/Integrations/Github/GetUser/Response/GetUserMapper.php',
+            'src/Infrastructure/Integrations/Github/GetUser/Response/GetUserResponse.php',
+        ],
+        codeReadmeLink: 'Para el flujo completo (facade → service → domain) →',
+        codeReadmeLinkLabel: 'README',
         problemaLabel: 'El Problema',
         problemaH2:    'Cada integración acaba siendo un caso aislado',
         problemaSub:   'Diferentes formatos, autenticaciones inconsistentes, lógica de cache duplicada. El código se fragmenta y cada nueva API es empezar de cero.',
@@ -55,17 +71,19 @@ const T = {
             { label: 'Sin auth',           id: 'tab-noauth' },
             { label: 'Con path params',    id: 'tab-path' },
             { label: 'Con body y headers', id: 'tab-body' },
+            { label: 'GraphQL',            id: 'tab-graphql' },
         ],
-        codeNoAuth: `<span class="cmt">// Sin autenticación</span>\n<span class="var">$registry</span><span class="kw">-&gt;</span><span class="met">get</span>(\n    <span class="cls">AcmeIntegration</span><span class="kw">::</span><span class="cls">NAME</span>\n)<span class="kw">-&gt;</span><span class="met">send</span>(\n    <span class="cls">GetUsersAction</span><span class="kw">::</span><span class="met">getName</span>()\n);`,
-        codePath:   `<span class="cmt">// Con parámetros de ruta — /users/{id}</span>\n<span class="var">$registry</span><span class="kw">-&gt;</span><span class="met">get</span>(\n    <span class="cls">AcmeIntegration</span><span class="kw">::</span><span class="cls">NAME</span>\n)<span class="kw">-&gt;</span><span class="met">send</span>(\n    <span class="cls">GetUserAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    context: <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="num">42</span>])\n);`,
-        codeBody:   `<span class="cmt">// Con body y headers personalizados</span>\n<span class="var">$registry</span><span class="kw">-&gt;</span><span class="met">get</span>(\n    <span class="cls">AcmeIntegration</span><span class="kw">::</span><span class="cls">NAME</span>\n)<span class="kw">-&gt;</span><span class="met">send</span>(\n    <span class="cls">CreateOrderAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body:    <span class="var">$body</span>,\n    headers: <span class="kw">new</span> <span class="cls">CorrelationHeaders</span>(<span class="var">$id</span>)\n);`,
+        codeNoAuth: `<span class="cmt">// Action path: GET /orders</span>\n<span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    <span class="cls">GetOrdersAction</span><span class="kw">::</span><span class="met">getName</span>()\n);\n<span class="cmt">// → GET /orders</span>`,
+        codePath:   `<span class="cmt">// Action path: GET /orders/{id}</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">GetOrderAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    context: <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n);\n<span class="cmt">// → GET /orders/42</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetOrderResponse</span>);\n<span class="cmt">// GetOrderResponse { id: 42, reference: 'ORD-001', items: [...] }</span>`,
+        codeBody:   `<span class="cmt">// Action path: POST /orders</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">CreateOrderAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body: <span class="cls">CreateOrderBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'reference'</span> <span class="kw">=&gt;</span> <span class="str">'ORD-001'</span>]),\n    headers: <span class="kw">new</span> <span class="cls">CorrelationHeaders</span>(<span class="var">$correlationId</span>),\n);\n<span class="cmt">// → POST /orders { "reference": "ORD-001" }</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">CreateOrderResponse</span>);\n<span class="cmt">// CreateOrderResponse { id: 99, reference: 'ORD-001', status: 'pending' }</span>`,
+        codeGraphQL: `<span class="cmt">// Action endpoint: POST /graphql</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">GetOrderAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body: <span class="cls">GetOrderBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n);\n<span class="cmt">// → POST /graphql { "query": "...", "variables": { "id": 42 } }</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetOrderResponse</span>);\n<span class="cmt">// GetOrderResponse { id: 42, reference: 'ORD-001', items: [...] }</span>`,
         capasLabel: 'Diseño en Capas',
         capasH2:    'El bundle propone. No impone.',
         capasSub:   'Tres niveles que emergen solos. Usa los que necesites.',
         layersHead: ['Clase', 'Responsabilidad', 'Alcance'],
         layers: [
             { name: 'CreateChargeAction', desc: 'Solo declara el método, el path y el DTO de respuesta. Sin lógica HTTP.',                 scope: 'Acción concreta' },
-            { name: 'StripeAction',       desc: 'Auth, path base y headers comunes de Stripe. Reutilizado por todas sus acciones.',        scope: 'Integración' },
+            { name: 'GithubAction',       desc: 'Auth, path base y headers comunes de GitHub. Reutilizado por todas sus acciones.',        scope: 'Integración' },
             { name: 'AbstractAction',     desc: 'Contrato base que provee el engine. Extensible sin tocar el core.',                      scope: 'Bundle' },
         ],
         makeNote: 'El comando <code>make:integration</code> crea el config, las clases y el YAML en un solo paso.',
@@ -73,13 +91,15 @@ const T = {
         ctaP:    'Sin boilerplate. Sin decisiones arbitrarias. Solo tu lógica de negocio.',
         ctaBtn1: 'Ver en GitHub',
         ctaBtn2: 'Documentación',
+        ctaBtn3: 'Ver demo',
+        ctaBtn3Href: 'https://github.com/CarlosGude/integrationEngine-use-example',
         footerTxt: 'IntegrationEngine &mdash; <a href="https://github.com/CarlosGude/integrationEngine">CarlosGude/integrationEngine</a> &mdash; MIT License',
     },
 
     en: {
         htmlLang: 'en',
         pageTitle: 'IntegrationEngine — Symfony Bundle',
-        otherLang: 'es', otherFlag: '🇪🇸', otherLabel: 'Español',
+        metaDesc:  'An integration engine for Symfony that centralises your external APIs under clear contracts.',
         heroBadge: 'Symfony Bundle · PHP 8.2+ · Packagist',
         heroH1:    'Stop writing the same HTTP client over and over again',
         heroP:     'An integration engine for Symfony that centralises your external APIs under clear contracts.',
@@ -89,7 +109,23 @@ const T = {
             { label: 'Documentation', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION.md' },
             { label: 'Demo',          href: 'https://github.com/CarlosGude/integrationEngine-use-example' },
         ],
-        copyHint: 'Copied!',
+        whyLabel: 'Why not HttpClient?',
+        whyH2:    'HttpClient sends requests. IntegrationEngine structures integrations.',
+        whySub:   'Use HttpClient for one or two simple calls. Use IntegrationEngine when the API is part of your architecture and you want clear contracts, typed responses, and an Anti-Corruption Layer between the provider and your domain.',
+        makeLabel: 'One command generates everything',
+        makeH2:   'From zero to a typed integration in seconds.',
+        makeSub:  'The command asks the questions. You only write the logic.',
+        makeCmd:  '$ php bin/console make:integration Github GetUser',
+        makeFiles: [
+            'config/packages/integration_engine.yaml',
+            'src/Infrastructure/Integrations/Github/GithubIntegration.php',
+            'src/Infrastructure/Integrations/Github/Github.yaml',
+            'src/Infrastructure/Integrations/Github/GetUser/Request/GetUserAction.php',
+            'src/Infrastructure/Integrations/Github/GetUser/Response/GetUserMapper.php',
+            'src/Infrastructure/Integrations/Github/GetUser/Response/GetUserResponse.php',
+        ],
+        codeReadmeLink: 'For the full pattern (facade → service → domain) →',
+        codeReadmeLinkLabel: 'README',
         problemaLabel: 'The Problem',
         problemaH2:    'Every integration ends up as an isolated case',
         problemaSub:   'Different formats, inconsistent authentication, duplicated cache logic. The codebase fragments and every new API means starting from scratch.',
@@ -118,17 +154,19 @@ const T = {
             { label: 'No auth',          id: 'tab-noauth' },
             { label: 'Path params',      id: 'tab-path' },
             { label: 'Body and headers', id: 'tab-body' },
+            { label: 'GraphQL',          id: 'tab-graphql' },
         ],
-        codeNoAuth: `<span class="cmt">// No authentication</span>\n<span class="var">$registry</span><span class="kw">-&gt;</span><span class="met">get</span>(\n    <span class="cls">AcmeIntegration</span><span class="kw">::</span><span class="cls">NAME</span>\n)<span class="kw">-&gt;</span><span class="met">send</span>(\n    <span class="cls">GetUsersAction</span><span class="kw">::</span><span class="met">getName</span>()\n);`,
-        codePath:   `<span class="cmt">// With path parameters — /users/{id}</span>\n<span class="var">$registry</span><span class="kw">-&gt;</span><span class="met">get</span>(\n    <span class="cls">AcmeIntegration</span><span class="kw">::</span><span class="cls">NAME</span>\n)<span class="kw">-&gt;</span><span class="met">send</span>(\n    <span class="cls">GetUserAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    context: <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="num">42</span>])\n);`,
-        codeBody:   `<span class="cmt">// With body and custom headers</span>\n<span class="var">$registry</span><span class="kw">-&gt;</span><span class="met">get</span>(\n    <span class="cls">AcmeIntegration</span><span class="kw">::</span><span class="cls">NAME</span>\n)<span class="kw">-&gt;</span><span class="met">send</span>(\n    <span class="cls">CreateOrderAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body:    <span class="var">$body</span>,\n    headers: <span class="kw">new</span> <span class="cls">CorrelationHeaders</span>(<span class="var">$id</span>)\n);`,
+        codeNoAuth: `<span class="cmt">// Action path: GET /orders</span>\n<span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    <span class="cls">GetOrdersAction</span><span class="kw">::</span><span class="met">getName</span>()\n);\n<span class="cmt">// → GET /orders</span>`,
+        codePath:   `<span class="cmt">// Action path: GET /orders/{id}</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">GetOrderAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    context: <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n);\n<span class="cmt">// → GET /orders/42</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetOrderResponse</span>);\n<span class="cmt">// GetOrderResponse { id: 42, reference: 'ORD-001', items: [...] }</span>`,
+        codeBody:   `<span class="cmt">// Action path: POST /orders</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">CreateOrderAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body: <span class="cls">CreateOrderBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'reference'</span> <span class="kw">=&gt;</span> <span class="str">'ORD-001'</span>]),\n    headers: <span class="kw">new</span> <span class="cls">CorrelationHeaders</span>(<span class="var">$correlationId</span>),\n);\n<span class="cmt">// → POST /orders { "reference": "ORD-001" }</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">CreateOrderResponse</span>);\n<span class="cmt">// CreateOrderResponse { id: 99, reference: 'ORD-001', status: 'pending' }</span>`,
+        codeGraphQL: `<span class="cmt">// Action endpoint: POST /graphql</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">GetOrderAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body: <span class="cls">GetOrderBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n);\n<span class="cmt">// → POST /graphql { "query": "...", "variables": { "id": 42 } }</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetOrderResponse</span>);\n<span class="cmt">// GetOrderResponse { id: 42, reference: 'ORD-001', items: [...] }</span>`,
         capasLabel: 'Layered Design',
         capasH2:    'The bundle proposes. It does not impose.',
         capasSub:   'Three levels that emerge naturally. Use whichever you need.',
         layersHead: ['Class', 'Responsibility', 'Scope'],
         layers: [
             { name: 'CreateChargeAction', desc: 'Only declares the method, path and response DTO. No HTTP logic.',                    scope: 'Concrete action' },
-            { name: 'StripeAction',       desc: 'Auth, base path and common Stripe headers. Reused by all Stripe actions.',           scope: 'Integration' },
+            { name: 'GithubAction',       desc: 'Auth, base path and common GitHub headers. Reused by all GitHub actions.',            scope: 'Integration' },
             { name: 'AbstractAction',     desc: 'Base contract provided by the engine. Extensible without touching the core.',        scope: 'Bundle' },
         ],
         makeNote: 'The <code>make:integration</code> command creates the config, classes and YAML in a single step.',
@@ -136,6 +174,8 @@ const T = {
         ctaP:    'No boilerplate. No arbitrary decisions. Just your business logic.',
         ctaBtn1: 'View on GitHub',
         ctaBtn2: 'Documentation',
+        ctaBtn3: 'See demo',
+        ctaBtn3Href: 'https://github.com/CarlosGude/integrationEngine-use-example',
         footerTxt: 'IntegrationEngine &mdash; <a href="https://github.com/CarlosGude/integrationEngine">CarlosGude/integrationEngine</a> &mdash; MIT License',
     },
 };
@@ -180,6 +220,17 @@ function getHTML(lang) {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${t.pageTitle}</title>
+  <meta name="description" content="${t.metaDesc}" />
+  <meta name="author" content="CarlosGude" />
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://integrationengine.dev/?lang=${lang}" />
+  <meta property="og:title"       content="${t.pageTitle}" />
+  <meta property="og:description" content="${t.metaDesc}" />
+  <meta property="og:site_name"   content="IntegrationEngine" />
+  <meta name="twitter:card"        content="summary" />
+  <meta name="twitter:title"       content="${t.pageTitle}" />
+  <meta name="twitter:description" content="${t.metaDesc}" />
+  <link rel="canonical" href="https://integrationengine.dev/?lang=${lang}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800&family=Roboto:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
@@ -218,13 +269,20 @@ function getHTML(lang) {
     <span class="copy-hint">${t.copyHint}</span>
     composer require carlosgude/integration-engine
   </div>
-  <nav class="hero-nav">
-    ${navLinks}
-  </nav>
+  <a class="hero-gh-btn" href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener">${t.ctaBtn1} →</a>
 </header>
 
-<!-- EL PROBLEMA -->
+<!-- POR QUÉ NO HTTPCLIENT -->
 <section class="problema">
+  <div class="container">
+    <p class="section-label">${t.whyLabel}</p>
+    <h2 class="section-title">${t.whyH2}</h2>
+    <p class="section-sub">${t.whySub}</p>
+  </div>
+</section>
+
+<!-- EL PROBLEMA -->
+<section class="problema" style="padding-top:0">
   <div class="container">
     <p class="section-label">${t.problemaLabel}</p>
     <h2 class="section-title">${t.problemaH2}</h2>
@@ -254,6 +312,23 @@ function getHTML(lang) {
   </div>
 </section>
 
+<!-- MAKE:INTEGRATION -->
+<section class="como">
+  <div class="container">
+    <p class="section-label">${t.makeLabel}</p>
+    <h2 class="section-title">${t.makeH2}</h2>
+    <p class="section-sub">${t.makeSub}</p>
+    <div class="code-block" style="margin-bottom:1rem">
+      <div class="code-body" style="padding:1rem 1.5rem; display:flex; gap:1.5rem; flex-wrap:wrap; align-items:flex-start;">
+        <pre style="color:#7dd3fc; font-family:monospace; font-size:.82rem; white-space:pre">${t.makeCmd}</pre>
+      </div>
+    </div>
+    <div style="background:var(--code-bg); border:1px solid var(--border); border-radius:6px; padding:1rem 1.5rem;">
+      ${t.makeFiles.map(f => `<div style="font-family:monospace;font-size:.78rem;color:#4a6680;line-height:1.9">${f}</div>`).join('')}
+    </div>
+  </div>
+</section>
+
 <!-- EL CALL SITE -->
 <section class="callsite">
   <div class="container">
@@ -269,8 +344,12 @@ function getHTML(lang) {
         <div class="code-panel active" id="tab-noauth"><pre>${t.codeNoAuth}</pre></div>
         <div class="code-panel"        id="tab-path"><pre>${t.codePath}</pre></div>
         <div class="code-panel"        id="tab-body"><pre>${t.codeBody}</pre></div>
+        <div class="code-panel"        id="tab-graphql"><pre>${t.codeGraphQL}</pre></div>
       </div>
     </div>
+    <p style="margin-top:1rem;font-size:.82rem;color:#4a5568;">
+      ${t.codeReadmeLink} <a href="https://github.com/CarlosGude/integrationEngine#readme" target="_blank" rel="noopener" style="color:var(--blue-light)">${t.codeReadmeLinkLabel} →</a>
+    </p>
   </div>
 </section>
 
@@ -295,8 +374,9 @@ function getHTML(lang) {
     <h2>${t.ctaH2}</h2>
     <p>${t.ctaP}</p>
     <div class="cta-buttons">
-      <a href="https://github.com/CarlosGude/integration-engine" class="btn btn-primary" target="_blank" rel="noopener">${t.ctaBtn1}</a>
-      <a href="https://github.com/CarlosGude/integration-engine/blob/main/DOCUMENTATION.md" class="btn btn-ghost" target="_blank" rel="noopener">${t.ctaBtn2}</a>
+      <a href="https://github.com/CarlosGude/integrationEngine" class="btn btn-primary" target="_blank" rel="noopener">${t.ctaBtn1}</a>
+      <a href="${lang === 'es' ? 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION_ES.md' : 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION.md'}" class="btn btn-ghost" target="_blank" rel="noopener">${t.ctaBtn2}</a>
+      <a href="${t.ctaBtn3Href}" class="btn btn-ghost" target="_blank" rel="noopener">${t.ctaBtn3}</a>
     </div>
   </div>
 </section>
@@ -495,6 +575,21 @@ h1, h2, h3, .section-title, .hero h1, .cta h2 {
   white-space: nowrap;
 }
 .install-box.copied .copy-hint { opacity: 1; }
+
+.hero-gh-btn {
+  display: inline-block;
+  background: var(--blue);
+  color: #fff;
+  font-family: "Inter", sans-serif;
+  font-size: .9rem;
+  font-weight: 700;
+  padding: .6rem 1.5rem;
+  border-radius: 6px;
+  text-decoration: none;
+  margin-bottom: 2rem;
+  transition: opacity .2s, transform .1s;
+}
+.hero-gh-btn:hover { opacity: .85; transform: translateY(-1px); }
 
 .hero-nav {
   position: relative;
