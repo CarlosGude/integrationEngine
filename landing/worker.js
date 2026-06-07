@@ -1,7 +1,7 @@
 export default {
     async fetch(request, env, ctx) {
         const url  = new URL(request.url);
-        const lang = url.searchParams.get('lang') === 'en' ? 'en' : 'es';
+        const lang = url.searchParams.get('lang') === 'es' ? 'es' : 'en';
         console.info({ message: 'IntegrationEngine landing', lang });
         return new Response(getHTML(lang), {
             headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -197,9 +197,15 @@ function getHTML(lang) {
         : 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION.md'
     }" target="_blank" rel="noopener">${lang === 'es' ? 'Documentación' : 'Documentation'}</a>
   </div>
-  <div class="topnav-flags">
-    <a href="?lang=es" class="${lang === 'es' ? 'flag-active' : ''}" title="Español">🇪🇸</a>
-    <a href="?lang=en" class="${lang === 'en' ? 'flag-active' : ''}" title="English">🇬🇧</a>
+  <div class="lang-pill">
+    <a href="?lang=es" class="lang-opt ${lang === 'es' ? 'lang-active' : 'lang-inactive'}">
+      <span class="lp-flag">🇪🇸</span>
+      <span class="lp-string"><span class="lp-bracket">'</span><span class="lp-code">ES</span><span class="lp-bracket">'</span></span>
+    </a>
+    <a href="?lang=en" class="lang-opt ${lang === 'en' ? 'lang-active' : 'lang-inactive'}">
+      <span class="lp-flag">🇬🇧</span>
+      <span class="lp-string"><span class="lp-bracket">'</span><span class="lp-code">EN</span><span class="lp-bracket">'</span></span>
+    </a>
   </div>
 </nav>
 
@@ -369,22 +375,42 @@ body {
   white-space: nowrap;
 }
 .topnav-links a:hover { color: var(--white); }
-.topnav-flags {
-  display: flex;
-  gap: .5rem;
+.lang-pill {
+  display: inline-flex;
   align-items: center;
-  border-left: 1px solid var(--border);
-  padding-left: 1rem;
+  gap: 6px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: .72rem;
 }
-.topnav-flags a {
-  font-size: 1.15rem;
+.lang-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  border: 1px solid transparent;
   text-decoration: none;
-  opacity: .45;
-  transition: opacity .2s, transform .15s;
-  line-height: 1;
+  cursor: pointer;
+  transition: opacity .15s, border-color .15s;
 }
-.topnav-flags a:hover { opacity: 1; transform: scale(1.15); }
-.topnav-flags a.flag-active { opacity: 1; }
+.lp-flag { font-size: .88rem; }
+.lp-string {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: #000;
+  border-radius: 2px;
+  padding: 1px 4px;
+}
+.lp-bracket { color: #3a5470; }
+.lp-code    { font-weight: 700; letter-spacing: .06em; }
+.lang-inactive { opacity: 1; }
+.lang-inactive .lp-flag { filter: grayscale(20%); }
+.lang-inactive .lp-code { color: var(--muted); }
+.lang-inactive:hover { border-color: rgba(255,255,255,0.08); }
+.lang-active { opacity: 1; border-color: rgba(255,255,255,0.15); }
+.lang-active .lp-flag { filter: none; }
+.lang-active .lp-code { color: #7dd3fc; }
 
 @media (max-width: 500px) {
   .topnav-links { display: none; }
