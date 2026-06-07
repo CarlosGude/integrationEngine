@@ -607,7 +607,7 @@ h1, h2, h3, .section-title, .hero h1, .cta h2 {
 }
 .hero-nav a:hover { color: var(--white); }
 
-section { padding: 5rem 1.5rem; }
+section { padding: 3.5rem 1.5rem; }
 .container { max-width: 960px; margin: 0 auto; }
 
 .section-label {
