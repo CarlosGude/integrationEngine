@@ -386,15 +386,15 @@ integration_engine:
       headers:
         X-Api-Version: '2'
       client: rest           # "rest" (default), "graphql", or any registered custom type
-      cache_service: ~       # defaults to InMemoryCacheAdapter (dev only)
+      cache_service: ~       # defaults to cache.app — override with a dedicated pool if needed
       client_service: ~      # custom ClientInterface service ID — overrides client
 ```
 
 Either `base_url` or `client_service` is required per integration.
 
-> **Warning**: The default `InMemoryCacheAdapter` is process-scoped and does
-> not persist between requests under PHP-FPM. Configure a `cache_service`
-> backed by Redis or APCu for dynamic auth in production.
+> **Note**: The default cache adapter wraps Symfony's `cache.app` via PSR-6. In most production
+> setups this is sufficient. If you need a dedicated cache pool for dynamic auth tokens — for
+> example to control TTL independently — configure `cache_service` with a custom pool id.
 
 ### Integration configuration (`src/Infrastructure/Integrations/MyApi/MyApi.yaml`)
 
@@ -604,6 +604,10 @@ final class CreateOrderBody implements ActionBodyInterface
 Bodies are serialised as JSON and sent for `POST`, `PUT`, `PATCH`, and
 `DELETE` requests.
 
+> **Note**: If a body object is passed to `engine->send()` but the action does not declare a
+> `body` class in its YAML config, the engine throws an `InvalidArgumentException`. This prevents
+> silently discarding request payloads when the YAML and the call site are out of sync.
+
 ### GraphQL bodies
 
 For GraphQL integrations, implement `GraphQLBodyInterface` instead of
@@ -807,7 +811,7 @@ Every infrastructure component is replaceable:
 | Contract            | Default implementation         | Override via                    |
 |---------------------|--------------------------------|---------------------------------|
 | `ClientInterface`   | `SymfonyHttpClientAdapter`     | `client_service` or `client`    |
-| `CachePort`         | `InMemoryCacheAdapter`         | `cache_service`                 |
+| `CachePort`         | `Psr6CacheAdapter` (wraps `cache.app`)  | `cache_service`                 |
 | `ConfigPort`        | `YamlConfigAdapter`            | custom CompilerPass             |
 
 ### Custom HTTP adapters

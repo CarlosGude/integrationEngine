@@ -1,6 +1,52 @@
 # IntegrationEngine Bundle
 
-A Symfony bundle for centralising external API integrations behind a consistent, hexagonal architecture.
+Most Symfony applications start with a few simple HTTP calls:
+
+```php
+$response = $httpClient->request('GET', '/users');
+```
+
+That works well. The problem appears when the application grows and external APIs become part of the business process:
+
+- Multiple providers with different authentication mechanisms
+- Repeated request construction scattered across services
+- DTO mapping duplicated throughout the codebase
+- Controllers and services depending on provider-specific structures
+
+IntegrationEngine provides a consistent, hexagonal structure for those integrations while remaining framework-native and fully extensible.
+
+---
+
+## Why not just Symfony HttpClient?
+
+Symfony HttpClient sends HTTP requests. IntegrationEngine structures integrations.
+
+**Use HttpClient when:**
+- You need a small number of simple requests
+- The API is not part of your core business flow
+
+**Use IntegrationEngine when:**
+- The integration becomes part of your application architecture
+- Multiple actions belong to the same provider
+- You want typed requests and responses
+- You want a clear Anti-Corruption Layer between external APIs and your domain
+
+IntegrationEngine uses Symfony HttpClient internally and can work with any `ClientInterface` implementation you provide.
+
+---
+
+## When should I use this?
+
+**Good fit:**
+- External APIs are a core part of the application
+- You have multiple actions per provider
+- You want a clear separation between provider DTOs and domain objects
+- You are already following DDD, Hexagonal, Clean Architecture, or similar patterns
+
+**Probably unnecessary:**
+- One or two simple HTTP calls
+- Small scripts or short-lived prototypes
+- Applications where external APIs are not strategically important
 
 > **Full documentation** → [DOCUMENTATION.md](./DOCUMENTATION.md)
 
@@ -37,26 +83,26 @@ return [
 No config file needed beforehand — the command creates everything:
 
 ```bash
-php bin/console make:integration DummyRestApi GetEmployees
+php bin/console make:integration Github GetUser
 ```
 
 The command asks:
 
-1. **Base URL** (first run only): `https://dummy.restapiexample.com`
-2. **Path**: `/api/v1/employees`
+1. **Base URL** (first run only): `https://api.github.com`
+2. **Path**: `/users/{username}`
 3. **Method**: `GET`
 
 Generated files:
 
 ```
 config/packages/integration_engine.yaml
-src/Infrastructure/Integrations/DummyRestApi/
-    DummyRestApiIntegration.php
-    DummyRestApi.yaml
-    GetEmployees/
-        Request/GetEmployeesAction.php
-        Response/GetEmployeesMapper.php
-        Response/GetEmployeesResponse.php
+src/Infrastructure/Integrations/Github/
+    GithubIntegration.php
+    Github.yaml
+    GetUser/
+        Request/GetUserAction.php
+        Response/GetUserMapper.php
+        Response/GetUserResponse.php
 ```
 
 The same command adds new actions to an existing integration — it detects
@@ -70,32 +116,32 @@ service:
 
 ```php
 // 1. Fill in the generated facade
-public function getEmployee(int $id): GetEmployeeResponse
+public function getUser(string $username): GetUserResponse
 {
     $response = $this->engine->send(
-        actionName: GetEmployeeAction::getName(),
-        context: DefaultActionContext::create(['id' => $id]),
+        actionName: GetUserAction::getName(),
+        context: DefaultActionContext::create(['username' => $username]),
     );
 
-    \assert($response instanceof GetEmployeeResponse);
+    \assert($response instanceof GetUserResponse);
     return $response;
 }
 
 // 2. Translate to domain in an application service
-final class EmployeeService
+final class GithubService
 {
     public function __construct(
-        private readonly DummyRestApiIntegration $integration,
+        private readonly GithubIntegration $integration,
     ) {}
 
-    public function getEmployee(int $id): Employee
+    public function getUser(string $username): User
     {
-        $dto = $this->integration->getEmployee($id);
+        $dto = $this->integration->getUser($username);
 
-        return new Employee(
-            id:     $dto->id,
-            name:   $dto->employeeName,
-            salary: $dto->employeeSalary,
+        return new User(
+            login:  $dto->login,
+            name:   $dto->name,
+            email:  $dto->email,
         );
     }
 }
@@ -178,13 +224,9 @@ integration_engine:
       config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MyApi/MyApi.yaml'
       headers:
         X-Api-Version: '2'
-      cache_service: ~     # defaults to InMemoryCacheAdapter — replace in production
+      cache_service: ~     # defaults to cache.app — override with a dedicated pool if needed
       client_service: ~    # custom ClientInterface service ID
 ```
-
-> **Warning**: The default `InMemoryCacheAdapter` is process-scoped and does not
-> persist between requests under PHP-FPM. Configure a `cache_service` backed by
-> Redis or APCu for dynamic auth in production.
 
 ### Action config (`MyApi.yaml`)
 
