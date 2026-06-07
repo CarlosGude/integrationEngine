@@ -386,7 +386,7 @@ integration_engine:
       headers:
         X-Api-Version: '2'
       client: rest           # "rest" (default), "graphql", or any registered custom type
-      cache_service: ~       # defaults to cache.app — override with a dedicated pool if needed
+      cache_service: ~       # defaults to Psr6CacheAdapter wrapping cache.app — override with a dedicated pool if needed
       client_service: ~      # custom ClientInterface service ID — overrides client
 ```
 
@@ -601,8 +601,7 @@ final class CreateOrderBody implements ActionBodyInterface
 }
 ```
 
-Bodies are serialised as JSON and sent for `POST`, `PUT`, `PATCH`, and
-`DELETE` requests.
+Bodies are serialised as JSON and sent for `POST`, `PUT`, and `PATCH` requests.
 
 > **Note**: If a body object is passed to `engine->send()` but the action does not declare a
 > `body` class in its YAML config, the engine throws an `InvalidArgumentException`. This prevents
@@ -855,9 +854,9 @@ integration_engine:
       client: soap
 ```
 
-Project adapters always take precedence over bundle built-ins. Registering
-an adapter with `client: rest` replaces `SymfonyHttpClientAdapter` for that
-integration.
+Project adapters registered after bundle built-ins will override them for the
+same type. Registering an adapter with `client: rest` replaces
+`SymfonyHttpClientAdapter` for that integration.
 
 ## 13. Error reference
 

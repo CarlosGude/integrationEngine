@@ -33,6 +33,9 @@ tests/
 │   ├── FakeTokenMapper.php
 │   └── FakeTokenResponse.php
 └── Infrastructure/
+    ├── ClientAdapterResolverTest.php
+    ├── GraphQLClientAdapterTest.php
+    ├── Psr6CacheAdapterTest.php
     └── SymfonyHttpClientAdapterHeadersTest.php
 ```
 
@@ -116,6 +119,65 @@ to `HttpClientInterface::request()`.
 | `noDefaultHeadersSendsOnlyAccept` | Without defaults, only `Accept: application/json` is sent |
 | `allThreeLayersMergeInCorrectOrder` | All three layers coexist: YAML sets a key, auth overrides it, caller overrides that. Other YAML keys survive |
 | `contextIsPassedToGetPath` | Context provided to `send()` is used to resolve path placeholders in the URL |
+
+---
+
+### `ClientAdapterResolverTest` — 7 tests
+
+Covers `ClientAdapterResolver` in isolation. Verifies registration, resolution,
+override precedence, and error messaging.
+
+| Test | What it protects |
+|------|-----------------|
+| `resolveReturnsBultInRestAdapter` | `rest` resolves to `SymfonyHttpClientAdapter` after registration |
+| `resolveReturnsBultInGraphQLAdapter` | `graphql` resolves to `GraphQLClientAdapter` after registration |
+| `resolveUnknownTypeThrowsInvalidArgumentException` | Unknown type throws with the type name and registered types in the message |
+| `laterRegistrationOverridesEarlier` | Re-registering a type replaces the previous adapter — project adapters win |
+| `allReturnsFullMap` | `all()` returns the complete registered map |
+| `resolveOnEmptyResolverThrowsWithNoneMessage` | Empty resolver error message says "none" not a blank string |
+| `customAdapterIsRegisteredAndResolved` | Custom adapter type is registered and resolved correctly |
+
+---
+
+### `GraphQLClientAdapterTest` — 12 tests
+
+Covers `GraphQLClientAdapter` in full isolation. Uses a `GQLSpyHttpClient`
+inline — records method, URL, and options. Tests body serialisation, data
+extraction, error handling, auth headers, and adapter capabilities.
+
+| Test | What it protects |
+|------|-----------------|
+| `graphQLBodyIsSerialisedAsQueryAndVariables` | Body is sent as `{ query, variables }` JSON to the endpoint |
+| `alwaysPostsToEndpointUrlIgnoringActionPath` | Adapter always uses the configured endpoint URL regardless of action path |
+| `graphQLDataIsExtractedBeforeMapper` | Mapper receives only `data[]`, not the full GraphQL envelope |
+| `nullDataKeyReturnsEmptyArray` | `data: null` in the response returns `[]` without error |
+| `graphQLErrorsInResponseThrowsRequestResponseException` | `errors[]` in the response body (HTTP 200) throws with the error message |
+| `graphQLErrorWithoutMessageThrowsGenericError` | `errors[]` without a `message` key throws a generic GraphQL error |
+| `http4xxThrowsRequestResponseException` | HTTP 4xx from the endpoint throws `RequestResponseException` |
+| `nonGraphQLBodyThrowsImmediately` | Body that does not implement `GraphQLBodyInterface` throws before any HTTP call |
+| `nullBodyThrowsImmediately` | Null body throws before any HTTP call |
+| `defaultHeadersAreSentWithContentType` | Default headers and `Content-Type: application/json` are merged correctly |
+| `bearerAuthHeaderIsApplied` | Bearer auth config produces `Authorization: Bearer {token}` |
+| `callerHeaderOverridesAuthHeader` | Per-request caller header overrides the auth-resolved header |
+
+---
+
+### `Psr6CacheAdapterTest` — 8 tests
+
+Covers `Psr6CacheAdapter`, the PSR-6 bridge over `CachePort`. Uses a
+`SpyCachePool` inline — records keys and TTLs passed to the pool, and supports
+pre-seeding values for hit scenarios.
+
+| Test | What it protects |
+|------|-----------------|
+| `getReturnsCachedValueOnHit` | A seeded key is returned correctly |
+| `getReturnsNullOnMiss` | A missing key returns null, not an exception |
+| `setStoresValueAndTtl` | Value and TTL are forwarded to the pool correctly |
+| `hasReturnsTrueForExistingKey` | `has()` returns true for a seeded key |
+| `hasReturnsFalseForMissingKey` | `has()` returns false for an unknown key |
+| `reservedPsr6CharactersAreSanitized` | PSR-6 reserved chars (`{}()/\@:`) are replaced before the key reaches the pool |
+| `dotsAreSanitized` | Dots are sanitized — protects keys like `integration_engine.token.*` which some pools reject |
+| `sanitizedKeyIsUsedForGetAndHasConsistently` | `set()`, `get()`, and `has()` all sanitize the same way, so they remain consistent with each other |
 
 ---
 

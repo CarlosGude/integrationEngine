@@ -386,7 +386,7 @@ integration_engine:
       headers:
         X-Api-Version: '2'
       client: rest           # "rest" (por defecto), "graphql" o cualquier tipo registrado
-      cache_service: ~       # por defecto cache.app — sobreescribe con un pool dedicado si es necesario
+      cache_service: ~       # por defecto Psr6CacheAdapter sobre cache.app — sobreescribe con un pool dedicado si es necesario
       client_service: ~      # ID de servicio ClientInterface — sobreescribe client
 ```
 
@@ -604,8 +604,7 @@ final class CreateOrderBody implements ActionBodyInterface
 }
 ```
 
-Los bodies se serializan como JSON y se envían en peticiones `POST`, `PUT`,
-`PATCH` y `DELETE`.
+Los bodies se serializan como JSON y se envían en peticiones `POST`, `PUT` y `PATCH`.
 
 > **Nota**: Si se pasa un body a `engine->send()` pero la acción no declara una clase `body` en su
 > configuración YAML, el motor lanza una `InvalidArgumentException`. Esto evita que los payloads
@@ -822,7 +821,7 @@ integration_engine:
       client: soap
 ```
 
-Los adapters del proyecto siempre tienen prioridad sobre los built-ins del bundle.
+Los adapters del proyecto registrados después de los built-ins del bundle los sobrescriben para el mismo tipo.
 
 ## 13. Errores
 

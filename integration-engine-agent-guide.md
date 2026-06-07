@@ -133,7 +133,7 @@ final readonly class GetEntityContext implements ActionContextInterface
 
 ### 3.4 `ActionBodyInterface`
 
-Carries the request payload for `POST`, `PUT`, `PATCH`, `DELETE`. Serialised
+Carries the request payload for `POST`, `PUT`, `PATCH`. Serialised
 as JSON automatically by the engine.
 
 ```php
@@ -214,6 +214,8 @@ final class GetUserBody implements GraphQLBodyInterface
 {
     public function getQuery(): string
     {
+        // Inline or loaded from an external file — both are valid:
+        // return 'query { user { id } }';
         return file_get_contents(__DIR__ . '/queries/get_user.graphql');
     }
 
@@ -255,13 +257,14 @@ integration_engine:
             config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/ExternalApi/ExternalApi.yaml'
             headers:                       # optional — sent with every request
                 X-Api-Version: '2'
-            cache_service: ~               # optional — defaults to InMemoryCacheAdapter (dev only)
+            cache_service: ~               # optional — defaults to Psr6CacheAdapter wrapping cache.app
             client_service: ~              # optional — custom ClientInterface service ID
 ```
 
-> **Warning**: `InMemoryCacheAdapter` is process-scoped and does not persist
-> between requests under PHP-FPM. Set `cache_service` to a Redis or APCu
-> adapter for dynamic auth in production.
+> **Warning**: The default `Psr6CacheAdapter` wraps `cache.app`. Under PHP-FPM
+> this is typically APCu or filesystem — sufficient for most cases. For dynamic
+> auth tokens with strict TTL control, configure `cache_service` with a
+> dedicated Redis or APCu pool.
 
 ### 4.2 `{Name}.yaml` (action map)
 
@@ -269,19 +272,19 @@ Maps each action name to its class, HTTP method, and path.
 
 ```yaml
 GetEntities:
-    action: App\Infrastructure\Integrations\ExternalApi\GetEntities\Request\GetEntitiesAction
-    method: GET
-    path: /{dtoVar}
+  action: App\Infrastructure\Integrations\ExternalApi\GetEntities\Request\GetEntitiesAction
+  method: GET
+  path: /{dtoVar}
 
 GetEntity:
-    action: App\Infrastructure\Integrations\ExternalApi\GetEntity\Request\GetEntityAction
-    method: GET
-    path: /{dtoVar}/{id}    # {id} resolved from ActionContextInterface at call time
+  action: App\Infrastructure\Integrations\ExternalApi\GetEntity\Request\GetEntityAction
+  method: GET
+  path: /{dtoVar}/{id}    # {id} resolved from ActionContextInterface at call time
 
 CreateEntity:
-    action: App\Infrastructure\Integrations\ExternalApi\CreateEntity\Request\CreateEntityAction
-    method: POST
-    path: /{dtoVar}
+  action: App\Infrastructure\Integrations\ExternalApi\CreateEntity\Request\CreateEntityAction
+  method: POST
+  path: /{dtoVar}
 ```
 
 No logic lives in YAML. YAML declares intent; Actions and Mappers implement
@@ -428,12 +431,12 @@ Declared in the integration YAML under the action entry:
 
 ```yaml
 GetOrders:
-    action: App\Infrastructure\Integrations\MyApi\GetOrders\Request\GetOrdersAction
-    method: GET
-    path: /orders
-    authorization:
-        type: bearer
-        token: '%env(MY_API_TOKEN)%'
+  action: App\Infrastructure\Integrations\MyApi\GetOrders\Request\GetOrdersAction
+  method: GET
+  path: /orders
+  authorization:
+    type: bearer
+    token: '%env(MY_API_TOKEN)%'
 ```
 
 Supported types: `bearer`, `basic`, `api_key`.
@@ -445,19 +448,19 @@ token, caches it, and substitutes a static auth transparently.
 
 ```yaml
 FetchToken:
-    action: App\Infrastructure\Integrations\MyApi\FetchToken\Request\FetchTokenAction
-    method: POST
-    path: /oauth/token
+  action: App\Infrastructure\Integrations\MyApi\FetchToken\Request\FetchTokenAction
+  method: POST
+  path: /oauth/token
 
 GetOrders:
-    action: App\Infrastructure\Integrations\MyApi\GetOrders\Request\GetOrdersAction
-    method: GET
-    path: /orders
-    authorization:
-        type: dynamic
-        action: FetchToken
-        token_field: access_token
-        ttl: 3600
+  action: App\Infrastructure\Integrations\MyApi\GetOrders\Request\GetOrdersAction
+  method: GET
+  path: /orders
+  authorization:
+    type: dynamic
+    action: FetchToken
+    token_field: access_token
+    ttl: 3600
 ```
 
 The token action requires its own Action + Mapper + Response like any other:
