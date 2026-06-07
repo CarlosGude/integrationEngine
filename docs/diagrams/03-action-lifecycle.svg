@@ -1,0 +1,117 @@
+<svg width="100%" viewBox="0 0 680 620" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>IntegrationEngine — ciclo de vida de una acción</title>
+  <desc>Flowchart detallado del ciclo de vida desde engine.send() hasta ResponseInterface, incluyendo el camino de auth dinámica con cache.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      text { font-family: ui-sans-serif, system-ui, sans-serif; }
+      .th-t  { font-size:14px; font-weight:600; fill:#085041; }
+      .ts-t  { font-size:12px; font-weight:400; fill:#0F6E56; }
+      .th-g  { font-size:14px; font-weight:600; fill:#444441; }
+      .ts-g  { font-size:12px; font-weight:400; fill:#5F5E5A; }
+      .th-a  { font-size:14px; font-weight:600; fill:#633806; }
+      .ts-a  { font-size:12px; font-weight:400; fill:#854F0B; }
+      .th-c  { font-size:14px; font-weight:600; fill:#712B13; }
+      .ts-c  { font-size:12px; font-weight:400; fill:#993C1D; }
+      .th-p  { font-size:14px; font-weight:600; fill:#3C3489; }
+      .ts-p  { font-size:12px; font-weight:400; fill:#534AB7; }
+      .label { font-size:11px; font-weight:400; fill:#888780; }
+      @media (prefers-color-scheme: dark) {
+        .th-t{fill:#9FE1CB;} .ts-t{fill:#5DCAA5;}
+        .th-g{fill:#D3D1C7;} .ts-g{fill:#B4B2A9;}
+        .th-a{fill:#FAC775;} .ts-a{fill:#EF9F27;}
+        .th-c{fill:#F5C4B3;} .ts-c{fill:#F0997B;}
+        .th-p{fill:#CECBF6;} .ts-p{fill:#AFA9EC;}
+        .label{fill:#888780;}
+      }
+    </style>
+  </defs>
+
+  <!-- 1. engine.send() -->
+  <rect x="240" y="30" width="200" height="44" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+  <text class="th-t" x="340" y="48" text-anchor="middle" dominant-baseline="central">engine.send()</text>
+  <text class="ts-t" x="340" y="64" text-anchor="middle" dominant-baseline="central">actionName · context · body · headers</text>
+  <line x1="340" y1="74" x2="340" y2="104" stroke="#888780" stroke-width="1" marker-end="url(#arrow)"/>
+
+  <!-- 2. ConfigPort -->
+  <rect x="240" y="104" width="200" height="44" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+  <text class="th-g" x="340" y="122" text-anchor="middle" dominant-baseline="central">ConfigPort.getAction()</text>
+  <text class="ts-g" x="340" y="138" text-anchor="middle" dominant-baseline="central">Instantiates AbstractAction</text>
+  <line x1="340" y1="148" x2="340" y2="178" stroke="#888780" stroke-width="1" marker-end="url(#arrow)"/>
+
+  <!-- 3. Auth decision diamond -->
+  <polygon points="340,178 430,216 340,254 250,216" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+  <text class="th-a" x="340" y="210" text-anchor="middle" dominant-baseline="central">auth type?</text>
+
+  <!-- static/none branch right -->
+  <text class="label" x="435" y="210" text-anchor="start">static / none</text>
+  <line x1="430" y1="216" x2="510" y2="216" stroke="#888780" stroke-width="1" marker-end="url(#arrow)"/>
+  <rect x="510" y="194" width="130" height="44" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+  <text class="th-a" x="575" y="212" text-anchor="middle" dominant-baseline="central">Set static header</text>
+  <text class="ts-a" x="575" y="228" text-anchor="middle" dominant-baseline="central">bearer · basic · api_key</text>
+  <!-- static rejoins down -->
+  <path d="M575 238 L575 390 L452 390" fill="none" stroke="#888780" stroke-width="1" marker-end="url(#arrow)"/>
+
+  <!-- dynamic branch left -->
+  <text class="label" x="245" y="210" text-anchor="end">dynamic</text>
+  <line x1="250" y1="216" x2="160" y2="216" stroke="#888780" stroke-width="1" marker-end="url(#arrow)"/>
+
+  <!-- Cache check -->
+  <rect x="68" y="194" width="92" height="44" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+  <text class="th-a" x="114" y="212" text-anchor="middle" dominant-baseline="central">Cache hit?</text>
+  <text class="ts-a" x="114" y="228" text-anchor="middle" dominant-baseline="central">CachePort.get()</text>
+
+  <!-- miss → token action -->
+  <text class="label" x="114" y="252" text-anchor="middle">miss</text>
+  <line x1="114" y1="238" x2="114" y2="268" stroke="#888780" stroke-width="1" marker-end="url(#arrow)"/>
+  <rect x="68" y="268" width="92" height="44" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+  <text class="th-a" x="114" y="286" text-anchor="middle" dominant-baseline="central">Token action</text>
+  <text class="ts-a" x="114" y="302" text-anchor="middle" dominant-baseline="central">Fetch + map + store</text>
+
+  <!-- hit bypasses token action -->
+  <text class="label" x="62" y="212" text-anchor="end">hit</text>
+
+  <!-- both paths rejoin at Rebuild action -->
+  <path d="M114 312 L114 390 L228 390" fill="none" stroke="#888780" stroke-width="1" marker-end="url(#arrow)"/>
+  <path d="M68 216 L48 216 L48 390 L228 390" fill="none" stroke="#888780" stroke-width="1" marker-end="url(#arrow)"/>
+
+  <!-- 4. Rebuild action with StaticAuth -->
+  <rect x="228" y="368" width="224" height="44" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+  <text class="th-a" x="340" y="386" text-anchor="middle" dominant-baseline="central">Rebuild action</text>
+  <text class="ts-a" x="340" y="402" text-anchor="middle" dominant-baseline="central">StaticAuth with resolved token</text>
+  <line x1="340" y1="412" x2="340" y2="442" stroke="#888780" stroke-width="1" marker-end="url(#arrow)"/>
+
+  <!-- 5. HTTP client -->
+  <rect x="228" y="442" width="224" height="44" rx="8" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+  <text class="th-c" x="340" y="460" text-anchor="middle" dominant-baseline="central">ClientInterface.send()</text>
+  <text class="ts-c" x="340" y="476" text-anchor="middle" dominant-baseline="central">Resolve path · HTTP request</text>
+  <line x1="340" y1="486" x2="340" y2="516" stroke="#888780" stroke-width="1" marker-end="url(#arrow)"/>
+
+  <!-- 6. hasResponse diamond -->
+  <polygon points="340,516 420,546 340,576 260,546" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+  <text class="th-g" x="340" y="540" text-anchor="middle" dominant-baseline="central">hasResponse?</text>
+
+  <!-- false → EmptyResponse -->
+  <text class="label" x="255" y="543" text-anchor="end">false</text>
+  <line x1="260" y1="546" x2="200" y2="546" stroke="#888780" stroke-width="1" marker-end="url(#arrow)"/>
+  <rect x="88" y="524" width="112" height="44" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+  <text class="th-g" x="144" y="542" text-anchor="middle" dominant-baseline="central">EmptyResponse</text>
+  <text class="ts-g" x="144" y="558" text-anchor="middle" dominant-baseline="central">DELETE / no body</text>
+
+  <!-- true → Mapper -->
+  <text class="label" x="425" y="543" text-anchor="start">true</text>
+  <line x1="420" y1="546" x2="488" y2="546" stroke="#888780" stroke-width="1" marker-end="url(#arrow)"/>
+  <rect x="488" y="524" width="104" height="44" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+  <text class="th-t" x="540" y="542" text-anchor="middle" dominant-baseline="central">Mapper.map()</text>
+  <text class="ts-t" x="540" y="558" text-anchor="middle" dominant-baseline="central">array → Response</text>
+
+  <!-- both → ResponseInterface -->
+  <path d="M144 568 L144 600 L540 600" fill="none" stroke="#888780" stroke-width="1"/>
+  <line x1="540" y1="568" x2="540" y2="600" stroke="#888780" stroke-width="1"/>
+  <line x1="340" y1="600" x2="340" y2="600" stroke="#888780" stroke-width="1" marker-end="url(#arrow)"/>
+
+  <rect x="240" y="580" width="200" height="30" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text class="th-p" x="340" y="598" text-anchor="middle" dominant-baseline="central">ResponseInterface</text>
+</svg>

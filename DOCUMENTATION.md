@@ -227,6 +227,8 @@ responsibility. It is the most important convention the bundle asks of you.
 
 ---
 
+![IntegrationEngine — visión general](./docs/diagrams/01-overview.svg)
+
 ## 2. Philosophy
 
 ### The bundle proposes, it does not impose

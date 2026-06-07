@@ -226,6 +226,8 @@ responsabilidad. Es la convención más importante que el bundle te pide.
 
 ---
 
+![IntegrationEngine — visión general](./docs/diagrams/01-overview.svg)
+
 ## 2. Filosofía
 
 ### El bundle propone, no impone
