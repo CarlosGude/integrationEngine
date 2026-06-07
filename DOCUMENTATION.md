@@ -398,10 +398,7 @@ Either `base_url` or `client_service` is required per integration.
 > setups this is sufficient. If you need a dedicated cache pool for dynamic auth tokens — for
 > example to control TTL independently — configure `cache_service` with a custom pool id.
 
-> **Warning**: `config_path` is resolved at **runtime**, not at compile time. A missing or
-> incorrect path will not be caught by `cache:warmup` — it will throw an `InvalidArgumentException`
-> on the first request that touches that integration. Verify all paths after deploy and consider
-> adding a smoke test or health check that exercises each integration.
+> **Warning**: `config_path` is required and validated at **compile time** by the bundle's compiler pass. A missing `config_path` key will throw an `InvalidArgumentException` during container compilation. A path that is declared but points to a non-existent file will be caught at **runtime**, on the first request that touches that integration. Verify all paths after deploy and consider adding a smoke test or health check that exercises each integration.
 
 ### Integration configuration (`src/Infrastructure/Integrations/MyApi/MyApi.yaml`)
 

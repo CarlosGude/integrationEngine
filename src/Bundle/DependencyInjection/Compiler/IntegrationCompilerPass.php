@@ -22,7 +22,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
             return;
         }
 
-        /** @var array<string, array{config_path: string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, headers: array<string, string>}> $integrations */
+        /** @var array<string, array{config_path: null|string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, headers: array<string, string>}> $integrations */
         $integrations = $container->getParameter('integration_engine.integrations');
 
         // ── Build adapter map from tagged services ─────────────────────────
@@ -55,6 +55,14 @@ final class IntegrationCompilerPass implements CompilerPassInterface
 
         foreach ($integrations as $name => $config) {
             $configId = "integration_engine.config.{$name}";
+
+            if (null === $config['config_path']) {
+                throw new \InvalidArgumentException(\sprintf(
+                    'Integration "%s" must define "config_path". '
+                    .'Use "php bin/console make:integration" to generate it automatically.',
+                    $name,
+                ));
+            }
 
             $container->setDefinition($configId, new Definition(
                 YamlConfigAdapter::class,

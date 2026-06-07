@@ -17,7 +17,7 @@ use PHPUnit\Framework\Attributes\Test;
 
 final class EngineContractTest extends IntegrationEngineTestCase
 {
-    // ── Flujo completo ────────────────────────────────────────────────────────
+    // ── Full pipeline ─────────────────────────────────────────────────────────
 
     #[Test]
     public function engineExecutesFullFlowAndReturnsMappedResponse(): void
@@ -44,7 +44,7 @@ final class EngineContractTest extends IntegrationEngineTestCase
         self::assertSame('widget', $response->toArray()['name']);
     }
 
-    // ── Acción sin response ───────────────────────────────────────────────────
+    // ── Action with no response ───────────────────────────────────────────────
 
     #[Test]
     public function actionWithNoResponseReturnsEmptyResponse(): void
@@ -69,7 +69,7 @@ final class EngineContractTest extends IntegrationEngineTestCase
         self::assertSame(1, $this->client->callCount(EngNoResponseAction::getName()));
     }
 
-    // ── Excepciones del contrato ──────────────────────────────────────────────
+    // ── Contract exceptions ───────────────────────────────────────────────────
 
     #[Test]
     public function unknownActionNameThrowsActionNotFoundException(): void
@@ -101,7 +101,7 @@ final class EngineContractTest extends IntegrationEngineTestCase
         $this->engine->send(EngMismatchAction::getName());
     }
 
-    // ── Contexto llega al cliente ─────────────────────────────────────────────
+    // ── Context reaches the client ────────────────────────────────────────────
 
     #[Test]
     public function contextIsPassedThroughToClient(): void
@@ -193,7 +193,7 @@ final class EngMismatchMapper extends AbstractMapper
     public static function getAction(): string
     {
         return EngBasicAction::class;
-    } // deliberadamente incorrecto
+    } // deliberately wrong — points to EngBasicAction, not EngMismatchAction
 
     protected static function transform(AbstractAction $action, array $response): ResponseInterface
     {
