@@ -25,6 +25,7 @@ final readonly class IntegrationEngine
         private ConfigPort $config,
         private ClientInterface $client,
         private CachePort $cache,
+        private string $integrationName,
     ) {}
 
     public function send(
@@ -65,7 +66,7 @@ final readonly class IntegrationEngine
             authorization: new StaticAuthorizationConfig(
                 type: $isDefaultHeader ? 'bearer' : 'api_key',
                 params: $isDefaultHeader
-                    ? ['token' => $token]
+                    ? ['token' => $token, 'prefix' => $auth->prefix]
                     : ['header' => $auth->header, 'token' => $token],
             ),
         );
@@ -73,7 +74,7 @@ final readonly class IntegrationEngine
 
     private function resolveToken(DynamicAuthorizationConfig $authConfig): string
     {
-        $cacheKey = \sprintf('integration_engine.token.%s', $authConfig->action);
+        $cacheKey = \sprintf('integration_engine.token.%s.%s', $this->integrationName, $authConfig->action);
 
         $cached = $this->cache->get($cacheKey);
         if (\is_string($cached)) {

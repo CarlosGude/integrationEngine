@@ -27,6 +27,7 @@ abstract class IntegrationEngineTestCase extends TestCase
             config: $this->config,
             client: $this->client,
             cache: $this->cache,
+            integrationName: 'test_integration',
         );
     }
 }

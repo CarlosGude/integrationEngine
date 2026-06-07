@@ -122,7 +122,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface
         $headerKey = isset($auth->params['header']) && \is_string($auth->params['header']) ? $auth->params['header'] : 'X-Api-Key';
 
         $headers += match ($auth->type) {
-            'bearer' => ['Authorization' => \sprintf('Bearer %s', $token)],
+            'bearer' => ['Authorization' => \sprintf('%s %s', $auth->params['prefix'] ?? 'Bearer', $token)],
             'basic' => ['Authorization' => \sprintf('Basic %s', base64_encode($username.':'.$password))],
             'api_key' => [$headerKey => $token],
             default => [],

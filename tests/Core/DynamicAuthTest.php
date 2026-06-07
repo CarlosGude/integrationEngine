@@ -36,6 +36,28 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
     }
 
     #[Test]
+    public function dynamicAuthUsesCustomPrefixInAuthorizationHeader(): void
+    {
+        $this->config->register(FakeTokenAction::getName(), FakeTokenAction::create('GET', '/token'));
+        $this->config->register(FakeProtectedAction::getName(), FakeProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
+            action: FakeTokenAction::getName(),
+            tokenField: 'access_token',
+            ttl: 60,
+            prefix: 'Token',
+        )));
+        $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'my_token']);
+        $this->client->setResponse(FakeProtectedAction::getName(), []);
+
+        $this->engine->send(FakeProtectedAction::getName());
+
+        $auth = $this->client->lastAction()?->getAuthorization();
+        self::assertInstanceOf(StaticAuthorizationConfig::class, $auth);
+        self::assertSame('bearer', $auth->type);
+        self::assertSame('my_token', $auth->params['token']);
+        self::assertSame('Token', $auth->params['prefix']);
+    }
+
+    #[Test]
     public function dynamicAuthUsesApiKeyForCustomHeader(): void
     {
         $this->config->register(FakeTokenAction::getName(), FakeTokenAction::create('GET', '/token'));
@@ -71,7 +93,7 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
         $this->engine->send(FakeProtectedAction::getName());
         $this->engine->send(FakeProtectedAction::getName());
 
-        self::assertTrue($this->cache->has('integration_engine.token.'.FakeTokenAction::getName()));
+        self::assertTrue($this->cache->has('integration_engine.token.test_integration.'.FakeTokenAction::getName()));
         self::assertSame(1, $this->client->callCount(FakeTokenAction::getName()));
     }
 
@@ -95,7 +117,7 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
     #[Test]
     public function dynamicAuthUsesTokenFromCacheWhenAvailable(): void
     {
-        $this->cache->set('integration_engine.token.'.FakeTokenAction::getName(), 'pre_cached_token', 60);
+        $this->cache->set('integration_engine.token.test_integration.'.FakeTokenAction::getName(), 'pre_cached_token', 60);
 
         $this->config->register(FakeProtectedAction::getName(), FakeProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
             action: FakeTokenAction::getName(),

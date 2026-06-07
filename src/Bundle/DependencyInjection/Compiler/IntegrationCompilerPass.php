@@ -101,6 +101,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
                     new Reference($configId),
                     $clientRef,
                     $cacheRef,
+                    $name,
                 ]
             ));
 

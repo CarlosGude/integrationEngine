@@ -11,6 +11,7 @@ final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
         public string $tokenField,
         public int $ttl,
         public string $header = 'Authorization',
+        public string $prefix = 'Bearer',
     ) {
         parent::__construct('dynamic');
     }
@@ -33,6 +34,7 @@ final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
             tokenField: $config['token_field'],
             ttl: (int) $config['ttl'],
             header: isset($config['header']) && \is_string($config['header']) ? $config['header'] : 'Authorization',
+            prefix: isset($config['prefix']) && \is_string($config['prefix']) ? $config['prefix'] : 'Bearer',
         );
     }
 }
