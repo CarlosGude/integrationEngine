@@ -113,6 +113,10 @@ final readonly class IntegrationEngine
             throw new NotMappedActionException($action::getName());
         }
 
+        // Fail-fast before entering the mapper: catches misconfigured actions
+        // from custom ConfigPort or ClientInterface implementations.
+        // AbstractMapper::map() carries the same guard as a public contract
+        // for callers that use it outside the engine flow.
         if ($mapperClass::getAction() !== $action::class) {
             throw new MapperActionMismatchException(
                 mapperClass: $mapperClass,
