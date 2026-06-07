@@ -103,37 +103,6 @@ final readonly class TemplateRenderer
             PHP;
     }
 
-    /**
-     * Only generated for POST, PUT, PATCH.
-     */
-    public function body(): string
-    {
-        return <<<PHP
-        <?php
-
-        declare(strict_types=1);
-
-        namespace {$this->ctx->requestNamespace()};
-
-        use IntegrationEngine\\Core\\Contract\\ActionBodyInterface;
-
-        final readonly class {$this->ctx->action}Body implements ActionBodyInterface
-        {
-            public function __construct() {}
-
-            public static function create(array \$data): static
-            {
-                return new static();
-            }
-
-            public function toArray(): array
-            {
-                return [];
-            }
-        }
-        PHP;
-    }
-
     /* =========================
      * RESPONSE LAYER
      * ========================= */

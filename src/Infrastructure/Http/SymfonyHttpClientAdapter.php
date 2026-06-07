@@ -57,7 +57,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface
         ];
 
         $body = $action->getBody();
-        if (null !== $body && \in_array($action->getMethod(), ['POST', 'PUT', 'PATCH', 'DELETE'], strict: true)) {
+        if (null !== $body && \in_array($action->getMethod(), ['POST', 'PUT', 'PATCH'], strict: true)) {
             $options['json'] = $body->toArray();
         }
 

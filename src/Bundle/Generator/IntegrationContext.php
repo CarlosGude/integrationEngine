@@ -38,31 +38,6 @@ final readonly class IntegrationContext
         return $this->actionNamespace().'\Response';
     }
 
-    public function isGet(): bool
-    {
-        return 'GET' === strtoupper($this->method);
-    }
-
-    public function isPost(): bool
-    {
-        return 'POST' === strtoupper($this->method);
-    }
-
-    public function isPut(): bool
-    {
-        return 'PUT' === strtoupper($this->method);
-    }
-
-    public function isDelete(): bool
-    {
-        return 'DELETE' === strtoupper($this->method);
-    }
-
-    public function isPatch(): bool
-    {
-        return 'PATCH' === strtoupper($this->method);
-    }
-
     public function hasBody(): bool
     {
         if (!$this->adapterRequiresMethod) {
@@ -70,7 +45,7 @@ final readonly class IntegrationContext
             return true;
         }
 
-        return $this->isPost() || $this->isPut() || $this->isPatch();
+        return \in_array(strtoupper($this->method), ['POST', 'PUT', 'PATCH'], strict: true);
     }
 
     public function hasResponse(): bool
@@ -80,7 +55,7 @@ final readonly class IntegrationContext
             return true;
         }
 
-        return !$this->isDelete();
+        return 'DELETE' !== strtoupper($this->method);
     }
 
     public function needsGraphQLBodyHint(): bool
