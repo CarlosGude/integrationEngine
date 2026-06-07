@@ -29,8 +29,10 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         // Bundle built-ins have priority 0. Project adapters registered via
         // _instanceof also get priority 0 but are processed after bundle
         // services, so they naturally override built-ins for the same type.
-        $resolver = new ClientAdapterResolver();
         $resolverDefinition = $container->findDefinition(ClientAdapterResolver::class);
+
+        /** @var array<string, class-string<ClientAdapterInterface>> $adapterMap */
+        $adapterMap = [];
 
         foreach ($container->findTaggedServiceIds('integration_engine.client_adapter') as $serviceId => $tags) {
             $definition = $container->getDefinition($serviceId);
@@ -44,7 +46,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
                 continue;
             }
 
-            $resolver->register($class::getClientType(), $class);
+            $adapterMap[$class::getClientType()] = $class;
             $resolverDefinition->addMethodCall('register', [$class::getClientType(), $class]);
         }
 
@@ -63,7 +65,17 @@ final class IntegrationCompilerPass implements CompilerPassInterface
                 $clientRef = new Reference($config['client_service']);
             } else {
                 $httpClientId = "integration_engine.http_client.{$name}";
-                $adapterClass = $resolver->resolve($config['client']);
+
+                if (!isset($adapterMap[$config['client']])) {
+                    throw new \InvalidArgumentException(\sprintf(
+                        'Unknown client type "%s" for integration "%s". Registered types: %s.',
+                        $config['client'],
+                        $name,
+                        implode(', ', array_keys($adapterMap)) ?: 'none',
+                    ));
+                }
+
+                $adapterClass = $adapterMap[$config['client']];
 
                 $container->setDefinition($httpClientId, new Definition(
                     $adapterClass,

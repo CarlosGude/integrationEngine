@@ -117,6 +117,12 @@ final class MakeIntegrationCommand extends Command
             );
         }
 
+        if (!\is_string($action) || '' === $action) {
+            $io->error('Action name could not be resolved. Use --no-interaction with the action argument.');
+
+            return Command::FAILURE;
+        }
+
         // ── Ask path and method only if adapter requires them ─────────────
         $actionPath = '/';
         $method = 'POST';
@@ -139,7 +145,7 @@ final class MakeIntegrationCommand extends Command
 
         $ctx = new IntegrationContext(
             name: $name,
-            action: $action ?? '',
+            action: $action,
             method: $method,
             path: $actionPath,
             baseNamespace: $baseNamespace,
