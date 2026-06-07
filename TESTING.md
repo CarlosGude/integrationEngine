@@ -68,7 +68,7 @@ authorization wiring.
 
 ---
 
-### `DynamicAuthTest` — 7 tests
+### `DynamicAuthTest` — 8 tests
 
 Covers the full dynamic authorization flow via the engine. Uses
 `IntegrationEngineTestCase` as base. All fakes are in-memory — no HTTP,
@@ -82,6 +82,7 @@ no real cache.
 | `dynamicAuthThrowsWhenTokenFieldMissing` | If the auth response does not contain `token_field`, `DynamicAuthException` is thrown before the real request executes |
 | `dynamicAuthUsesTokenFromCacheWhenAvailable` | Pre-cached token is used directly without calling the auth action |
 | `contextReachesClientAfterDynamicAuthReconstruction` | **Regression** — when dynamic auth reconstructs the action, the original context still reaches the client. Protects against the bug where context was lost after token substitution |
+| `dynamicAuthUsesCustomPrefixInAuthorizationHeader` | When `prefix` is set, the resolved `StaticAuthorizationConfig` carries the custom prefix — protects APIs using `Authorization: Token …` or other non-Bearer schemes |
 | `actionRemainsStatelessAcrossMultipleSendCalls` | Same action resolves different paths across successive calls with different contexts |
 
 ---

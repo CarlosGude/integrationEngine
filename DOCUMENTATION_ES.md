@@ -399,6 +399,11 @@ Se requiere `base_url` o `client_service` por integración.
 > los tokens de auth dinámica — por ejemplo para controlar el TTL de forma independiente —
 > configura `cache_service` con el id de un pool personalizado.
 
+> **Advertencia**: `config_path` se resuelve en **tiempo de ejecución**, no en compilación. Una ruta
+> incorrecta o inexistente no se detecta con `cache:warmup` — lanzará `InvalidArgumentException` en
+> el primer request que toque esa integración. Verifica todas las rutas tras el deploy y considera
+> añadir un smoke test o health check que ejercite cada integración.
+
 ### Configuración de integración (`src/Infrastructure/Integrations/MyApi/MyApi.yaml`)
 
 Declara las operaciones disponibles para una integración específica. Se
@@ -594,6 +599,24 @@ protected function resolvePathCallback(): ?callable
 }
 ```
 
+
+> **Nota**: El resolver por defecto usa `\w+` para los nombres de placeholder (`[a-zA-Z0-9_]`). Los nombres con guiones — habituales en algunas APIs REST (p.ej. `{user-id}`) — no se resuelven y el placeholder queda literal en el path, causando un 404 silencioso. Usa `resolvePathCallback()` para estos casos:
+>
+> ```php
+> protected function resolvePathCallback(): ?callable
+> {
+>     return function (string $path, ?ActionContextInterface $context): string {
+>         $data = $context?->toArray() ?? [];
+>         return preg_replace_callback('/\{([^}]+)\}/', static function (array $m) use ($data, $path): string {
+>             if (!array_key_exists($m[1], $data)) {
+>                 throw PathResolutionException::missingParameter($m[1], $path);
+>             }
+>             return (string) $data[$m[1]];
+>         }, $path) ?? $path;
+>     };
+> }
+> ```
+
 ## 7. Body
 
 Los bodies son objetos explícitos que implementan `ActionBodyInterface`:
@@ -619,7 +642,7 @@ Los bodies se serializan como JSON y se envían en peticiones `POST`, `PUT` y `P
 
 | Tipo      | Header generado                     |
 |-----------|-------------------------------------|
-| `bearer`  | `Authorization: Bearer {token}`     |
+| `bearer`  | `Authorization: Bearer {token}` (prefijo configurable con `prefix:`) |
 | `basic`   | `Authorization: Basic {b64}`        |
 | `api_key` | `{header}: {token}` (header custom) |
 
@@ -687,13 +710,14 @@ GetOrders:
     action: FetchToken
     token_field: access_token
     ttl: 3600
+    # prefix: Token   # opcional — por defecto "Bearer". Usar para esquemas no-Bearer (p.ej. "Token", "Digest")
 ```
 
 **Qué ocurre en tiempo de ejecución:**
 
 1. Se llama a `engine->send('GetOrders')`.
 2. El engine detecta `authorization.type: dynamic`.
-3. Comprueba la caché para `integration_engine.token.FetchToken`.
+3. Comprueba la caché para `integration_engine.token.{integrationName}.FetchToken`.
 4. Cache miss → ejecuta `FetchTokenAction`, mapea la respuesta con
    `FetchTokenMapper`, extrae `access_token`.
 5. Almacena el token en caché durante 3600 segundos.
@@ -703,6 +727,12 @@ GetOrders:
 
 En llamadas posteriores dentro del TTL, el paso 4 se omite completamente.
 El desarrollador no escribe ninguna lógica de caché.
+
+> **Limitación**: La autorización dinámica solo soporta `bearer` (para el header `Authorization`) y
+> `api_key` (para cualquier otro nombre de header). El tipo `basic` — que requiere usuario y
+> contraseña en lugar de un único token — no es compatible con el flujo de auth dinámica, ya que
+> el engine espera un único valor escalar en `token_field`. Para APIs con HTTP Basic auth y
+> credenciales dinámicas, usa un `ClientInterface` personalizado.
 
 ## 9. Headers
 

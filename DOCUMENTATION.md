@@ -398,6 +398,11 @@ Either `base_url` or `client_service` is required per integration.
 > setups this is sufficient. If you need a dedicated cache pool for dynamic auth tokens — for
 > example to control TTL independently — configure `cache_service` with a custom pool id.
 
+> **Warning**: `config_path` is resolved at **runtime**, not at compile time. A missing or
+> incorrect path will not be caught by `cache:warmup` — it will throw an `InvalidArgumentException`
+> on the first request that touches that integration. Verify all paths after deploy and consider
+> adding a smoke test or health check that exercises each integration.
+
 ### Integration configuration (`src/Infrastructure/Integrations/MyApi/MyApi.yaml`)
 
 Declares the operations available for a specific integration. Generated and
@@ -591,6 +596,24 @@ protected function resolvePathCallback(): ?callable
 }
 ```
 
+
+> **Note**: The default resolver uses `\w+` to match placeholder names (`[a-zA-Z0-9_]`). Parameter names containing hyphens — common in some REST APIs (e.g. `{user-id}`) — will not be resolved and the placeholder will remain literal in the path, causing a silent 404. Use `resolvePathCallback()` to handle these cases:
+>
+> ```php
+> protected function resolvePathCallback(): ?callable
+> {
+>     return function (string $path, ?ActionContextInterface $context): string {
+>         $data = $context?->toArray() ?? [];
+>         return preg_replace_callback('/\{([^}]+)\}/', static function (array $m) use ($data, $path): string {
+>             if (!array_key_exists($m[1], $data)) {
+>                 throw PathResolutionException::missingParameter($m[1], $path);
+>             }
+>             return (string) $data[$m[1]];
+>         }, $path) ?? $path;
+>     };
+> }
+> ```
+
 ## 7. Body system
 
 Bodies are explicit objects implementing `ActionBodyInterface`:
@@ -653,7 +676,7 @@ and thrown as `RequestResponseException`.
 
 | Type      | Header produced                     |
 |-----------|-------------------------------------|
-| `bearer`  | `Authorization: Bearer {token}`     |
+| `bearer`  | `Authorization: Bearer {token}` (prefix configurable via `prefix:`) |
 | `basic`   | `Authorization: Basic {b64}`        |
 | `api_key` | `{header}: {token}` (custom header) |
 
@@ -721,13 +744,14 @@ GetOrders:
     action: FetchToken
     token_field: access_token
     ttl: 3600
+    # prefix: Token   # optional — defaults to "Bearer". Use for non-Bearer Authorization schemes (e.g. "Token", "Digest")
 ```
 
 **What happens at runtime:**
 
 1. `engine->send('GetOrders')` is called.
 2. The engine detects `authorization.type: dynamic`.
-3. It checks the cache for `integration_engine.token.FetchToken`.
+3. It checks the cache for `integration_engine.token.{integrationName}.FetchToken`.
 4. Cache miss → executes `FetchTokenAction`, maps the response via
    `FetchTokenMapper`, extracts `access_token`.
 5. Stores the token in cache for 3600 seconds.
@@ -737,6 +761,12 @@ GetOrders:
 
 On subsequent calls within the TTL, step 4 is skipped entirely. The
 integration author writes no caching logic.
+
+> **Limitation**: Dynamic authorization only supports `bearer` (for `Authorization` header) and
+> `api_key` (for any other header name). The `basic` auth type — which requires a username and
+> password rather than a single token — is not compatible with the dynamic auth flow, since the
+> engine expects a single scalar value from `token_field`. For APIs using HTTP Basic auth with
+> dynamic credentials, use a custom `ClientInterface` instead.
 
 ## 9. Headers system
 
