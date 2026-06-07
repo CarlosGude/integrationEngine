@@ -867,10 +867,10 @@ same type. Registering an adapter with `client: rest` replaces
 | `ActionNotFoundException`        | `send()` called with an action name not in the YAML config                        | Verify the action name matches the YAML key exactly             |
 | `NotMappedActionException`       | `mapper()` returns `null` but `hasResponse()` is `true`                          | Declare a mapper class or set `hasResponse: false`              |
 | `MapperActionMismatchException`  | The mapper's `getAction()` does not match the action being executed               | Ensure each mapper declares the correct Action class            |
-| `RequestResponseException`       | HTTP 4xx/5xx or network error                                                     | Inspect `getStatusCode()` and `getContext()`                    |
+| `RequestResponseException`       | HTTP 4xx/5xx or network error                                                     | Inspect `$e->statusCode` and `$e->context`                    |
 | `RuntimeException`               | A path parameter is missing from the context                                      | Ensure all `{param}` placeholders are covered                   |
 | `RuntimeException`               | Dynamic auth response does not contain the expected `token_field`                 | Verify the auth action response structure matches the config    |
 | `InvalidArgumentException`       | Integration YAML file is empty or its content is not a valid YAML map             | Check the YAML file is not empty and has the correct structure  |
 | `InvalidArgumentException`       | Action class declared in YAML does not exist or does not extend `AbstractAction`  | Verify the FQCN in the `action` field and run `composer dump-autoload` |
 | `InvalidArgumentException`       | `client` value in YAML is not registered (e.g. `client: soap` with no adapter)  | Register the adapter with the `integration_engine.client_adapter` tag  |
-| `RequestResponseException`       | GraphQL response contains `errors` (HTTP 200 with error payload)                  | Inspect `getContext()` for the GraphQL error message                    |
+| `RequestResponseException`       | GraphQL response contains `errors` (HTTP 200 with error payload)                  | Inspect `$e->context` for the GraphQL error message                    |
