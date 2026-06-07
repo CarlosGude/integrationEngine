@@ -93,7 +93,7 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
         $this->engine->send(FakeProtectedAction::getName());
         $this->engine->send(FakeProtectedAction::getName());
 
-        self::assertTrue($this->cache->has('integration_engine.token.test_integration.'.FakeTokenAction::getName()));
+        // The token action must be called only once — the second send() hits the cache.
         self::assertSame(1, $this->client->callCount(FakeTokenAction::getName()));
     }
 

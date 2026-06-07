@@ -243,6 +243,8 @@ GetOrder:
 ```
 
 The `make:integration` command fills the `action` field automatically.
+Each entry must define the `action` key — the bundle validates this at boot
+time and throws a descriptive error if it is missing or not a valid class.
 
 ---
 
@@ -284,6 +286,68 @@ final class CreateChargeAction extends StripeAction
 ```
 
 Full details in [DOCUMENTATION.md — Section 2](./DOCUMENTATION.md#2-philosophy).
+
+---
+
+## Extensibility
+
+### Custom HTTP adapter
+
+Implement `ClientAdapterInterface` and tag it — the bundle discovers it automatically:
+
+```php
+use IntegrationEngine\Core\Contract\ClientAdapterInterface;
+
+final readonly class SoapClientAdapter implements ClientAdapterInterface
+{
+    public static function getClientType(): string { return 'soap'; }
+    public static function requiresPath(): bool    { return false; }
+    public static function requiresMethod(): bool  { return false; }
+
+    public function send(AbstractAction $action, ...): array
+    {
+        // your implementation
+    }
+}
+```
+
+```yaml
+# config/packages/integration_engine.yaml
+integration_engine:
+  integrations:
+    my_soap_api:
+      client_service: App\Infrastructure\Integrations\SoapClientAdapter
+      config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MySoapApi/MySoapApi.yaml'
+```
+
+Project adapters registered after bundle built-ins override them for the
+same type — registering a `rest` adapter in your project replaces the
+default `SymfonyHttpClientAdapter` for that integration.
+
+### Custom cache pool
+
+```yaml
+integration_engine:
+  integrations:
+    my_api:
+      cache_service: cache.my_dedicated_pool
+```
+
+Any service implementing `CachePort` (`get` and `set`) is accepted.
+
+---
+
+## Error reference
+
+| Exception | When |
+|---|---|
+| `ActionNotFoundException` | The action name is not defined in the YAML config |
+| `NotMappedActionException` | `hasResponse()` is `true` but `mapper()` returns `null` |
+| `MapperActionMismatchException` | The mapper's `getAction()` does not match the action being executed |
+| `RequestResponseException` | HTTP 4xx / 5xx or network error |
+| `DynamicAuthException` | Token field missing or non-scalar in the auth response |
+| `PathResolutionException` | A `{placeholder}` in the path has no matching context key |
+| `IntegrationConfigurationException` | Missing or invalid bundle configuration detected at container compile time |
 
 ---
 

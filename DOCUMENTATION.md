@@ -370,7 +370,125 @@ will not resolve correctly from the registry.
 
 ---
 
-## 4. YAML configuration
+## 4. Directory structure
+
+Every integration follows the same layout. Understanding it once means being
+able to navigate any integration without opening a file.
+
+### Generated structure
+
+Running `make:integration DummyRestApi GetEmployee` on a fresh project
+produces the following tree:
+
+```
+config/
+└── packages/
+    └── integration_engine.yaml          ← transport config (base_url, cache, headers)
+
+src/Infrastructure/Integrations/
+└── DummyRestApi/
+    ├── DummyRestApiIntegration.php      ← facade: exposes typed methods, hides the engine
+    ├── DummyRestApi.yaml                ← action registry: maps names to classes
+    └── GetEmployee/
+        ├── Request/
+        │   └── GetEmployeeAction.php    ← declares the request (method, path, mapper)
+        └── Response/
+            ├── GetEmployeeMapper.php    ← transforms raw array → integration DTO
+            └── GetEmployeeResponse.php  ← integration DTO (mirrors the external API)
+```
+
+Adding a second action (`make:integration DummyRestApi CreateEmployee`) adds
+only the new action subtree and appends an entry to `DummyRestApi.yaml`:
+
+```
+└── DummyRestApi/
+    ├── DummyRestApiIntegration.php
+    ├── DummyRestApi.yaml                ← GetEmployee + CreateEmployee entries
+    ├── GetEmployee/
+    │   ├── Request/GetEmployeeAction.php
+    │   └── Response/
+    │       ├── GetEmployeeMapper.php
+    │       └── GetEmployeeResponse.php
+    └── CreateEmployee/
+        ├── Request/CreateEmployeeAction.php
+        └── Response/
+            ├── CreateEmployeeMapper.php
+            └── CreateEmployeeResponse.php
+```
+
+### Why this layout
+
+Each directory level has one responsibility:
+
+| Level | Directory | Contains |
+|---|---|---|
+| Integration | `DummyRestApi/` | Everything for one external provider |
+| Facade | `DummyRestApiIntegration.php` | Typed public API — one method per action |
+| Action | `GetEmployee/` | Everything for one operation |
+| Request | `Request/` | The action class — what to send |
+| Response | `Response/` | The mapper and the DTO — what to do with the reply |
+
+The `Request/Response` split inside each action is deliberate. It mirrors
+the HTTP contract: a request goes out, a response comes back. Both belong to
+the same operation but they solve different problems. Keeping them in
+separate subdirectories makes the separation explicit and navigable — when
+something breaks in the mapping, you go straight to `Response/`. When the
+wrong path is being called, you go straight to `Request/`.
+
+### DELETE actions — no response layer
+
+`DELETE` actions set `hasResponse: false`. The scaffold generates no Mapper
+or Response because there is nothing to map:
+
+```
+└── DeleteEmployee/
+    └── Request/
+        └── DeleteEmployeeAction.php    ← hasResponse(): false, mapper(): null
+```
+
+The engine returns an `EmptyResponse` and the caller discards it.
+
+### GraphQL — same structure, different body
+
+GraphQL actions follow the same layout. The only difference is that the
+Request layer also needs a body class implementing `GraphQLBodyInterface`:
+
+```
+└── GetUser/
+    ├── Request/
+    │   ├── GetUserAction.php
+    │   └── GetUserBody.php             ← implements GraphQLBodyInterface (query + variables)
+    └── Response/
+        ├── GetUserMapper.php
+        └── GetUserResponse.php
+```
+
+The command generates `GetUserAction` with a comment pointing to
+`GraphQLBodyInterface`. The body class is not generated automatically because
+the query string is implementation-specific — write it once and it does not
+change.
+
+### Naming conventions
+
+The scaffold enforces a consistent naming pattern. Following it outside the
+scaffold keeps the codebase uniform:
+
+| File | Pattern | Example |
+|---|---|---|
+| Action | `{ActionName}Action.php` | `GetEmployeeAction.php` |
+| Mapper | `{ActionName}Mapper.php` | `GetEmployeeMapper.php` |
+| Response | `{ActionName}Response.php` | `GetEmployeeResponse.php` |
+| Body | `{ActionName}Body.php` | `CreateEmployeeBody.php` |
+| Facade | `{IntegrationName}Integration.php` | `DummyRestApiIntegration.php` |
+| YAML registry | `{IntegrationName}.yaml` | `DummyRestApi.yaml` |
+
+The action name used in YAML (the key) and in `getName()` must match exactly.
+The engine resolves actions by name at runtime — a mismatch causes an
+`ActionNotFoundException`.
+
+---
+
+## 5. YAML configuration
 
 There are two separate files with different responsibilities.
 
@@ -427,7 +545,7 @@ behaviour.
 
 ---
 
-## 5. Actions
+## 6. Actions
 
 ### YAML vs Action — why both exist
 
@@ -528,7 +646,7 @@ final class GetEmployeeMapper extends AbstractMapper
 }
 ```
 
-## 6. Context system
+## 7. Context system
 
 Context resolves dynamic URL path segments at call time:
 
@@ -611,7 +729,7 @@ protected function resolvePathCallback(): ?callable
 > }
 > ```
 
-## 7. Body system
+## 8. Body system
 
 Bodies are explicit objects implementing `ActionBodyInterface`:
 
@@ -667,7 +785,7 @@ and sends it as `POST` to the configured endpoint. The mapper receives only
 the `data` key of the GraphQL response — errors are detected automatically
 and thrown as `RequestResponseException`.
 
-## 8. Authorization system
+## 9. Authorization system
 
 ### Static authorization
 
@@ -765,7 +883,7 @@ integration author writes no caching logic.
 > engine expects a single scalar value from `token_field`. For APIs using HTTP Basic auth with
 > dynamic credentials, use a custom `ClientInterface` instead.
 
-## 9. Headers system
+## 10. Headers system
 
 Headers are resolved in three layers. Each layer overrides the previous:
 
@@ -794,7 +912,7 @@ final class CorrelationHeaders implements RequestHeadersInterface
 }
 ```
 
-## 10. Engine API
+## 11. Engine API
 
 ```php
 send(
@@ -816,7 +934,7 @@ $response = $this->engine->send(...);
 return $response;
 ```
 
-## 11. The response boundary
+## 12. The response boundary
 
 `ResponseInterface` requires only `toArray()`. This is intentional — it is
 the point where the bundle's responsibility ends and yours begins. See
@@ -832,7 +950,7 @@ a `ResponseInterface`, and the engine verifies at runtime that the mapper
 corresponds to the correct action. What the response object contains beyond
 that is entirely up to you.
 
-## 12. Extensibility
+## 13. Extensibility
 
 Every infrastructure component is replaceable:
 
@@ -887,7 +1005,233 @@ Project adapters registered after bundle built-ins will override them for the
 same type. Registering an adapter with `client: rest` replaces
 `SymfonyHttpClientAdapter` for that integration.
 
-## 13. Error reference
+## 14. Bundle internals
+
+This section is for developers who want to extend or fork the bundle itself —
+not just use it. It describes how the three layers are wired together and
+where each extension point lives.
+
+### Layer map
+
+```
+Bundle/
+├── IntegrationEngineBundle.php              ← registers the compiler pass
+├── DependencyInjection/
+│   ├── IntegrationEngineExtension.php       ← loads services.yaml, exposes config as parameters
+│   ├── Configuration.php                    ← defines and validates the config tree
+│   └── Compiler/
+│       └── IntegrationCompilerPass.php      ← builds one IntegrationEngine per integration
+├── Exception/
+│   └── IntegrationConfigurationException.php ← compile-time config errors
+├── Command/
+│   └── MakeIntegrationCommand.php           ← make:integration scaffolding
+└── Generator/
+    ├── IntegrationContext.php               ← value object: all data for one generation run
+    ├── IntegrationFileGenerator.php         ← decides which files to write and where
+    └── TemplateRenderer.php                 ← produces the PHP/YAML content strings
+
+Core/
+├── IntegrationEngine.php                    ← orchestrates one send() call end-to-end
+├── Contract/
+│   ├── AbstractAction.php                   ← base for all actions
+│   ├── AbstractMapper.php                   ← base for all mappers
+│   ├── ActionBodyInterface.php
+│   ├── ActionContextInterface.php
+│   ├── AuthorizationConfig.php              ← factory: dispatches to Static or Dynamic
+│   ├── StaticAuthorizationConfig.php
+│   ├── DynamicAuthorizationConfig.php
+│   ├── ClientInterface.php                  ← port: what the engine calls
+│   ├── ClientAdapterInterface.php           ← extends ClientInterface + type metadata
+│   ├── RequestHeadersInterface.php
+│   ├── ResponseInterface.php
+│   └── GraphQLBodyInterface.php
+├── Port/
+│   ├── CachePort.php                        ← port: get / set
+│   └── ConfigPort.php                       ← port: getAction()
+├── Registry/
+│   ├── IntegrationRegistry.php              ← runtime map of name → IntegrationEngine
+│   └── IntegrationName.php                  ← marker interface for NAME constants
+├── Response/
+│   └── EmptyResponse.php                    ← returned when hasResponse() is false
+└── Exception/                               ← one exception class per failure mode
+
+Infrastructure/
+├── Adapter/
+│   └── YamlConfigAdapter.php                ← ConfigPort implementation
+├── Cache/
+│   └── Psr6CacheAdapter.php                 ← CachePort implementation
+└── Http/
+    ├── ClientAdapterResolver.php            ← type string → adapter class map
+    ├── SymfonyHttpClientAdapter.php          ← ClientAdapterInterface: REST
+    └── GraphQLClientAdapter.php             ← ClientAdapterInterface: GraphQL
+```
+
+### Boot sequence
+
+Understanding the two-phase boot is essential before modifying anything.
+
+**Phase 1 — Container compilation** (`IntegrationCompilerPass::process()`):
+
+```
+IntegrationEngineExtension::load()
+  → reads integration_engine.yaml
+  → validates config tree (Configuration.php)
+  → stores integrations as container parameter: integration_engine.integrations
+
+IntegrationCompilerPass::process()
+  → reads the parameter
+  → scans services tagged integration_engine.client_adapter
+      → builds type → class map (later registrations override earlier ones)
+      → calls ClientAdapterResolver::register() for each
+  → for each integration:
+      → creates Definition for YamlConfigAdapter(config_path)   [integration_engine.config.{name}]
+      → creates Definition for the HTTP adapter(http_client, base_url, headers)  [integration_engine.http_client.{name}]
+        (or uses client_service reference directly)
+      → creates Definition for IntegrationEngine(config, client, cache, name)   [integration_engine.integration.{name}]
+      → calls IntegrationRegistry::register(name, engine)
+```
+
+All service IDs follow the pattern `integration_engine.{type}.{name}`.
+They are not public by default — they are wired internally via `Reference`.
+
+**Phase 2 — Runtime** (`IntegrationEngine::send()`):
+
+```
+send(actionName, context, body, headers)
+  → ConfigPort::getAction(name, body)          ← reads YAML, instantiates Action
+  → applyAuthorization(action)
+      → if DynamicAuthorizationConfig:
+          → cache lookup (CachePort::get)
+          → cache miss: send auth action, map response, extract token, cache it
+          → reconstruct action with StaticAuthorizationConfig
+  → ClientInterface::send(action, context, headers)
+  → if !action::hasResponse(): return EmptyResponse
+  → applyMapper(action, rawResponse)
+      → guard: mapper::getAction() === action::class
+      → mapper::map(action, rawResponse)
+      → return ResponseInterface
+```
+
+### Extension points
+
+There are four ways to extend the bundle, in increasing order of invasiveness:
+
+**1. New client adapter type** (most common)
+
+Implement `ClientAdapterInterface`, tag it, use it via `client:` in YAML.
+The compiler pass discovers it automatically. See section 13.
+
+**2. Replace an infrastructure component per integration**
+
+Every integration can use a different `ClientInterface`, `CachePort`, or
+`ConfigPort` implementation. None of them need to be registered globally —
+just pass the service ID via `client_service` or `cache_service`.
+
+To replace `ConfigPort` entirely (e.g. to load actions from a database
+instead of YAML), implement `ConfigPort` and wire it manually in a custom
+compiler pass:
+
+```php
+// src/Infrastructure/Integrations/MyApi/DatabaseConfigAdapter.php
+final class DatabaseConfigAdapter implements ConfigPort
+{
+    public function __construct(private readonly Connection $db) {}
+
+    public function getAction(string $name, ?ActionBodyInterface $body): AbstractAction
+    {
+        // load from DB, instantiate action
+    }
+}
+```
+
+```php
+// src/Bundle/Compiler/MyApiConfigPass.php
+final class MyApiConfigPass implements CompilerPassInterface
+{
+    public function process(ContainerBuilder $container): void
+    {
+        // override the definition created by IntegrationCompilerPass
+        $container->getDefinition('integration_engine.config.my_api')
+            ->setClass(DatabaseConfigAdapter::class)
+            ->setArguments([new Reference('doctrine.dbal.default_connection')]);
+    }
+}
+```
+
+Register it after `IntegrationCompilerPass` so it runs later and wins:
+
+```php
+// src/Kernel.php or a bundle's build()
+$container->addCompilerPass(new MyApiConfigPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, -10);
+```
+
+**3. Extend the bundle configuration**
+
+To add new config keys to `integration_engine.yaml`, extend `Configuration`
+and `IntegrationEngineExtension`. The cleanest approach if you are building
+a library on top of this bundle is to create your own bundle that declares
+a `PrependExtensionInterface` and injects config into `integration_engine`:
+
+```php
+final class MyLibraryBundle extends Bundle implements PrependExtensionInterface
+{
+    public function prepend(ContainerBuilder $container): void
+    {
+        $container->prependExtensionConfig('integration_engine', [
+            'integrations' => [
+                'my_api' => [
+                    'base_url'    => '%env(MY_API_URL)%',
+                    'config_path' => __DIR__.'/Resources/my_api.yaml',
+                ],
+            ],
+        ]);
+    }
+}
+```
+
+**4. Fork the compiler pass** (most invasive)
+
+If you need to change how `IntegrationEngine` instances are constructed —
+for example to inject additional collaborators — copy `IntegrationCompilerPass`
+and register yours instead. The service ID conventions
+(`integration_engine.config.{name}`, `integration_engine.http_client.{name}`,
+`integration_engine.integration.{name}`) are stable and can be relied upon.
+
+### Service ID reference
+
+| Service ID | Class | Created by |
+|---|---|---|
+| `integration_engine.registry` | `IntegrationRegistry` | `services.yaml` |
+| `integration_engine.cache.default` | `Psr6CacheAdapter` | `services.yaml` |
+| `integration_engine.resolver` | `ClientAdapterResolver` | `services.yaml` |
+| `integration_engine.config.{name}` | `YamlConfigAdapter` | Compiler pass |
+| `integration_engine.http_client.{name}` | adapter class | Compiler pass |
+| `integration_engine.integration.{name}` | `IntegrationEngine` | Compiler pass |
+
+### DI tag reference
+
+| Tag | Used by | Effect |
+|---|---|---|
+| `integration_engine.client_adapter` | any `ClientAdapterInterface` | Registers the adapter with `ClientAdapterResolver` at compile time |
+
+### What not to override
+
+`IntegrationEngine` itself is `final readonly`. It is not designed to be
+subclassed — its behaviour is fixed by its collaborators. Swap the
+collaborators, not the engine.
+
+`AbstractAction::create()` uses `new static()` deliberately. Subclasses
+inherit it without needing to override it. Do not change the constructor
+signature — the compiler pass constructs actions via `create()`, and so does
+any code that reconstructs an action during dynamic auth.
+
+`AbstractMapper::map()` is `final`. The guard it performs — verifying that
+the mapper belongs to the action — is a correctness invariant. Override
+`transform()` instead.
+
+---
+
+## 15. Error reference
 
 | Exception                        | When                                                                              | Action                                                          |
 |----------------------------------|-----------------------------------------------------------------------------------|-----------------------------------------------------------------|
