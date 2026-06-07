@@ -30,6 +30,14 @@ final class YamlConfigAdapter implements ConfigPort
             );
         }
 
+        foreach ($parsed as $actionName => $actionConfig) {
+            if (!isset($actionConfig['action']) || !\is_string($actionConfig['action'])) {
+                throw new \InvalidArgumentException(
+                    \sprintf('Action "%s" must define a string "action" class in the integration YAML.', $actionName)
+                );
+            }
+        }
+
         /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>}> $parsed */
         $this->config = $parsed;
     }

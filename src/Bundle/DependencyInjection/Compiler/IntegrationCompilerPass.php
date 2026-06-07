@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Bundle\DependencyInjection\Compiler;
 
+use IntegrationEngine\Bundle\Exception\IntegrationConfigurationException;
 use IntegrationEngine\Core\Contract\ClientAdapterInterface;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Registry\IntegrationRegistry;
@@ -57,11 +58,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
             $configId = "integration_engine.config.{$name}";
 
             if (null === $config['config_path']) {
-                throw new \InvalidArgumentException(\sprintf(
-                    'Integration "%s" must define "config_path". '
-                    .'Use "php bin/console make:integration" to generate it automatically.',
-                    $name,
-                ));
+                throw IntegrationConfigurationException::missingConfigPath($name);
             }
 
             $container->setDefinition($configId, new Definition(
@@ -75,12 +72,11 @@ final class IntegrationCompilerPass implements CompilerPassInterface
                 $httpClientId = "integration_engine.http_client.{$name}";
 
                 if (!isset($adapterMap[$config['client']])) {
-                    throw new \InvalidArgumentException(\sprintf(
-                        'Unknown client type "%s" for integration "%s". Registered types: %s.',
+                    throw IntegrationConfigurationException::unknownClientType(
                         $config['client'],
                         $name,
-                        implode(', ', array_keys($adapterMap)) ?: 'none',
-                    ));
+                        implode(', ', array_keys($adapterMap)),
+                    );
                 }
 
                 $adapterClass = $adapterMap[$config['client']];

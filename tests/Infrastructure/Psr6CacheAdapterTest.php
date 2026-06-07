@@ -47,27 +47,6 @@ final class Psr6CacheAdapterTest extends TestCase
         self::assertSame(300, $pool->lastTtl());
     }
 
-    // ── has ──────────────────────────────────────────────────────────────────
-
-    #[Test]
-    public function hasReturnsTrueForExistingKey(): void
-    {
-        $pool = new SpyCachePool();
-        $pool->seed('existing', 'value');
-        $adapter = new Psr6CacheAdapter($pool);
-
-        self::assertTrue($adapter->has('existing'));
-    }
-
-    #[Test]
-    public function hasReturnsFalseForMissingKey(): void
-    {
-        $pool = new SpyCachePool();
-        $adapter = new Psr6CacheAdapter($pool);
-
-        self::assertFalse($adapter->has('missing'));
-    }
-
     // ── key sanitization ─────────────────────────────────────────────────────
 
     #[Test]
@@ -97,21 +76,6 @@ final class Psr6CacheAdapterTest extends TestCase
         $sanitized = $pool->lastSetKey();
         self::assertNotNull($sanitized);
         self::assertStringNotContainsString('.', $sanitized);
-    }
-
-    #[Test]
-    public function sanitizedKeyIsUsedForGetAndHasConsistently(): void
-    {
-        $pool = new SpyCachePool();
-        $adapter = new Psr6CacheAdapter($pool);
-
-        $key = 'integration_engine.token.my_action';
-
-        $adapter->set($key, 'token_value', 60);
-
-        // get() and has() must sanitize the same way so they find what set() stored
-        self::assertTrue($adapter->has($key));
-        self::assertSame('token_value', $adapter->get($key));
     }
 }
 
