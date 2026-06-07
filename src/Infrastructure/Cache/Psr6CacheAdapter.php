@@ -35,10 +35,10 @@ final class Psr6CacheAdapter implements CachePort
 
     /**
      * PSR-6 keys may not contain reserved characters: {}()/\@:
-     * We replace them with underscores to keep keys readable.
+     * Some pools also reject dots — we replace all of them with underscores.
      */
     private function sanitizeKey(string $key): string
     {
-        return strtr($key, '{}()/\@:', '________');
+        return strtr($key, '{}()/\@:.', '_________');
     }
 }

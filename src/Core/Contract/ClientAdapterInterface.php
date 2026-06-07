@@ -15,7 +15,8 @@ namespace IntegrationEngine\Core\Contract;
  *       my_api:
  *         client: my_custom_type
  *
- * Project adapters always take precedence over bundle built-ins.
+ * Project adapters registered after bundle built-ins will override them
+ * for the same type, since later registrations win in ClientAdapterResolver.
  * Implementing this interface with an existing type (e.g. "rest") replaces
  * the bundle's default adapter for that type.
  */

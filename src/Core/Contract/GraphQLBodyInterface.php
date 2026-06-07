@@ -8,9 +8,10 @@ interface GraphQLBodyInterface extends ActionBodyInterface
 {
     /**
      * The GraphQL query or mutation string.
-     * Can be declared inline or loaded from a .graphql file:
+     * Return it inline or load it yourself from an external file:
      *
-     *   return file_get_contents(__DIR__ . '/queries/get_user.graphql');
+     *   return 'query { user { id } }';
+     *   // or: return file_get_contents(__DIR__ . '/queries/get_user.graphql');
      */
     public function getQuery(): string;
 
