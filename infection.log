@@ -1,0 +1,207 @@
+Note: Pass `--log-verbosity=all` to log information about killed and errored mutants.
+Note: Pass `--debug` to log test-framework output.
+
+Escaped mutants:
+================
+
+1) /Users/cgude/PhpstormProjects/integrationEngine/src/Core/IntegrationEngine.php:99    [M] CastString [ID] dd8101d130554e634f6ee8bab88b087a
+
+@@ @@
+             throw DynamicAuthException::nonScalarTokenField($authConfig->tokenField);
+         }
+
+-        $token = (string) $tokenValue;
++        $token = $tokenValue;
+
+         $this->cache->set($cacheKey, $token, $authConfig->ttl);
+
+
+2) /Users/cgude/PhpstormProjects/integrationEngine/src/Core/IntegrationEngine.php:122    [M] Throw_ [ID] dc56ddd0682b6d29b30d72a74ea1ec4c
+
+@@ @@
+         // AbstractMapper::map() carries the same guard as a public contract
+         // for callers that use it outside the engine flow.
+         if ($mapperClass::getAction() !== $action::class) {
+-            throw new MapperActionMismatchException(
++            new MapperActionMismatchException(
+                 mapperClass: $mapperClass,
+                 expectedActionClass: $mapperClass::getAction(),
+                 actualActionClass: $action::class
+
+
+3) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/GraphQLClientAdapter.php:76    [M] CatchBlockRemoval [ID] 0a7149835af5cdde7201aa95fcb5222c
+
+@@ @@
+
+         try {
+             $response = $this->httpClient->request('POST', $this->endpointUrl, $options);
+-
+             $statusCode = $response->getStatusCode();
+-
+             if ($statusCode >= 400) {
+                 throw new RequestResponseException(
+                     statusCode: $statusCode,
+@@ @@
+                     )
+                 );
+             }
+-
+             $data = $response->toArray();
+-
+             // GraphQL always returns 200, even on errors.
+             // Errors are signalled inside the response body under the "errors" key.
+             if (!empty($data['errors'])) {
+@@ @@
+                     )
+                 );
+             }
+-
+             return $data['data'] ?? [];
+         } catch (RequestResponseException $e) {
+             throw $e;
+-        } catch (\Throwable $e) {
+-            throw new RequestResponseException(
+-                statusCode: 0,
+-                context: \sprintf(
+-                    'Network error on GraphQL endpoint %s: %s',
+-                    $this->endpointUrl,
+-                    $e->getMessage()
+-                )
+-            );
+         }
+     }
+
+
+4) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/GraphQLClientAdapter.php:81    [M] GreaterThanOrEqualTo [ID] eb4c4900b614f32ac95e549f424d0ad9
+
+@@ @@
+
+             $statusCode = $response->getStatusCode();
+
+-            if ($statusCode >= 400) {
++            if ($statusCode > 400) {
+                 throw new RequestResponseException(
+                     statusCode: $statusCode,
+                     context: \sprintf(
+
+
+5) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/GraphQLClientAdapter.php:88    [M] FalseValue [ID] 57a55fa6bd8d39e27ca00604f010a765
+
+@@ @@
+                         'GraphQL endpoint %s returned HTTP %d: %s',
+                         $this->endpointUrl,
+                         $statusCode,
+-                        $response->getContent(throw: false)
++                        $response->getContent(throw: true)
+                     )
+                 );
+             }
+
+
+6) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/GraphQLClientAdapter.php:134    [M] ArrayOneItem [ID] aeb8f52719f9076334ffd549ac616e34
+
+@@ @@
+         $auth = $action->getAuthorization();
+
+         if (!$auth instanceof StaticAuthorizationConfig) {
+-            return $headers;
++            return count($headers) > 1 ? array_slice($headers, 0, 1, true) : $headers;
+         }
+
+         $token = isset($auth->params['token']) && \is_string($auth->params['token']) ? $auth->params['token'] : '';
+
+
+7) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/GraphQLClientAdapter.php:142    [M] Assignment [ID] a73b90e6985e0cfc15698d1339ed95e5
+
+@@ @@
+         $password = isset($auth->params['password']) && \is_string($auth->params['password']) ? $auth->params['password'] : '';
+         $headerKey = isset($auth->params['header']) && \is_string($auth->params['header']) ? $auth->params['header'] : 'X-Api-Key';
+
+-        $headers += match ($auth->type) {
++        $headers = match ($auth->type) {
+             'bearer' => ['Authorization' => \sprintf('%s %s', $auth->params['prefix'] ?? 'Bearer', $token)],
+             'basic' => ['Authorization' => \sprintf('Basic %s', base64_encode($username.':'.$password))],
+             'api_key' => [$headerKey => $token],
+
+
+8) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/GraphQLClientAdapter.php:149    [M] ArrayOneItem [ID] 2c89f5a3f45ca440fd7b1599f0e7be5b
+
+@@ @@
+             default => [],
+         };
+
+-        return $headers;
++        return count($headers) > 1 ? array_slice($headers, 0, 1, true) : $headers;
+     }
+ }
+
+
+9) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:81    [M] FalseValue [ID] 848a3d523d6a08057dc06a371559f02d
+
+@@ @@
+                         $action->getMethod(),
+                         $path,
+                         $statusCode,
+-                        $response->getContent(throw: false)
++                        $response->getContent(throw: true)
+                     )
+                 );
+             }
+
+
+10) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:86    [M] FalseValue [ID] e56b27618925a65f71a496bf250a6658
+
+@@ @@
+                 );
+             }
+
+-            $content = $response->getContent(throw: false);
++            $content = $response->getContent(throw: true);
+
+             if (204 === $statusCode || '' === trim($content)) {
+                 return [];
+
+
+11) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:88    [M] UnwrapTrim [ID] ae07d21be5df45a0b9f445b2c56825a6
+
+@@ @@
+
+             $content = $response->getContent(throw: false);
+
+-            if (204 === $statusCode || '' === trim($content)) {
++            if (204 === $statusCode || '' === $content) {
+                 return [];
+             }
+
+
+12) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:116    [M] ArrayOneItem [ID] b6e088ad125fb8a45640001dcf660a8c
+
+@@ @@
+         $auth = $action->getAuthorization();
+
+         if (!$auth instanceof StaticAuthorizationConfig) {
+-            return $headers;
++            return count($headers) > 1 ? array_slice($headers, 0, 1, true) : $headers;
+         }
+
+         $token = isset($auth->params['token']) && \is_string($auth->params['token']) ? $auth->params['token'] : '';
+
+
+13) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:125    [M] Coalesce [ID] df93f157985eaf5669c3398a2d8654dc
+
+@@ @@
+         $headerKey = isset($auth->params['header']) && \is_string($auth->params['header']) ? $auth->params['header'] : 'X-Api-Key';
+
+         $headers += match ($auth->type) {
+-            'bearer' => ['Authorization' => \sprintf('%s %s', $auth->params['prefix'] ?? 'Bearer', $token)],
++            'bearer' => ['Authorization' => \sprintf('%s %s', 'Bearer' ?? $auth->params['prefix'], $token)],
+             'basic' => ['Authorization' => \sprintf('Basic %s', base64_encode($username.':'.$password))],
+             'api_key' => [$headerKey => $token],
+             default => [],
+
+
+Timed Out mutants:
+==================
+
+Skipped mutants:
+================

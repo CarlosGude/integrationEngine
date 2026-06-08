@@ -225,6 +225,72 @@ final class GraphQLClientAdapterTest extends TestCase
     {
         self::assertSame('graphql', GraphQLClientAdapter::getClientType());
     }
+
+    // ── statusCode en body inválido es exactamente 0 ──────────────────────────
+
+    #[Test]
+    public function nonGraphQLBodyExceptionHasStatusCodeZero(): void
+    {
+        $spy = new GQLSpyHttpClient();
+        $adapter = new GraphQLClientAdapter(httpClient: $spy, endpointUrl: 'https://api.example.com/graphql');
+
+        try {
+            $adapter->send(GQLTestAction::create('POST', '/graphql', GQLNonGraphQLBody::create([])));
+            self::fail('Expected RequestResponseException');
+        } catch (RequestResponseException $e) {
+            self::assertSame(0, $e->statusCode);
+            self::assertStringContainsString('GraphQLBodyInterface', $e->context);
+        }
+    }
+
+    #[Test]
+    public function nullBodyExceptionHasStatusCodeZero(): void
+    {
+        $spy = new GQLSpyHttpClient();
+        $adapter = new GraphQLClientAdapter(httpClient: $spy, endpointUrl: 'https://api.example.com/graphql');
+
+        try {
+            $adapter->send(GQLTestAction::create('POST', '/graphql'));
+            self::fail('Expected RequestResponseException');
+        } catch (RequestResponseException $e) {
+            self::assertSame(0, $e->statusCode);
+        }
+    }
+
+    // ── statusCode en error GraphQL es exactamente 200 ────────────────────────
+
+    #[Test]
+    public function graphQLErrorExceptionHasStatusCode200(): void
+    {
+        $spy = new GQLSpyHttpClient(responseBody: [
+            'errors' => [['message' => 'something went wrong']],
+            'data' => null,
+        ]);
+        $adapter = new GraphQLClientAdapter(httpClient: $spy, endpointUrl: 'https://api.example.com/graphql');
+
+        try {
+            $adapter->send(GQLTestAction::create('POST', '/graphql', GQLTestBody::create([])));
+            self::fail('Expected RequestResponseException');
+        } catch (RequestResponseException $e) {
+            self::assertSame(200, $e->statusCode);
+        }
+    }
+
+    #[Test]
+    public function graphQLErrorWithoutMessageExceptionHasStatusCode200(): void
+    {
+        $spy = new GQLSpyHttpClient(responseBody: [
+            'errors' => [['extensions' => ['code' => 'UNAUTHENTICATED']]],
+        ]);
+        $adapter = new GraphQLClientAdapter(httpClient: $spy, endpointUrl: 'https://api.example.com/graphql');
+
+        try {
+            $adapter->send(GQLTestAction::create('POST', '/graphql', GQLTestBody::create([])));
+            self::fail('Expected RequestResponseException');
+        } catch (RequestResponseException $e) {
+            self::assertSame(200, $e->statusCode);
+        }
+    }
 }
 
 // ──────────────────────────────────────────────
