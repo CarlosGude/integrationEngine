@@ -186,6 +186,10 @@ const T = {
 function getHTML(lang) {
     const t = T[lang];
 
+    const navLinks = t.heroNav.map(n =>
+        `<a href="${n.href}" target="_blank" rel="noopener">${n.label}</a>`
+    ).join('\n    ');
+
     const problems = t.problems.map(p => `
       <div class="problem-card">
         <h3>${p.h3}</h3>
@@ -382,7 +386,7 @@ function getHTML(lang) {
   <p>${t.footerTxt}</p>
 </footer>
 
-<script>${JS}</script>
+<script>${JS}<\/script>
 </body>
 </html>`;
 }
@@ -841,7 +845,7 @@ function showTab(btn, panelId) {
 function renderLineNumbers(block) {
   const activePanel = block.querySelector('.code-panel.active pre');
   if (!activePanel) return;
-  const lines = activePanel.textContent.split(String.raw`\n`);
+  const lines = activePanel.textContent.split('\\n');
   if (lines[lines.length - 1] === '') lines.pop();
   const gutter = block.querySelector('.line-numbers');
   if (!gutter) return;
