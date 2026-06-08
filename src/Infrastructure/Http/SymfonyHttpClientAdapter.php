@@ -105,14 +105,4 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface
             );
         }
     }
-
-    /**
-     * The REST adapter always sends Accept: application/json as a base header.
-     *
-     * @return array<string, string>
-     */
-    private function defaultAuthHeaders(): array
-    {
-        return ['Accept' => 'application/json'];
-    }
 }
