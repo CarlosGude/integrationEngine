@@ -8,3 +8,4 @@ symfony.lock
 /.phpunit.result.cache
 /.idea/
 .DS_Store
+infection.html
