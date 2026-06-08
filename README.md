@@ -369,6 +369,25 @@ recommended patterns:
 
 **[→ DOCUMENTATION.md](./DOCUMENTATION.md)**
 
+## Testing
+
+The bundle ships with a full mutation test suite powered by [Infection](https://infection.github.io/).
+
+```
+Mutation Code Coverage: 100%
+Covered Code MSI:        94%
+```
+
+All production source files are covered. The suite uses inline PHP fakes — no
+mocking framework, no coupling to internals. Every test represents a real scenario
+the engine can encounter in production.
+
+Run the suite locally:
+
+```bash
+XDEBUG_MODE=coverage ./vendor/bin/infection --show-mutations
+```
+
 Test suite structure, fakes, and the rationale behind each test:
 
 **[→ TESTING.md](./TESTING.md)**

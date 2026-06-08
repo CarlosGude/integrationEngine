@@ -1,0 +1,34 @@
+{
+    "source": {
+        "directories": ["src"],
+        "excludes": [
+            "Bundle",
+            "Core/Contract/ActionBodyInterface.php",
+            "Core/Contract/ActionContextInterface.php",
+            "Core/Contract/ClientInterface.php",
+            "Core/Contract/RequestHeadersInterface.php",
+            "Core/Contract/ResponseInterface.php",
+            "Core/Port/CachePort.php",
+            "Core/Port/ConfigPort.php",
+            "Core/Registry/IntegrationName.php"
+        ]
+    },
+    "testFramework": "phpunit",
+    "testFrameworkOptions": "--testdox",
+    "minMsi": 94,
+    "minCoveredMsi": 94,
+    "mutators": {
+        "@default": true,
+        "UnwrapArrayMap": false,
+        "UnwrapArrayFilter": false
+    },
+    "logs": {
+        "text": "infection.log",
+        "html": "infection.html",
+        "summary": "infection-summary.log",
+        "perMutator": "infection-per-mutator.md"
+    },
+    "phpUnit": {
+        "configDir": "."
+    }
+}
