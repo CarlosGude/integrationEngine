@@ -250,7 +250,7 @@ final class RestHeadersSpyClient implements HttpClientInterface
                 return [];
             }
 
-            public function cancel(): void {}
+            public function cancel(): void { /* No-op: cancellation not needed in test double */ }
 
             public function getInfo(?string $type = null): mixed
             {

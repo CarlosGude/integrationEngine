@@ -67,24 +67,16 @@ final class MakeIntegrationCommand extends Command
 
         [$clientType, $baseUrl] = $this->resolveClientConfig($io, $bundleConfigPath, $name, $bundleConfigExists);
 
-        try {
-            $adapterClass = $this->adapterResolver->resolve($clientType);
-        } catch (\InvalidArgumentException $e) {
-            $io->error($e->getMessage());
-
+        $resolved = $this->resolveAdapterAndAction($io, $clientType, $actionArg);
+        if (null === $resolved) {
             return Command::FAILURE;
         }
+
+        [$adapterClass, $action] = $resolved;
 
         /** @var class-string<ClientAdapterInterface> $adapterClass */
         $requiresPath = $adapterClass::requiresPath();
         $requiresMethod = $adapterClass::requiresMethod();
-
-        $action = $this->resolveActionName($io, $actionArg);
-        if (null === $action) {
-            $io->error('Action name could not be resolved. Use --no-interaction with the action argument.');
-
-            return Command::FAILURE;
-        }
 
         [$actionPath, $method] = $this->resolvePathAndMethod($io, $action, $requiresPath, $requiresMethod);
 
@@ -289,4 +281,31 @@ YAML;
     {
         return strtolower(preg_replace('/(?<!^)[A-Z]/u', '_$0', $value) ?? $value);
     }
+
+    /**
+     * Resolves the adapter class and action name, returning null on failure.
+     *
+     * @return array{class-string<ClientAdapterInterface>, string}|null
+     */
+    private function resolveAdapterAndAction(SymfonyStyle $io, string $clientType, mixed $actionArg): ?array
+    {
+        try {
+            $adapterClass = $this->adapterResolver->resolve($clientType);
+        } catch (\InvalidArgumentException $e) {
+            $io->error($e->getMessage());
+
+            return null;
+        }
+
+        $action = $this->resolveActionName($io, $actionArg);
+        if (null === $action) {
+            $io->error('Action name could not be resolved. Use --no-interaction with the action argument.');
+
+            return null;
+        }
+
+        /** @var class-string<ClientAdapterInterface> $adapterClass */
+        return [$adapterClass, $action];
+    }
+
 }

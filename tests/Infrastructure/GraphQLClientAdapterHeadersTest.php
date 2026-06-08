@@ -300,7 +300,7 @@ final class GQLHeadersSpyClient implements HttpClientInterface
                 return ['data' => []];
             }
 
-            public function cancel(): void {}
+            public function cancel(): void { /* No-op: cancellation not needed in test double */ }
 
             public function getInfo(?string $type = null): mixed
             {
@@ -323,7 +323,7 @@ final class GQLHeadersSpyClient implements HttpClientInterface
 
 final class GQLHeadersBody implements GraphQLBodyInterface
 {
-    private function __construct() {}
+    private function __construct() { /* Intentionally empty: use factory method */ }
 
     /** @param array<string, mixed> $data */
     public static function create(array $data): self

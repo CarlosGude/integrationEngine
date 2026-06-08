@@ -392,7 +392,7 @@ final class GQLSpyHttpClient implements HttpClientInterface
 
 final class GQLTestBody implements GraphQLBodyInterface
 {
-    private function __construct() {}
+    private function __construct() { /* Intentionally empty: use factory method */ }
 
     public static function create(array $data): self
     {
@@ -419,7 +419,7 @@ final class GQLTestBody implements GraphQLBodyInterface
 
 final class GQLNonGraphQLBody implements ActionBodyInterface
 {
-    private function __construct() {}
+    private function __construct() { /* Intentionally empty: use factory method */ }
 
     public static function create(array $data): self
     {
