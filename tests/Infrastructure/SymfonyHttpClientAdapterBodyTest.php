@@ -248,7 +248,9 @@ final class BodySpyHttpClient implements HttpClientInterface
                 return json_decode($this->content, true) ?? [];
             }
 
-            public function cancel(): void { /* No-op: cancellation not needed in test double */ }
+            public function cancel(): void
+            { // No-op: cancellation not needed in test double
+            }
 
             public function getInfo(?string $type = null): mixed
             {

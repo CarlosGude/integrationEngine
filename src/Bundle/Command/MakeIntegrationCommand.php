@@ -285,7 +285,7 @@ YAML;
     /**
      * Resolves the adapter class and action name, returning null on failure.
      *
-     * @return array{class-string<ClientAdapterInterface>, string}|null
+     * @return null|array{class-string<ClientAdapterInterface>, string}
      */
     private function resolveAdapterAndAction(SymfonyStyle $io, string $clientType, mixed $actionArg): ?array
     {
@@ -307,5 +307,4 @@ YAML;
         /** @var class-string<ClientAdapterInterface> $adapterClass */
         return [$adapterClass, $action];
     }
-
 }
