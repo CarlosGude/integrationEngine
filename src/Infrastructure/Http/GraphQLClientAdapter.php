@@ -9,12 +9,13 @@ use IntegrationEngine\Core\Contract\ActionContextInterface;
 use IntegrationEngine\Core\Contract\ClientAdapterInterface;
 use IntegrationEngine\Core\Contract\GraphQLBodyInterface;
 use IntegrationEngine\Core\Contract\RequestHeadersInterface;
-use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final readonly class GraphQLClientAdapter implements ClientAdapterInterface
 {
+    use ResolvesAuthHeaders;
+
     public function __construct(
         private HttpClientInterface $httpClient,
         private string $endpointUrl,
@@ -122,30 +123,5 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface
                 )
             );
         }
-    }
-
-    /** @return array<string, string> */
-    private function resolveHeaders(AbstractAction $action): array
-    {
-        $headers = [];
-        $auth = $action->getAuthorization();
-
-        if (!$auth instanceof StaticAuthorizationConfig) {
-            return $headers;
-        }
-
-        $token = isset($auth->params['token']) && \is_string($auth->params['token']) ? $auth->params['token'] : '';
-        $username = isset($auth->params['username']) && \is_string($auth->params['username']) ? $auth->params['username'] : '';
-        $password = isset($auth->params['password']) && \is_string($auth->params['password']) ? $auth->params['password'] : '';
-        $headerKey = isset($auth->params['header']) && \is_string($auth->params['header']) ? $auth->params['header'] : 'X-Api-Key';
-
-        $headers += match ($auth->type) {
-            'bearer' => ['Authorization' => \sprintf('%s %s', $auth->params['prefix'] ?? 'Bearer', $token)],
-            'basic' => ['Authorization' => \sprintf('Basic %s', base64_encode($username.':'.$password))],
-            'api_key' => [$headerKey => $token],
-            default => [],
-        };
-
-        return $headers;
     }
 }

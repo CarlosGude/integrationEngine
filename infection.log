@@ -29,7 +29,7 @@ Escaped mutants:
                  actualActionClass: $action::class
 
 
-3) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/GraphQLClientAdapter.php:76    [M] CatchBlockRemoval [ID] 0a7149835af5cdde7201aa95fcb5222c
+3) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/GraphQLClientAdapter.php:77    [M] CatchBlockRemoval [ID] e619e2632654a5a2e9493cf91e540a64
 
 @@ @@
 
@@ -70,9 +70,10 @@ Escaped mutants:
 -            );
          }
      }
+ }
 
 
-4) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/GraphQLClientAdapter.php:81    [M] GreaterThanOrEqualTo [ID] eb4c4900b614f32ac95e549f424d0ad9
+4) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/GraphQLClientAdapter.php:82    [M] GreaterThanOrEqualTo [ID] 72866e033713084f3604703c26607787
 
 @@ @@
 
@@ -85,7 +86,7 @@ Escaped mutants:
                      context: \sprintf(
 
 
-5) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/GraphQLClientAdapter.php:88    [M] FalseValue [ID] 57a55fa6bd8d39e27ca00604f010a765
+5) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/GraphQLClientAdapter.php:89    [M] FalseValue [ID] 294c7611620358d5eb8fa2d7aa53747c
 
 @@ @@
                          'GraphQL endpoint %s returned HTTP %d: %s',
@@ -98,7 +99,7 @@ Escaped mutants:
              }
 
 
-6) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/GraphQLClientAdapter.php:134    [M] ArrayOneItem [ID] aeb8f52719f9076334ffd549ac616e34
+6) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/ResolvesAuthHeaders.php:24    [M] ArrayOneItem [ID] d6d865cb3d1250d33883abec3653a347
 
 @@ @@
          $auth = $action->getAuthorization();
@@ -111,32 +112,7 @@ Escaped mutants:
          $token = isset($auth->params['token']) && \is_string($auth->params['token']) ? $auth->params['token'] : '';
 
 
-7) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/GraphQLClientAdapter.php:142    [M] Assignment [ID] a73b90e6985e0cfc15698d1339ed95e5
-
-@@ @@
-         $password = isset($auth->params['password']) && \is_string($auth->params['password']) ? $auth->params['password'] : '';
-         $headerKey = isset($auth->params['header']) && \is_string($auth->params['header']) ? $auth->params['header'] : 'X-Api-Key';
-
--        $headers += match ($auth->type) {
-+        $headers = match ($auth->type) {
-             'bearer' => ['Authorization' => \sprintf('%s %s', $auth->params['prefix'] ?? 'Bearer', $token)],
-             'basic' => ['Authorization' => \sprintf('Basic %s', base64_encode($username.':'.$password))],
-             'api_key' => [$headerKey => $token],
-
-
-8) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/GraphQLClientAdapter.php:149    [M] ArrayOneItem [ID] 2c89f5a3f45ca440fd7b1599f0e7be5b
-
-@@ @@
-             default => [],
-         };
-
--        return $headers;
-+        return count($headers) > 1 ? array_slice($headers, 0, 1, true) : $headers;
-     }
- }
-
-
-9) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:81    [M] FalseValue [ID] 848a3d523d6a08057dc06a371559f02d
+7) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:82    [M] FalseValue [ID] e9f14243e60c93fe5622b6f08bd6fa58
 
 @@ @@
                          $action->getMethod(),
@@ -149,7 +125,7 @@ Escaped mutants:
              }
 
 
-10) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:86    [M] FalseValue [ID] e56b27618925a65f71a496bf250a6658
+8) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:87    [M] FalseValue [ID] 9c090aa48a899a5eaf33520b5842f9f0
 
 @@ @@
                  );
@@ -162,7 +138,31 @@ Escaped mutants:
                  return [];
 
 
-11) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:88    [M] UnwrapTrim [ID] ae07d21be5df45a0b9f445b2c56825a6
+9) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:89    [M] DecrementInteger [ID] b4aedb6f8ceedf8019690e75f76e6034
+
+@@ @@
+
+             $content = $response->getContent(throw: false);
+
+-            if (204 === $statusCode || '' === trim($content)) {
++            if (203 === $statusCode || '' === trim($content)) {
+                 return [];
+             }
+
+
+10) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:89    [M] IncrementInteger [ID] 90835c9d1803649a74a8784721679eed
+
+@@ @@
+
+             $content = $response->getContent(throw: false);
+
+-            if (204 === $statusCode || '' === trim($content)) {
++            if (205 === $statusCode || '' === trim($content)) {
+                 return [];
+             }
+
+
+11) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:89    [M] UnwrapTrim [ID] ce0b2b8b1b154203632deb90a39a2ecc
 
 @@ @@
 
@@ -174,30 +174,29 @@ Escaped mutants:
              }
 
 
-12) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:116    [M] ArrayOneItem [ID] b6e088ad125fb8a45640001dcf660a8c
+12) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:89    [M] LogicalOr [ID] ec74ca98db384903030d0b0a04f56052
 
 @@ @@
-         $auth = $action->getAuthorization();
 
-         if (!$auth instanceof StaticAuthorizationConfig) {
--            return $headers;
-+            return count($headers) > 1 ? array_slice($headers, 0, 1, true) : $headers;
-         }
+             $content = $response->getContent(throw: false);
 
-         $token = isset($auth->params['token']) && \is_string($auth->params['token']) ? $auth->params['token'] : '';
+-            if (204 === $statusCode || '' === trim($content)) {
++            if (204 === $statusCode && '' === trim($content)) {
+                 return [];
+             }
 
 
-13) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:125    [M] Coalesce [ID] df93f157985eaf5669c3398a2d8654dc
+13) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/SymfonyHttpClientAdapter.php:90    [M] ReturnRemoval [ID] 99f597ad73cd22b1769ff8c49a5f03d9
 
 @@ @@
-         $headerKey = isset($auth->params['header']) && \is_string($auth->params['header']) ? $auth->params['header'] : 'X-Api-Key';
+             $content = $response->getContent(throw: false);
 
-         $headers += match ($auth->type) {
--            'bearer' => ['Authorization' => \sprintf('%s %s', $auth->params['prefix'] ?? 'Bearer', $token)],
-+            'bearer' => ['Authorization' => \sprintf('%s %s', 'Bearer' ?? $auth->params['prefix'], $token)],
-             'basic' => ['Authorization' => \sprintf('Basic %s', base64_encode($username.':'.$password))],
-             'api_key' => [$headerKey => $token],
-             default => [],
+             if (204 === $statusCode || '' === trim($content)) {
+-                return [];
++
+             }
+
+             return $response->toArray();
 
 
 Timed Out mutants:
