@@ -6,7 +6,10 @@
     <body>
         <a href="/">Back</a>
         <mutation-test-report-app title-postfix="Infection"></mutation-test-report-app>
-        <script defer src="https://cdn.jsdelivr.net/npm/mutation-testing-elements/dist/mutation-test-elements.js" crossorigin="anonymous"></script>
+        <script defer
+                src="https://cdn.jsdelivr.net/npm/mutation-testing-elements@3.7.3/dist/mutation-test-elements.js"
+                integrity="sha384-DV8SGK8PtMwuCTlPAVIunrZN2AQS7PIQbMyo0HzWhf1v8gn0by9wwL1yQEWWXqBy"
+                crossorigin="anonymous"></script>
         <script>
             const app = document.getElementsByTagName('mutation-test-report-app').item(0);
             function updateTheme() {
