@@ -62,14 +62,83 @@ final class MakeIntegrationCommand extends Command
         $baseNamespace = rtrim($namespaceOpt, '\\');
         $basePath = rtrim($pathOpt, '/');
         $integrationPath = $this->projectDir.'/'.$basePath.'/'.$name;
-
         $bundleConfigPath = $this->projectDir.'/config/packages/integration_engine.yaml';
         $bundleConfigExists = file_exists($bundleConfigPath);
 
-        // ── Detect or ask client type ─────────────────────────────────────
-        $clientType = $this->detectClientType($bundleConfigPath, $name);
+        [$clientType, $baseUrl] = $this->resolveClientConfig($io, $bundleConfigPath, $name, $bundleConfigExists);
 
+        try {
+            $adapterClass = $this->adapterResolver->resolve($clientType);
+        } catch (\InvalidArgumentException $e) {
+            $io->error($e->getMessage());
+
+            return Command::FAILURE;
+        }
+
+        /** @var class-string<ClientAdapterInterface> $adapterClass */
+        $requiresPath = $adapterClass::requiresPath();
+        $requiresMethod = $adapterClass::requiresMethod();
+
+        $action = $this->resolveActionName($io, $actionArg);
+        if (null === $action) {
+            $io->error('Action name could not be resolved. Use --no-interaction with the action argument.');
+
+            return Command::FAILURE;
+        }
+
+        [$actionPath, $method] = $this->resolvePathAndMethod($io, $action, $requiresPath, $requiresMethod);
+
+        $ctx = new IntegrationContext(
+            name: $name,
+            action: $action,
+            method: $method,
+            path: $actionPath,
+            baseNamespace: $baseNamespace,
+            basePath: $integrationPath,
+            clientType: $clientType,
+            adapterRequiresPath: $requiresPath,
+            adapterRequiresMethod: $requiresMethod,
+        );
+
+        $io->title(\sprintf('Generating integration: %s / %s', $name, $action));
+
+        if (!$bundleConfigExists && null !== $baseUrl) {
+            $this->createBundleConfig($bundleConfigPath, $name, $baseUrl, $clientType, $io);
+        }
+
+        if (!$this->generator->integrationExists($ctx)) {
+            foreach ($this->generator->generateIntegrationFiles($ctx) as $file => $content) {
+                $this->writeFile($file, $content, $io, $force);
+            }
+        }
+
+        foreach ($this->generator->generateActionFiles($ctx) as $file => $content) {
+            $this->writeFile($file, $content, $io, $force);
+        }
+
+        $configPath = $this->generator->appendActionToConfig($ctx);
+        $io->text("  updated  {$configPath}");
+        $io->success('Done.');
+
+        return Command::SUCCESS;
+    }
+
+    /**
+     * Resolves the client type and base URL.
+     * On first run (no bundle config), asks the user interactively.
+     * On subsequent runs, reads the client type from the existing YAML.
+     *
+     * @return array{string, null|string} [clientType, baseUrl|null]
+     */
+    private function resolveClientConfig(
+        SymfonyStyle $io,
+        string $bundleConfigPath,
+        string $name,
+        bool $bundleConfigExists,
+    ): array {
+        $clientType = $this->detectClientType($bundleConfigPath, $name);
         $baseUrl = null;
+
         if (!$bundleConfigExists) {
             $baseUrl = $io->ask(
                 \sprintf('Base URL for the "%s" integration (e.g. https://api.example.com)', $name),
@@ -87,43 +156,44 @@ final class MakeIntegrationCommand extends Command
             $clientType = $io->choice('Client type', $availableTypes, 'rest');
         }
 
-        // ── Resolve adapter capabilities ──────────────────────────────────
-        try {
-            $adapterClass = $this->adapterResolver->resolve($clientType);
-        } catch (\InvalidArgumentException $e) {
-            $io->error($e->getMessage());
+        return [$clientType, $baseUrl];
+    }
 
-            return Command::FAILURE;
+    /**
+     * Resolves the action name from the argument or asks interactively.
+     */
+    private function resolveActionName(SymfonyStyle $io, mixed $actionArg): ?string
+    {
+        if (\is_string($actionArg) && '' !== $actionArg) {
+            return $actionArg;
         }
 
-        /** @var class-string<ClientAdapterInterface> $adapterClass */
-        $requiresPath = $adapterClass::requiresPath();
-        $requiresMethod = $adapterClass::requiresMethod();
-
-        // ── Resolve action name ───────────────────────────────────────────
-        $action = \is_string($actionArg) && '' !== $actionArg ? $actionArg : null;
-
-        if (null === $action) {
-            $action = $io->ask(
-                'Name of the first action (e.g. GetEmployees)',
-                null,
-                static function (?string $value): string {
-                    if (null === $value || '' === trim($value)) {
-                        throw new \InvalidArgumentException('Action name cannot be empty.');
-                    }
-
-                    return trim($value);
+        $action = $io->ask(
+            'Name of the first action (e.g. GetEmployees)',
+            null,
+            static function (?string $value): string {
+                if (null === $value || '' === trim($value)) {
+                    throw new \InvalidArgumentException('Action name cannot be empty.');
                 }
-            );
-        }
 
-        if (!\is_string($action) || '' === $action) {
-            $io->error('Action name could not be resolved. Use --no-interaction with the action argument.');
+                return trim($value);
+            }
+        );
 
-            return Command::FAILURE;
-        }
+        return \is_string($action) && '' !== $action ? $action : null;
+    }
 
-        // ── Ask path and method only if adapter requires them ─────────────
+    /**
+     * Asks for path and method only when the adapter requires them.
+     *
+     * @return array{string, string} [actionPath, method]
+     */
+    private function resolvePathAndMethod(
+        SymfonyStyle $io,
+        string $action,
+        bool $requiresPath,
+        bool $requiresMethod,
+    ): array {
         $actionPath = '/';
         $method = 'POST';
 
@@ -143,43 +213,7 @@ final class MakeIntegrationCommand extends Command
             $method = $io->choice('HTTP method', ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], 'GET');
         }
 
-        $ctx = new IntegrationContext(
-            name: $name,
-            action: $action,
-            method: $method,
-            path: $actionPath,
-            baseNamespace: $baseNamespace,
-            basePath: $integrationPath,
-            clientType: $clientType,
-            adapterRequiresPath: $requiresPath,
-            adapterRequiresMethod: $requiresMethod,
-        );
-
-        $io->title(\sprintf('Generating integration: %s / %s', $name, $action));
-
-        // ── 1. Create bundle config if it does not exist ──────────────────
-        if (!$bundleConfigExists && null !== $baseUrl) {
-            $this->createBundleConfig($bundleConfigPath, $name, $baseUrl, $clientType, $io);
-        }
-
-        // ── 2. Integration skeleton (only if first time) ──────────────────
-        if (!$this->generator->integrationExists($ctx)) {
-            foreach ($this->generator->generateIntegrationFiles($ctx) as $file => $content) {
-                $this->writeFile($file, $content, $io, $force);
-            }
-        }
-
-        // ── 3. Action skeleton ────────────────────────────────────────────
-        foreach ($this->generator->generateActionFiles($ctx) as $file => $content) {
-            $this->writeFile($file, $content, $io, $force);
-        }
-
-        $configPath = $this->generator->appendActionToConfig($ctx);
-        $io->text("  updated  {$configPath}");
-
-        $io->success('Done.');
-
-        return Command::SUCCESS;
+        return [$actionPath, $method];
     }
 
     private function detectClientType(string $bundleConfigPath, string $name): string

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Infrastructure;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\ActionBodyInterface;
 use IntegrationEngine\Core\Contract\GraphQLBodyInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Infrastructure\Http\GraphQLClientAdapter;
@@ -79,7 +78,7 @@ final class GraphQLClientAdapterHeadersTest extends TestCase
             authorization: new StaticAuthorizationConfig(
                 type: 'bearer',
                 params: ['token' => 'abc'],
-            // no prefix key
+                // no prefix key
             ),
         );
 
@@ -175,7 +174,7 @@ final class GraphQLClientAdapterHeadersTest extends TestCase
             authorization: new StaticAuthorizationConfig(
                 type: 'api_key',
                 params: ['token' => 'secret'],
-            // no 'header' key
+                // no 'header' key
             ),
         );
 
@@ -280,12 +279,33 @@ final class GQLHeadersSpyClient implements HttpClientInterface
         $this->lastHeaders = $options['headers'] ?? [];
 
         return new class implements HttpResponseInterface {
-            public function getStatusCode(): int { return 200; }
-            public function getHeaders(bool $throw = true): array { return []; }
-            public function getContent(bool $throw = true): string { return '{"data":[]}'; }
-            public function toArray(bool $throw = true): array { return ['data' => []]; }
+            public function getStatusCode(): int
+            {
+                return 200;
+            }
+
+            public function getHeaders(bool $throw = true): array
+            {
+                return [];
+            }
+
+            public function getContent(bool $throw = true): string
+            {
+                return '{"data":[]}';
+            }
+
+            /** @return array<mixed> */
+            public function toArray(bool $throw = true): array
+            {
+                return ['data' => []];
+            }
+
             public function cancel(): void {}
-            public function getInfo(?string $type = null): mixed { return null; }
+
+            public function getInfo(?string $type = null): mixed
+            {
+                return null;
+            }
         };
     }
 
@@ -295,7 +315,10 @@ final class GQLHeadersSpyClient implements HttpClientInterface
     }
 
     /** @param array<string, mixed> $options */
-    public function withOptions(array $options): static { return $this; }
+    public function withOptions(array $options): static
+    {
+        return $this;
+    }
 }
 
 final class GQLHeadersBody implements GraphQLBodyInterface
@@ -303,20 +326,43 @@ final class GQLHeadersBody implements GraphQLBodyInterface
     private function __construct() {}
 
     /** @param array<string, mixed> $data */
-    public static function create(array $data): self { return new self(); }
+    public static function create(array $data): self
+    {
+        return new self();
+    }
 
-    public function getQuery(): string { return 'query { items { id } }'; }
+    public function getQuery(): string
+    {
+        return 'query { items { id } }';
+    }
 
     /** @return array<string, mixed> */
-    public function getVariables(): array { return []; }
+    public function getVariables(): array
+    {
+        return [];
+    }
 
     /** @return array<string, mixed> */
-    public function toArray(): array { return ['query' => $this->getQuery(), 'variables' => []]; }
+    public function toArray(): array
+    {
+        return ['query' => $this->getQuery(), 'variables' => []];
+    }
 }
 
 final class GQLHeadersAction extends AbstractAction
 {
-    public static function getName(): string { return 'gql_headers_test'; }
-    public static function hasResponse(): bool { return true; }
-    public static function mapper(): ?string { return null; }
+    public static function getName(): string
+    {
+        return 'gql_headers_test';
+    }
+
+    public static function hasResponse(): bool
+    {
+        return true;
+    }
+
+    public static function mapper(): ?string
+    {
+        return null;
+    }
 }

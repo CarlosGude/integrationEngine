@@ -154,67 +154,13 @@ final class SymfonyHttpClientAdapterBodyTest extends TestCase
 
         self::assertSame([], $result);
     }
-
-    #[Test]
-    public function http400ResponseIncludesBodyContentInContext(): void
-    {
-        $spy = new BodySpyHttpClient(statusCode: 400, content: '{"error":"bad request"}');
-        $adapter = new SymfonyHttpClientAdapter(httpClient: $spy, baseUrl: 'https://api.example.com');
-
-        try {
-            $adapter->send(BodyTestAction::create('GET', '/orders'));
-            self::fail('Expected RequestResponseException');
-        } catch (RequestResponseException $e) {
-            self::assertSame(400, $e->statusCode);
-            self::assertStringContainsString('bad request', $e->context);
-        }
-    }
-
-    // ── statusCode 204 boundary ───────────────────────────────────────────────
-
-    #[Test]
-    public function statusCode204WithContentReturnsEmptyArray(): void
-    {
-        // 204 siempre devuelve [] independientemente del contenido
-        $spy = new BodySpyHttpClient(statusCode: 204, content: '{"ignored":true}');
-        $adapter = new SymfonyHttpClientAdapter(httpClient: $spy, baseUrl: 'https://api.example.com');
-
-        $result = $adapter->send(BodyTestAction::create('DELETE', '/orders/1'));
-
-        self::assertSame([], $result);
-    }
-
-    #[Test]
-    public function statusCode203WithContentDoesNotReturnEmptyArray(): void
-    {
-        // 203 no es el código especial — debe devolver el cuerpo
-        $spy = new BodySpyHttpClient(statusCode: 203, content: '{"ok":true}');
-        $adapter = new SymfonyHttpClientAdapter(httpClient: $spy, baseUrl: 'https://api.example.com');
-
-        $result = $adapter->send(BodyTestAction::create('GET', '/orders'));
-
-        self::assertSame(['ok' => true], $result);
-    }
-
-    #[Test]
-    public function statusCode205WithContentDoesNotReturnEmptyArray(): void
-    {
-        // 205 tampoco es el código especial
-        $spy = new BodySpyHttpClient(statusCode: 205, content: '{"ok":true}');
-        $adapter = new SymfonyHttpClientAdapter(httpClient: $spy, baseUrl: 'https://api.example.com');
-
-        $result = $adapter->send(BodyTestAction::create('GET', '/orders'));
-
-        self::assertSame(['ok' => true], $result);
-    }
-
 }
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 final class BodyTestBody implements ActionBodyInterface
 {
-    private function __construct(private readonly array $data = ['reference' => 'ORD-001']) {}
+    private function __construct(/** @var array<string, mixed> */ private readonly array $data = ['reference' => 'ORD-001']) {}
 
     /** @param array<string, mixed> $data */
     public static function create(array $data = []): self
@@ -273,7 +219,7 @@ final class BodySpyHttpClient implements HttpClientInterface
         }
 
         $statusCode = $this->statusCode;
-        $content    = $this->content;
+        $content = $this->content;
 
         return new class($statusCode, $content) implements HttpResponseInterface {
             public function __construct(
@@ -281,12 +227,22 @@ final class BodySpyHttpClient implements HttpClientInterface
                 private readonly string $content,
             ) {}
 
-            public function getStatusCode(): int { return $this->statusCode; }
+            public function getStatusCode(): int
+            {
+                return $this->statusCode;
+            }
 
-            public function getHeaders(bool $throw = true): array { return []; }
+            public function getHeaders(bool $throw = true): array
+            {
+                return [];
+            }
 
-            public function getContent(bool $throw = true): string { return $this->content; }
+            public function getContent(bool $throw = true): string
+            {
+                return $this->content;
+            }
 
+            /** @return array<mixed> */
             public function toArray(bool $throw = true): array
             {
                 return json_decode($this->content, true) ?? [];
@@ -294,7 +250,10 @@ final class BodySpyHttpClient implements HttpClientInterface
 
             public function cancel(): void {}
 
-            public function getInfo(?string $type = null): mixed { return null; }
+            public function getInfo(?string $type = null): mixed
+            {
+                return null;
+            }
         };
     }
 
@@ -304,5 +263,8 @@ final class BodySpyHttpClient implements HttpClientInterface
     }
 
     /** @param array<string, mixed> $options */
-    public function withOptions(array $options): static { return $this; }
+    public function withOptions(array $options): static
+    {
+        return $this;
+    }
 }

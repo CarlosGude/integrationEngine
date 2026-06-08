@@ -229,12 +229,33 @@ final class RestHeadersSpyClient implements HttpClientInterface
         $this->lastHeaders = $options['headers'] ?? [];
 
         return new class implements HttpResponseInterface {
-            public function getStatusCode(): int { return 200; }
-            public function getHeaders(bool $throw = true): array { return []; }
-            public function getContent(bool $throw = true): string { return '[]'; }
-            public function toArray(bool $throw = true): array { return []; }
+            public function getStatusCode(): int
+            {
+                return 200;
+            }
+
+            public function getHeaders(bool $throw = true): array
+            {
+                return [];
+            }
+
+            public function getContent(bool $throw = true): string
+            {
+                return '[]';
+            }
+
+            /** @return array<mixed> */
+            public function toArray(bool $throw = true): array
+            {
+                return [];
+            }
+
             public function cancel(): void {}
-            public function getInfo(?string $type = null): mixed { return null; }
+
+            public function getInfo(?string $type = null): mixed
+            {
+                return null;
+            }
         };
     }
 
@@ -244,12 +265,26 @@ final class RestHeadersSpyClient implements HttpClientInterface
     }
 
     /** @param array<string, mixed> $options */
-    public function withOptions(array $options): static { return $this; }
+    public function withOptions(array $options): static
+    {
+        return $this;
+    }
 }
 
 final class RestHeadersAction extends AbstractAction
 {
-    public static function getName(): string { return 'rest_headers_test'; }
-    public static function hasResponse(): bool { return false; }
-    public static function mapper(): ?string { return null; }
+    public static function getName(): string
+    {
+        return 'rest_headers_test';
+    }
+
+    public static function hasResponse(): bool
+    {
+        return false;
+    }
+
+    public static function mapper(): ?string
+    {
+        return null;
+    }
 }
