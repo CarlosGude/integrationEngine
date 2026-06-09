@@ -18,4 +18,9 @@ final readonly class DefaultActionContext implements ActionContextInterface
     {
         return $this->data;
     }
+
+    public function resolvePath(string $path): ?string
+    {
+        return null; // delegate to defaultResolvePath — resolves {placeholder} from toArray()
+    }
 }

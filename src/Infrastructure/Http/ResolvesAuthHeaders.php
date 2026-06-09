@@ -47,6 +47,8 @@ trait ResolvesAuthHeaders
      */
     private function defaultAuthHeaders(): array
     {
-        return [];
+        return [
+            'Accept' => 'application/json',
+        ];
     }
 }

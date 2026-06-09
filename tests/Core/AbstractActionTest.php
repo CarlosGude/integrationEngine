@@ -134,34 +134,33 @@ final class AbstractActionTest extends TestCase
         self::assertSame($auth, $action->getAuthorization());
     }
 
-    // ── custom resolvePathCallback ────────────────────────────────────────────
+    // ── context-driven path resolution ───────────────────────────────────────
 
     #[Test]
-    public function customPathResolverIsUsedWhenProvided(): void
+    public function contextCanOverridePathResolution(): void
     {
-        $action = AbstractActionWithResolver::create(method: 'GET', path: '/original');
+        $action = AbstractActionTestFixture::create(method: 'GET', path: '/character');
+        $context = ContextWithCustomResolver::create([]);
 
-        self::assertSame('/custom-resolved', $action->getPath());
+        self::assertSame('/custom-resolved', $action->getPath($context));
     }
 
     #[Test]
-    public function customPathResolverReceivesContext(): void
+    public function contextResolutionReceivesRawPathFromYaml(): void
     {
-        $action = AbstractActionWithContextAwareResolver::create(method: 'GET', path: '/base');
-        $context = FakeContext::create(['suffix' => 'xyz']);
+        $action = AbstractActionTestFixture::create(method: 'GET', path: '/character');
+        $context = ContextThatAppendsQueryString::create(['name' => 'rick', 'status' => 'alive']);
 
-        self::assertSame('/base/xyz', $action->getPath($context));
+        self::assertSame('/character?name=rick&status=alive', $action->getPath($context));
     }
 
     #[Test]
-    public function customPathResolverThrowsIfNotReturningString(): void
+    public function contextReturningNullFallsBackToDefaultResolver(): void
     {
-        $action = AbstractActionWithBadResolver::create(method: 'GET', path: '/original');
+        $action = AbstractActionTestFixture::create(method: 'GET', path: '/character/{id}');
+        $context = FakeContext::create(['id' => '42']); // resolvePath returns null → uses defaultResolvePath
 
-        $this->expectException(PathResolutionException::class);
-        $this->expectExceptionMessageMatches('/must return a string/');
-
-        $action->getPath();
+        self::assertSame('/character/42', $action->getPath($context));
     }
 }
 
@@ -187,76 +186,46 @@ final class AbstractActionTestFixture extends AbstractAction
     }
 }
 
-final class AbstractActionWithResolver extends AbstractAction
+final class ContextWithCustomResolver implements ActionContextInterface
 {
-    public static function getName(): string
+    private function __construct() {}
+
+    public static function create(array $data): self
     {
-        return 'resolver_action';
+        return new self();
     }
 
-    public static function hasResponse(): bool
+    public function toArray(): array
     {
-        return true;
+        return [];
     }
 
-    public static function mapper(): ?string
+    public function resolvePath(string $path): string
     {
-        return null;
-    }
-
-    protected function resolvePathCallback(): callable
-    {
-        return static fn (string $path, mixed $ctx): string => '/custom-resolved';
+        return '/custom-resolved';
     }
 }
 
-final class AbstractActionWithContextAwareResolver extends AbstractAction
+final class ContextThatAppendsQueryString implements ActionContextInterface
 {
-    public static function getName(): string
+    /** @param array<string, mixed> $data */
+    private function __construct(private readonly array $data) {}
+
+    /** @param array<string, mixed> $data */
+    public static function create(array $data): self
     {
-        return 'context_aware_resolver';
+        return new self($data);
     }
 
-    public static function hasResponse(): bool
+    public function toArray(): array
     {
-        return true;
+        return $this->data;
     }
 
-    public static function mapper(): ?string
+    public function resolvePath(string $path): ?string
     {
-        return null;
-    }
+        $params = array_filter($this->data, static fn (mixed $v): bool => '' !== (string) $v);
 
-    protected function resolvePathCallback(): callable
-    {
-        return static function (string $path, ?ActionContextInterface $ctx): string {
-            $data = $ctx?->toArray() ?? [];
-            $suffix = $data['suffix'] ?? '';
-
-            return $path.'/'.$suffix;
-        };
-    }
-}
-
-final class AbstractActionWithBadResolver extends AbstractAction
-{
-    public static function getName(): string
-    {
-        return 'bad_resolver_action';
-    }
-
-    public static function hasResponse(): bool
-    {
-        return true;
-    }
-
-    public static function mapper(): ?string
-    {
-        return null;
-    }
-
-    protected function resolvePathCallback(): callable
-    {
-        return static fn (): int => 42;
+        return empty($params) ? null : $path.'?'.http_build_query($params);
     }
 }

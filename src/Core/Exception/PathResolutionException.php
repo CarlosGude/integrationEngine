@@ -15,9 +15,4 @@ final class PathResolutionException extends \RuntimeException
     {
         return new self(\sprintf('Path parameter "%s" must be a scalar value.', $key));
     }
-
-    public static function resolverDidNotReturnString(): self
-    {
-        return new self('Path resolver must return a string.');
-    }
 }

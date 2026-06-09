@@ -22,4 +22,9 @@ final class FakeContext implements ActionContextInterface
     {
         return $this->data;
     }
+
+    public function resolvePath(string $path): ?string
+    {
+        return null;
+    }
 }

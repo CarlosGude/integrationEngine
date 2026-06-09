@@ -31,15 +31,11 @@ abstract class AbstractAction
 
     final public function getPath(?ActionContextInterface $context = null): string
     {
-        $resolver = $this->resolvePathCallback();
-
-        if (null !== $resolver) {
-            $result = $resolver($this->path, $context);
-            if (!\is_string($result)) {
-                throw PathResolutionException::resolverDidNotReturnString();
+        if (null !== $context) {
+            $resolved = $context->resolvePath($this->path);
+            if (null !== $resolved) {
+                return $resolved;
             }
-
-            return $result;
         }
 
         return $this->defaultResolvePath($this->path, $context);
@@ -68,11 +64,6 @@ abstract class AbstractAction
      * @return null|class-string<AbstractMapper>
      */
     abstract public static function mapper(): ?string;
-
-    protected function resolvePathCallback(): ?callable
-    {
-        return null;
-    }
 
     final protected function defaultResolvePath(string $path, ?ActionContextInterface $context): string
     {

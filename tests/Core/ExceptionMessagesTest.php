@@ -105,14 +105,6 @@ final class ExceptionMessagesTest extends TestCase
         self::assertSame('Path parameter "id" must be a scalar value.', $e->getMessage());
     }
 
-    #[Test]
-    public function resolverDidNotReturnStringHasCorrectMessage(): void
-    {
-        $e = PathResolutionException::resolverDidNotReturnString();
-
-        self::assertSame('Path resolver must return a string.', $e->getMessage());
-    }
-
     // ── RequestResponseException ──────────────────────────────────────────────
 
     #[Test]
