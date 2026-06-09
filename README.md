@@ -9,7 +9,7 @@ IntegrationEngine forces every integration to look the same.
 
 ---
 
-## 🧠 Core idea
+## Core idea
 
 An integration is not a client.
 
@@ -24,69 +24,296 @@ Nothing else is allowed to sprawl.
 
 ---
 
-## 🚀 What this solves
+## What this solves
 
 IntegrationEngine removes:
 
 - Inconsistent API clients across services
 - Ad-hoc HTTP logic scattered in services
 - Repeated mapping boilerplate per endpoint
-- “How does this API work again?” moments
+- "How does this API work again?" moments
 - Integration archaeology after months
 
 ---
 
-## ⚡ Quick usage
+## Quick usage
 
 ```php
 $employee = $dummyRestApi->getEmployee(123);
 ```
 
-No HTTP clients.
-No request builders.
-No mappers.
-
-Just integrations.
+No HTTP clients. No request builders. No mappers. Just integrations.
 
 ---
 
-## 🧱 Structure
-
-Each integration follows the same predictable structure:
-
-```
-Integration
- ├── Endpoint
- │     ├── Request
- │     │     ├── Action
- │     │     └── Context
- │     └── Response
- │           ├── Mapper
- │           └── DTO
-```
-
-If you know one integration, you know them all.
-
----
-
-## 🛠️ Installation
+## Installation
 
 ```bash
 composer require carlosgude/integration-engine
 ```
 
----
-
-## 🧪 Why it exists
-
-Because external APIs are not the problem.
-
-The problem is inconsistency between them.
+Requires PHP 8.2+ and Symfony 7.0+. The bundle registers itself automatically via Symfony Flex.
 
 ---
 
-## ⚠️ When NOT to use it
+## Structure
+
+Each integration follows the same predictable directory layout:
+
+```
+src/Infrastructure/Integrations/{Name}/
+├── {Name}Integration.php          ← facade + NAME constant
+├── {Name}.yaml                    ← action map (path, method, class)
+└── {ActionName}/
+    ├── Request/
+    │   └── {ActionName}Action.php
+    └── Response/
+        ├── {ActionName}Response.php
+        └── {ActionName}Mapper.php
+```
+
+Shared DTOs used by multiple actions go in a `Dto/` directory at the integration root.
+
+If you know one integration, you know them all.
+
+---
+
+## Configuration
+
+Register each integration in `config/packages/integration_engine.yaml`:
+
+```yaml
+integration_engine:
+    integrations:
+        my_api:
+            base_url: 'https://api.example.com'
+            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MyApi/MyApi.yaml'
+            headers:              # optional — sent with every request
+                X-Api-Version: '2'
+            cache_service: ~      # optional — defaults to cache.app
+            client_service: ~     # optional — fully custom ClientInterface
+```
+
+The action map YAML maps each action name to its class, method, and path:
+
+```yaml
+GetEmployee:
+    action: App\Infrastructure\Integrations\MyApi\GetEmployee\Request\GetEmployeeAction
+    method: GET
+    path: /employees/{id}
+
+CreateEmployee:
+    action: App\Infrastructure\Integrations\MyApi\CreateEmployee\Request\CreateEmployeeAction
+    method: POST
+    path: /employees
+```
+
+---
+
+## Sending a request
+
+The engine is accessed via `IntegrationRegistry`. Always wrap registry calls in an
+integration facade — never call the registry directly from a controller or service:
+
+```php
+// 1. Facade (infrastructure layer)
+final class MyApiIntegration implements IntegrationName
+{
+    public const string NAME = 'my_api';
+
+    public function __construct(IntegrationRegistry $registry)
+    {
+        $this->engine = $registry->get(self::NAME);
+    }
+
+    public function getEmployee(int $id): GetEmployeeResponse
+    {
+        $response = $this->engine->send(
+            actionName: GetEmployeeAction::getName(),
+            context: DefaultActionContext::create(['id' => $id]),
+        );
+        \assert($response instanceof GetEmployeeResponse);
+        return $response;
+    }
+}
+
+// 2. Application service — translates infrastructure DTOs to domain objects
+final class EmployeeService
+{
+    public function __construct(private MyApiIntegration $integration) {}
+
+    public function find(int $id): Employee // domain object
+    {
+        $dto = $this->integration->getEmployee($id);
+        return new Employee(id: $dto->employee->id, name: $dto->employee->name);
+    }
+}
+```
+
+---
+
+## Path parameters and query strings
+
+Path segment parameters (`{id}`) are resolved automatically from context:
+
+```yaml
+GetEmployee:
+    path: /employees/{id}
+```
+
+```php
+DefaultActionContext::create(['id' => 42]) // → /employees/42
+```
+
+For **optional** query string filters, override `resolvePathCallback()` in the action:
+
+```php
+protected function resolvePathCallback(): ?callable
+{
+    return static function (string $path, ?ActionContextInterface $context): string {
+        $data    = $context?->toArray() ?? [];
+        $allowed = ['status', 'department', 'page'];
+        $params  = array_filter(
+            array_intersect_key($data, array_flip($allowed)),
+            static fn(mixed $v): bool => '' !== (string) $v,
+        );
+        return empty($params) ? '/employees' : '/employees?' . http_build_query($params);
+    };
+}
+```
+
+For **required** query string params, declare them as placeholders directly in the YAML path:
+
+```yaml
+FilterByStatus:
+    path: /employees?status={status}  # throws if 'status' is missing from context
+```
+
+---
+
+## Authorization
+
+### Static (API key, bearer token, basic auth)
+
+Declare in the action entry in `{Name}.yaml`:
+
+```yaml
+GetOrders:
+    action: App\...\GetOrdersAction
+    method: GET
+    path: /orders
+    authorization:
+        type: bearer
+        token: '%env(MY_API_TOKEN)%'
+```
+
+Supported types: `bearer`, `basic` (`username` + `password`), `api_key` (`header` + `token`).
+
+### Dynamic (OAuth 2.0, session tokens)
+
+The engine calls a token action automatically, caches the result, and injects it as static
+auth on all protected actions. No manual token management needed:
+
+```yaml
+FetchToken:
+    action: App\...\FetchTokenAction
+    method: POST
+    path: /oauth/token
+
+GetOrders:
+    action: App\...\GetOrdersAction
+    method: GET
+    path: /orders
+    authorization:
+        type: dynamic
+        action: FetchToken      # calls this action to obtain the token
+        token_field: access_token
+        ttl: 3600
+```
+
+The token action is a regular action and requires its own `Action`, `Mapper`, and `Response`.
+The response must expose the token field via `toArray()`.
+
+> **Cache scope.** The default cache backend is `cache.app`, which is process-local under
+> PHP-FPM. Each worker fetches its own token on first warm-up. For APIs with strict
+> rate limits on the token endpoint, configure `cache_service` with a shared Redis pool.
+
+---
+
+## HTTP adapters
+
+Two adapters are included:
+
+| Type | Key | Use case |
+|---|---|---|
+| `SymfonyHttpClientAdapter` | `rest` | Standard REST APIs |
+| `GraphQLClientAdapter` | `graphql` | GraphQL endpoints |
+
+For GraphQL actions, the body must implement `GraphQLBodyInterface`:
+
+```php
+final class GetUserBody implements GraphQLBodyInterface
+{
+    public function getQuery(): string  { return 'query { user(id: $id) { name } }'; }
+    public function getVariables(): array { return ['id' => $this->id]; }
+    public function toArray(): array    { return ['query' => $this->getQuery(), 'variables' => $this->getVariables()]; }
+    public static function create(array $data): self { return new self((int) $data['id']); }
+}
+```
+
+### Custom adapters
+
+Implement `ClientAdapterInterface` and tag the service — the bundle discovers it automatically:
+
+```php
+final class SoapClientAdapter implements ClientAdapterInterface
+{
+    public static function getClientType(): string { return 'soap'; }
+    public static function requiresPath(): bool    { return false; }
+    public static function requiresMethod(): bool  { return false; }
+    public function send(AbstractAction $action, ...): array { ... }
+}
+```
+
+```yaml
+# services.yaml
+App\Infrastructure\Http\SoapClientAdapter:
+    tags:
+        - { name: integration_engine.client_adapter }
+```
+
+Project adapters override bundle built-ins when registered with the same `getClientType()`.
+
+---
+
+## Scaffolding
+
+Generate a full integration skeleton with the built-in command:
+
+```bash
+# New integration + first action
+php bin/console make:integration MyApi GetEmployee
+
+# Add an action to an existing integration
+php bin/console make:integration MyApi CreateEmployee
+```
+
+The command is interactive — it asks for base URL, client type, HTTP method, and path.
+It generates the `Action`, `Mapper`, `Response`, and updates the YAML action map.
+
+---
+
+## Further reading
+
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — design decisions: why actions are stateless,
+  the mapper invariant, cache behaviour under PHP-FPM, and the DTO/domain boundary.
+- [`TESTING.md`](./TESTING.md) — test philosophy, suite structure, and what each test protects.
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — setup, code quality tools, and how to run the test suite.
+
+---
+
+## When NOT to use it
 
 - You only have 1–2 simple API calls
 - You need full low-level HTTP control everywhere
-- You don’t want enforced structure in your codebase
+- You don't want enforced structure in your codebase

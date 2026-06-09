@@ -34,3 +34,11 @@ make qa      # all three in sequence
 vendor/bin/phpstan analyse src tests --level=8
 vendor/bin/php-cs-fixer fix --diff
 ```
+
+## Further reading
+
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — design decisions: why actions are stateless,
+  how path resolution works, the mapper invariant, cache behaviour, and the
+  DTO/domain boundary.
+- [`.agent/integration-engine-agent-guide.md`](agent/integration-engine-agent-guide.md) —
+  AI agent context for automated integration generation. Not intended for human workflows.
