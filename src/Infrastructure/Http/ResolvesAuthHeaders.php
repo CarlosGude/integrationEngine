@@ -10,11 +10,6 @@ use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 trait ResolvesAuthHeaders
 {
     /**
-     * Builds the Authorization / API-key headers from the action's static auth config.
-     *
-     * @return array<string, string>
-     */
-    /**
      * Base headers merged at the lowest priority before constructor defaults and auth headers.
      * Override in the using class to set adapter-specific defaults.
      *
@@ -27,9 +22,7 @@ trait ResolvesAuthHeaders
         ];
     }
 
-    /**
-     * @return array|string[]
-     */
+    /** @return array<string, string> */
     private function resolveHeaders(AbstractAction $action): array
     {
         $auth = $action->getAuthorization();
@@ -42,9 +35,10 @@ trait ResolvesAuthHeaders
         $username = isset($auth->params['username']) && \is_string($auth->params['username']) ? $auth->params['username'] : '';
         $password = isset($auth->params['password']) && \is_string($auth->params['password']) ? $auth->params['password'] : '';
         $headerKey = isset($auth->params['header']) && \is_string($auth->params['header']) ? $auth->params['header'] : 'X-Api-Key';
+        $prefix = isset($auth->params['prefix']) && \is_string($auth->params['prefix']) ? $auth->params['prefix'] : 'Bearer';
 
         return match ($auth->type) {
-            'bearer' => ['Authorization' => \sprintf('%s %s', $auth->params['prefix'] ?? 'Bearer', $token)],
+            'bearer' => ['Authorization' => \sprintf('%s %s', $prefix, $token)],
             'basic' => ['Authorization' => \sprintf('Basic %s', base64_encode($username.':'.$password))],
             'api_key' => [$headerKey => $token],
             default => [],

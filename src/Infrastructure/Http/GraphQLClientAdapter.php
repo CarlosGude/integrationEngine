@@ -96,9 +96,11 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface
 
             // GraphQL always returns 200, even on errors.
             // Errors are signalled inside the response body under the "errors" key.
-            if (!empty($data['errors'])) {
-                $message = \is_string($data['errors'][0]['message'] ?? null)
-                    ? $data['errors'][0]['message']
+            $errors = $data['errors'] ?? null;
+            if (!empty($errors) && \is_array($errors)) {
+                $firstError = \is_array($errors[0]) ? $errors[0] : [];
+                $message = \is_string($firstError['message'] ?? null)
+                    ? $firstError['message']
                     : 'GraphQL error';
 
                 throw new RequestResponseException(
@@ -111,7 +113,9 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface
                 );
             }
 
-            return $data['data'] ?? [];
+            $result = $data['data'] ?? [];
+
+            return \is_array($result) ? $result : [];
         } catch (RequestResponseException $e) {
             throw $e;
         } catch (\Throwable $e) {
