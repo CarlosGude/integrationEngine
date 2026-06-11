@@ -63,7 +63,8 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface
 
         $options = [
             'headers' => array_merge(
-                ['Content-Type' => 'application/json', 'Accept' => 'application/json'],
+                ['Content-Type' => 'application/json'],
+                $this->defaultAuthHeaders(),
                 $this->defaultHeaders,
                 $this->resolveHeaders($action),
                 $headers?->toArray() ?? [],

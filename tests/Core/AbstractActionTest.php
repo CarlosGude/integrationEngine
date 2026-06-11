@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Core;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\ActionContextInterface;
+use IntegrationEngine\Core\Contract\PathResolvableContextInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\PathResolutionException;
 use IntegrationEngine\Tests\Fake\FakeContext;
@@ -158,9 +158,21 @@ final class AbstractActionTest extends TestCase
     public function contextReturningNullFallsBackToDefaultResolver(): void
     {
         $action = AbstractActionTestFixture::create(method: 'GET', path: '/character/{id}');
-        $context = FakeContext::create(['id' => '42']); // resolvePath returns null → uses defaultResolvePath
+        $context = FakeContext::create(['id' => '42']);
 
         self::assertSame('/character/42', $action->getPath($context));
+    }
+
+    #[Test]
+    public function contextReturningEmptyStringThrows(): void
+    {
+        $action = AbstractActionTestFixture::create(method: 'GET', path: '/character');
+        $context = ContextThatReturnsEmptyString::create([]);
+
+        $this->expectException(PathResolutionException::class);
+        $this->expectExceptionMessageMatches('/empty string/');
+
+        $action->getPath($context);
     }
 }
 
@@ -186,7 +198,7 @@ final class AbstractActionTestFixture extends AbstractAction
     }
 }
 
-final class ContextWithCustomResolver implements ActionContextInterface
+final class ContextWithCustomResolver implements PathResolvableContextInterface
 {
     private function __construct() {}
 
@@ -206,7 +218,7 @@ final class ContextWithCustomResolver implements ActionContextInterface
     }
 }
 
-final class ContextThatAppendsQueryString implements ActionContextInterface
+final class ContextThatAppendsQueryString implements PathResolvableContextInterface
 {
     /** @param array<string, mixed> $data */
     private function __construct(private readonly array $data) {}
@@ -227,5 +239,25 @@ final class ContextThatAppendsQueryString implements ActionContextInterface
         $params = array_filter($this->data, static fn (mixed $v): bool => '' !== (string) $v);
 
         return empty($params) ? null : $path.'?'.http_build_query($params);
+    }
+}
+
+final class ContextThatReturnsEmptyString implements PathResolvableContextInterface
+{
+    private function __construct() {}
+
+    public static function create(array $data): self
+    {
+        return new self();
+    }
+
+    public function toArray(): array
+    {
+        return [];
+    }
+
+    public function resolvePath(string $path): string
+    {
+        return '';
     }
 }

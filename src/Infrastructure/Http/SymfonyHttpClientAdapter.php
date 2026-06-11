@@ -51,6 +51,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface
 
         $options = [
             'headers' => array_merge(
+                $this->defaultAuthHeaders(),
                 $this->defaultHeaders,
                 $this->resolveHeaders($action),
                 $headers?->toArray() ?? []

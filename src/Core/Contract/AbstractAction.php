@@ -31,9 +31,13 @@ abstract class AbstractAction
 
     final public function getPath(?ActionContextInterface $context = null): string
     {
-        if (null !== $context) {
+        if ($context instanceof PathResolvableContextInterface) {
             $resolved = $context->resolvePath($this->path);
             if (null !== $resolved) {
+                if ('' === $resolved) {
+                    throw PathResolutionException::resolverReturnedEmptyPath();
+                }
+
                 return $resolved;
             }
         }
@@ -86,6 +90,6 @@ abstract class AbstractAction
                 return (string) $value;
             },
             $path
-        ) ?? $path;
+        ) ?? throw new \RuntimeException(\sprintf('PCRE error resolving path "%s".', $path));
     }
 }

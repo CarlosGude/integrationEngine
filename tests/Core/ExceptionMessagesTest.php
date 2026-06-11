@@ -105,6 +105,14 @@ final class ExceptionMessagesTest extends TestCase
         self::assertSame('Path parameter "id" must be a scalar value.', $e->getMessage());
     }
 
+    #[Test]
+    public function resolverReturnedEmptyPathHasCorrectMessage(): void
+    {
+        $e = PathResolutionException::resolverReturnedEmptyPath();
+
+        self::assertSame('Path resolver returned an empty string; return null to fall back to placeholder resolution.', $e->getMessage());
+    }
+
     // ── RequestResponseException ──────────────────────────────────────────────
 
     #[Test]
