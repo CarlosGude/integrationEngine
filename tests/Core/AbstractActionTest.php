@@ -236,7 +236,7 @@ final class ContextThatAppendsQueryString implements PathResolvableContextInterf
 
     public function resolvePath(string $path): ?string
     {
-        $params = array_filter($this->data, static fn (mixed $v): bool => '' !== (string) $v);
+        $params = array_filter($this->data, static fn (mixed $v): bool => \is_scalar($v) && '' !== (string) $v);
 
         return empty($params) ? null : $path.'?'.http_build_query($params);
     }

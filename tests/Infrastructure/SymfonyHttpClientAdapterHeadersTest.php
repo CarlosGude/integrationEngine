@@ -29,8 +29,10 @@ final class SymfonyHttpClientAdapterHeadersTest extends TestCase
 
         $adapter->send(HeadersTestAction::create('GET', '/test'));
 
-        self::assertSame('2', $httpClient->lastOptions()['headers']['X-Api-Version']);
-        self::assertSame('test', $httpClient->lastOptions()['headers']['X-Client']);
+        /** @var array<string, string> $headers */
+        $headers = $httpClient->lastOptions()['headers'];
+        self::assertSame('2', $headers['X-Api-Version']);
+        self::assertSame('test', $headers['X-Client']);
     }
 
     #[Test]
@@ -51,7 +53,9 @@ final class SymfonyHttpClientAdapterHeadersTest extends TestCase
 
         $adapter->send($action);
 
-        self::assertSame('Bearer new-token', $httpClient->lastOptions()['headers']['Authorization']);
+        /** @var array<string, string> $headers */
+        $headers = $httpClient->lastOptions()['headers'];
+        self::assertSame('Bearer new-token', $headers['Authorization']);
     }
 
     #[Test]
@@ -78,7 +82,9 @@ final class SymfonyHttpClientAdapterHeadersTest extends TestCase
 
         $adapter->send($action, null, $callerHeaders);
 
-        self::assertSame('Bearer caller-token', $httpClient->lastOptions()['headers']['Authorization']);
+        /** @var array<string, string> $headers */
+        $headers = $httpClient->lastOptions()['headers'];
+        self::assertSame('Bearer caller-token', $headers['Authorization']);
     }
 
     #[Test]
@@ -120,8 +126,10 @@ final class SymfonyHttpClientAdapterHeadersTest extends TestCase
 
         $adapter->send($action, null, $callerHeaders);
 
-        self::assertSame('caller', $httpClient->lastOptions()['headers']['X-Layer']);
-        self::assertSame('1', $httpClient->lastOptions()['headers']['X-Api-Version']);
+        /** @var array<string, string> $headers */
+        $headers = $httpClient->lastOptions()['headers'];
+        self::assertSame('caller', $headers['X-Layer']);
+        self::assertSame('1', $headers['X-Api-Version']);
     }
 
     #[Test]

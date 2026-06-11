@@ -276,7 +276,15 @@ final class GQLHeadersSpyClient implements HttpClientInterface
     /** @param array<string, mixed> $options */
     public function request(string $method, string $url, array $options = []): HttpResponseInterface
     {
-        $this->lastHeaders = $options['headers'] ?? [];
+        $this->lastHeaders = [];
+        $rawHeaders = $options['headers'] ?? null;
+        if (\is_array($rawHeaders)) {
+            foreach ($rawHeaders as $k => $v) {
+                if (\is_string($k) && \is_string($v)) {
+                    $this->lastHeaders[$k] = $v;
+                }
+            }
+        }
 
         return new class implements HttpResponseInterface {
             public function getStatusCode(): int

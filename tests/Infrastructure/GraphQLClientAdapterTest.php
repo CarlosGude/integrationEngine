@@ -34,6 +34,7 @@ final class GraphQLClientAdapterTest extends TestCase
 
         self::assertSame('POST', $spy->lastMethod());
         self::assertSame('https://api.example.com/graphql', $spy->lastUrl());
+
         /** @var array<string, mixed> $json */
         $json = $spy->lastOptions()['json'];
         self::assertSame('query { user { id } }', $json['query']);

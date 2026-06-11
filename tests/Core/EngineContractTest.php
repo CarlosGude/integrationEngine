@@ -128,6 +128,9 @@ final class EngBasicMapper extends AbstractMapper
         return EngBasicAction::class;
     }
 
+    /**
+     * @param array<string, mixed> $response
+     */
     protected static function transform(AbstractAction $action, array $response): ResponseInterface
     {
         return new FakeTokenResponse($response);
@@ -195,6 +198,9 @@ final class EngMismatchMapper extends AbstractMapper
         return EngBasicAction::class;
     } // deliberately wrong — points to EngBasicAction, not EngMismatchAction
 
+    /**
+     * @param array<string, mixed> $response
+     */
     protected static function transform(AbstractAction $action, array $response): ResponseInterface
     {
         return new FakeTokenResponse($response);
