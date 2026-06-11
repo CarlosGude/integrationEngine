@@ -36,6 +36,25 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
     }
 
     #[Test]
+    public function dynamicAuthCastsIntegerTokenToString(): void
+    {
+        $this->config->register(FakeTokenAction::getName(), FakeTokenAction::create('GET', '/token'));
+        $this->config->register(FakeProtectedAction::getName(), FakeProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
+            action: FakeTokenAction::getName(),
+            tokenField: 'access_token',
+            ttl: 60,
+        )));
+        $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 42]);
+        $this->client->setResponse(FakeProtectedAction::getName(), []);
+
+        $this->engine->send(FakeProtectedAction::getName());
+
+        $auth = $this->client->lastAction()?->getAuthorization();
+        self::assertInstanceOf(StaticAuthorizationConfig::class, $auth);
+        self::assertSame('42', $auth->params['token']);
+    }
+
+    #[Test]
     public function dynamicAuthUsesCustomPrefixInAuthorizationHeader(): void
     {
         $this->config->register(FakeTokenAction::getName(), FakeTokenAction::create('GET', '/token'));

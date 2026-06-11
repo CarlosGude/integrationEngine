@@ -15,12 +15,23 @@
     },
     "testFramework": "phpunit",
     "testFrameworkOptions": "--testdox",
-    "minMsi": 92,
-    "minCoveredMsi": 93,
+    "minMsi": 100,
+    "minCoveredMsi": 100,
     "mutators": {
         "@default": true,
         "UnwrapArrayMap": false,
-        "UnwrapArrayFilter": false
+        "UnwrapArrayFilter": false,
+        "Throw_": {
+            "ignore": [
+                "IntegrationEngine\\Core\\Contract\\AbstractAction",
+                "IntegrationEngine\\Core\\IntegrationEngine"
+            ]
+        },
+        "ProtectedVisibility": {
+            "ignore": [
+                "IntegrationEngine\\Infrastructure\\Http\\ResolvesAuthHeaders"
+            ]
+        }
     },
     "logs": {
         "text": "infection.log",

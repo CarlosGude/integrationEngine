@@ -36,7 +36,7 @@ final class Configuration implements ConfigurationInterface
             ->defaultValue('rest')
             ->info('Client type to use: "rest" (default) or "graphql". Ignored when client_service is set.')
             ->validate()
-            ->ifTrue(static fn (mixed $v): bool => '' === trim((string) $v))
+            ->ifTrue(static fn (mixed $v): bool => \is_scalar($v) && '' === trim((string) $v))
             ->thenInvalid('Client type cannot be empty.')
             ->end()
             ->end()

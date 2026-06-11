@@ -135,8 +135,8 @@ final class MakeIntegrationCommand extends Command
             $baseUrl = $io->ask(
                 \sprintf('Base URL for the "%s" integration (e.g. https://api.example.com)', $name),
                 null,
-                static function (?string $value): string {
-                    if (null === $value || '' === trim($value)) {
+                static function (mixed $value): string {
+                    if (!\is_string($value) || '' === trim($value)) {
                         throw new \InvalidArgumentException('Base URL cannot be empty.');
                     }
 
@@ -148,7 +148,7 @@ final class MakeIntegrationCommand extends Command
             $clientType = $io->choice('Client type', $availableTypes, 'rest');
         }
 
-        return [$clientType, $baseUrl];
+        return [\is_string($clientType) ? $clientType : 'rest', \is_string($baseUrl) ? $baseUrl : null];
     }
 
     /**
@@ -163,8 +163,8 @@ final class MakeIntegrationCommand extends Command
         $action = $io->ask(
             'Name of the first action (e.g. GetEmployees)',
             null,
-            static function (?string $value): string {
-                if (null === $value || '' === trim($value)) {
+            static function (mixed $value): string {
+                if (!\is_string($value) || '' === trim($value)) {
                     throw new \InvalidArgumentException('Action name cannot be empty.');
                 }
 
@@ -193,10 +193,10 @@ final class MakeIntegrationCommand extends Command
             $actionPath = $io->ask(
                 \sprintf('Path for action "%s" (e.g. /employees or /employees/{id})', $action),
                 '/',
-                static function (?string $value): string {
-                    $value = trim((string) $value);
+                static function (mixed $value): string {
+                    $trimmed = trim(\is_string($value) ? $value : '');
 
-                    return '' === $value ? '/' : $value;
+                    return '' === $trimmed ? '/' : $trimmed;
                 }
             );
         }
@@ -205,7 +205,7 @@ final class MakeIntegrationCommand extends Command
             $method = $io->choice('HTTP method', ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], 'GET');
         }
 
-        return [$actionPath, $method];
+        return [\is_string($actionPath) ? $actionPath : '/', \is_string($method) ? $method : 'POST'];
     }
 
     private function detectClientType(string $bundleConfigPath, string $name): string
@@ -219,7 +219,20 @@ final class MakeIntegrationCommand extends Command
             $yaml = Yaml::parseFile($bundleConfigPath);
             $snakeName = $this->toSnakeCase($name);
 
-            return (string) ($yaml['integration_engine']['integrations'][$snakeName]['client'] ?? 'rest');
+            $engine = $yaml['integration_engine'] ?? null;
+            if (!\is_array($engine)) {
+                return 'rest';
+            }
+            $integrations = $engine['integrations'] ?? null;
+            if (!\is_array($integrations)) {
+                return 'rest';
+            }
+            $integration = $integrations[$snakeName] ?? null;
+            if (!\is_array($integration)) {
+                return 'rest';
+            }
+
+            return \is_string($integration['client'] ?? null) ? $integration['client'] : 'rest';
         } catch (\Throwable) {
             return 'rest';
         }

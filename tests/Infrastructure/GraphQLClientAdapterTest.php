@@ -34,8 +34,10 @@ final class GraphQLClientAdapterTest extends TestCase
 
         self::assertSame('POST', $spy->lastMethod());
         self::assertSame('https://api.example.com/graphql', $spy->lastUrl());
-        self::assertSame('query { user { id } }', $spy->lastOptions()['json']['query']);
-        self::assertSame(['login' => 'test'], $spy->lastOptions()['json']['variables']);
+        /** @var array<string, mixed> $json */
+        $json = $spy->lastOptions()['json'];
+        self::assertSame('query { user { id } }', $json['query']);
+        self::assertSame(['login' => 'test'], $json['variables']);
     }
 
     #[Test]
@@ -122,6 +124,57 @@ final class GraphQLClientAdapterTest extends TestCase
     }
 
     #[Test]
+    public function http400ExactlyThrowsRequestResponseException(): void
+    {
+        $spy = new GQLSpyHttpClient(statusCode: 400);
+        $adapter = new GraphQLClientAdapter(httpClient: $spy, endpointUrl: 'https://api.example.com/graphql');
+
+        $this->expectException(RequestResponseException::class);
+
+        $adapter->send(GQLTestAction::create('POST', '/graphql', GQLTestBody::create([])));
+    }
+
+    #[Test]
+    public function http4xxStatusCodeIsPreservedWhenGetContentUsesThrowFalse(): void
+    {
+        $spy = new GQLSpyHttpClient(statusCode: 400, throwOnGetContentTrue: true);
+        $adapter = new GraphQLClientAdapter(httpClient: $spy, endpointUrl: 'https://api.example.com/graphql');
+
+        try {
+            $adapter->send(GQLTestAction::create('POST', '/graphql', GQLTestBody::create([])));
+            self::fail('Expected RequestResponseException');
+        } catch (RequestResponseException $e) {
+            self::assertSame(400, $e->statusCode);
+        }
+    }
+
+    #[Test]
+    public function networkErrorDuringRequestIsWrappedInRequestResponseException(): void
+    {
+        $spy = new GQLSpyHttpClient(throwOnRequest: new \RuntimeException('Connection refused'));
+        $adapter = new GraphQLClientAdapter(httpClient: $spy, endpointUrl: 'https://api.example.com/graphql');
+
+        try {
+            $adapter->send(GQLTestAction::create('POST', '/graphql', GQLTestBody::create([])));
+            self::fail('Expected RequestResponseException');
+        } catch (RequestResponseException $e) {
+            self::assertSame(0, $e->statusCode);
+            self::assertStringContainsString('Connection refused', $e->context);
+        }
+    }
+
+    #[Test]
+    public function emptyErrorsArrayDoesNotThrow(): void
+    {
+        $spy = new GQLSpyHttpClient(responseBody: ['data' => ['user' => ['id' => '1']], 'errors' => []]);
+        $adapter = new GraphQLClientAdapter(httpClient: $spy, endpointUrl: 'https://api.example.com/graphql');
+
+        $result = $adapter->send(GQLTestAction::create('POST', '/graphql', GQLTestBody::create([])));
+
+        self::assertSame(['user' => ['id' => '1']], $result);
+    }
+
+    #[Test]
     public function nonGraphQLBodyThrowsImmediately(): void
     {
         $spy = new GQLSpyHttpClient();
@@ -159,8 +212,10 @@ final class GraphQLClientAdapterTest extends TestCase
 
         $adapter->send(GQLTestAction::create('POST', '/graphql', GQLTestBody::create([])));
 
-        self::assertSame('test', $spy->lastOptions()['headers']['X-Client']);
-        self::assertSame('application/json', $spy->lastOptions()['headers']['Content-Type']);
+        /** @var array<string, string> $headers */
+        $headers = $spy->lastOptions()['headers'];
+        self::assertSame('test', $headers['X-Client']);
+        self::assertSame('application/json', $headers['Content-Type']);
     }
 
     #[Test]
@@ -178,7 +233,9 @@ final class GraphQLClientAdapterTest extends TestCase
 
         $adapter->send($action);
 
-        self::assertSame('Bearer gh-token', $spy->lastOptions()['headers']['Authorization']);
+        /** @var array<string, string> $headers */
+        $headers = $spy->lastOptions()['headers'];
+        self::assertSame('Bearer gh-token', $headers['Authorization']);
     }
 
     #[Test]
@@ -203,7 +260,9 @@ final class GraphQLClientAdapterTest extends TestCase
 
         $adapter->send($action, null, $callerHeaders);
 
-        self::assertSame('Bearer caller-token', $spy->lastOptions()['headers']['Authorization']);
+        /** @var array<string, string> $headers */
+        $headers = $spy->lastOptions()['headers'];
+        self::assertSame('Bearer caller-token', $headers['Authorization']);
     }
 
     // ── ClientAdapterInterface capabilities ───────────────────────────────────
@@ -309,6 +368,8 @@ final class GQLSpyHttpClient implements HttpClientInterface
     public function __construct(
         private readonly array $responseBody = [],
         private readonly int $statusCode = 200,
+        private readonly ?\Throwable $throwOnRequest = null,
+        private readonly bool $throwOnGetContentTrue = false,
     ) {}
 
     public function lastMethod(): string
@@ -334,14 +395,20 @@ final class GQLSpyHttpClient implements HttpClientInterface
         $this->lastUrl = $url;
         $this->lastOptions = $options;
 
+        if (null !== $this->throwOnRequest) {
+            throw $this->throwOnRequest;
+        }
+
         $statusCode = $this->statusCode;
         $responseBody = $this->responseBody;
+        $throwOnGetContentTrue = $this->throwOnGetContentTrue;
 
-        return new class($statusCode, $responseBody) implements HttpResponseInterface {
+        return new class($statusCode, $responseBody, $throwOnGetContentTrue) implements HttpResponseInterface {
             /** @param array<string, mixed> $body */
             public function __construct(
                 private readonly int $statusCode,
                 private readonly array $body,
+                private readonly bool $throwOnGetContentTrue,
             ) {}
 
             public function getStatusCode(): int
@@ -357,6 +424,10 @@ final class GQLSpyHttpClient implements HttpClientInterface
 
             public function getContent(bool $throw = true): string
             {
+                if ($throw && $this->throwOnGetContentTrue) {
+                    throw new \RuntimeException('getContent called with throw: true');
+                }
+
                 return json_encode($this->body) ?: '{}';
             }
 

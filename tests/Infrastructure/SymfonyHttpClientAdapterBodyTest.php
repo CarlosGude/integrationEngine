@@ -88,6 +88,20 @@ final class SymfonyHttpClientAdapterBodyTest extends TestCase
     }
 
     #[Test]
+    public function http4xxStatusCodeIsPreservedWhenGetContentUsesThrowFalse(): void
+    {
+        $spy = new BodySpyHttpClient(statusCode: 400, throwOnGetContentTrue: true);
+        $adapter = new SymfonyHttpClientAdapter(httpClient: $spy, baseUrl: 'https://api.example.com');
+
+        try {
+            $adapter->send(BodyTestAction::create('GET', '/orders'));
+            self::fail('Expected RequestResponseException');
+        } catch (RequestResponseException $e) {
+            self::assertSame(400, $e->statusCode);
+        }
+    }
+
+    #[Test]
     public function statusCode399DoesNotThrow(): void
     {
         $spy = new BodySpyHttpClient(statusCode: 399, content: '{"ok":true}');
@@ -145,6 +159,28 @@ final class SymfonyHttpClientAdapterBodyTest extends TestCase
     }
 
     #[Test]
+    public function statusCode204WithNonEmptyBodyReturnsEmptyArray(): void
+    {
+        $spy = new BodySpyHttpClient(statusCode: 204, content: '{"id":1}', overrideToArray: ['id' => 1]);
+        $adapter = new SymfonyHttpClientAdapter(httpClient: $spy, baseUrl: 'https://api.example.com');
+
+        $result = $adapter->send(BodyTestAction::create('DELETE', '/orders/1'));
+
+        self::assertSame([], $result);
+    }
+
+    #[Test]
+    public function whitespaceOnlyContentReturnsEmptyArray(): void
+    {
+        $spy = new BodySpyHttpClient(statusCode: 200, content: '   ', overrideToArray: ['unexpected' => 'data']);
+        $adapter = new SymfonyHttpClientAdapter(httpClient: $spy, baseUrl: 'https://api.example.com');
+
+        $result = $adapter->send(BodyTestAction::create('GET', '/orders'));
+
+        self::assertSame([], $result);
+    }
+
+    #[Test]
     public function emptyBodyReturnsEmptyArray(): void
     {
         $spy = new BodySpyHttpClient(statusCode: 200, content: '');
@@ -153,6 +189,17 @@ final class SymfonyHttpClientAdapterBodyTest extends TestCase
         $result = $adapter->send(BodyTestAction::create('GET', '/orders'));
 
         self::assertSame([], $result);
+    }
+
+    #[Test]
+    public function nonErrorContentIsReadWithThrowFalse(): void
+    {
+        $spy = new BodySpyHttpClient(statusCode: 200, content: '{"data":"ok"}', throwOnGetContentTrue: true);
+        $adapter = new SymfonyHttpClientAdapter(httpClient: $spy, baseUrl: 'https://api.example.com');
+
+        $result = $adapter->send(BodyTestAction::create('GET', '/orders'));
+
+        self::assertSame(['data' => 'ok'], $result);
     }
 }
 
@@ -197,10 +244,13 @@ final class BodySpyHttpClient implements HttpClientInterface
     /** @var array<string, mixed> */
     private array $lastOptions = [];
 
+    /** @param null|array<mixed> $overrideToArray */
     public function __construct(
         private readonly int $statusCode = 200,
         private readonly string $content = '[]',
         private readonly ?\Throwable $throwOnRequest = null,
+        private readonly bool $throwOnGetContentTrue = false,
+        private readonly ?array $overrideToArray = null,
     ) {}
 
     /** @return array<string, mixed> */
@@ -220,11 +270,16 @@ final class BodySpyHttpClient implements HttpClientInterface
 
         $statusCode = $this->statusCode;
         $content = $this->content;
+        $throwOnGetContentTrue = $this->throwOnGetContentTrue;
+        $overrideToArray = $this->overrideToArray;
 
-        return new class($statusCode, $content) implements HttpResponseInterface {
+        return new class($statusCode, $content, $throwOnGetContentTrue, $overrideToArray) implements HttpResponseInterface {
+            /** @param null|array<mixed> $overrideToArray */
             public function __construct(
                 private readonly int $statusCode,
                 private readonly string $content,
+                private readonly bool $throwOnGetContentTrue,
+                private readonly ?array $overrideToArray,
             ) {}
 
             public function getStatusCode(): int
@@ -239,13 +294,22 @@ final class BodySpyHttpClient implements HttpClientInterface
 
             public function getContent(bool $throw = true): string
             {
+                if ($throw && $this->throwOnGetContentTrue) {
+                    throw new \RuntimeException('getContent called with throw: true');
+                }
+
                 return $this->content;
             }
 
             /** @return array<mixed> */
             public function toArray(bool $throw = true): array
             {
-                return json_decode($this->content, true) ?? [];
+                if (null !== $this->overrideToArray) {
+                    return $this->overrideToArray;
+                }
+                $decoded = json_decode($this->content, true);
+
+                return \is_array($decoded) ? $decoded : [];
             }
 
             public function cancel(): void

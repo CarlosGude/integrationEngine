@@ -11,9 +11,10 @@ qa: cs test
 # PRE-COMMIT
 # -----------------------------
 pre-commit: cs-fix
-	./vendor/bin/phpstan analyse src --level=8
-	./vendor/bin/phpstan analyse tests --level=8
+	./vendor/bin/phpstan analyse src --level=max
+	./vendor/bin/phpstan analyse tests --level=max
 	./vendor/bin/phpunit
+	./vendor/bin/infection --min-msi=98 --min-covered-msi=99
 	@echo "✔ Pre-commit OK"
 # -----------------------------
 # CODE STYLE
@@ -48,4 +49,10 @@ install:
 # -----------------------------
 # CI SIMULATION
 # -----------------------------
-ci: cs stan test
+# -----------------------------
+# MUTATION TESTING
+# -----------------------------
+mutation:
+	./vendor/bin/infection --min-msi=92 --min-covered-msi=92
+
+ci: cs stan test mutation
