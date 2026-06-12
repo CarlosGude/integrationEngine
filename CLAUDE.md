@@ -52,7 +52,7 @@ make stan PATHS='src/Core/IntegrationEngine.php'
 
 - **`ConfigPort`** — loads action config from YAML (`YamlConfigAdapter`)
 - **`ClientInterface`** — executes HTTP. Built-in: `SymfonyHttpClientAdapter` (REST) and `GraphQLClientAdapter`. Tagged `integration_engine.client_adapter`; multiple adapters are discovered automatically
-- **`CachePort`** — caches dynamic auth tokens (`Psr6CacheAdapter` wrapping Symfony's PSR-6 cache)
+- **`CachePort`** — caches dynamic auth tokens with `get`/`set`/`delete` (`Psr6CacheAdapter` wrapping Symfony's PSR-6 cache)
 
 ### Data Flow
 
@@ -71,11 +71,10 @@ Application services translate infrastructure DTOs to domain objects — DTOs mu
 
 ### Path Resolution
 
-Three approaches, in order of complexity:
+Two approaches, in order of complexity:
 
 1. **YAML placeholder** — define `{param}` in path; pass required params via `DefaultActionContext`
-2. **Custom context** — implement `ActionContextInterface::resolvePath()` for optional params or complex logic
-3. **`resolvePathCallback()`** in the action class — full control, last resort
+2. **Custom context** — implement `PathResolvableContextInterface::resolvePath()` for optional params or complex logic; return `null` to fall back to the placeholder resolver
 
 ### Dynamic Authentication
 
@@ -83,6 +82,7 @@ When an action has a dynamic auth config, the engine:
 1. Calls the designated token action
 2. Caches the result per integration per token action (default cache: `cache.app`)
 3. Reconstructs the original action with the token as static auth
+4. If a **cached** token is rejected with HTTP 401, deletes it and retries once with a fresh token (fresh-token 401s and non-401 errors propagate without retry)
 
 Per-worker token fetches under PHP-FPM are expected and by design.
 
@@ -94,8 +94,9 @@ Every `AbstractMapper` must declare `getAction(): string` returning its paired a
 
 Tests live in `tests/` with `Fake/` subdirectories containing minimal test doubles (no mocks on internal methods).
 
-- `tests/Core/` — engine contract, action path resolution, dynamic auth, mapper invariant
+- `tests/Core/` — engine contract, action path resolution, dynamic auth (including 401 retry), mapper invariant
 - `tests/Infrastructure/` — HTTP adapter headers, GraphQL adapter, PSR-6 cache, adapter resolver
+- `tests/Bundle/` — bundle configuration, DI extension, compiler pass, generator, `make:integration` command
 - `tests/Fake/` — `FakeClient`, `FakeCache`, `FakeConfigPort`, `FakeContext`, etc.
 
 ## Creating a New Integration

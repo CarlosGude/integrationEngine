@@ -59,14 +59,15 @@ FilterByStatus:
 
 ### 2b. Custom context with `resolvePath()` — optional or computed params
 
-`ActionContextInterface` declares `resolvePath(string $path): ?string`. When a context
-returns a non-null string, the engine uses it directly and skips `defaultResolvePath`.
-When it returns `null`, the engine falls back to the default `{placeholder}` resolver.
+`PathResolvableContextInterface` (extends `ActionContextInterface`) declares
+`resolvePath(string $path): ?string`. When a context implementing it returns a non-null
+string, the engine uses it directly and skips `defaultResolvePath`. When it returns
+`null`, the engine falls back to the default `{placeholder}` resolver.
 
 This is where optional query string logic lives — in the context, not in the action:
 
 ```php
-final readonly class FilterCharactersContext implements ActionContextInterface
+final readonly class FilterCharactersContext implements PathResolvableContextInterface
 {
     private const array ALLOWED = ['name', 'status', 'species', 'gender', 'page'];
 
@@ -101,9 +102,9 @@ final class FilterCharactersAction extends AbstractAction
 
 ### 2c. `DefaultActionContext` — nothing to decide
 
-`DefaultActionContext::resolvePath()` always returns `null`, delegating to the default
-`{placeholder}` resolver. Use it for actions where all params are required path segments
-or where no dynamic params exist at all.
+`DefaultActionContext` does not implement `PathResolvableContextInterface`, so the
+default `{placeholder}` resolver always applies. Use it for actions where all params are
+required path segments or where no dynamic params exist at all.
 
 ### Decision rule
 
@@ -186,6 +187,12 @@ This keeps the engine's invariant intact while avoiding duplicated transform log
 When an action uses `DynamicAuthorizationConfig`, the engine calls the auth action once,
 extracts the token from the response via `tokenField`, and caches it under the key
 `integration_engine.token.{integrationName}.{authActionName}`.
+
+**Stale token handling.** A token can be revoked or expire server-side before its TTL.
+When a request fails with HTTP 401 and the token came from the cache, the engine deletes
+the entry, fetches a fresh token, and retries the request exactly once. A fresh token
+that is rejected propagates the 401 — refetching would yield the same token. Non-401
+errors never evict the token: a 500 says nothing about its validity.
 
 The cache backend is whatever `CachePort` implementation is wired for that integration.
 The built-in `Psr6CacheAdapter` wraps any `CacheItemPoolInterface` — typically `cache.app`.

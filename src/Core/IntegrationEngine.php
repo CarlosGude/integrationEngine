@@ -15,6 +15,7 @@ use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\DynamicAuthException;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Exception\NotMappedActionException;
+use IntegrationEngine\Core\Exception\RequestResponseException;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
 use IntegrationEngine\Core\Response\EmptyResponse;
@@ -35,10 +36,52 @@ final readonly class IntegrationEngine
         ?RequestHeadersInterface $headers = null,
     ): ResponseInterface {
         $action = $this->config->getAction($actionName, $body);
-        $action = $this->applyAuthorization($action);
+        $auth = $action->getAuthorization();
+
+        if ($auth instanceof DynamicAuthorizationConfig) {
+            return $this->sendWithDynamicAuth($action, $auth, $context, $headers);
+        }
 
         $rawResponse = $this->client->send($action, $context, $headers);
 
+        return $this->buildResponse($action, $rawResponse);
+    }
+
+    private function sendWithDynamicAuth(
+        AbstractAction $action,
+        DynamicAuthorizationConfig $auth,
+        ?ActionContextInterface $context,
+        ?RequestHeadersInterface $headers,
+    ): ResponseInterface {
+        $usedCachedToken = \is_string($this->cache->get($this->tokenCacheKey($auth)));
+
+        $authorized = $this->withStaticToken($action, $auth);
+
+        try {
+            $rawResponse = $this->client->send($authorized, $context, $headers);
+        } catch (RequestResponseException $e) {
+            // A cached token can be revoked or expire server-side before its
+            // TTL: drop it and retry once with a freshly fetched token. A
+            // fresh token rejected with 401 is not retried — fetching it
+            // again would yield the same result.
+            if (401 !== $e->statusCode || !$usedCachedToken) {
+                throw $e;
+            }
+
+            $this->cache->delete($this->tokenCacheKey($auth));
+
+            $authorized = $this->withStaticToken($action, $auth);
+            $rawResponse = $this->client->send($authorized, $context, $headers);
+        }
+
+        return $this->buildResponse($authorized, $rawResponse);
+    }
+
+    /**
+     * @param array<mixed> $rawResponse
+     */
+    private function buildResponse(AbstractAction $action, array $rawResponse): ResponseInterface
+    {
         if (!$action::hasResponse()) {
             return new EmptyResponse();
         }
@@ -46,15 +89,10 @@ final readonly class IntegrationEngine
         return $this->applyMapper($action, $rawResponse);
     }
 
-    private function applyAuthorization(
+    private function withStaticToken(
         AbstractAction $action,
+        DynamicAuthorizationConfig $auth,
     ): AbstractAction {
-        $auth = $action->getAuthorization();
-
-        if (!$auth instanceof DynamicAuthorizationConfig) {
-            return $action;
-        }
-
         $token = $this->resolveToken($auth);
 
         $isDefaultHeader = 'Authorization' === $auth->header;
@@ -66,15 +104,20 @@ final readonly class IntegrationEngine
             authorization: new StaticAuthorizationConfig(
                 type: $isDefaultHeader ? 'bearer' : 'api_key',
                 params: $isDefaultHeader
-                    ? ['token' => $token, 'prefix' => $auth->prefix]
-                    : ['header' => $auth->header, 'token' => $token],
+                    ? ['token' => $token, 'prefix' => $auth->resolvedPrefix()]
+                    : ['header' => $auth->header, 'token' => $token, 'prefix' => $auth->resolvedPrefix()],
             ),
         );
     }
 
+    private function tokenCacheKey(DynamicAuthorizationConfig $authConfig): string
+    {
+        return \sprintf('integration_engine.token.%s.%s', $this->integrationName, $authConfig->action);
+    }
+
     private function resolveToken(DynamicAuthorizationConfig $authConfig): string
     {
-        $cacheKey = \sprintf('integration_engine.token.%s.%s', $this->integrationName, $authConfig->action);
+        $cacheKey = $this->tokenCacheKey($authConfig);
 
         $cached = $this->cache->get($cacheKey);
         if (\is_string($cached)) {

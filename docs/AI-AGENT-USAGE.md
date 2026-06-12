@@ -60,8 +60,9 @@ The API declares these filter params for /employees: name, department, status.
 → Are all of them required, or can any be omitted?
 
   [A] All required  → YAML placeholders: path: /employees?name={name}&...
-                       No resolvePathCallback needed.
-  [B] Some optional → resolvePathCallback with http_build_query.
+                       No custom context needed.
+  [B] Some optional → custom context implementing PathResolvableContextInterface
+                       with http_build_query.
 
 Which fits this API?
 ```
@@ -118,9 +119,10 @@ flows match the actual API behaviour.
 ambiguous, the agent will make reasonable assumptions — but they may be wrong. Pay
 particular attention to nullable fields, pagination wrappers, and error response shapes.
 
-**Custom path resolution is error-prone.** The agent generates `resolvePathCallback`
-correctly for standard filter patterns, but complex path logic (versioned URLs, dynamic
-base paths, content negotiation) may require manual adjustment.
+**Custom path resolution is error-prone.** The agent generates
+`PathResolvableContextInterface` contexts correctly for standard filter patterns, but
+complex path logic (versioned URLs, dynamic base paths, content negotiation) may require
+manual adjustment.
 
 **GraphQL introspection is not used.** The agent reads documentation prose, not the
 GraphQL schema. If the schema differs from the documentation, the generated queries

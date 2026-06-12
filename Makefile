@@ -11,8 +11,8 @@ qa: cs test
 # PRE-COMMIT
 # -----------------------------
 pre-commit: cs-fix
-	./vendor/bin/phpstan analyse src --level=max
-	./vendor/bin/phpstan analyse tests --level=max
+	./vendor/bin/phpstan analyse src --level=max --memory-limit=1G
+	./vendor/bin/phpstan analyse tests --level=max --memory-limit=1G
 	./vendor/bin/phpunit
 	./vendor/bin/infection --min-msi=98 --min-covered-msi=99
 	@echo "✔ Pre-commit OK"
@@ -29,7 +29,7 @@ cs-fix:
 # ANALYSIS
 # -----------------------------
 stan:
-	./vendor/bin/phpstan analyse $(PATHS)
+	./vendor/bin/phpstan analyse --memory-limit=1G $(PATHS)
 
 # -----------------------------
 # TESTS

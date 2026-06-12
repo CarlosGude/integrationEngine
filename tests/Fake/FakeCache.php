@@ -20,4 +20,9 @@ final class FakeCache implements CachePort
     {
         $this->data[$key] = $value;
     }
+
+    public function delete(string $key): void
+    {
+        unset($this->data[$key]);
+    }
 }

@@ -110,6 +110,49 @@ final class SymfonyHttpClientAdapterResolveHeadersTest extends TestCase
         self::assertSame('secret', $spy->lastHeaders()['X-Api-Key']);
     }
 
+    #[Test]
+    public function apiKeyAuthWithPrefixPrependsItToTheToken(): void
+    {
+        // Kills LogicalAnd and Ternary mutants in the api_key prefix guard
+        $spy = new RestHeadersSpyClient();
+        $adapter = new SymfonyHttpClientAdapter(httpClient: $spy, baseUrl: 'https://api.example.com');
+
+        $action = RestHeadersAction::create(
+            method: 'GET',
+            path: '/orders',
+            authorization: new StaticAuthorizationConfig(
+                type: 'api_key',
+                params: ['header' => 'X-My-Token', 'token' => 'secret', 'prefix' => 'Token'],
+            ),
+        );
+
+        $adapter->send($action);
+
+        self::assertSame('Token secret', $spy->lastHeaders()['X-My-Token']);
+    }
+
+    #[Test]
+    public function apiKeyAuthWithEmptyPrefixSendsBareToken(): void
+    {
+        // Kills the '' !== $prefix sub-expression mutant — an empty prefix
+        // must not produce a token with a leading space.
+        $spy = new RestHeadersSpyClient();
+        $adapter = new SymfonyHttpClientAdapter(httpClient: $spy, baseUrl: 'https://api.example.com');
+
+        $action = RestHeadersAction::create(
+            method: 'GET',
+            path: '/orders',
+            authorization: new StaticAuthorizationConfig(
+                type: 'api_key',
+                params: ['header' => 'X-My-Token', 'token' => 'secret', 'prefix' => ''],
+            ),
+        );
+
+        $adapter->send($action);
+
+        self::assertSame('secret', $spy->lastHeaders()['X-My-Token']);
+    }
+
     // ── default ───────────────────────────────────────────────────────────────
 
     #[Test]

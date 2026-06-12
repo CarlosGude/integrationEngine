@@ -46,6 +46,7 @@ final class Configuration implements ConfigurationInterface
             ->end()
             ->arrayNode('headers')
             ->info('Default HTTP headers sent with every request for this integration. Auth headers are merged on top.')
+            ->normalizeKeys(false)
             ->useAttributeAsKey('name')
             ->scalarPrototype()->end()
             ->defaultValue([])

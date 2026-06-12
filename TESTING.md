@@ -21,7 +21,8 @@ tests/
 │   ├── IntegrationEngineTestCase.php   ← shared base for engine tests
 │   ├── AbstractActionTest.php
 │   ├── DynamicAuthTest.php
-│   └── EngineContractTest.php
+│   ├── EngineContractTest.php
+│   └── ExceptionMessagesTest.php
 ├── Fake/
 │   ├── FakeCache.php
 │   ├── FakeClient.php
@@ -32,18 +33,34 @@ tests/
 │   ├── FakeTokenAction.php
 │   ├── FakeTokenMapper.php
 │   └── FakeTokenResponse.php
-└── Infrastructure/
-    ├── ClientAdapterResolverTest.php
-    ├── GraphQLClientAdapterTest.php
-    ├── Psr6CacheAdapterTest.php
-    └── SymfonyHttpClientAdapterHeadersTest.php
+├── Infrastructure/
+│   ├── ClientAdapterResolverTest.php
+│   ├── GraphQLClientAdapterHeadersTest.php
+│   ├── GraphQLClientAdapterTest.php
+│   ├── Psr6CacheAdapterTest.php
+│   ├── SymfonyHttpClientAdapterBodyTest.php
+│   ├── SymfonyHttpClientAdapterHeadersTest.php
+│   └── SymfonyHttpClientAdapterResolveHeadersTest.php
+└── Bundle/
+    ├── Command/
+    │   └── MakeIntegrationCommandTest.php
+    ├── DependencyInjection/
+    │   ├── ConfigurationTest.php
+    │   ├── IntegrationCompilerPassTest.php
+    │   └── IntegrationEngineExtensionTest.php
+    └── Generator/
+        ├── IntegrationContextTest.php
+        ├── IntegrationFileGeneratorTest.php
+        └── TemplateRendererTest.php
 ```
+
+Test counts rot quickly in prose — run `./vendor/bin/phpunit --testdox` for the live list.
 
 ---
 
 ## Test suites
 
-### `AbstractActionTest` — 14 tests
+### `AbstractActionTest`
 
 Covers the `AbstractAction` contract in full isolation. No engine, no HTTP,
 no mapper. Pure unit tests on the action's path resolution logic and
@@ -62,13 +79,14 @@ authorization wiring.
 | `sameActionInstanceCanBeCalledWithDifferentContexts` | Same instance is safe to reuse across calls |
 | `getAuthorizationReturnsNullByDefault` | No auth config means null, not an error |
 | `getAuthorizationReturnsInjectedConfig` | Injected auth config is returned as-is |
-| `customPathResolverIsUsedWhenProvided` | `resolvePathCallback()` override takes full control |
-| `customPathResolverReceivesContext` | Custom resolver receives context correctly |
-| `customPathResolverThrowsIfNotReturningString` | Bad resolver (returns non-string) throws clearly |
+| `contextCanOverridePathResolution` | A `PathResolvableContextInterface` context takes full control of the path |
+| `contextResolutionReceivesRawPathFromYaml` | The custom resolver receives the raw path, not a pre-resolved one |
+| `contextReturningNullFallsBackToDefaultResolver` | Returning `null` delegates to the `{placeholder}` resolver |
+| `contextReturningEmptyStringThrows` | An empty resolved path throws `PathResolutionException` instead of producing a broken URL |
 
 ---
 
-### `DynamicAuthTest` — 8 tests
+### `DynamicAuthTest`
 
 Covers the full dynamic authorization flow via the engine. Uses
 `IntegrationEngineTestCase` as base. All fakes are in-memory — no HTTP,
@@ -83,11 +101,18 @@ no real cache.
 | `dynamicAuthUsesTokenFromCacheWhenAvailable` | Pre-cached token is used directly without calling the auth action |
 | `contextReachesClientAfterDynamicAuthReconstruction` | **Regression** — when dynamic auth reconstructs the action, the original context still reaches the client. Protects against the bug where context was lost after token substitution |
 | `dynamicAuthUsesCustomPrefixInAuthorizationHeader` | When `prefix` is set, the resolved `StaticAuthorizationConfig` carries the custom prefix — protects APIs using `Authorization: Token …` or other non-Bearer schemes |
+| `dynamicAuthKeepsCustomPrefixOnCustomHeader` | **Regression** — a custom header plus a custom prefix keeps the prefix; it used to be silently dropped |
+| `dynamicAuthDefaultsToBearerPrefixOnAuthorizationHeader` | No explicit prefix on the `Authorization` header defaults to `Bearer` |
+| `dynamicAuthCastsIntegerTokenToString` | A numeric token field is cast to string instead of failing |
+| `rejectedCachedTokenIsDroppedAndRequestRetriedWithFreshToken` | A cached token rejected with 401 is evicted; the request retries once with a fresh token |
+| `freshTokenRejectedWith401IsNotRetried` | A freshly fetched token that gets 401 propagates — refetching would yield the same token |
+| `non401ErrorWithCachedTokenIsNotRetried` | A 500 does not evict the token nor trigger a retry |
+| `second401AfterRetryPropagates` | Exactly one retry: a second 401 propagates to the caller |
 | `actionRemainsStatelessAcrossMultipleSendCalls` | Same action resolves different paths across successive calls with different contexts |
 
 ---
 
-### `EngineContractTest` — 8 tests
+### `EngineContractTest`
 
 Covers the `IntegrationEngine::send()` contract end-to-end. Uses
 `IntegrationEngineTestCase` as base. Verifies the full pipeline:
@@ -106,7 +131,7 @@ Config → Client → Mapper → Response, and all named exceptions.
 
 ---
 
-### `SymfonyHttpClientAdapterHeadersTest` — 6 tests
+### `SymfonyHttpClientAdapterHeadersTest`
 
 Covers the three-layer header precedence system in `SymfonyHttpClientAdapter`.
 Uses a `SpyHttpClient` inline — a test double that records the options passed
@@ -123,7 +148,7 @@ to `HttpClientInterface::request()`.
 
 ---
 
-### `ClientAdapterResolverTest` — 7 tests
+### `ClientAdapterResolverTest`
 
 Covers `ClientAdapterResolver` in isolation. Verifies registration, resolution,
 override precedence, and error messaging.
@@ -140,7 +165,7 @@ override precedence, and error messaging.
 
 ---
 
-### `GraphQLClientAdapterTest` — 12 tests
+### `GraphQLClientAdapterTest`
 
 Covers `GraphQLClientAdapter` in full isolation. Uses a `GQLSpyHttpClient`
 inline — records method, URL, and options. Tests body serialisation, data
@@ -163,7 +188,7 @@ extraction, error handling, auth headers, and adapter capabilities.
 
 ---
 
-### `Psr6CacheAdapterTest` — 8 tests
+### `Psr6CacheAdapterTest`
 
 Covers `Psr6CacheAdapter`, the PSR-6 bridge over `CachePort`. Uses a
 `SpyCachePool` inline — records keys and TTLs passed to the pool, and supports
@@ -174,11 +199,39 @@ pre-seeding values for hit scenarios.
 | `getReturnsCachedValueOnHit` | A seeded key is returned correctly |
 | `getReturnsNullOnMiss` | A missing key returns null, not an exception |
 | `setStoresValueAndTtl` | Value and TTL are forwarded to the pool correctly |
-| `hasReturnsTrueForExistingKey` | `has()` returns true for a seeded key |
-| `hasReturnsFalseForMissingKey` | `has()` returns false for an unknown key |
+| `deleteRemovesStoredValue` | `delete()` evicts the entry — the engine relies on this for 401 token invalidation |
+| `deleteSanitizesKeyLikeGetAndSet` | `set()` and `delete()` sanitize identically, so the delete targets the stored item |
 | `reservedPsr6CharactersAreSanitized` | PSR-6 reserved chars (`{}()/\@:`) are replaced before the key reaches the pool |
 | `dotsAreSanitized` | Dots are sanitized — protects keys like `integration_engine.token.*` which some pools reject |
-| `sanitizedKeyIsUsedForGetAndHasConsistently` | `set()`, `get()`, and `has()` all sanitize the same way, so they remain consistent with each other |
+
+---
+
+### Other Core / Infrastructure suites
+
+| Suite | What it covers |
+|------|-----------------|
+| `ExceptionMessagesTest` | Every exception message exposes the values a developer needs to debug (action names, field names, status codes) |
+| `SymfonyHttpClientAdapterBodyTest` | Body serialisation rules per HTTP method and error mapping (4xx/5xx → `RequestResponseException`, network errors, 204/empty responses) |
+| `SymfonyHttpClientAdapterResolveHeadersTest` | The `ResolvesAuthHeaders` trait: `bearer`, `basic`, `api_key` (with and without `prefix`), unknown types, and header precedence |
+| `GraphQLClientAdapterHeadersTest` | Header precedence layers for the GraphQL adapter, including auth resolution |
+
+---
+
+## Bundle suites
+
+Cover the Symfony integration layer in `tests/Bundle/` — wiring is verified
+against a real `ContainerBuilder`, the command against `CommandTester` with
+a temporary project directory. No kernel boot needed.
+
+| Suite | What it covers |
+|------|-----------------|
+| `ConfigurationTest` | Config tree defaults and validation: `base_url`/`client_service` requirement, empty client rejection, headers preserved verbatim (**regression** — dashes in header names used to be mangled to underscores) |
+| `IntegrationEngineExtensionTest` | `load()` exposes processed integrations as a parameter, registers built-in adapters with the client-adapter tag, and the bundle adds the compiler pass |
+| `IntegrationCompilerPassTest` | Per-integration service wiring: config adapter, HTTP client, engine, registry registration; custom `client_service`/`cache_service`; invalid tagged services skipped; configuration errors throw at compile time |
+| `IntegrationContextTest` | Namespace building and the `hasBody`/`hasResponse` rules per HTTP method and adapter type |
+| `TemplateRendererTest` | Generated PHP templates (integration, action, mapper, response) and YAML entries are correct and syntactically valid |
+| `IntegrationFileGeneratorTest` | File layout per action, response layer omitted for DELETE, YAML append without erasing previous actions |
+| `MakeIntegrationCommandTest` | The interactive `make:integration` flow end-to-end: first run, adding actions, DELETE actions, GraphQL integrations, skip-without-force, unknown client type |
 
 ---
 
@@ -190,8 +243,8 @@ no PHPUnit `createMock()`.
 
 | Fake | Implements | Purpose |
 |------|-----------|---------|
-| `FakeCache` | `CachePort` | In-memory key-value store with TTL ignored. Used to pre-seed tokens and verify cache hits |
-| `FakeClient` | `ClientInterface` | Records the last action, last context, and call count per action name. Returns pre-configured responses |
+| `FakeCache` | `CachePort` | In-memory key-value store with TTL ignored. Supports `delete()`. Used to pre-seed tokens and verify cache hits and evictions |
+| `FakeClient` | `ClientInterface` | Records the last action, last context, and call count per action name. Returns pre-configured responses; `queueException()` throws on the next call to simulate HTTP failures (e.g. 401 retry scenarios) |
 | `FakeConfigPort` | `ConfigPort` | Registry of actions registered by name. Throws `ActionNotFoundException` for unknown names |
 | `FakeContext` | `ActionContextInterface` | General-purpose context with arbitrary key-value data |
 | `FakeTokenAction` | `AbstractAction` | Action that represents a token-fetching endpoint. Has a response and a mapper |

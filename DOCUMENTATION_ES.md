@@ -117,25 +117,35 @@ FilterByDepartment:
     path: /employees?dept={dept}   # solo cuando el parámetro es siempre obligatorio
 ```
 
-### 2. `resolvePathCallback` — parámetros opcionales o computados
+### 2. Contexto personalizado con `resolvePath()` — parámetros opcionales o computados
 
-Sobreescribe este método cuando algún parámetro es opcional. Construyes el string del path
-completamente dentro del callback:
+Implementa `PathResolvableContextInterface` (extiende `ActionContextInterface`) cuando
+algún parámetro es opcional. El contexto recibe el path crudo del YAML y devuelve el path
+final, o `null` para delegar en el resolutor de `{placeholder}` por defecto:
 
 ```php
-protected function resolvePathCallback(): ?callable
+final readonly class FilterEmployeesContext implements PathResolvableContextInterface
 {
-    return static function (string $path, ?ActionContextInterface $context): string {
-        $data    = $context?->toArray() ?? [];
+    private function __construct(private array $filters) {}
+
+    public static function create(array $data): self { return new self($data); }
+    public function toArray(): array { return $this->filters; }
+
+    public function resolvePath(string $path): ?string
+    {
         $allowed = ['status', 'department', 'page'];
         $params  = array_filter(
-            array_intersect_key($data, array_flip($allowed)),
+            array_intersect_key($this->filters, array_flip($allowed)),
             static fn(mixed $v): bool => '' !== (string) $v,
         );
-        return empty($params) ? '/employees' : '/employees?' . http_build_query($params);
-    };
+        // null → el engine usa el resolutor de {placeholder} por defecto sobre el path crudo
+        return empty($params) ? null : $path . '?' . http_build_query($params);
+    }
 }
 ```
+
+La action se mantiene puramente declarativa — sin lógica de path, sin callbacks. Devolver
+un string vacío lanza `PathResolutionException`; devuelve `null` para delegar.
 
 ### 3. Sin contexto
 
@@ -147,7 +157,7 @@ Si el path no tiene placeholders, no pases contexto o usa `DefaultActionContext:
 |---|---|
 | Segmento de path — siempre obligatorio | YAML `{placeholder}` |
 | Query params — todos obligatorios | YAML `{placeholder}` en query string |
-| Query params — alguno opcional | `resolvePathCallback` + `http_build_query` |
+| Query params — alguno opcional | Contexto personalizado implementando `PathResolvableContextInterface` |
 | Sin valores dinámicos | Sin contexto |
 
 ---
@@ -268,7 +278,7 @@ HTTP traduce la configuración a cabeceras:
 |---|---|---|
 | `bearer` | `token`, `prefix` opcional (por defecto: `Bearer`) | `Authorization: Bearer {token}` |
 | `basic` | `username`, `password` | `Authorization: Basic {base64}` |
-| `api_key` | `token`, `header` (por defecto: `X-Api-Key`) | `{header}: {token}` |
+| `api_key` | `token`, `header` (por defecto: `X-Api-Key`), `prefix` opcional | `{header}: {token}` o `{header}: {prefix} {token}` |
 
 ### Dinámica
 
@@ -280,7 +290,11 @@ integration_engine.token.{integrationName}.{authActionName}
 ```
 
 En llamadas posteriores dentro del TTL, el token cacheado se usa directamente. La acción
-de auth no se vuelve a llamar hasta que la entrada de caché expire.
+de auth no se vuelve a llamar hasta que la entrada de caché expire — con una excepción: si
+la API rechaza un token **cacheado** con HTTP 401 (revocado o expirado en el servidor antes
+de su TTL), el engine borra la entrada de caché, obtiene un token fresco y reintenta la
+petición una sola vez. Un token recién obtenido que es rechazado no se reintenta, y los
+errores que no son 401 nunca invalidan el token.
 
 La acción de token es una acción normal. Requiere su propia `Action`, `Mapper` y
 `Response`. El `toArray()` de la respuesta debe incluir el campo indicado en `token_field`:

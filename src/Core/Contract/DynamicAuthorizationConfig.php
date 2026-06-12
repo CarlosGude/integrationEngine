@@ -6,14 +6,23 @@ namespace IntegrationEngine\Core\Contract;
 
 final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
 {
+    /**
+     * @param null|string $prefix null means "default for the header":
+     *                            "Bearer" for Authorization, none otherwise
+     */
     public function __construct(
         public string $action,
         public string $tokenField,
         public int $ttl,
         public string $header = 'Authorization',
-        public string $prefix = 'Bearer',
+        public ?string $prefix = null,
     ) {
         parent::__construct('dynamic');
+    }
+
+    public function resolvedPrefix(): string
+    {
+        return $this->prefix ?? ('Authorization' === $this->header ? 'Bearer' : '');
     }
 
     /** @param array<string, mixed> $config */
@@ -34,7 +43,7 @@ final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
             tokenField: $config['token_field'],
             ttl: (int) $config['ttl'],
             header: isset($config['header']) && \is_string($config['header']) ? $config['header'] : 'Authorization',
-            prefix: isset($config['prefix']) && \is_string($config['prefix']) ? $config['prefix'] : 'Bearer',
+            prefix: isset($config['prefix']) && \is_string($config['prefix']) ? $config['prefix'] : null,
         );
     }
 }

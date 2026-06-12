@@ -165,20 +165,27 @@ GetEmployee:
 DefaultActionContext::create(['id' => 42]) // → /employees/42
 ```
 
-For **optional** query string filters, override `resolvePathCallback()` in the action:
+For **optional** query string filters, implement `PathResolvableContextInterface` in a
+custom context — path logic lives in the context, the action stays declarative:
 
 ```php
-protected function resolvePathCallback(): ?callable
+final readonly class FilterEmployeesContext implements PathResolvableContextInterface
 {
-    return static function (string $path, ?ActionContextInterface $context): string {
-        $data    = $context?->toArray() ?? [];
+    private function __construct(private array $filters) {}
+
+    public static function create(array $data): self { return new self($data); }
+    public function toArray(): array { return $this->filters; }
+
+    public function resolvePath(string $path): ?string
+    {
         $allowed = ['status', 'department', 'page'];
         $params  = array_filter(
-            array_intersect_key($data, array_flip($allowed)),
+            array_intersect_key($this->filters, array_flip($allowed)),
             static fn(mixed $v): bool => '' !== (string) $v,
         );
-        return empty($params) ? '/employees' : '/employees?' . http_build_query($params);
-    };
+        // null → fall back to the default {placeholder} resolver
+        return empty($params) ? null : $path . '?' . http_build_query($params);
+    }
 }
 ```
 
@@ -207,7 +214,8 @@ GetOrders:
         token: '%env(MY_API_TOKEN)%'
 ```
 
-Supported types: `bearer`, `basic` (`username` + `password`), `api_key` (`header` + `token`).
+Supported types: `bearer`, `basic` (`username` + `password`), `api_key` (`header` + `token`,
+optional `prefix`).
 
 ### Dynamic (OAuth 2.0, session tokens)
 
@@ -229,10 +237,16 @@ GetOrders:
         action: FetchToken      # calls this action to obtain the token
         token_field: access_token
         ttl: 3600
+        header: Authorization   # optional — header carrying the token
+        prefix: Bearer          # optional — defaults to Bearer for Authorization, none for custom headers
 ```
 
 The token action is a regular action and requires its own `Action`, `Mapper`, and `Response`.
 The response must expose the token field via `toArray()`.
+
+If a cached token is rejected with HTTP 401 before its TTL expires (revoked or expired
+server-side), the engine evicts it from the cache and retries the request **once** with a
+freshly fetched token. No manual token invalidation needed.
 
 > **Cache scope.** The default cache backend is `cache.app`, which is process-local under
 > PHP-FPM. Each worker fetches its own token on first warm-up. For APIs with strict

@@ -47,6 +47,34 @@ final class Psr6CacheAdapterTest extends TestCase
         self::assertSame(300, $pool->lastTtl());
     }
 
+    // ── delete ───────────────────────────────────────────────────────────────
+
+    #[Test]
+    public function deleteRemovesStoredValue(): void
+    {
+        $pool = new SpyCachePool();
+        $adapter = new Psr6CacheAdapter($pool);
+        $adapter->set('token', 'abc123', 300);
+
+        $adapter->delete('token');
+
+        self::assertNull($adapter->get('token'));
+    }
+
+    #[Test]
+    public function deleteSanitizesKeyLikeGetAndSet(): void
+    {
+        $pool = new SpyCachePool();
+        $adapter = new Psr6CacheAdapter($pool);
+
+        // Same key as the engine generates — set and delete must sanitize
+        // identically so the delete actually targets the stored item.
+        $adapter->set('integration_engine.token.fake_fetch_token', 'tok', 60);
+        $adapter->delete('integration_engine.token.fake_fetch_token');
+
+        self::assertNull($adapter->get('integration_engine.token.fake_fetch_token'));
+    }
+
     // ── key sanitization ─────────────────────────────────────────────────────
 
     #[Test]

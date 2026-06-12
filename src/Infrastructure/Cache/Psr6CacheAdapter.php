@@ -28,6 +28,11 @@ final class Psr6CacheAdapter implements CachePort
         $this->pool->save($item);
     }
 
+    public function delete(string $key): void
+    {
+        $this->pool->deleteItem($this->sanitizeKey($key));
+    }
+
     /**
      * PSR-6 keys may not contain reserved characters: {}()/\@:
      * Some pools also reject dots — we replace all of them with underscores.

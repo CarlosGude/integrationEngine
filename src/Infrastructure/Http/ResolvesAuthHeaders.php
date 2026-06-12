@@ -35,12 +35,13 @@ trait ResolvesAuthHeaders
         $username = isset($auth->params['username']) && \is_string($auth->params['username']) ? $auth->params['username'] : '';
         $password = isset($auth->params['password']) && \is_string($auth->params['password']) ? $auth->params['password'] : '';
         $headerKey = isset($auth->params['header']) && \is_string($auth->params['header']) ? $auth->params['header'] : 'X-Api-Key';
-        $prefix = isset($auth->params['prefix']) && \is_string($auth->params['prefix']) ? $auth->params['prefix'] : 'Bearer';
+        $prefix = isset($auth->params['prefix']) && \is_string($auth->params['prefix']) ? $auth->params['prefix'] : null;
 
         return match ($auth->type) {
-            'bearer' => ['Authorization' => \sprintf('%s %s', $prefix, $token)],
+            'bearer' => ['Authorization' => \sprintf('%s %s', $prefix ?? 'Bearer', $token)],
             'basic' => ['Authorization' => \sprintf('Basic %s', base64_encode($username.':'.$password))],
-            'api_key' => [$headerKey => $token],
+            // api_key carries the bare token unless a prefix is explicitly set.
+            'api_key' => [$headerKey => null !== $prefix && '' !== $prefix ? \sprintf('%s %s', $prefix, $token) : $token],
             default => [],
         };
     }

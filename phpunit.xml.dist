@@ -19,8 +19,6 @@
       <file>src/Core/Port/CachePort.php</file>
       <file>src/Core/Port/ConfigPort.php</file>
       <file>src/Core/Registry/IntegrationName.php</file>
-      <!-- Symfony bundle wiring — covered by integration, not unit tests -->
-      <directory>src/Bundle</directory>
     </exclude>
   </source>
 </phpunit>
