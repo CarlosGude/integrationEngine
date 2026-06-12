@@ -276,3 +276,27 @@ With coverage (requires Xdebug or PCOV):
 ```bash
 ./vendor/bin/phpunit --coverage-text
 ```
+
+---
+
+## Mutation testing — don't trust 100% MSI
+
+A 100% MSI from Infection can contain false positives and **always requires a
+second, manual review**:
+
+- A mutant can be "killed" by a side effect — e.g. a `TypeError` from a
+  constructor — instead of by an assertion that validates the real behaviour.
+  The score counts it as killed either way.
+- The MSI only measures **covered** code. A class with zero tests contributes
+  nothing to the score, so the aggregate number can stay at 100% while entire
+  classes go untested. This happened in this project: `YamlConfigAdapter`,
+  `IntegrationRegistry` and `DefaultActionContext` sat at 0% coverage behind a
+  100% MSI.
+
+When adding or changing tests, do not accept the run just because `make ci`
+reports 100%. Double-check:
+
+1. Each test kills mutants through behavioural assertions (returned values,
+   exception messages) — not accidentally.
+2. Per-class coverage, not just the aggregate MSI.
+3. `infection.log` for escaped mutants and for mutants killed by accident.
