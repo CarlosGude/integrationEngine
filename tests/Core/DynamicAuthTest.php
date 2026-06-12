@@ -356,4 +356,22 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
         self::assertNotNull($receivedCtx2);
         self::assertSame(['id' => '2'], $receivedCtx2->toArray());
     }
+
+    #[Test]
+    public function nonScalarTokenFieldThrows(): void
+    {
+        $this->config->register(FakeTokenAction::getName(), FakeTokenAction::create('GET', '/token'));
+        $this->config->register(FakeProtectedAction::getName(), FakeProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
+            action: FakeTokenAction::getName(),
+            tokenField: 'access_token',
+            ttl: 60,
+        )));
+        $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => ['nested' => 'value']]);
+        $this->client->setResponse(FakeProtectedAction::getName(), []);
+
+        $this->expectException(DynamicAuthException::class);
+        $this->expectExceptionMessage('Token field "access_token" must be a scalar value.');
+
+        $this->engine->send(FakeProtectedAction::getName());
+    }
 }
