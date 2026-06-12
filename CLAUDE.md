@@ -47,11 +47,14 @@ make stan PATHS='src/Core/IntegrationEngine.php'
 | `ActionBodyInterface` | Request payload converted to JSON (REST) or GraphQL query |
 | `IntegrationEngine` | Orchestrator: Config → Client → Mapper → Response. Also handles dynamic auth token caching |
 | `IntegrationRegistry` | Service locator; returns the `IntegrationEngine` instance for a named integration |
+| `EngineRequest` | One request inside a batch: the same four `send()` arguments as an immutable value object |
+| `BatchResult` | Outcome of one batch item: `isSuccess()`, `response()` (rethrows on failure), `error()` |
 
 ### Key Ports and Adapters
 
 - **`ConfigPort`** — loads action config from YAML (`YamlConfigAdapter`)
 - **`ClientInterface`** — executes HTTP. Built-in: `SymfonyHttpClientAdapter` (REST) and `GraphQLClientAdapter`. Tagged `integration_engine.client_adapter`; multiple adapters are discovered automatically
+- **`BatchClientInterface`** — optional capability: executes a batch of `PreparedRequest`s concurrently, returning raw payload or Throwable per key. `SymfonyHttpClientAdapter` implements it (lazy responses: dispatch all, then consume). Clients without it fall back to sequential sends
 - **`CachePort`** — caches dynamic auth tokens with `get`/`set`/`delete` (`Psr6CacheAdapter` wrapping Symfony's PSR-6 cache)
 
 ### Data Flow
@@ -68,6 +71,12 @@ Application service
 ```
 
 Application services translate infrastructure DTOs to domain objects — DTOs must not leak into the domain.
+
+### Batch / Parallel Requests
+
+`sendMany(array<key, EngineRequest>): array<key, BatchResult>` executes a batch (mixed actions allowed), preserving the caller's keys. Individual failures never abort the batch — each key resolves to a success or failure `BatchResult`. `sendManyOrFail()` unwraps to `ResponseInterface`s instead, throwing the first failure in request order (the whole batch still executes). Requests run concurrently when the client implements `BatchClientInterface`; otherwise sequentially.
+
+Dynamic auth in batches: the token is resolved once per token action (not per item). Items that entered the batch with a pre-batch cached token get the single 401 retry with one shared fresh token; a token fetched during the batch counts as fresh for every item, so their 401s are final.
 
 ### Path Resolution
 

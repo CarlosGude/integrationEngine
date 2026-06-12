@@ -20,10 +20,17 @@ tests/
 ├── Core/
 │   ├── IntegrationEngineTestCase.php   ← shared base for engine tests
 │   ├── AbstractActionTest.php
+│   ├── AbstractMapperTest.php
+│   ├── AuthorizationConfigTest.php
+│   ├── BatchResultTest.php
+│   ├── BatchSendTest.php
+│   ├── DefaultActionContextTest.php
 │   ├── DynamicAuthTest.php
 │   ├── EngineContractTest.php
-│   └── ExceptionMessagesTest.php
+│   ├── ExceptionMessagesTest.php
+│   └── IntegrationRegistryTest.php
 ├── Fake/
+│   ├── FakeBatchClient.php
 │   ├── FakeCache.php
 │   ├── FakeClient.php
 │   ├── FakeConfigPort.php
@@ -38,9 +45,11 @@ tests/
 │   ├── GraphQLClientAdapterHeadersTest.php
 │   ├── GraphQLClientAdapterTest.php
 │   ├── Psr6CacheAdapterTest.php
+│   ├── SymfonyHttpClientAdapterBatchTest.php
 │   ├── SymfonyHttpClientAdapterBodyTest.php
 │   ├── SymfonyHttpClientAdapterHeadersTest.php
-│   └── SymfonyHttpClientAdapterResolveHeadersTest.php
+│   ├── SymfonyHttpClientAdapterResolveHeadersTest.php
+│   └── YamlConfigAdapterTest.php
 └── Bundle/
     ├── Command/
     │   └── MakeIntegrationCommandTest.php
@@ -214,6 +223,9 @@ pre-seeding values for hit scenarios.
 | `SymfonyHttpClientAdapterBodyTest` | Body serialisation rules per HTTP method and error mapping (4xx/5xx → `RequestResponseException`, network errors, 204/empty responses) |
 | `SymfonyHttpClientAdapterResolveHeadersTest` | The `ResolvesAuthHeaders` trait: `bearer`, `basic`, `api_key` (with and without `prefix`), unknown types, and header precedence |
 | `GraphQLClientAdapterHeadersTest` | Header precedence layers for the GraphQL adapter, including auth resolution |
+| `BatchSendTest` | `sendMany()`/`sendManyOrFail()`: key preservation, mixed actions, partial results, batch dynamic auth (token once per batch, shared 401 retry, fresh-token 401s final), batch-client routing and misbehaving batch clients |
+| `BatchResultTest` | The success/failure envelope: accessors and `response()` rethrowing the stored failure |
+| `SymfonyHttpClientAdapterBatchTest` | Concurrent dispatch (all requests sent before any response is consumed), per-key error envelopes, per-request path resolution |
 
 ---
 
@@ -245,6 +257,7 @@ no PHPUnit `createMock()`.
 |------|-----------|---------|
 | `FakeCache` | `CachePort` | In-memory key-value store with TTL ignored. Supports `delete()`. Used to pre-seed tokens and verify cache hits and evictions |
 | `FakeClient` | `ClientInterface` | Records the last action, last context, and call count per action name. Returns pre-configured responses; `queueException()` throws on the next call to simulate HTTP failures (e.g. 401 retry scenarios) |
+| `FakeBatchClient` | `BatchClientInterface`, `ClientInterface` | Wraps a `FakeClient` and records every `sendMany()` call, so tests can assert the engine routed a batch through the batch interface instead of looping over `send()` |
 | `FakeConfigPort` | `ConfigPort` | Registry of actions registered by name. Throws `ActionNotFoundException` for unknown names |
 | `FakeContext` | `ActionContextInterface` | General-purpose context with arbitrary key-value data |
 | `FakeTokenAction` | `AbstractAction` | Action that represents a token-fetching endpoint. Has a response and a mapper |
