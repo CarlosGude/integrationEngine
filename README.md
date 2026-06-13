@@ -116,16 +116,25 @@ The engine is accessed via `IntegrationRegistry`. Always wrap registry calls in 
 integration facade — never call the registry directly from a controller or service:
 
 ```php
+use IntegrationEngine\Core\Batch\EngineRequest;
+use IntegrationEngine\Core\Contract\DefaultActionContext;
+use IntegrationEngine\Core\IntegrationEngine;
+use IntegrationEngine\Core\Registry\IntegrationName;
+use IntegrationEngine\Core\Registry\IntegrationRegistry;
+
 // 1. Facade (infrastructure layer)
 final class MyApiIntegration implements IntegrationName
 {
     public const string NAME = 'my_api';
+
+    private IntegrationEngine $engine;
 
     public function __construct(IntegrationRegistry $registry)
     {
         $this->engine = $registry->get(self::NAME);
     }
 
+    // Single request
     public function getEmployee(int $id): GetEmployeeResponse
     {
         $response = $this->engine->send(
@@ -134,6 +143,26 @@ final class MyApiIntegration implements IntegrationName
         );
         \assert($response instanceof GetEmployeeResponse);
         return $response;
+    }
+
+    // Parallel fan-out — N requests at once, results keyed like the input
+    public function getManyEmployees(array $ids): array
+    {
+        $requests = [];
+        foreach ($ids as $id) {
+            $requests[$id] = EngineRequest::create(
+                GetEmployeeAction::getName(),
+                DefaultActionContext::create(['id' => $id]),
+            );
+        }
+
+        $results = $this->engine->sendMany($requests); // BatchResultCollection
+
+        if ($results->hasFailures()) {
+            throw array_values($results->errors())[0];
+        }
+
+        return array_map(fn($dto) => Employee::fromDto($dto), $results->responses());
     }
 }
 
@@ -149,6 +178,13 @@ final class EmployeeService
     }
 }
 ```
+
+`sendMany()` returns a `BatchResultCollection` — one result per key, successes and
+failures independent. Real concurrency requires the client to implement
+`BatchClientInterface`: the default `rest` client does, `graphql` does not. For GraphQL
+or SOAP with real concurrency, use `client_service:` and implement `BatchClientInterface`
+yourself. See [DOCUMENTATION.md](DOCUMENTATION.md) → *Batch / Parallel Requests* for
+the full API, failure-handling patterns, and concurrency details.
 
 ---
 
@@ -169,6 +205,8 @@ For **optional** query string filters, implement `PathResolvableContextInterface
 custom context — path logic lives in the context, the action stays declarative:
 
 ```php
+use IntegrationEngine\Core\Contract\PathResolvableContextInterface;
+
 final readonly class FilterEmployeesContext implements PathResolvableContextInterface
 {
     private function __construct(private array $filters) {}
@@ -266,6 +304,8 @@ Two adapters are included:
 For GraphQL actions, the body must implement `GraphQLBodyInterface`:
 
 ```php
+use IntegrationEngine\Core\Contract\GraphQLBodyInterface;
+
 final class GetUserBody implements GraphQLBodyInterface
 {
     public function getQuery(): string  { return 'query { user(id: $id) { name } }'; }
@@ -280,6 +320,9 @@ final class GetUserBody implements GraphQLBodyInterface
 Implement `ClientAdapterInterface` and tag the service — the bundle discovers it automatically:
 
 ```php
+use IntegrationEngine\Core\Contract\AbstractAction;
+use IntegrationEngine\Core\Contract\ClientAdapterInterface;
+
 final class SoapClientAdapter implements ClientAdapterInterface
 {
     public static function getClientType(): string { return 'soap'; }

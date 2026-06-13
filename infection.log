@@ -4,6 +4,19 @@ Note: Pass `--debug` to log test-framework output.
 Escaped mutants:
 ================
 
+1) /Users/cgude/PhpstormProjects/integrationEngine/src/Infrastructure/Http/GraphQLClientAdapter.php:66    [M] ArrayItemRemoval [ID] c9984a99f8185042a6c82bd45dcda694
+
+@@ @@
+
+         $options = [
+             'headers' => array_merge(
+-                ['Content-Type' => 'application/json'],
++                [],
+                 $this->defaultAuthHeaders(),
+                 $this->defaultHeaders,
+                 $this->resolveHeaders($action),
+
+
 Timed Out mutants:
 ==================
 

@@ -6,6 +6,7 @@ namespace IntegrationEngine\Tests\Infrastructure;
 
 use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\GraphQLBodyInterface;
+use IntegrationEngine\Core\Contract\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
 use IntegrationEngine\Infrastructure\Http\GraphQLClientAdapter;
 use PHPUnit\Framework\Attributes\Test;
@@ -236,6 +237,33 @@ final class GraphQLClientAdapterHeadersTest extends TestCase
 
         self::assertArrayHasKey('Authorization', $spy->lastHeaders());
         self::assertSame('preserved', $spy->lastHeaders()['X-Custom']);
+    }
+
+    // ── caller header overrides engine auth ───────────────────────────────────
+
+    #[Test]
+    public function callerHeaderOverridesAuthHeader(): void
+    {
+        $spy = new GQLHeadersSpyClient();
+        $adapter = new GraphQLClientAdapter(httpClient: $spy, endpointUrl: 'https://api.example.com/graphql');
+
+        $action = GQLHeadersAction::create(
+            method: 'POST',
+            path: '/graphql',
+            body: GQLHeadersBody::create([]),
+            authorization: new StaticAuthorizationConfig(type: 'bearer', params: ['token' => 'engine-token']),
+        );
+
+        $callerHeaders = new class implements RequestHeadersInterface {
+            public function toArray(): array
+            {
+                return ['Authorization' => 'Bearer caller-token'];
+            }
+        };
+
+        $adapter->send($action, null, $callerHeaders);
+
+        self::assertSame('Bearer caller-token', $spy->lastHeaders()['Authorization']);
     }
 
     // ── no auth — returns headers unchanged ───────────────────────────────────

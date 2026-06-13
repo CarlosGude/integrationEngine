@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IntegrationEngine\Core;
 
 use IntegrationEngine\Core\Batch\BatchResult;
+use IntegrationEngine\Core\Batch\BatchResultCollection;
 use IntegrationEngine\Core\Batch\EngineRequest;
 use IntegrationEngine\Core\Batch\PreparedRequest;
 use IntegrationEngine\Core\Contract\AbstractAction;
@@ -60,10 +61,8 @@ final readonly class IntegrationEngine
      * BatchClientInterface; otherwise they fall back to sequential sends.
      *
      * @param array<array-key, EngineRequest> $requests
-     *
-     * @return array<array-key, BatchResult>
      */
-    public function sendMany(array $requests): array
+    public function sendMany(array $requests): BatchResultCollection
     {
         $failures = [];
         $prepared = [];
@@ -127,7 +126,12 @@ final readonly class IntegrationEngine
             }
         }
 
-        return $results;
+        $actionClasses = [];
+        foreach ($prepared as $key => $preparedRequest) {
+            $actionClasses[$key] = $preparedRequest->action::class;
+        }
+
+        return new BatchResultCollection($results, $actionClasses);
     }
 
     /**
