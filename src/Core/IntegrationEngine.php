@@ -6,6 +6,7 @@ namespace IntegrationEngine\Core;
 
 use IntegrationEngine\Core\Batch\BatchResult;
 use IntegrationEngine\Core\Batch\BatchResultCollection;
+use IntegrationEngine\Core\Batch\BatchTokenRetry;
 use IntegrationEngine\Core\Batch\EngineRequest;
 use IntegrationEngine\Core\Batch\PreparedRequest;
 use IntegrationEngine\Core\Contract\AbstractAction;
@@ -66,8 +67,7 @@ final readonly class IntegrationEngine
     {
         $failures = [];
         $prepared = [];
-        $retryableAuth = [];
-        $fetchedInBatch = [];
+        $tokenRetry = new BatchTokenRetry($this->cache, $this->integrationName);
 
         foreach ($requests as $key => $request) {
             try {
@@ -75,19 +75,7 @@ final readonly class IntegrationEngine
                 $auth = $action->getAuthorization();
 
                 if ($auth instanceof DynamicAuthorizationConfig) {
-                    // Same 401-retry semantics as send(), evaluated per batch:
-                    // only tokens cached before this batch are retried. A token
-                    // fetched while preparing the batch is fresh for every item
-                    // that uses it, even if later items see it in the cache.
-                    $cacheKey = $this->tokenCacheKey($auth);
-                    if (\is_string($this->cache->get($cacheKey))) {
-                        if (!\in_array($cacheKey, $fetchedInBatch, true)) {
-                            $retryableAuth[$key] = $auth;
-                        }
-                    } else {
-                        $fetchedInBatch[] = $cacheKey;
-                    }
-
+                    $tokenRetry->observe($key, $auth);
                     $action = $this->withStaticToken($action, $auth);
                 }
 
@@ -98,7 +86,7 @@ final readonly class IntegrationEngine
         }
 
         $raw = $this->dispatchBatch($prepared);
-        $raw = $this->retryCachedToken401s($requests, $raw, $retryableAuth);
+        $raw = $this->retryBatch($requests, $raw, $tokenRetry->plan($raw));
 
         $results = [];
 
@@ -186,47 +174,31 @@ final readonly class IntegrationEngine
     }
 
     /**
-     * Retries, once and with a fresh token, every item rejected with HTTP 401
-     * that entered the batch holding a cached token. Each rejected token is
-     * dropped before re-resolving, so all retried items sharing a token
-     * action reuse a single freshly fetched replacement.
+     * Executes the retry batch produced by BatchTokenRetry::plan(): re-prepares
+     * each item with a freshly resolved token and dispatches them together.
      *
      * @param array<array-key, EngineRequest>              $requests
      * @param array<array-key, array<mixed>|\Throwable>    $raw
-     * @param array<array-key, DynamicAuthorizationConfig> $retryableAuth
+     * @param array<array-key, DynamicAuthorizationConfig> $toRetry
      *
      * @return array<array-key, array<mixed>|\Throwable>
      */
-    private function retryCachedToken401s(array $requests, array $raw, array $retryableAuth): array
+    private function retryBatch(array $requests, array $raw, array $toRetry): array
     {
-        $toRetry = [];
-
-        foreach ($retryableAuth as $key => $auth) {
-            $result = $raw[$key] ?? null;
-
-            if ($result instanceof RequestResponseException && 401 === $result->statusCode) {
-                $toRetry[$key] = $auth;
-            }
-        }
-
-        foreach ($toRetry as $auth) {
-            $this->cache->delete($this->tokenCacheKey($auth));
-        }
-
-        $retryPrepared = [];
+        $prepared = [];
 
         foreach ($toRetry as $key => $auth) {
             $request = $requests[$key];
 
             try {
                 $action = $this->config->getAction($request->actionName, $request->body);
-                $retryPrepared[$key] = new PreparedRequest($this->withStaticToken($action, $auth), $request->context, $request->headers);
+                $prepared[$key] = new PreparedRequest($this->withStaticToken($action, $auth), $request->context, $request->headers);
             } catch (\Throwable $e) {
                 $raw[$key] = $e;
             }
         }
 
-        foreach ($this->dispatchBatch($retryPrepared) as $key => $result) {
+        foreach ($this->dispatchBatch($prepared) as $key => $result) {
             $raw[$key] = $result;
         }
 
