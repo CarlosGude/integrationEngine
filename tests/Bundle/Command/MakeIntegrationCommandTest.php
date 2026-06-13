@@ -193,6 +193,9 @@ final class MakeIntegrationCommandTest extends TestCase
         );
 
         foreach ($items as $item) {
+            if (!$item instanceof \SplFileInfo) {
+                continue;
+            }
             $item->isDir() ? rmdir($item->getPathname()) : unlink($item->getPathname());
         }
 

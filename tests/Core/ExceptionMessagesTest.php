@@ -6,6 +6,7 @@ namespace IntegrationEngine\Tests\Core;
 
 use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
+use IntegrationEngine\Core\Exception\BatchMapperActionMismatchException;
 use IntegrationEngine\Core\Exception\DynamicAuthException;
 use IntegrationEngine\Core\Exception\IntegrationNotFoundException;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
@@ -40,6 +41,24 @@ final class ExceptionMessagesTest extends TestCase
         $e = new NotMappedActionException('some_action');
 
         self::assertSame('Action "some_action" requires a mapper but none was defined.', $e->getMessage());
+    }
+
+    // ── BatchMapperActionMismatchException ────────────────────────────────────
+
+    #[Test]
+    public function batchMapperActionMismatchExceptionContainsAllFourParts(): void
+    {
+        $e = new BatchMapperActionMismatchException(
+            mapperClass: 'MyBatchMapper',
+            expectedActionClass: 'ExpectedAction',
+            key: 'item_key',
+            actualActionClass: 'ActualAction',
+        );
+
+        self::assertSame(
+            'Batch mapper "MyBatchMapper" expects action "ExpectedAction" but key "item_key" has action "ActualAction".',
+            $e->getMessage()
+        );
     }
 
     // ── MapperActionMismatchException ─────────────────────────────────────────

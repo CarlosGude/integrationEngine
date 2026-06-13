@@ -92,6 +92,7 @@ final class IntegrationCompilerPassTest extends TestCase
         self::assertSame('integration_engine.cache.default', $this->referencedServiceId($engineDef->getArgument(2)));
         self::assertSame('my_api', $engineDef->getArgument(3));
 
+        /** @var list<array{string, array<int, mixed>}> $registryCalls */
         $registryCalls = $container->getDefinition(IntegrationRegistry::class)->getMethodCalls();
         self::assertCount(1, $registryCalls);
         self::assertSame('register', $registryCalls[0][0]);

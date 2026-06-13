@@ -9,3 +9,5 @@ symfony.lock
 /.idea/
 .DS_Store
 infection.html
+infection-per-mutator.md
+infection-summary.log

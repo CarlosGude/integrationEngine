@@ -99,10 +99,11 @@ final class ConfigurationTest extends TestCase
     /**
      * @param array<string, mixed> $config
      *
-     * @return array<string, mixed>
+     * @return array{integrations: array<string, array<string, mixed>>}
      */
     private function process(array $config): array
     {
+        // @phpstan-ignore-next-line
         return (new Processor())->processConfiguration(new Configuration(), [$config]);
     }
 }
