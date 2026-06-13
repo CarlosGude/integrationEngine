@@ -364,7 +364,10 @@ It generates the `Action`, `Mapper`, `Response`, and updates the YAML action map
 
 - [`DOCUMENTATION.md`](./DOCUMENTATION.md) — deeper guide: engine pipeline, all configuration
   options, and links to per-topic references.
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — design decisions: why actions are stateless,
+  the mapper invariant, cache behaviour under PHP-FPM, and the DTO/domain boundary.
 - [`TESTING.md`](./TESTING.md) — test philosophy, suite structure, and what each test protects.
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — setup, code quality tools, and how to run the test suite.
 - [`docs/`](./docs/) — per-topic references: actions, authorization, batch requests, clients,
   context and path resolution, mappers and responses.
 

@@ -8,6 +8,7 @@ symfony.lock
 /.phpunit.result.cache
 /.idea/
 .DS_Store
+infection.log
 infection.html
 infection-per-mutator.md
 infection-summary.log

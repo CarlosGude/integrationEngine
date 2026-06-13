@@ -15,8 +15,8 @@ make cs             # check code style (dry-run)
 make cs-fix         # fix code style in-place
 make stan           # phpstan level max analysis
 make qa             # cs + test
-make ci             # cs + stan + test
-make pre-commit     # cs-fix + stan + test
+make ci             # cs + stan + test + mutation
+make pre-commit     # cs-fix + stan + test + mutation
 ```
 
 **Run a single test file:**
@@ -49,6 +49,9 @@ make stan PATHS='src/Core/IntegrationEngine.php'
 | `IntegrationRegistry` | Service locator; returns the `IntegrationEngine` instance for a named integration |
 | `EngineRequest` | One request inside a batch: the same four `send()` arguments as an immutable value object |
 | `BatchResult` | Outcome of one batch item: `isSuccess()`, `response()` (rethrows on failure), `error()` |
+| `BatchResultCollection` | Keyed collection of `BatchResult`s returned by `sendMany()`. Iterable, countable, `ArrayAccess`. Exposes `responses()`, `errors()`, `hasFailures()`, `mapWith()` |
+| `AbstractBatchMapper` | Second-stage mapper for homogeneous batches (same action, N contexts). `consolidate()` receives already-mapped DTOs; called via `BatchResultCollection::mapWith()` |
+| `BatchTokenRetry` | Internal: tracks which batch items hold a pre-cached token (retryable on 401) vs a token first fetched in this batch (already fresh). Used by `sendMany()` to coordinate the shared-token retry |
 
 ### Key Ports and Adapters
 
@@ -74,7 +77,7 @@ Application services translate infrastructure DTOs to domain objects — DTOs mu
 
 ### Batch / Parallel Requests
 
-`sendMany(array<key, EngineRequest>): array<key, BatchResult>` executes a batch (mixed actions allowed), preserving the caller's keys. Individual failures never abort the batch — each key resolves to a success or failure `BatchResult`. `sendManyOrFail()` unwraps to `ResponseInterface`s instead, throwing the first failure in request order (the whole batch still executes). Requests run concurrently when the client implements `BatchClientInterface`; otherwise sequentially.
+`sendMany(array<key, EngineRequest>): BatchResultCollection` executes a batch (mixed actions allowed), preserving the caller's keys. Individual failures never abort the batch — each key resolves to a success or failure `BatchResult`. `sendManyOrFail()` unwraps to `array<key, ResponseInterface>` instead, throwing the first failure in request order (the whole batch still executes). Requests run concurrently when the client implements `BatchClientInterface`; otherwise sequentially.
 
 Dynamic auth in batches: the token is resolved once per token action (not per item). Items that entered the batch with a pre-batch cached token get the single 401 retry with one shared fresh token; a token fetched during the batch counts as fresh for every item, so their 401s are final.
 
