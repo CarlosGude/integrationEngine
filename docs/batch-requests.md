@@ -152,11 +152,17 @@ final class ConcurrentGraphQLClient implements ClientInterface, BatchClientInter
     /** @param array<array-key, PreparedRequest> $requests */
     public function sendMany(array $requests): array
     {
-        // 1. dispatch all — store lazy response handles, do not read yet
+        // Each PreparedRequest carries the resolved action (with static auth),
+        // the context (for path resolution), and optional caller headers.
+        // For GraphQL, the endpoint URL is fixed — the action path is ignored.
+
+        // 1. dispatch all — responses are lazy; requests run concurrently
         $handles = [];
         foreach ($requests as $key => $prepared) {
-            $handles[$key] = $this->httpClient->request('POST', $prepared->url, [
-                'json' => $prepared->body?->toArray(),
+            $body = $prepared->action->getBody();
+            $handles[$key] = $this->httpClient->request('POST', $this->endpointUrl, [
+                'json'    => $body?->toArray(),           // ['query' => '...', 'variables' => [...]]
+                'headers' => $prepared->headers?->toArray() ?? [],
             ]);
         }
 

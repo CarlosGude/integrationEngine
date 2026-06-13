@@ -20,17 +20,22 @@ tests/
 ├── Core/
 │   ├── IntegrationEngineTestCase.php   ← shared base for engine tests
 │   ├── AbstractActionTest.php
+│   ├── AbstractBatchMapperTest.php
 │   ├── AbstractMapperTest.php
 │   ├── AuthorizationConfigTest.php
+│   ├── BatchResultCollectionTest.php
 │   ├── BatchResultTest.php
+│   ├── BatchSendSadPathTest.php
 │   ├── BatchSendTest.php
 │   ├── DefaultActionContextTest.php
+│   ├── DynamicAuthSadPathTest.php
 │   ├── DynamicAuthTest.php
 │   ├── EngineContractTest.php
 │   ├── ExceptionMessagesTest.php
 │   └── IntegrationRegistryTest.php
 ├── Fake/
 │   ├── FakeBatchClient.php
+│   ├── FakeBatchMapper.php
 │   ├── FakeCache.php
 │   ├── FakeClient.php
 │   ├── FakeConfigPort.php
@@ -42,8 +47,9 @@ tests/
 │   └── FakeTokenResponse.php
 ├── Infrastructure/
 │   ├── ClientAdapterResolverTest.php
+│   ├── GraphQLClientAdapterBodyTest.php
+│   ├── GraphQLClientAdapterErrorTest.php
 │   ├── GraphQLClientAdapterHeadersTest.php
-│   ├── GraphQLClientAdapterTest.php
 │   ├── Psr6CacheAdapterTest.php
 │   ├── SymfonyHttpClientAdapterBatchTest.php
 │   ├── SymfonyHttpClientAdapterBodyTest.php
@@ -95,29 +101,39 @@ authorization wiring.
 
 ---
 
-### `DynamicAuthTest`
+### `DynamicAuthTest` — happy path
 
-Covers the full dynamic authorization flow via the engine. Uses
+Covers the dynamic authorization flow via the engine. Uses
 `IntegrationEngineTestCase` as base. All fakes are in-memory — no HTTP,
 no real cache.
 
 | Test | What it protects |
 |------|-----------------|
 | `dynamicAuthResolvesTokenAndSetsStaticAuth` | Token is fetched, extracted, and substituted as `bearer` auth before the real request |
-| `dynamicAuthUsesApiKeyForCustomHeader` | When `header` is customized, auth type becomes `api_key` with the correct header name |
-| `dynamicAuthCachesTokenOnFirstCall` | Auth action is only called once; token is cached for subsequent calls |
-| `dynamicAuthThrowsWhenTokenFieldMissing` | If the auth response does not contain `token_field`, `DynamicAuthException` is thrown before the real request executes |
-| `dynamicAuthUsesTokenFromCacheWhenAvailable` | Pre-cached token is used directly without calling the auth action |
-| `contextReachesClientAfterDynamicAuthReconstruction` | **Regression** — when dynamic auth reconstructs the action, the original context still reaches the client. Protects against the bug where context was lost after token substitution |
+| `dynamicAuthCastsIntegerTokenToString` | A numeric token field is cast to string instead of failing |
 | `dynamicAuthUsesCustomPrefixInAuthorizationHeader` | When `prefix` is set, the resolved `StaticAuthorizationConfig` carries the custom prefix — protects APIs using `Authorization: Token …` or other non-Bearer schemes |
+| `dynamicAuthUsesApiKeyForCustomHeader` | When `header` is customized, auth type becomes `api_key` with the correct header name |
 | `dynamicAuthKeepsCustomPrefixOnCustomHeader` | **Regression** — a custom header plus a custom prefix keeps the prefix; it used to be silently dropped |
 | `dynamicAuthDefaultsToBearerPrefixOnAuthorizationHeader` | No explicit prefix on the `Authorization` header defaults to `Bearer` |
-| `dynamicAuthCastsIntegerTokenToString` | A numeric token field is cast to string instead of failing |
+| `dynamicAuthCachesTokenOnFirstCall` | Auth action is only called once; token is cached for subsequent calls |
+| `dynamicAuthUsesTokenFromCacheWhenAvailable` | Pre-cached token is used directly without calling the auth action |
+| `contextReachesClientAfterDynamicAuthReconstruction` | **Regression** — when dynamic auth reconstructs the action, the original context still reaches the client. Protects against the bug where context was lost after token substitution |
+| `actionRemainsStatelessAcrossMultipleSendCalls` | Same action resolves different paths across successive calls with different contexts |
+
+---
+
+### `DynamicAuthSadPathTest`
+
+Covers dynamic auth failure scenarios. Uses `IntegrationEngineTestCase` as base.
+
+| Test | What it protects |
+|------|-----------------|
+| `dynamicAuthThrowsWhenTokenFieldMissing` | If the auth response does not contain `token_field`, `DynamicAuthException` is thrown before the real request executes |
+| `nonScalarTokenFieldThrows` | A non-scalar token field value (e.g. an array) throws `DynamicAuthException` |
 | `rejectedCachedTokenIsDroppedAndRequestRetriedWithFreshToken` | A cached token rejected with 401 is evicted; the request retries once with a fresh token |
 | `freshTokenRejectedWith401IsNotRetried` | A freshly fetched token that gets 401 propagates — refetching would yield the same token |
 | `non401ErrorWithCachedTokenIsNotRetried` | A 500 does not evict the token nor trigger a retry |
 | `second401AfterRetryPropagates` | Exactly one retry: a second 401 propagates to the caller |
-| `actionRemainsStatelessAcrossMultipleSendCalls` | Same action resolves different paths across successive calls with different contexts |
 
 ---
 
@@ -137,6 +153,43 @@ Config → Client → Mapper → Response, and all named exceptions.
 | `actionWithResponseButNoMapperThrows` | `hasResponse: true` with `mapper: null` throws `NotMappedActionException` |
 | `mapperPointingToWrongActionThrows` | Mapper whose `getAction()` does not match the executing action throws `MapperActionMismatchException` |
 | `contextIsPassedThroughToClient` | Context provided to `send()` reaches the HTTP client |
+
+---
+
+### `BatchSendTest` — happy path
+
+Covers `sendMany()` and `sendManyOrFail()` for the normal-operation paths.
+Uses `IntegrationEngineTestCase` as base.
+
+| Test | What it protects |
+|------|-----------------|
+| `sendManyPreservesKeysAndMapsEachActionWithItsOwnMapper` | Keys are preserved and each item is mapped by its own action's mapper |
+| `sendManyStoresActionClassPerItemInCollection` | `BatchResultCollection::actionClassFor()` returns the correct class per key |
+| `sendManyWithEmptyArrayReturnsEmptyCollectionWithoutTouchingClient` | Empty input returns an empty `BatchResultCollection` without any client call |
+| `sendManyWithEmptyArrayDoesNotInvokeABatchClient` | Empty input does not call `BatchClientInterface::sendMany()` |
+| `sendManyOrFailReturnsMappedResponsesPreservingKeys` | `sendManyOrFail()` unwraps to `array<key, ResponseInterface>` when all succeed |
+| `sendManyRoutesThroughBatchClientWhenAvailable` | When the client implements `BatchClientInterface`, the engine routes through it |
+
+---
+
+### `BatchSendSadPathTest`
+
+Covers failure scenarios in `sendMany()`: partial failures, unknown actions,
+mapper mismatches, dynamic auth edge cases, and misbehaving batch clients.
+Uses `IntegrationEngineTestCase` as base.
+
+| Test | What it protects |
+|------|-----------------|
+| `sendManyReturnsPartialResultsWhenOneRequestFails` | A failure on one key does not abort other keys |
+| `sendManyCapturesUnknownActionAsFailureWithoutAbortingBatch` | An unknown action name becomes a failure result, not an exception |
+| `sendManyCapturesMapperMismatchAsFailureWithoutAbortingBatch` | A mapper invariant violation becomes a failure result, not an exception |
+| `sendManyOrFailThrowsTheFirstFailureInRequestOrder` | `sendManyOrFail()` throws the first failure in input order (not arbitrary) |
+| `sendManyResolvesDynamicTokenOncePerBatch` | Only one token fetch per token action per batch, regardless of how many items share it |
+| `sendManyRetriesAllCachedToken401sWithOneFreshToken` | All items holding a stale cached token get retried with a single freshly fetched token |
+| `sendManyDoesNotRetry401WhenTokenWasFetchedInThisBatch` | A token first fetched during this batch is treated as fresh — 401s are final for all items holding it |
+| `sendManyDoesNotRetryNon401FailuresEvenWithCachedToken` | A 500 does not evict the token nor trigger a retry |
+| `sendManyFailsItemWhenTokenRefetchFailsDuringRetry` | If the token endpoint is down during the retry phase, the item fails with that error |
+| `sendManyFailsKeysMissingFromABatchClientResponse` | A batch client that omits a key from its result produces a failure for that key |
 
 ---
 
@@ -174,11 +227,11 @@ override precedence, and error messaging.
 
 ---
 
-### `GraphQLClientAdapterTest`
+### GraphQL adapter suites
 
-Covers `GraphQLClientAdapter` in full isolation. Uses a `GQLSpyHttpClient`
-inline — records method, URL, and options. Tests body serialisation, data
-extraction, error handling, auth headers, and adapter capabilities.
+The GraphQL adapter tests are split into three files by concern:
+
+**`GraphQLClientAdapterBodyTest`** — body serialization, data extraction, adapter capabilities
 
 | Test | What it protects |
 |------|-----------------|
@@ -186,14 +239,25 @@ extraction, error handling, auth headers, and adapter capabilities.
 | `alwaysPostsToEndpointUrlIgnoringActionPath` | Adapter always uses the configured endpoint URL regardless of action path |
 | `graphQLDataIsExtractedBeforeMapper` | Mapper receives only `data[]`, not the full GraphQL envelope |
 | `nullDataKeyReturnsEmptyArray` | `data: null` in the response returns `[]` without error |
-| `graphQLErrorsInResponseThrowsRequestResponseException` | `errors[]` in the response body (HTTP 200) throws with the error message |
-| `graphQLErrorWithoutMessageThrowsGenericError` | `errors[]` without a `message` key throws a generic GraphQL error |
+| `emptyErrorsArrayDoesNotThrow` | An empty `errors: []` does not throw |
+| `graphQLAdapterDoesNotRequirePath` | `requiresPath()` returns false |
+| `graphQLAdapterDoesNotRequireMethod` | `requiresMethod()` returns false |
+| `graphQLAdapterClientTypeIsGraphql` | `getClientType()` returns `'graphql'` |
+
+**`GraphQLClientAdapterErrorTest`** — all error paths
+
+| Test | What it protects |
+|------|-----------------|
+| `graphQLErrorsInResponseThrowsWithStatusCode200` | `errors[]` in the response body (HTTP 200) throws `RequestResponseException` with the error message and status 200 |
+| `graphQLErrorWithoutMessageThrowsGenericErrorWithStatusCode200` | `errors[]` without a `message` key throws a generic error with status 200 |
+| `nonGraphQLBodyThrowsWithStatusCodeZero` | Body that does not implement `GraphQLBodyInterface` throws before any HTTP call, with status 0 |
+| `nullBodyThrowsWithStatusCodeZero` | Null body throws before any HTTP call, with status 0 |
 | `http4xxThrowsRequestResponseException` | HTTP 4xx from the endpoint throws `RequestResponseException` |
-| `nonGraphQLBodyThrowsImmediately` | Body that does not implement `GraphQLBodyInterface` throws before any HTTP call |
-| `nullBodyThrowsImmediately` | Null body throws before any HTTP call |
-| `defaultHeadersAreSentWithContentType` | Default headers and `Content-Type: application/json` are merged correctly |
-| `bearerAuthHeaderIsApplied` | Bearer auth config produces `Authorization: Bearer {token}` |
-| `callerHeaderOverridesAuthHeader` | Per-request caller header overrides the auth-resolved header |
+| `http400ExactlyThrowsRequestResponseException` | HTTP 400 exactly is treated as an error (boundary check) |
+| `http4xxStatusCodeIsPreservedWhenGetContentThrows` | Status code is preserved even when `getContent()` throws during error reporting |
+| `networkErrorDuringRequestIsWrappedWithStatusCodeZero` | A transport-level exception is wrapped with status 0 |
+
+**`GraphQLClientAdapterHeadersTest`** — header resolution (bearer, basic, api_key, default, caller override)
 
 ---
 
@@ -215,17 +279,24 @@ pre-seeding values for hit scenarios.
 
 ---
 
-### Other Core / Infrastructure suites
+### Other Core suites
 
 | Suite | What it covers |
 |------|-----------------|
 | `ExceptionMessagesTest` | Every exception message exposes the values a developer needs to debug (action names, field names, status codes) |
+| `BatchResultTest` | The success/failure envelope: `isSuccess()`, `response()` (rethrowing stored failure), `error()` |
+| `BatchResultCollectionTest` | Collection API: key preservation, iteration, `ArrayAccess`, `hasFailures()`, `responses()`, `errors()`, `actionClassFor()`, `mapWith()` validation |
+| `AbstractBatchMapperTest` | The batch mapper invariant: passes when all items share the declared action, throws `BatchMapperActionMismatchException` on mismatch, skips null-class items (prep failures), always calls `consolidate()` |
+
+---
+
+### Other Infrastructure suites
+
+| Suite | What it covers |
+|------|-----------------|
 | `SymfonyHttpClientAdapterBodyTest` | Body serialisation rules per HTTP method and error mapping (4xx/5xx → `RequestResponseException`, network errors, 204/empty responses) |
 | `SymfonyHttpClientAdapterResolveHeadersTest` | The `ResolvesAuthHeaders` trait: `bearer`, `basic`, `api_key` (with and without `prefix`), unknown types, and header precedence |
-| `GraphQLClientAdapterHeadersTest` | Header precedence layers for the GraphQL adapter, including auth resolution |
-| `BatchSendTest` | `sendMany()`/`sendManyOrFail()`: key preservation, mixed actions, partial results, batch dynamic auth (token once per batch, shared 401 retry, fresh-token 401s final), batch-client routing and misbehaving batch clients |
-| `BatchResultTest` | The success/failure envelope: accessors and `response()` rethrowing the stored failure |
-| `SymfonyHttpClientAdapterBatchTest` | Concurrent dispatch (all requests sent before any response is consumed), per-key error envelopes, per-request path resolution |
+| `SymfonyHttpClientAdapterBatchTest` | Concurrent dispatch: all requests dispatched before any response is consumed; per-key error envelopes (HTTP error, network error, path resolution error); per-request path resolution with context |
 
 ---
 
@@ -258,23 +329,24 @@ no PHPUnit `createMock()`.
 | `FakeCache` | `CachePort` | In-memory key-value store with TTL ignored. Supports `delete()`. Used to pre-seed tokens and verify cache hits and evictions |
 | `FakeClient` | `ClientInterface` | Records the last action, last context, and call count per action name. Returns pre-configured responses; `queueException()` throws on the next call to simulate HTTP failures (e.g. 401 retry scenarios) |
 | `FakeBatchClient` | `BatchClientInterface`, `ClientInterface` | Wraps a `FakeClient` and records every `sendMany()` call, so tests can assert the engine routed a batch through the batch interface instead of looping over `send()` |
+| `FakeBatchMapper` | `AbstractBatchMapper` | Captures the `BatchResultCollection` passed to `consolidate()` via a public static property, so tests can assert what the mapper received. Returns a count-based `FakeTokenResponse` |
 | `FakeConfigPort` | `ConfigPort` | Registry of actions registered by name. Throws `ActionNotFoundException` for unknown names |
 | `FakeContext` | `ActionContextInterface` | General-purpose context with arbitrary key-value data |
 | `FakeTokenAction` | `AbstractAction` | Action that represents a token-fetching endpoint. Has a response and a mapper |
 | `FakeTokenMapper` | `AbstractMapper` | Passes the raw response through as `FakeTokenResponse` |
 | `FakeTokenResponse` | `ResponseInterface` | Wraps the raw array from the token endpoint |
-| `FakePathAction` | `AbstractAction` | Action with a path parameter (`/orders/{id}`). No response needed — used to verify context propagation |
-| `FakeProtectedAction` | `AbstractAction` | Action that requires authorization. No response needed — used to verify auth substitution |
+| `FakePathAction` | `AbstractAction` | Action with a path parameter (`/orders/{id}`). No response — used to verify context propagation and path resolution |
+| `FakeProtectedAction` | `AbstractAction` | Action that requires authorization. No response — used to verify auth substitution |
 
 ---
 
 ## Base class
 
 `IntegrationEngineTestCase` is an abstract `TestCase` that wires up the
-full engine with fakes in `setUp()`. `DynamicAuthTest` and
-`EngineContractTest` extend it. `AbstractActionTest` and
-`SymfonyHttpClientAdapterHeadersTest` do not — they test components in
-isolation and do not need the full engine.
+full engine with fakes in `setUp()`: `$this->engine`, `$this->config`,
+`$this->client`, `$this->cache`. Engine contract tests and all batch tests
+extend it. Tests that verify components in isolation (`AbstractActionTest`,
+adapter tests) do not — they construct what they need directly.
 
 ---
 
@@ -282,6 +354,13 @@ isolation and do not need the full engine.
 
 ```bash
 ./vendor/bin/phpunit
+```
+
+Single file or method:
+
+```bash
+./vendor/bin/phpunit tests/Core/BatchSendTest.php
+./vendor/bin/phpunit --filter=sendManyPreservesKeys tests/Core/BatchSendTest.php
 ```
 
 With coverage (requires Xdebug or PCOV):
