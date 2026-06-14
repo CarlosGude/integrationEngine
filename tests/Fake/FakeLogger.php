@@ -18,7 +18,7 @@ final class FakeLogger implements LoggerInterface
     public function log(mixed $level, string|\Stringable $message, array $context = []): void
     {
         $this->logs[] = [
-            'level' => (string) $level,
+            'level' => \is_string($level) ? $level : '',
             'message' => (string) $message,
             'context' => $context,
         ];
