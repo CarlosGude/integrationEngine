@@ -56,3 +56,9 @@ mutation:
 	./vendor/bin/infection --min-msi=92 --min-covered-msi=92
 
 ci: cs stan test mutation
+
+# -----------------------------
+# LANDING
+# -----------------------------
+deploy-landing:
+	cd landing && npx wrangler deploy

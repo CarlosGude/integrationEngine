@@ -16,10 +16,11 @@ const T = {
     es: {
         htmlLang: 'es',
         pageTitle: 'IntegrationEngine — Symfony Bundle',
-        metaDesc:  'Un motor de integración para Symfony que centraliza tus APIs externas bajo contratos claros.',
+        metaDesc:  'Un estándar para cada API externa en tus proyectos Symfony. Entrega más rápido. Onboarding instantáneo. Sin arqueología de código.',
         heroBadge: 'Symfony Bundle · PHP 8.2+ · Packagist',
-        heroH1:    'Deja de escribir el mismo cliente HTTP una y otra vez',
-        heroP:     'Un motor de integración para Symfony que centraliza tus APIs externas bajo contratos claros.',
+        heroH1:    'Después de unos meses, ya no tienes integraciones. Tienes un zoo.',
+        heroP:     'IntegrationEngine obliga a que todas las integraciones tengan la misma forma. Entrega más rápido. Onboarding instantáneo. Sin arqueología de código.',
+        copyHint:  '¡Copiado!',
         heroNav: [
             { label: 'GitHub',        href: 'https://github.com/CarlosGude/integrationEngine' },
             { label: 'Packagist',     href: 'https://packagist.org/packages/carlosgude/integration-engine' },
@@ -27,68 +28,70 @@ const T = {
             { label: 'Demo',          href: 'https://github.com/CarlosGude/integrationEngine-use-example' },
         ],
         whyLabel: '¿Por qué no HttpClient?',
-        whyH2:    'HttpClient envía peticiones. IntegrationEngine estructura integraciones.',
-        whySub:   'Usa HttpClient cuando necesitas una o dos llamadas simples. Usa IntegrationEngine cuando la API forma parte de tu arquitectura y quieres contratos claros, respuestas tipadas y una Anti-Corruption Layer entre el proveedor y tu dominio.',
+        whyH2:    'HttpClient es una herramienta. IntegrationEngine es un estándar.',
+        whySub:   'Usa HttpClient para llamadas puntuales. Usa IntegrationEngine cuando las APIs externas son parte de tu arquitectura — y necesitas que todo tu equipo hable el mismo idioma seis meses después.',
         makeLabel: 'Un comando lo genera todo',
-        makeH2:   'De cero a integración tipada en segundos.',
-        makeSub:  'El comando hace las preguntas. Tú solo escribes la lógica.',
-        makeCmd:  '$ php bin/console make:integration Github GetUser',
+        makeH2:   'De cero a una integración lista para producción en un solo comando.',
+        makeSub:  'Responde tres preguntas. Obtén una integración completamente tipada y generada.',
+        makeCmd:  '$ php bin/console make:integration MyApi GetEmployee',
         makeFiles: [
             'config/packages/integration_engine.yaml',
-            'src/Infrastructure/Integrations/Github/GithubIntegration.php',
-            'src/Infrastructure/Integrations/Github/Github.yaml',
-            'src/Infrastructure/Integrations/Github/GetUser/Request/GetUserAction.php',
-            'src/Infrastructure/Integrations/Github/GetUser/Response/GetUserMapper.php',
-            'src/Infrastructure/Integrations/Github/GetUser/Response/GetUserResponse.php',
+            'src/Infrastructure/Integrations/MyApi/MyApiIntegration.php',
+            'src/Infrastructure/Integrations/MyApi/MyApi.yaml',
+            'src/Infrastructure/Integrations/MyApi/GetEmployee/Request/GetEmployeeAction.php',
+            'src/Infrastructure/Integrations/MyApi/GetEmployee/Response/GetEmployeeMapper.php',
+            'src/Infrastructure/Integrations/MyApi/GetEmployee/Response/GetEmployeeResponse.php',
         ],
-        codeReadmeLink: 'Para el flujo completo (facade → service → domain) →',
+        codeReadmeLink: 'Para el patrón completo (facade → service → dominio) →',
         codeReadmeLinkLabel: 'README',
         problemaLabel: 'El Problema',
         problemaH2:    'Cada integración acaba siendo un caso aislado',
-        problemaSub:   'Diferentes formatos, autenticaciones inconsistentes, lógica de cache duplicada. El código se fragmenta y cada nueva API es empezar de cero.',
+        problemaSub:   'Sin un estándar compartido, cada desarrollador lo resuelve a su manera. El código se fragmenta. El conocimiento desaparece. Cada nueva API supone empezar desde cero.',
         problems: [
-            { h3: 'Auth duplicada',    p: 'Tokens y cache reimplementados en cada integración.' },
-            { h3: 'Sin contrato común', p: 'Cada cliente HTTP tiene su propia estructura.' },
-            { h3: 'Difícil de testear', p: 'HTTP acoplado al dominio. Imposible aislar.' },
-            { h3: 'Sin consistencia',   p: 'Cada desarrollador resuelve el problema a su manera.' },
-            { h3: 'Cero visibilidad',   p: 'Sin trazabilidad, sin logs unificados, sin contexto compartido.' },
+            { h3: 'Días perdidos por cada API',    p: 'Sin un patrón común, conectar una nueva API cuesta días de descubrimiento y decisiones arbitrarias.' },
+            { h3: 'Onboarding que no escala',      p: 'Una estructura diferente por integración obliga a cada nuevo compañero a empezar de cero.' },
+            { h3: 'Bugs escondidos en los huecos', p: 'Lógica HTTP dispersa por los services, sin contrato que aplicar ni aislar en tests.' },
+            { h3: 'Cero reutilización',            p: 'Auth, cache, mapeo — reinventados desde cero en cada integración, sin excepción.' },
+            { h3: 'Nadie sabe cómo funciona',      p: 'Seis meses después, el desarrollador que la construyó se fue y el código es ilegible.' },
         ],
         comoLabel: 'Cómo Funciona',
-        comoH2:    'Un flujo único para todas tus integraciones',
-        comoSub:   'Un único punto de entrada. Cada paso tiene una responsabilidad clara.',
+        comoH2:    'Un punto de entrada. Un contrato. Siempre.',
+        comoSub:   'Un único flujo para todas tus APIs externas. Cada paso tiene un responsable claro y testeable.',
         features: [
-            { h3: 'Auth dinámica con cache',  p: 'OAuth, sesiones, API keys. El engine los resuelve y cachea automáticamente.' },
-            { h3: 'Context de path',          p: '<code>/orders/{id}</code> se resuelve en tiempo de llamada. Fallo explícito si falta parámetro.' },
-            { h3: 'Headers en tres capas',    p: 'YAML → auth → capa de llamada. Cada capa sobreescribe a la anterior. Sin magia.' },
-            { h3: 'Respuestas tipadas',       p: 'Cada acción define su propio Response DTO con contrato garantizado.' },
-            { h3: 'Totalmente extensible',    p: 'Client, cache y config source sustituibles con una línea en YAML.' },
-            { h3: 'Scaffolding incluido',     p: '<code>make:integration</code> genera Mapper, Response DTO y YAML en segundos.' },
+            { h3: 'Listo en minutos, no en días',       p: '<code>make:integration</code> genera Action, Mapper, Response DTO y YAML con un comando. Solo escribes lógica de negocio.' },
+            { h3: 'Si conoces una, las conoces todas',  p: 'Cada integración sigue la misma estructura y los mismos contratos. Onboarding instantáneo para cada nuevo compañero.' },
+            { h3: 'Tokens gestionados sin esfuerzo',    p: 'OAuth, sesiones, API keys — obtenidos, cacheados y refrescados automáticamente en 401. Sin lógica de tokens manual.' },
+            { h3: 'Respuestas tipadas y garantizadas',  p: 'Cada endpoint devuelve un DTO garantizado. Sin sorpresas en tiempo de ejecución ni en producción.' },
+            { h3: 'Requests en paralelo, de serie',     p: '<code>sendMany()</code> ejecuta N peticiones en paralelo. Los fallos individuales nunca abortan el batch.' },
+            { h3: 'Intercambia cualquier capa',         p: 'Cliente HTTP, cache, fuente de config — cada uno sustituible con una línea en YAML.' },
         ],
         callsiteLabel: 'El Call Site',
-        callsiteH2:    'Una línea. Siempre la misma.',
-        callsiteSub:   'Sin strings mágicos — todo a través de contratos.',
+        callsiteH2:    'La misma llamada. Siempre.',
+        callsiteSub:   'Sin clientes HTTP, sin builders de peticiones, sin mappers. Un único método de facade que todo tu equipo reconoce.',
         tabs: [
             { label: 'Sin auth',           id: 'tab-noauth' },
             { label: 'Con path params',    id: 'tab-path' },
             { label: 'Con body y headers', id: 'tab-body' },
             { label: 'GraphQL',            id: 'tab-graphql' },
+            { label: 'Batch / sendMany',   id: 'tab-batch' },
         ],
-        codeNoAuth: `<span class="cmt">// Action path: GET /orders</span>\n<span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    <span class="cls">GetOrdersAction</span><span class="kw">::</span><span class="met">getName</span>()\n);\n<span class="cmt">// → GET /orders</span>`,
-        codePath:   `<span class="cmt">// Action path: GET /orders/{id}</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">GetOrderAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    context: <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n);\n<span class="cmt">// → GET /orders/42</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetOrderResponse</span>);\n<span class="cmt">// GetOrderResponse { id: 42, reference: 'ORD-001', items: [...] }</span>`,
-        codeBody:   `<span class="cmt">// Action path: POST /orders</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">CreateOrderAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body: <span class="cls">CreateOrderBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'reference'</span> <span class="kw">=&gt;</span> <span class="str">'ORD-001'</span>]),\n    headers: <span class="kw">new</span> <span class="cls">CorrelationHeaders</span>(<span class="var">$correlationId</span>),\n);\n<span class="cmt">// → POST /orders { "reference": "ORD-001" }</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">CreateOrderResponse</span>);\n<span class="cmt">// CreateOrderResponse { id: 99, reference: 'ORD-001', status: 'pending' }</span>`,
-        codeGraphQL: `<span class="cmt">// Action endpoint: POST /graphql</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">GetOrderAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body: <span class="cls">GetOrderBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n);\n<span class="cmt">// → POST /graphql { "query": "...", "variables": { "id": 42 } }</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetOrderResponse</span>);\n<span class="cmt">// GetOrderResponse { id: 42, reference: 'ORD-001', items: [...] }</span>`,
+        codeNoAuth:   `<span class="cmt">// Action path: GET /employees</span>\n<span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    <span class="cls">GetEmployeesAction</span><span class="kw">::</span><span class="met">getName</span>()\n);\n<span class="cmt">// → GET /employees</span>`,
+        codePath:     `<span class="cmt">// Action path: GET /employees/{id}</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">GetEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    context: <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n);\n<span class="cmt">// → GET /employees/42</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetEmployeeResponse</span>);\n<span class="cmt">// GetEmployeeResponse { id: 42, name: 'John Doe', department: 'Engineering' }</span>`,
+        codeBody:     `<span class="cmt">// Action path: POST /employees</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">CreateEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body: <span class="cls">CreateEmployeeBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'name'</span> <span class="kw">=&gt;</span> <span class="str">'John Doe'</span>]),\n    headers: <span class="kw">new</span> <span class="cls">CorrelationHeaders</span>(<span class="var">$correlationId</span>),\n);\n<span class="cmt">// → POST /employees { "name": "John Doe" }</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">CreateEmployeeResponse</span>);\n<span class="cmt">// CreateEmployeeResponse { id: 99, name: 'John Doe', status: 'active' }</span>`,
+        codeGraphQL:  `<span class="cmt">// Action endpoint: POST /graphql</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">GetUserAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body: <span class="cls">GetUserBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n);\n<span class="cmt">// → POST /graphql { "query": "query { user(id: $id) { name } }", "variables": { "id": 42 } }</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetUserResponse</span>);\n<span class="cmt">// GetUserResponse { id: 42, name: 'John Doe' }</span>`,
+        codeSendMany: `<span class="cmt">// Fan-out paralelo — una petición por ID de empleado</span>\n<span class="var">$requests</span> = [];\n<span class="kw">foreach</span> (<span class="var">$ids</span> <span class="kw">as</span> <span class="var">$id</span>) {\n    <span class="var">$requests</span>[<span class="var">$id</span>] = <span class="cls">EngineRequest</span><span class="kw">::</span><span class="met">create</span>(\n        <span class="cls">GetEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n        <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n    );\n}\n\n<span class="var">$results</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">sendMany</span>(<span class="var">$requests</span>);\n<span class="cmt">// BatchResultCollection — cada clave se resuelve de forma independiente</span>\n\n<span class="kw">if</span> (<span class="var">$results</span><span class="kw">-&gt;</span><span class="met">hasFailures</span>()) {\n    <span class="kw">throw</span> <span class="met">array_values</span>(<span class="var">$results</span><span class="kw">-&gt;</span><span class="met">errors</span>())[<span class="num">0</span>];\n}\n\n<span class="kw">return</span> <span class="met">array_map</span>(\n    <span class="kw">fn</span>(<span class="var">$dto</span>) <span class="kw">=&gt;</span> <span class="cls">Employee</span><span class="kw">::</span><span class="met">fromDto</span>(<span class="var">$dto</span>),\n    <span class="var">$results</span><span class="kw">-&gt;</span><span class="met">responses</span>(),\n);`,
         capasLabel: 'Diseño en Capas',
         capasH2:    'El bundle propone. No impone.',
         capasSub:   'Tres niveles que emergen solos. Usa los que necesites.',
         layersHead: ['Clase', 'Responsabilidad', 'Alcance'],
         layers: [
-            { name: 'CreateChargeAction', desc: 'Solo declara el método, el path y el DTO de respuesta. Sin lógica HTTP.',                 scope: 'Acción concreta' },
-            { name: 'GithubAction',       desc: 'Auth, path base y headers comunes de GitHub. Reutilizado por todas sus acciones.',        scope: 'Integración' },
-            { name: 'AbstractAction',     desc: 'Contrato base que provee el engine. Extensible sin tocar el core.',                      scope: 'Bundle' },
+            { name: 'GetEmployeeAction', desc: 'Solo declara el método, el path y el DTO de respuesta. Sin lógica HTTP.',                   scope: 'Acción concreta' },
+            { name: 'MyApiIntegration',  desc: 'Auth, URL base y headers comunes de MyApi. Reutilizado por todas sus acciones.',            scope: 'Integración' },
+            { name: 'AbstractAction',    desc: 'Contrato base que provee el engine. Extensible sin tocar el core.',                        scope: 'Bundle' },
         ],
         makeNote: 'El comando <code>make:integration</code> crea el config, las clases y el YAML en un solo paso.',
-        ctaH2:   'Empieza en un comando',
-        ctaP:    'Sin boilerplate. Sin decisiones arbitrarias. Solo tu lógica de negocio.',
+        ctaH2:   'Estandariza tus integraciones hoy.',
+        ctaP:    'Instalación en 30 segundos. Primera integración tipada en menos de 5 minutos.',
         ctaBtn1: 'Ver en GitHub',
         ctaBtn2: 'Documentación',
         ctaBtn3: 'Ver demo',
@@ -99,10 +102,11 @@ const T = {
     en: {
         htmlLang: 'en',
         pageTitle: 'IntegrationEngine — Symfony Bundle',
-        metaDesc:  'An integration engine for Symfony that centralises your external APIs under clear contracts.',
+        metaDesc:  'One standard for every external API in your Symfony projects. Ship faster. Onboard instantly. Stop doing archaeology.',
         heroBadge: 'Symfony Bundle · PHP 8.2+ · Packagist',
-        heroH1:    'Stop writing the same HTTP client over and over again',
-        heroP:     'An integration engine for Symfony that centralises your external APIs under clear contracts.',
+        heroH1:    'After a few months, you no longer have integrations. You have a zoo.',
+        heroP:     'IntegrationEngine forces every integration to look the same. Ship faster. Onboard instantly. Stop doing archaeology forever.',
+        copyHint:  'Copied!',
         heroNav: [
             { label: 'GitHub',        href: 'https://github.com/CarlosGude/integrationEngine' },
             { label: 'Packagist',     href: 'https://packagist.org/packages/carlosgude/integration-engine' },
@@ -110,68 +114,70 @@ const T = {
             { label: 'Demo',          href: 'https://github.com/CarlosGude/integrationEngine-use-example' },
         ],
         whyLabel: 'Why not HttpClient?',
-        whyH2:    'HttpClient sends requests. IntegrationEngine structures integrations.',
-        whySub:   'Use HttpClient for one or two simple calls. Use IntegrationEngine when the API is part of your architecture and you want clear contracts, typed responses, and an Anti-Corruption Layer between the provider and your domain.',
+        whyH2:    'HttpClient is a tool. IntegrationEngine is a standard.',
+        whySub:   'Use HttpClient for one-off calls. Use IntegrationEngine when external APIs are part of your architecture — and you need your whole team to speak the same language six months from now.',
         makeLabel: 'One command generates everything',
-        makeH2:   'From zero to a typed integration in seconds.',
-        makeSub:  'The command asks the questions. You only write the logic.',
-        makeCmd:  '$ php bin/console make:integration Github GetUser',
+        makeH2:   'From zero to a production-ready integration in one command.',
+        makeSub:  'Answer three questions. Get a fully scaffolded, typed integration.',
+        makeCmd:  '$ php bin/console make:integration MyApi GetEmployee',
         makeFiles: [
             'config/packages/integration_engine.yaml',
-            'src/Infrastructure/Integrations/Github/GithubIntegration.php',
-            'src/Infrastructure/Integrations/Github/Github.yaml',
-            'src/Infrastructure/Integrations/Github/GetUser/Request/GetUserAction.php',
-            'src/Infrastructure/Integrations/Github/GetUser/Response/GetUserMapper.php',
-            'src/Infrastructure/Integrations/Github/GetUser/Response/GetUserResponse.php',
+            'src/Infrastructure/Integrations/MyApi/MyApiIntegration.php',
+            'src/Infrastructure/Integrations/MyApi/MyApi.yaml',
+            'src/Infrastructure/Integrations/MyApi/GetEmployee/Request/GetEmployeeAction.php',
+            'src/Infrastructure/Integrations/MyApi/GetEmployee/Response/GetEmployeeMapper.php',
+            'src/Infrastructure/Integrations/MyApi/GetEmployee/Response/GetEmployeeResponse.php',
         ],
         codeReadmeLink: 'For the full pattern (facade → service → domain) →',
         codeReadmeLinkLabel: 'README',
         problemaLabel: 'The Problem',
         problemaH2:    'Every integration ends up as an isolated case',
-        problemaSub:   'Different formats, inconsistent authentication, duplicated cache logic. The codebase fragments and every new API means starting from scratch.',
+        problemaSub:   'Without a shared standard, each developer solves it differently. The codebase fragments. Knowledge disappears. Every new API means starting from scratch.',
         problems: [
-            { h3: 'Duplicated auth',    p: 'Tokens and cache reimplemented in every integration.' },
-            { h3: 'No shared contract', p: 'Every HTTP client has its own structure.' },
-            { h3: 'Hard to test',       p: 'HTTP coupled to the domain. Impossible to isolate.' },
-            { h3: 'No consistency',     p: 'Every developer solves the problem their own way.' },
-            { h3: 'Zero visibility',    p: 'No traceability, no unified logs, no shared context.' },
+            { h3: 'Days lost per API',          p: 'No shared pattern means days of discovery and arbitrary decisions every time a new API lands on the backlog.' },
+            { h3: 'Onboarding that never scales', p: 'A different structure per integration means every new teammate has to start from zero, every time.' },
+            { h3: 'Bugs hiding in the gaps',    p: 'HTTP logic scattered across services, no contract to enforce, nothing to test in isolation.' },
+            { h3: 'Zero reuse',                 p: 'Auth, caching, mapping — reinvented from scratch every single time, in every integration.' },
+            { h3: 'Nobody knows how it works',  p: 'Six months later, the developer who built it is gone and the code is unreadable.' },
         ],
         comoLabel: 'How It Works',
-        comoH2:    'A single flow for all your integrations',
-        comoSub:   'A single entry point. Every step has a clear responsibility.',
+        comoH2:    'One entry point. One contract. Every time.',
+        comoSub:   'A single flow for all your external APIs. Every step has a clear, testable owner.',
         features: [
-            { h3: 'Dynamic auth with cache',  p: 'OAuth, sessions, API keys. The engine resolves and caches them automatically.' },
-            { h3: 'Path context',             p: '<code>/orders/{id}</code> is resolved at call time. Explicit failure if a parameter is missing.' },
-            { h3: 'Headers in three layers',  p: 'YAML → auth → call layer. Each layer overrides the previous. No magic.' },
-            { h3: 'Typed responses',          p: 'Every action defines its own Response DTO with a guaranteed contract.' },
-            { h3: 'Fully extensible',         p: 'Client, cache and config source replaceable with one line in YAML.' },
-            { h3: 'Scaffolding included',     p: '<code>make:integration</code> generates Mapper, Response DTO and YAML in seconds.' },
+            { h3: 'Ship in minutes, not days',       p: '<code>make:integration</code> scaffolds Action, Mapper, Response DTO and YAML in one command. You write only business logic.' },
+            { h3: 'If you know one, you know them all', p: 'Every integration follows the same layout and the same contracts. Instant onboarding for every new teammate.' },
+            { h3: 'Token management, zero effort',   p: 'OAuth, sessions, API keys — fetched, cached, and auto-refreshed on 401. No manual token logic, ever.' },
+            { h3: 'Type-safe responses',             p: 'Every endpoint returns a guaranteed DTO. No guessing at runtime, no silent surprises in production.' },
+            { h3: 'Parallel requests, built-in',     p: '<code>sendMany()</code> runs N concurrent requests. Individual failures never abort the batch.' },
+            { h3: 'Swap any layer',                  p: 'HTTP client, cache backend, config source — each replaceable with one line in YAML.' },
         ],
         callsiteLabel: 'The Call Site',
-        callsiteH2:    'One line. Always the same.',
-        callsiteSub:   'No magic strings — everything through contracts.',
+        callsiteH2:    'The same call. Every time.',
+        callsiteSub:   'No HTTP clients. No request builders. No mappers. One clean facade method your entire team recognises.',
         tabs: [
             { label: 'No auth',          id: 'tab-noauth' },
             { label: 'Path params',      id: 'tab-path' },
             { label: 'Body and headers', id: 'tab-body' },
             { label: 'GraphQL',          id: 'tab-graphql' },
+            { label: 'Batch / sendMany', id: 'tab-batch' },
         ],
-        codeNoAuth: `<span class="cmt">// Action path: GET /orders</span>\n<span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    <span class="cls">GetOrdersAction</span><span class="kw">::</span><span class="met">getName</span>()\n);\n<span class="cmt">// → GET /orders</span>`,
-        codePath:   `<span class="cmt">// Action path: GET /orders/{id}</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">GetOrderAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    context: <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n);\n<span class="cmt">// → GET /orders/42</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetOrderResponse</span>);\n<span class="cmt">// GetOrderResponse { id: 42, reference: 'ORD-001', items: [...] }</span>`,
-        codeBody:   `<span class="cmt">// Action path: POST /orders</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">CreateOrderAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body: <span class="cls">CreateOrderBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'reference'</span> <span class="kw">=&gt;</span> <span class="str">'ORD-001'</span>]),\n    headers: <span class="kw">new</span> <span class="cls">CorrelationHeaders</span>(<span class="var">$correlationId</span>),\n);\n<span class="cmt">// → POST /orders { "reference": "ORD-001" }</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">CreateOrderResponse</span>);\n<span class="cmt">// CreateOrderResponse { id: 99, reference: 'ORD-001', status: 'pending' }</span>`,
-        codeGraphQL: `<span class="cmt">// Action endpoint: POST /graphql</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">GetOrderAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body: <span class="cls">GetOrderBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n);\n<span class="cmt">// → POST /graphql { "query": "...", "variables": { "id": 42 } }</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetOrderResponse</span>);\n<span class="cmt">// GetOrderResponse { id: 42, reference: 'ORD-001', items: [...] }</span>`,
+        codeNoAuth:   `<span class="cmt">// Action path: GET /employees</span>\n<span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    <span class="cls">GetEmployeesAction</span><span class="kw">::</span><span class="met">getName</span>()\n);\n<span class="cmt">// → GET /employees</span>`,
+        codePath:     `<span class="cmt">// Action path: GET /employees/{id}</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">GetEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    context: <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n);\n<span class="cmt">// → GET /employees/42</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetEmployeeResponse</span>);\n<span class="cmt">// GetEmployeeResponse { id: 42, name: 'John Doe', department: 'Engineering' }</span>`,
+        codeBody:     `<span class="cmt">// Action path: POST /employees</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">CreateEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body: <span class="cls">CreateEmployeeBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'name'</span> <span class="kw">=&gt;</span> <span class="str">'John Doe'</span>]),\n    headers: <span class="kw">new</span> <span class="cls">CorrelationHeaders</span>(<span class="var">$correlationId</span>),\n);\n<span class="cmt">// → POST /employees { "name": "John Doe" }</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">CreateEmployeeResponse</span>);\n<span class="cmt">// CreateEmployeeResponse { id: 99, name: 'John Doe', status: 'active' }</span>`,
+        codeGraphQL:  `<span class="cmt">// Action endpoint: POST /graphql</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">GetUserAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body: <span class="cls">GetUserBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n);\n<span class="cmt">// → POST /graphql { "query": "query { user(id: $id) { name } }", "variables": { "id": 42 } }</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetUserResponse</span>);\n<span class="cmt">// GetUserResponse { id: 42, name: 'John Doe' }</span>`,
+        codeSendMany: `<span class="cmt">// Parallel fan-out — one request per employee ID</span>\n<span class="var">$requests</span> = [];\n<span class="kw">foreach</span> (<span class="var">$ids</span> <span class="kw">as</span> <span class="var">$id</span>) {\n    <span class="var">$requests</span>[<span class="var">$id</span>] = <span class="cls">EngineRequest</span><span class="kw">::</span><span class="met">create</span>(\n        <span class="cls">GetEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n        <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n    );\n}\n\n<span class="var">$results</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">sendMany</span>(<span class="var">$requests</span>);\n<span class="cmt">// BatchResultCollection — each key resolves independently</span>\n\n<span class="kw">if</span> (<span class="var">$results</span><span class="kw">-&gt;</span><span class="met">hasFailures</span>()) {\n    <span class="kw">throw</span> <span class="met">array_values</span>(<span class="var">$results</span><span class="kw">-&gt;</span><span class="met">errors</span>())[<span class="num">0</span>];\n}\n\n<span class="kw">return</span> <span class="met">array_map</span>(\n    <span class="kw">fn</span>(<span class="var">$dto</span>) <span class="kw">=&gt;</span> <span class="cls">Employee</span><span class="kw">::</span><span class="met">fromDto</span>(<span class="var">$dto</span>),\n    <span class="var">$results</span><span class="kw">-&gt;</span><span class="met">responses</span>(),\n);`,
         capasLabel: 'Layered Design',
         capasH2:    'The bundle proposes. It does not impose.',
         capasSub:   'Three levels that emerge naturally. Use whichever you need.',
         layersHead: ['Class', 'Responsibility', 'Scope'],
         layers: [
-            { name: 'CreateChargeAction', desc: 'Only declares the method, path and response DTO. No HTTP logic.',                    scope: 'Concrete action' },
-            { name: 'GithubAction',       desc: 'Auth, base path and common GitHub headers. Reused by all GitHub actions.',            scope: 'Integration' },
-            { name: 'AbstractAction',     desc: 'Base contract provided by the engine. Extensible without touching the core.',        scope: 'Bundle' },
+            { name: 'GetEmployeeAction', desc: 'Only declares the method, path and response DTO. No HTTP logic.',                    scope: 'Concrete action' },
+            { name: 'MyApiIntegration',  desc: 'Auth, base URL and common headers for MyApi. Reused by all its actions.',           scope: 'Integration' },
+            { name: 'AbstractAction',    desc: 'Base contract provided by the engine. Extensible without touching the core.',       scope: 'Bundle' },
         ],
         makeNote: 'The <code>make:integration</code> command creates the config, classes and YAML in a single step.',
-        ctaH2:   'Get started in one command',
-        ctaP:    'No boilerplate. No arbitrary decisions. Just your business logic.',
+        ctaH2:   'Standardise your integrations today.',
+        ctaP:    'Install in 30 seconds. Ship your first typed integration in under 5 minutes.',
         ctaBtn1: 'View on GitHub',
         ctaBtn2: 'Documentation',
         ctaBtn3: 'See demo',
@@ -323,8 +329,8 @@ function getHTML(lang) {
         <pre style="color:#7dd3fc; font-family:monospace; font-size:.82rem; white-space:pre">${t.makeCmd}</pre>
       </div>
     </div>
-    <div style="background:var(--code-bg); border:1px solid var(--border); border-radius:6px; padding:1rem 1.5rem;">
-      ${t.makeFiles.map(f => `<div style="font-family:monospace;font-size:.78rem;color:#4a6680;line-height:1.9">${f}</div>`).join('')}
+    <div style="background:var(--code-bg); border:1px solid var(--border); border-radius:6px; padding:1rem 1.5rem; overflow-x:auto;">
+      ${t.makeFiles.map(f => `<div style="font-family:monospace;font-size:.78rem;color:#4a6680;line-height:1.9;white-space:nowrap">${f}</div>`).join('')}
     </div>
   </div>
 </section>
@@ -345,6 +351,7 @@ function getHTML(lang) {
         <div class="code-panel"        id="tab-path"><pre>${t.codePath}</pre></div>
         <div class="code-panel"        id="tab-body"><pre>${t.codeBody}</pre></div>
         <div class="code-panel"        id="tab-graphql"><pre>${t.codeGraphQL}</pre></div>
+        <div class="code-panel"        id="tab-batch"><pre>${t.codeSendMany}</pre></div>
       </div>
     </div>
     <p style="margin-top:1rem;font-size:.82rem;color:#4a5568;">
@@ -392,7 +399,7 @@ function getHTML(lang) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   CSS — verbatim de styles.css + .lang-toggle añadido
+   CSS
 ───────────────────────────────────────────────────────────── */
 const CSS = `*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -527,9 +534,9 @@ h1, h2, h3, .section-title, .hero h1, .cta h2 {
 }
 .hero h1 {
   position: relative;
-  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-size: clamp(1.7rem, 5vw, 3.25rem);
   font-weight: 800;
-  line-height: 1.15;
+  line-height: 1.2;
   color: var(--white);
   max-width: 760px;
   margin: 0 auto 1.25rem;
@@ -544,6 +551,7 @@ h1, h2, h3, .section-title, .hero h1, .cta h2 {
 }
 .install-box {
   display: inline-block;
+  max-width: calc(100% - 3rem);
   background: var(--code-bg);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -554,6 +562,8 @@ h1, h2, h3, .section-title, .hero h1, .cta h2 {
   margin-bottom: 2.5rem;
   cursor: pointer;
   position: relative;
+  overflow-x: auto;
+  white-space: nowrap;
   transition: border-color .2s, box-shadow .2s;
 }
 .install-box:hover {
@@ -619,7 +629,7 @@ section { padding: 3.5rem 1.5rem; }
   margin-bottom: .75rem;
 }
 .section-title {
-  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  font-size: clamp(1.4rem, 3.5vw, 2.2rem);
   font-weight: 800;
   color: var(--blue);
   margin-bottom: .75rem;
@@ -734,7 +744,7 @@ section { padding: 3.5rem 1.5rem; }
   line-height: 1.7;
   color: #2e4a68;
 }
-.code-panel { display: none; flex: 1; padding: 0 1.25rem; }
+.code-panel { display: none; flex: 1; padding: 0 1.25rem; min-width: 0; }
 .code-panel.active { display: block; }
 pre {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
@@ -783,7 +793,7 @@ pre {
   padding: 4rem 1.5rem;
 }
 .cta h2 {
-  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-size: clamp(1.4rem, 3vw, 2rem);
   font-weight: 800;
   color: var(--white);
   margin-bottom: .75rem;
@@ -813,6 +823,15 @@ footer {
 footer a { color: var(--blue-light); text-decoration: none; }
 
 @media (max-width: 600px) {
+  section { padding: 2.5rem 1.25rem; }
+  .hero { padding: 3rem 1.25rem 2.5rem; }
+  .hero p { font-size: .95rem; }
+  .install-box { font-size: .75rem; padding: .65rem 1rem; }
+  .hero-gh-btn { display: block; text-align: center; }
+  .problems-grid { grid-template-columns: 1fr; }
+  .features-grid { grid-template-columns: 1fr; }
+  .cta-buttons { flex-direction: column; align-items: stretch; }
+  .cta-buttons .btn { text-align: center; }
   .hero-nav { gap: 1.25rem; }
   .layers-table thead { display: none; }
   .layers-table, .layers-table tbody, .layers-table tr, .layers-table td {

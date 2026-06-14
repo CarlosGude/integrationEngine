@@ -1,0 +1,3 @@
+name = "integrationengine-landing"
+main = "worker.js"
+compatibility_date = "2025-01-01"
