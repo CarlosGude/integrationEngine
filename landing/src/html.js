@@ -179,6 +179,9 @@ export function getHTML(lang) {
       <a href="${docsHref}" class="btn btn-ghost" target="_blank" rel="noopener">${t.ctaBtn2}</a>
       <a href="${t.ctaBtn3Href}" class="btn btn-ghost" target="_blank" rel="noopener">${t.ctaBtn3}</a>
     </div>
+    <p style="margin-top:2rem;font-size:.82rem;color:var(--muted);">
+      ${t.feedbackLabel} <a href="https://github.com/CarlosGude/integrationEngine/discussions" target="_blank" rel="noopener" style="color:var(--blue-light)">${t.feedbackLink}</a>
+    </p>
   </div>
 </section>
 

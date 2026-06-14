@@ -69,6 +69,8 @@ export default {
     codeBody,
     codeGraphQL,
     codeSendMany,
+    feedbackLabel: '¿Ya lo has instalado?',
+    feedbackLink:  'Cuéntanos qué tal →',
     ctaH2:   'Empieza con la siguiente.',
     ctaP:    'Las existentes no necesitan cambiar. La próxima puede ser diferente.',
     ctaBtn1: 'Ver en GitHub',
