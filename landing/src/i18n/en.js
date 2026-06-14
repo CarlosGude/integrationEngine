@@ -71,6 +71,8 @@ export default {
     codeSendMany,
     feedbackLabel: 'Already using it?',
     feedbackLink:  'Tell us how it goes →',
+    contactLabel:  'Prefer to write directly?',
+    contactLink:   'hi@integrationengine.dev',
     ctaH2:   'Start with the next one.',
     ctaP:    'Your existing integrations do not need to change. The next one can be different.',
     ctaBtn1: 'View on GitHub',

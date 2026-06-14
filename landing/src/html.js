@@ -181,6 +181,8 @@ export function getHTML(lang) {
     </div>
     <p style="margin-top:2rem;font-size:.82rem;color:var(--muted);">
       ${t.feedbackLabel} <a href="https://github.com/CarlosGude/integrationEngine/discussions" target="_blank" rel="noopener" style="color:var(--blue-light)">${t.feedbackLink}</a>
+      &nbsp;·&nbsp;
+      ${t.contactLabel} <a href="mailto:${t.contactLink}" style="color:var(--blue-light)">${t.contactLink}</a>
     </p>
   </div>
 </section>
