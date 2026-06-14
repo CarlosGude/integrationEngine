@@ -187,7 +187,9 @@ h1, h2, h3, .section-title, .hero h1, .cta h2 {
 }
 .install-box.copied .copy-hint { opacity: 1; }
 .hero-gh-btn {
-  display: inline-block;
+  display: block;
+  width: fit-content;
+  margin: 0 auto;
   background: var(--blue);
   color: #fff;
   font-family: "Inter", sans-serif;
@@ -196,6 +198,7 @@ h1, h2, h3, .section-title, .hero h1, .cta h2 {
   padding: .6rem 1.5rem;
   border-radius: 6px;
   text-decoration: none;
+  text-align: center;
   transition: opacity .2s, transform .1s;
 }
 .hero-gh-btn:hover { opacity: .85; transform: translateY(-1px); }
@@ -401,7 +404,7 @@ footer a { color: var(--blue-light); text-decoration: none; }
   .hero { padding: 2.5rem 1.25rem 2rem; }
   .hero p { font-size: .95rem; }
   .install-box { font-size: .75rem; padding: .6rem 1rem; }
-  .hero-gh-btn { display: block; text-align: center; }
+  .hero-gh-btn { width: 100%; }
 
   /* pipeline vertical */
   .pipeline { flex-direction: column; align-items: center; gap: 0; padding: 1rem; }
