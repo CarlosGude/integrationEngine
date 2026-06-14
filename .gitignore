@@ -12,3 +12,4 @@ infection.log
 infection.html
 infection-per-mutator.md
 infection-summary.log
+.wrangler
