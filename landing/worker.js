@@ -18,8 +18,8 @@ const T = {
         pageTitle: 'IntegrationEngine — Symfony Bundle',
         metaDesc:  'Un estándar para cada API externa en tus proyectos Symfony. Entrega más rápido. Onboarding instantáneo. Sin arqueología de código.',
         heroBadge: 'Symfony Bundle · PHP 8.2+ · Packagist',
-        heroH1:    'Después de unos meses, ya no tienes integraciones. Tienes un zoo.',
-        heroP:     'IntegrationEngine obliga a que todas las integraciones tengan la misma forma. Entrega más rápido. Onboarding instantáneo. Sin arqueología de código.',
+        heroH1:    'Un patrón. Cada integración.',
+        heroP:     'Ya tienes integraciones en producción. No todas pueden reescribirse de golpe. IntegrationEngine no elimina la deuda técnica que ya tienes — te da un punto de fuga: un estándar claro para cada integración nueva y un camino para migrar las antiguas cuando llegue el momento.',
         copyHint:  '¡Copiado!',
         navLabels: ['El Problema', 'Cómo funciona', 'Call site'],
         heroNav: [
@@ -28,12 +28,12 @@ const T = {
             { label: 'Documentación', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION_ES.md' },
             { label: 'Demo',          href: 'https://github.com/CarlosGude/integrationEngine-use-example' },
         ],
-        whyLabel: '¿Por qué no HttpClient?',
-        whyH2:    'HttpClient es una herramienta. IntegrationEngine es un estándar.',
-        whySub:   'Usa HttpClient para llamadas puntuales. Usa IntegrationEngine cuando las APIs externas son parte de tu arquitectura — y necesitas que todo tu equipo hable el mismo idioma seis meses después.',
+        whyLabel: '¿Y las integraciones que ya tienes?',
+        whyH2:    'No tienes que reescribir nada para empezar.',
+        whySub:   'IntegrationEngine convive con tu código existente. Empieza con la próxima integración que añadas al proyecto. Las antiguas pueden seguir funcionando como siempre — y migrarlas pasa a ser una decisión técnica planificada, no una urgencia.',
         makeLabel: 'Un comando lo genera todo',
-        makeH2:   'De cero a una integración lista para producción en un solo comando.',
-        makeSub:  'Responde tres preguntas. Obtén una integración completamente tipada y generada.',
+        makeH2:   'La próxima integración que añadas puede sentar el estándar.',
+        makeSub:  'Un comando genera todo el scaffolding. Tu equipo empieza a escribir código que todo el mundo reconoce.',
         makeCmd:  '$ php bin/console make:integration MyApi GetEmployee',
         makeFiles: [
             'config/packages/integration_engine.yaml',
@@ -45,9 +45,9 @@ const T = {
         ],
         codeReadmeLink: 'Para el patrón completo (facade → service → dominio) →',
         codeReadmeLinkLabel: 'README',
-        problemaLabel: 'El Problema',
+        problemaLabel: '¿Te suena esto?',
         problemaH2:    'Cada integración acaba siendo un caso aislado',
-        problemaSub:   'Sin un estándar compartido, cada desarrollador lo resuelve a su manera. El código se fragmenta. El conocimiento desaparece. Cada nueva API supone empezar desde cero.',
+        problemaSub:   'Si estás en esta landing, ya los conoces. No son nuevos. La pregunta es qué haces con la próxima API que tengas que integrar.',
         problems: [
             { h3: 'Días perdidos por cada API',    p: 'Sin un patrón común, conectar una nueva API cuesta días de descubrimiento y decisiones arbitrarias.' },
             { h3: 'Onboarding que no escala',      p: 'Una estructura diferente por integración obliga a cada nuevo compañero a empezar de cero.' },
@@ -82,8 +82,8 @@ const T = {
         codeBody:     `<span class="kw">final class</span> <span class="cls">MyApiIntegration</span>\n{\n    <span class="kw">public function</span> <span class="met">createEmployee</span>(\n        <span class="kw">string</span> <span class="var">$name</span>,\n        <span class="kw">string</span> <span class="var">$correlationId</span>,\n    ): <span class="cls">CreateEmployeeResponse</span> {\n        <span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n            actionName: <span class="cls">CreateEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n            body: <span class="cls">CreateEmployeeBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'name'</span> <span class="kw">=&gt;</span> <span class="var">$name</span>]),\n            headers: <span class="kw">new</span> <span class="cls">CorrelationHeaders</span>(<span class="var">$correlationId</span>),\n        );\n        \\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">CreateEmployeeResponse</span>);\n        <span class="kw">return</span> <span class="var">$response</span>;\n    }\n}`,
         codeGraphQL:  `<span class="kw">final class</span> <span class="cls">MyApiIntegration</span>\n{\n    <span class="kw">public function</span> <span class="met">getUser</span>(<span class="kw">int</span> <span class="var">$id</span>): <span class="cls">GetUserResponse</span>\n    {\n        <span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n            actionName: <span class="cls">GetUserAction</span><span class="kw">::</span><span class="met">getName</span>(),\n            body: <span class="cls">GetUserBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n        );\n        \\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetUserResponse</span>);\n        <span class="kw">return</span> <span class="var">$response</span>;\n    }\n}`,
         codeSendMany: `<span class="kw">final class</span> <span class="cls">MyApiIntegration</span>\n{\n    <span class="kw">public function</span> <span class="met">getManyEmployees</span>(<span class="kw">array</span> <span class="var">$ids</span>): <span class="kw">array</span>\n    {\n        <span class="var">$requests</span> = [];\n        <span class="kw">foreach</span> (<span class="var">$ids</span> <span class="kw">as</span> <span class="var">$id</span>) {\n            <span class="var">$requests</span>[<span class="var">$id</span>] = <span class="cls">EngineRequest</span><span class="kw">::</span><span class="met">create</span>(\n                <span class="cls">GetEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n                <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n            );\n        }\n        <span class="var">$results</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">sendMany</span>(<span class="var">$requests</span>);\n        <span class="kw">if</span> (<span class="var">$results</span><span class="kw">-&gt;</span><span class="met">hasFailures</span>()) {\n            <span class="kw">throw</span> <span class="met">array_values</span>(<span class="var">$results</span><span class="kw">-&gt;</span><span class="met">errors</span>())[<span class="num">0</span>];\n        }\n        <span class="kw">return</span> <span class="var">$results</span><span class="kw">-&gt;</span><span class="met">responses</span>();\n    }\n}`,
-        ctaH2:   'Estandariza tus integraciones hoy.',
-        ctaP:    'Instalación en 30 segundos. Primera integración tipada en menos de 5 minutos.',
+        ctaH2:   'Empieza con la siguiente.',
+        ctaP:    'Las existentes no necesitan cambiar. La próxima puede ser diferente.',
         ctaBtn1: 'Ver en GitHub',
         ctaBtn2: 'Documentación',
         ctaBtn3: 'Ver demo',
@@ -96,8 +96,8 @@ const T = {
         pageTitle: 'IntegrationEngine — Symfony Bundle',
         metaDesc:  'One standard for every external API in your Symfony projects. Ship faster. Onboard instantly. Stop doing archaeology.',
         heroBadge: 'Symfony Bundle · PHP 8.2+ · Packagist',
-        heroH1:    'After a few months, you no longer have integrations. You have a zoo.',
-        heroP:     'IntegrationEngine forces every integration to look the same. Ship faster. Onboard instantly. Stop doing archaeology forever.',
+        heroH1:    'One pattern. Every integration.',
+        heroP:     'You already have integrations in production. You cannot rewrite them overnight. IntegrationEngine does not eliminate the technical debt you already have — it gives you a direction: a clear standard for every new integration and a path to migrate the old ones when the time is right.',
         copyHint:  'Copied!',
         navLabels: ['Problem', 'How it works', 'Call site'],
         heroNav: [
@@ -106,12 +106,12 @@ const T = {
             { label: 'Documentation', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION.md' },
             { label: 'Demo',          href: 'https://github.com/CarlosGude/integrationEngine-use-example' },
         ],
-        whyLabel: 'Why not HttpClient?',
-        whyH2:    'HttpClient is a tool. IntegrationEngine is a standard.',
-        whySub:   'Use HttpClient for one-off calls. Use IntegrationEngine when external APIs are part of your architecture — and you need your whole team to speak the same language six months from now.',
+        whyLabel: 'What about your existing integrations?',
+        whyH2:    'You do not have to rewrite anything to start.',
+        whySub:   'IntegrationEngine lives alongside your existing code. Start with the next integration you add to the project. The old ones can keep running as they always have — migrating them becomes a planned technical decision, not an emergency.',
         makeLabel: 'One command generates everything',
-        makeH2:   'From zero to a production-ready integration in one command.',
-        makeSub:  'Answer three questions. Get a fully scaffolded, typed integration.',
+        makeH2:   'The next integration you add can set the standard.',
+        makeSub:  'One command generates all the scaffolding. Your team starts writing code that everyone else recognises.',
         makeCmd:  '$ php bin/console make:integration MyApi GetEmployee',
         makeFiles: [
             'config/packages/integration_engine.yaml',
@@ -123,9 +123,9 @@ const T = {
         ],
         codeReadmeLink: 'For the full pattern (facade → service → domain) →',
         codeReadmeLinkLabel: 'README',
-        problemaLabel: 'The Problem',
+        problemaLabel: 'Sound familiar?',
         problemaH2:    'Every integration ends up as an isolated case',
-        problemaSub:   'Without a shared standard, each developer solves it differently. The codebase fragments. Knowledge disappears. Every new API means starting from scratch.',
+        problemaSub:   'If you are on this page, you already know these. They are not new. The question is what you do with the next API you have to integrate.',
         problems: [
             { h3: 'Days lost per API',            p: 'No shared pattern means days of discovery and arbitrary decisions every time a new API lands on the backlog.' },
             { h3: 'Onboarding that never scales', p: 'A different structure per integration means every new teammate has to start from zero, every time.' },
@@ -160,8 +160,8 @@ const T = {
         codeBody:     `<span class="kw">final class</span> <span class="cls">MyApiIntegration</span>\n{\n    <span class="kw">public function</span> <span class="met">createEmployee</span>(\n        <span class="kw">string</span> <span class="var">$name</span>,\n        <span class="kw">string</span> <span class="var">$correlationId</span>,\n    ): <span class="cls">CreateEmployeeResponse</span> {\n        <span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n            actionName: <span class="cls">CreateEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n            body: <span class="cls">CreateEmployeeBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'name'</span> <span class="kw">=&gt;</span> <span class="var">$name</span>]),\n            headers: <span class="kw">new</span> <span class="cls">CorrelationHeaders</span>(<span class="var">$correlationId</span>),\n        );\n        \\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">CreateEmployeeResponse</span>);\n        <span class="kw">return</span> <span class="var">$response</span>;\n    }\n}`,
         codeGraphQL:  `<span class="kw">final class</span> <span class="cls">MyApiIntegration</span>\n{\n    <span class="kw">public function</span> <span class="met">getUser</span>(<span class="kw">int</span> <span class="var">$id</span>): <span class="cls">GetUserResponse</span>\n    {\n        <span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n            actionName: <span class="cls">GetUserAction</span><span class="kw">::</span><span class="met">getName</span>(),\n            body: <span class="cls">GetUserBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n        );\n        \\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetUserResponse</span>);\n        <span class="kw">return</span> <span class="var">$response</span>;\n    }\n}`,
         codeSendMany: `<span class="kw">final class</span> <span class="cls">MyApiIntegration</span>\n{\n    <span class="kw">public function</span> <span class="met">getManyEmployees</span>(<span class="kw">array</span> <span class="var">$ids</span>): <span class="kw">array</span>\n    {\n        <span class="var">$requests</span> = [];\n        <span class="kw">foreach</span> (<span class="var">$ids</span> <span class="kw">as</span> <span class="var">$id</span>) {\n            <span class="var">$requests</span>[<span class="var">$id</span>] = <span class="cls">EngineRequest</span><span class="kw">::</span><span class="met">create</span>(\n                <span class="cls">GetEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n                <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n            );\n        }\n        <span class="var">$results</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">sendMany</span>(<span class="var">$requests</span>);\n        <span class="kw">if</span> (<span class="var">$results</span><span class="kw">-&gt;</span><span class="met">hasFailures</span>()) {\n            <span class="kw">throw</span> <span class="met">array_values</span>(<span class="var">$results</span><span class="kw">-&gt;</span><span class="met">errors</span>())[<span class="num">0</span>];\n        }\n        <span class="kw">return</span> <span class="var">$results</span><span class="kw">-&gt;</span><span class="met">responses</span>();\n    }\n}`,
-        ctaH2:   'Standardise your integrations today.',
-        ctaP:    'Install in 30 seconds. Ship your first typed integration in under 5 minutes.',
+        ctaH2:   'Start with the next one.',
+        ctaP:    'Your existing integrations do not need to change. The next one can be different.',
         ctaBtn1: 'View on GitHub',
         ctaBtn2: 'Documentation',
         ctaBtn3: 'See demo',
@@ -255,23 +255,23 @@ function getHTML(lang) {
   <a class="hero-gh-btn" href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener">${t.ctaBtn1} →</a>
 </header>
 
-<!-- POR QUÉ NO HTTPCLIENT -->
-<section class="problema">
-  <div class="container">
-    <p class="section-label">${t.whyLabel}</p>
-    <h2 class="section-title">${t.whyH2}</h2>
-    <p class="section-sub">${t.whySub}</p>
-  </div>
-</section>
-
 <!-- EL PROBLEMA -->
-<section id="problema" class="problema" style="padding-top:0">
+<section id="problema" class="problema">
   <div class="container">
     <p class="section-label">${t.problemaLabel}</p>
     <h2 class="section-title">${t.problemaH2}</h2>
     <p class="section-sub">${t.problemaSub}</p>
     <div class="problems-grid">${problems}
     </div>
+  </div>
+</section>
+
+<!-- POR QUÉ NO HTTPCLIENT -->
+<section class="problema" style="padding-top:0">
+  <div class="container">
+    <p class="section-label">${t.whyLabel}</p>
+    <h2 class="section-title">${t.whyH2}</h2>
+    <p class="section-sub">${t.whySub}</p>
   </div>
 </section>
 
