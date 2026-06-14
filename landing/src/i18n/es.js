@@ -5,8 +5,8 @@ export default {
     pageTitle: 'IntegrationEngine — Symfony Bundle',
     metaDesc:  'Un estándar para cada API externa en tus proyectos Symfony. Entrega más rápido. Onboarding instantáneo. Sin arqueología de código.',
     heroBadge: 'Symfony Bundle · PHP 8.2+ · Packagist',
-    heroH1:    'Para de reinventar cada integración.',
-    heroP:     'Cada API acaba siendo un mundo aparte. Lógica HTTP dispersa, bases de código que solo entiende quien las escribió, onboarding que nunca escala. IntegrationEngine lo resuelve con un patrón único: una Action, un Mapper, un DTO — siempre la misma estructura, siempre los mismos contratos.',
+    heroH1:    'Deja de reinventar. Define el estándar.',
+    heroP:     'Cada API construida diferente es deuda técnica. IntegrationEngine da al equipo un único patrón — una Action, un Mapper, un DTO — que se repite en cada integración, sin excepción. La estructura no se debate: está definida.',
     copyHint:  '¡Copiado!',
     navLabels: ['El Problema', 'Cómo funciona', 'Call site'],
     heroNav: [
