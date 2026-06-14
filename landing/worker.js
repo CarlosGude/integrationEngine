@@ -14,13 +14,14 @@ export default {
 ───────────────────────────────────────────────────────────── */
 const T = {
     es: {
-        htmlLang: 'es',
+        htmlLang:  'es',
         pageTitle: 'IntegrationEngine — Symfony Bundle',
         metaDesc:  'Un estándar para cada API externa en tus proyectos Symfony. Entrega más rápido. Onboarding instantáneo. Sin arqueología de código.',
         heroBadge: 'Symfony Bundle · PHP 8.2+ · Packagist',
         heroH1:    'Después de unos meses, ya no tienes integraciones. Tienes un zoo.',
         heroP:     'IntegrationEngine obliga a que todas las integraciones tengan la misma forma. Entrega más rápido. Onboarding instantáneo. Sin arqueología de código.',
         copyHint:  '¡Copiado!',
+        navLabels: ['El Problema', 'Cómo funciona', 'Call site'],
         heroNav: [
             { label: 'GitHub',        href: 'https://github.com/CarlosGude/integrationEngine' },
             { label: 'Packagist',     href: 'https://packagist.org/packages/carlosgude/integration-engine' },
@@ -52,6 +53,7 @@ const T = {
             { h3: 'Onboarding que no escala',      p: 'Una estructura diferente por integración obliga a cada nuevo compañero a empezar de cero.' },
             { h3: 'Bugs escondidos en los huecos', p: 'Lógica HTTP dispersa por los services, sin contrato que aplicar ni aislar en tests.' },
             { h3: 'Cero reutilización',            p: 'Auth, cache, mapeo — reinventados desde cero en cada integración, sin excepción.' },
+            { h3: 'Imposible de testear',          p: 'HTTP acoplado al dominio. No puedes probar la lógica de negocio sin tocar la red.' },
             { h3: 'Nadie sabe cómo funciona',      p: 'Seis meses después, el desarrollador que la construyó se fue y el código es ilegible.' },
         ],
         comoLabel: 'Cómo Funciona',
@@ -67,7 +69,7 @@ const T = {
         ],
         callsiteLabel: 'El Call Site',
         callsiteH2:    'La misma llamada. Siempre.',
-        callsiteSub:   'Sin clientes HTTP, sin builders de peticiones, sin mappers. Un único método de facade que todo tu equipo reconoce.',
+        callsiteSub:   'El engine vive en tu facade de integración. Desde fuera, tu dominio no sabe que existe HTTP.',
         tabs: [
             { label: 'Sin auth',           id: 'tab-noauth' },
             { label: 'Con path params',    id: 'tab-path' },
@@ -75,11 +77,11 @@ const T = {
             { label: 'GraphQL',            id: 'tab-graphql' },
             { label: 'Batch / sendMany',   id: 'tab-batch' },
         ],
-        codeNoAuth:   `<span class="cmt">// Action path: GET /employees</span>\n<span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    <span class="cls">GetEmployeesAction</span><span class="kw">::</span><span class="met">getName</span>()\n);\n<span class="cmt">// → GET /employees</span>`,
-        codePath:     `<span class="cmt">// Action path: GET /employees/{id}</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">GetEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    context: <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n);\n<span class="cmt">// → GET /employees/42</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetEmployeeResponse</span>);\n<span class="cmt">// GetEmployeeResponse { id: 42, name: 'John Doe', department: 'Engineering' }</span>`,
-        codeBody:     `<span class="cmt">// Action path: POST /employees</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">CreateEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body: <span class="cls">CreateEmployeeBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'name'</span> <span class="kw">=&gt;</span> <span class="str">'John Doe'</span>]),\n    headers: <span class="kw">new</span> <span class="cls">CorrelationHeaders</span>(<span class="var">$correlationId</span>),\n);\n<span class="cmt">// → POST /employees { "name": "John Doe" }</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">CreateEmployeeResponse</span>);\n<span class="cmt">// CreateEmployeeResponse { id: 99, name: 'John Doe', status: 'active' }</span>`,
-        codeGraphQL:  `<span class="cmt">// Action endpoint: POST /graphql</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">GetUserAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body: <span class="cls">GetUserBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n);\n<span class="cmt">// → POST /graphql { "query": "query { user(id: $id) { name } }", "variables": { "id": 42 } }</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetUserResponse</span>);\n<span class="cmt">// GetUserResponse { id: 42, name: 'John Doe' }</span>`,
-        codeSendMany: `<span class="cmt">// Fan-out paralelo — una petición por ID de empleado</span>\n<span class="var">$requests</span> = [];\n<span class="kw">foreach</span> (<span class="var">$ids</span> <span class="kw">as</span> <span class="var">$id</span>) {\n    <span class="var">$requests</span>[<span class="var">$id</span>] = <span class="cls">EngineRequest</span><span class="kw">::</span><span class="met">create</span>(\n        <span class="cls">GetEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n        <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n    );\n}\n\n<span class="var">$results</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">sendMany</span>(<span class="var">$requests</span>);\n<span class="cmt">// BatchResultCollection — cada clave se resuelve de forma independiente</span>\n\n<span class="kw">if</span> (<span class="var">$results</span><span class="kw">-&gt;</span><span class="met">hasFailures</span>()) {\n    <span class="kw">throw</span> <span class="met">array_values</span>(<span class="var">$results</span><span class="kw">-&gt;</span><span class="met">errors</span>())[<span class="num">0</span>];\n}\n\n<span class="kw">return</span> <span class="met">array_map</span>(\n    <span class="kw">fn</span>(<span class="var">$dto</span>) <span class="kw">=&gt;</span> <span class="cls">Employee</span><span class="kw">::</span><span class="met">fromDto</span>(<span class="var">$dto</span>),\n    <span class="var">$results</span><span class="kw">-&gt;</span><span class="met">responses</span>(),\n);`,
+        codeNoAuth:   `<span class="kw">final class</span> <span class="cls">MyApiIntegration</span>\n{\n    <span class="kw">public function</span> <span class="met">__construct</span>(\n        <span class="kw">private</span> <span class="cls">IntegrationEngine</span> <span class="var">$engine</span>\n    ) {}\n\n    <span class="kw">public function</span> <span class="met">listEmployees</span>(): <span class="cls">GetEmployeesResponse</span>\n    {\n        <span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n            <span class="cls">GetEmployeesAction</span><span class="kw">::</span><span class="met">getName</span>()\n        );\n        \\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetEmployeesResponse</span>);\n        <span class="kw">return</span> <span class="var">$response</span>;\n    }\n}`,
+        codePath:     `<span class="kw">final class</span> <span class="cls">MyApiIntegration</span>\n{\n    <span class="kw">public function</span> <span class="met">getEmployee</span>(<span class="kw">int</span> <span class="var">$id</span>): <span class="cls">GetEmployeeResponse</span>\n    {\n        <span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n            actionName: <span class="cls">GetEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n            context: <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n        );\n        \\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetEmployeeResponse</span>);\n        <span class="kw">return</span> <span class="var">$response</span>;\n    }\n}`,
+        codeBody:     `<span class="kw">final class</span> <span class="cls">MyApiIntegration</span>\n{\n    <span class="kw">public function</span> <span class="met">createEmployee</span>(\n        <span class="kw">string</span> <span class="var">$name</span>,\n        <span class="kw">string</span> <span class="var">$correlationId</span>,\n    ): <span class="cls">CreateEmployeeResponse</span> {\n        <span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n            actionName: <span class="cls">CreateEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n            body: <span class="cls">CreateEmployeeBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'name'</span> <span class="kw">=&gt;</span> <span class="var">$name</span>]),\n            headers: <span class="kw">new</span> <span class="cls">CorrelationHeaders</span>(<span class="var">$correlationId</span>),\n        );\n        \\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">CreateEmployeeResponse</span>);\n        <span class="kw">return</span> <span class="var">$response</span>;\n    }\n}`,
+        codeGraphQL:  `<span class="kw">final class</span> <span class="cls">MyApiIntegration</span>\n{\n    <span class="kw">public function</span> <span class="met">getUser</span>(<span class="kw">int</span> <span class="var">$id</span>): <span class="cls">GetUserResponse</span>\n    {\n        <span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n            actionName: <span class="cls">GetUserAction</span><span class="kw">::</span><span class="met">getName</span>(),\n            body: <span class="cls">GetUserBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n        );\n        \\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetUserResponse</span>);\n        <span class="kw">return</span> <span class="var">$response</span>;\n    }\n}`,
+        codeSendMany: `<span class="kw">final class</span> <span class="cls">MyApiIntegration</span>\n{\n    <span class="kw">public function</span> <span class="met">getManyEmployees</span>(<span class="kw">array</span> <span class="var">$ids</span>): <span class="kw">array</span>\n    {\n        <span class="var">$requests</span> = [];\n        <span class="kw">foreach</span> (<span class="var">$ids</span> <span class="kw">as</span> <span class="var">$id</span>) {\n            <span class="var">$requests</span>[<span class="var">$id</span>] = <span class="cls">EngineRequest</span><span class="kw">::</span><span class="met">create</span>(\n                <span class="cls">GetEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n                <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n            );\n        }\n        <span class="var">$results</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">sendMany</span>(<span class="var">$requests</span>);\n        <span class="kw">if</span> (<span class="var">$results</span><span class="kw">-&gt;</span><span class="met">hasFailures</span>()) {\n            <span class="kw">throw</span> <span class="met">array_values</span>(<span class="var">$results</span><span class="kw">-&gt;</span><span class="met">errors</span>())[<span class="num">0</span>];\n        }\n        <span class="kw">return</span> <span class="var">$results</span><span class="kw">-&gt;</span><span class="met">responses</span>();\n    }\n}`,
         capasLabel: 'Diseño en Capas',
         capasH2:    'El bundle propone. No impone.',
         capasSub:   'Tres niveles que emergen solos. Usa los que necesites.',
@@ -100,13 +102,14 @@ const T = {
     },
 
     en: {
-        htmlLang: 'en',
+        htmlLang:  'en',
         pageTitle: 'IntegrationEngine — Symfony Bundle',
         metaDesc:  'One standard for every external API in your Symfony projects. Ship faster. Onboard instantly. Stop doing archaeology.',
         heroBadge: 'Symfony Bundle · PHP 8.2+ · Packagist',
         heroH1:    'After a few months, you no longer have integrations. You have a zoo.',
         heroP:     'IntegrationEngine forces every integration to look the same. Ship faster. Onboard instantly. Stop doing archaeology forever.',
         copyHint:  'Copied!',
+        navLabels: ['Problem', 'How it works', 'Call site'],
         heroNav: [
             { label: 'GitHub',        href: 'https://github.com/CarlosGude/integrationEngine' },
             { label: 'Packagist',     href: 'https://packagist.org/packages/carlosgude/integration-engine' },
@@ -134,26 +137,27 @@ const T = {
         problemaH2:    'Every integration ends up as an isolated case',
         problemaSub:   'Without a shared standard, each developer solves it differently. The codebase fragments. Knowledge disappears. Every new API means starting from scratch.',
         problems: [
-            { h3: 'Days lost per API',          p: 'No shared pattern means days of discovery and arbitrary decisions every time a new API lands on the backlog.' },
+            { h3: 'Days lost per API',            p: 'No shared pattern means days of discovery and arbitrary decisions every time a new API lands on the backlog.' },
             { h3: 'Onboarding that never scales', p: 'A different structure per integration means every new teammate has to start from zero, every time.' },
-            { h3: 'Bugs hiding in the gaps',    p: 'HTTP logic scattered across services, no contract to enforce, nothing to test in isolation.' },
-            { h3: 'Zero reuse',                 p: 'Auth, caching, mapping — reinvented from scratch every single time, in every integration.' },
-            { h3: 'Nobody knows how it works',  p: 'Six months later, the developer who built it is gone and the code is unreadable.' },
+            { h3: 'Bugs hiding in the gaps',      p: 'HTTP logic scattered across services, no contract to enforce, nothing to test in isolation.' },
+            { h3: 'Zero reuse',                   p: 'Auth, caching, mapping — reinvented from scratch every single time, in every integration.' },
+            { h3: 'Impossible to test',           p: 'HTTP coupled to domain logic. You cannot test business rules without hitting the network.' },
+            { h3: 'Nobody knows how it works',    p: 'Six months later, the developer who built it is gone and the code is unreadable.' },
         ],
         comoLabel: 'How It Works',
         comoH2:    'One entry point. One contract. Every time.',
         comoSub:   'A single flow for all your external APIs. Every step has a clear, testable owner.',
         features: [
-            { h3: 'Ship in minutes, not days',       p: '<code>make:integration</code> scaffolds Action, Mapper, Response DTO and YAML in one command. You write only business logic.' },
+            { h3: 'Ship in minutes, not days',        p: '<code>make:integration</code> scaffolds Action, Mapper, Response DTO and YAML in one command. You write only business logic.' },
             { h3: 'If you know one, you know them all', p: 'Every integration follows the same layout and the same contracts. Instant onboarding for every new teammate.' },
-            { h3: 'Token management, zero effort',   p: 'OAuth, sessions, API keys — fetched, cached, and auto-refreshed on 401. No manual token logic, ever.' },
-            { h3: 'Type-safe responses',             p: 'Every endpoint returns a guaranteed DTO. No guessing at runtime, no silent surprises in production.' },
-            { h3: 'Parallel requests, built-in',     p: '<code>sendMany()</code> runs N concurrent requests. Individual failures never abort the batch.' },
-            { h3: 'Swap any layer',                  p: 'HTTP client, cache backend, config source — each replaceable with one line in YAML.' },
+            { h3: 'Token management, zero effort',    p: 'OAuth, sessions, API keys — fetched, cached, and auto-refreshed on 401. No manual token logic, ever.' },
+            { h3: 'Type-safe responses',              p: 'Every endpoint returns a guaranteed DTO. No guessing at runtime, no silent surprises in production.' },
+            { h3: 'Parallel requests, built-in',      p: '<code>sendMany()</code> runs N concurrent requests. Individual failures never abort the batch.' },
+            { h3: 'Swap any layer',                   p: 'HTTP client, cache backend, config source — each replaceable with one line in YAML.' },
         ],
         callsiteLabel: 'The Call Site',
         callsiteH2:    'The same call. Every time.',
-        callsiteSub:   'No HTTP clients. No request builders. No mappers. One clean facade method your entire team recognises.',
+        callsiteSub:   'The engine lives inside your integration facade. From the outside, your domain never knows HTTP exists.',
         tabs: [
             { label: 'No auth',          id: 'tab-noauth' },
             { label: 'Path params',      id: 'tab-path' },
@@ -161,11 +165,11 @@ const T = {
             { label: 'GraphQL',          id: 'tab-graphql' },
             { label: 'Batch / sendMany', id: 'tab-batch' },
         ],
-        codeNoAuth:   `<span class="cmt">// Action path: GET /employees</span>\n<span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    <span class="cls">GetEmployeesAction</span><span class="kw">::</span><span class="met">getName</span>()\n);\n<span class="cmt">// → GET /employees</span>`,
-        codePath:     `<span class="cmt">// Action path: GET /employees/{id}</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">GetEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    context: <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n);\n<span class="cmt">// → GET /employees/42</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetEmployeeResponse</span>);\n<span class="cmt">// GetEmployeeResponse { id: 42, name: 'John Doe', department: 'Engineering' }</span>`,
-        codeBody:     `<span class="cmt">// Action path: POST /employees</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">CreateEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body: <span class="cls">CreateEmployeeBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'name'</span> <span class="kw">=&gt;</span> <span class="str">'John Doe'</span>]),\n    headers: <span class="kw">new</span> <span class="cls">CorrelationHeaders</span>(<span class="var">$correlationId</span>),\n);\n<span class="cmt">// → POST /employees { "name": "John Doe" }</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">CreateEmployeeResponse</span>);\n<span class="cmt">// CreateEmployeeResponse { id: 99, name: 'John Doe', status: 'active' }</span>`,
-        codeGraphQL:  `<span class="cmt">// Action endpoint: POST /graphql</span>\n<span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n    actionName: <span class="cls">GetUserAction</span><span class="kw">::</span><span class="met">getName</span>(),\n    body: <span class="cls">GetUserBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n);\n<span class="cmt">// → POST /graphql { "query": "query { user(id: $id) { name } }", "variables": { "id": 42 } }</span>\n\n\\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetUserResponse</span>);\n<span class="cmt">// GetUserResponse { id: 42, name: 'John Doe' }</span>`,
-        codeSendMany: `<span class="cmt">// Parallel fan-out — one request per employee ID</span>\n<span class="var">$requests</span> = [];\n<span class="kw">foreach</span> (<span class="var">$ids</span> <span class="kw">as</span> <span class="var">$id</span>) {\n    <span class="var">$requests</span>[<span class="var">$id</span>] = <span class="cls">EngineRequest</span><span class="kw">::</span><span class="met">create</span>(\n        <span class="cls">GetEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n        <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n    );\n}\n\n<span class="var">$results</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">sendMany</span>(<span class="var">$requests</span>);\n<span class="cmt">// BatchResultCollection — each key resolves independently</span>\n\n<span class="kw">if</span> (<span class="var">$results</span><span class="kw">-&gt;</span><span class="met">hasFailures</span>()) {\n    <span class="kw">throw</span> <span class="met">array_values</span>(<span class="var">$results</span><span class="kw">-&gt;</span><span class="met">errors</span>())[<span class="num">0</span>];\n}\n\n<span class="kw">return</span> <span class="met">array_map</span>(\n    <span class="kw">fn</span>(<span class="var">$dto</span>) <span class="kw">=&gt;</span> <span class="cls">Employee</span><span class="kw">::</span><span class="met">fromDto</span>(<span class="var">$dto</span>),\n    <span class="var">$results</span><span class="kw">-&gt;</span><span class="met">responses</span>(),\n);`,
+        codeNoAuth:   `<span class="kw">final class</span> <span class="cls">MyApiIntegration</span>\n{\n    <span class="kw">public function</span> <span class="met">__construct</span>(\n        <span class="kw">private</span> <span class="cls">IntegrationEngine</span> <span class="var">$engine</span>\n    ) {}\n\n    <span class="kw">public function</span> <span class="met">listEmployees</span>(): <span class="cls">GetEmployeesResponse</span>\n    {\n        <span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n            <span class="cls">GetEmployeesAction</span><span class="kw">::</span><span class="met">getName</span>()\n        );\n        \\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetEmployeesResponse</span>);\n        <span class="kw">return</span> <span class="var">$response</span>;\n    }\n}`,
+        codePath:     `<span class="kw">final class</span> <span class="cls">MyApiIntegration</span>\n{\n    <span class="kw">public function</span> <span class="met">getEmployee</span>(<span class="kw">int</span> <span class="var">$id</span>): <span class="cls">GetEmployeeResponse</span>\n    {\n        <span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n            actionName: <span class="cls">GetEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n            context: <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n        );\n        \\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetEmployeeResponse</span>);\n        <span class="kw">return</span> <span class="var">$response</span>;\n    }\n}`,
+        codeBody:     `<span class="kw">final class</span> <span class="cls">MyApiIntegration</span>\n{\n    <span class="kw">public function</span> <span class="met">createEmployee</span>(\n        <span class="kw">string</span> <span class="var">$name</span>,\n        <span class="kw">string</span> <span class="var">$correlationId</span>,\n    ): <span class="cls">CreateEmployeeResponse</span> {\n        <span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n            actionName: <span class="cls">CreateEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n            body: <span class="cls">CreateEmployeeBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'name'</span> <span class="kw">=&gt;</span> <span class="var">$name</span>]),\n            headers: <span class="kw">new</span> <span class="cls">CorrelationHeaders</span>(<span class="var">$correlationId</span>),\n        );\n        \\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">CreateEmployeeResponse</span>);\n        <span class="kw">return</span> <span class="var">$response</span>;\n    }\n}`,
+        codeGraphQL:  `<span class="kw">final class</span> <span class="cls">MyApiIntegration</span>\n{\n    <span class="kw">public function</span> <span class="met">getUser</span>(<span class="kw">int</span> <span class="var">$id</span>): <span class="cls">GetUserResponse</span>\n    {\n        <span class="var">$response</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">send</span>(\n            actionName: <span class="cls">GetUserAction</span><span class="kw">::</span><span class="met">getName</span>(),\n            body: <span class="cls">GetUserBody</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n        );\n        \\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetUserResponse</span>);\n        <span class="kw">return</span> <span class="var">$response</span>;\n    }\n}`,
+        codeSendMany: `<span class="kw">final class</span> <span class="cls">MyApiIntegration</span>\n{\n    <span class="kw">public function</span> <span class="met">getManyEmployees</span>(<span class="kw">array</span> <span class="var">$ids</span>): <span class="kw">array</span>\n    {\n        <span class="var">$requests</span> = [];\n        <span class="kw">foreach</span> (<span class="var">$ids</span> <span class="kw">as</span> <span class="var">$id</span>) {\n            <span class="var">$requests</span>[<span class="var">$id</span>] = <span class="cls">EngineRequest</span><span class="kw">::</span><span class="met">create</span>(\n                <span class="cls">GetEmployeeAction</span><span class="kw">::</span><span class="met">getName</span>(),\n                <span class="cls">DefaultActionContext</span><span class="kw">::</span><span class="met">create</span>([<span class="str">'id'</span> <span class="kw">=&gt;</span> <span class="var">$id</span>]),\n            );\n        }\n        <span class="var">$results</span> = <span class="var">$this</span><span class="kw">-&gt;</span><span class="met">engine</span><span class="kw">-&gt;</span><span class="met">sendMany</span>(<span class="var">$requests</span>);\n        <span class="kw">if</span> (<span class="var">$results</span><span class="kw">-&gt;</span><span class="met">hasFailures</span>()) {\n            <span class="kw">throw</span> <span class="met">array_values</span>(<span class="var">$results</span><span class="kw">-&gt;</span><span class="met">errors</span>())[<span class="num">0</span>];\n        }\n        <span class="kw">return</span> <span class="var">$results</span><span class="kw">-&gt;</span><span class="met">responses</span>();\n    }\n}`,
         capasLabel: 'Layered Design',
         capasH2:    'The bundle proposes. It does not impose.',
         capasSub:   'Three levels that emerge naturally. Use whichever you need.',
@@ -192,10 +196,6 @@ const T = {
 function getHTML(lang) {
     const t = T[lang];
 
-    const navLinks = t.heroNav.map(n =>
-        `<a href="${n.href}" target="_blank" rel="noopener">${n.label}</a>`
-    ).join('\n    ');
-
     const problems = t.problems.map(p => `
       <div class="problem-card">
         <h3>${p.h3}</h3>
@@ -219,6 +219,10 @@ function getHTML(lang) {
           <td class="layer-desc">${l.desc}</td>
           <td class="layer-scope">${l.scope}</td>
         </tr>`).join('');
+
+    const docsHref = lang === 'es'
+        ? 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION_ES.md'
+        : 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION.md';
 
     return `<!DOCTYPE html>
 <html lang="${t.htmlLang}">
@@ -248,11 +252,12 @@ function getHTML(lang) {
 <nav class="topnav">
   <a class="topnav-brand" href="?lang=${lang}">Integration<span>Engine</span></a>
   <div class="topnav-links">
+    <a href="#problema">${t.navLabels[0]}</a>
+    <a href="#como">${t.navLabels[1]}</a>
+    <a href="#callsite">${t.navLabels[2]}</a>
+    <span class="topnav-sep"></span>
     <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener">GitHub</a>
-    <a href="${lang === 'es'
-        ? 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION_ES.md'
-        : 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION.md'
-    }" target="_blank" rel="noopener">${lang === 'es' ? 'Documentación' : 'Documentation'}</a>
+    <a href="${docsHref}" target="_blank" rel="noopener">${lang === 'es' ? 'Documentación' : 'Documentation'}</a>
   </div>
   <div class="lang-pill">
     <a href="?lang=es" class="lang-opt ${lang === 'es' ? 'lang-active' : 'lang-inactive'}">
@@ -288,7 +293,7 @@ function getHTML(lang) {
 </section>
 
 <!-- EL PROBLEMA -->
-<section class="problema" style="padding-top:0">
+<section id="problema" class="problema" style="padding-top:0">
   <div class="container">
     <p class="section-label">${t.problemaLabel}</p>
     <h2 class="section-title">${t.problemaH2}</h2>
@@ -299,7 +304,7 @@ function getHTML(lang) {
 </section>
 
 <!-- COMO FUNCIONA -->
-<section class="como">
+<section id="como" class="como">
   <div class="container">
     <p class="section-label">${t.comoLabel}</p>
     <h2 class="section-title">${t.comoH2}</h2>
@@ -336,7 +341,7 @@ function getHTML(lang) {
 </section>
 
 <!-- EL CALL SITE -->
-<section class="callsite">
+<section id="callsite" class="callsite">
   <div class="container">
     <p class="section-label">${t.callsiteLabel}</p>
     <h2 class="section-title">${t.callsiteH2}</h2>
@@ -382,7 +387,7 @@ function getHTML(lang) {
     <p>${t.ctaP}</p>
     <div class="cta-buttons">
       <a href="https://github.com/CarlosGude/integrationEngine" class="btn btn-primary" target="_blank" rel="noopener">${t.ctaBtn1}</a>
-      <a href="${lang === 'es' ? 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION_ES.md' : 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION.md'}" class="btn btn-ghost" target="_blank" rel="noopener">${t.ctaBtn2}</a>
+      <a href="${docsHref}" class="btn btn-ghost" target="_blank" rel="noopener">${t.ctaBtn2}</a>
       <a href="${t.ctaBtn3Href}" class="btn btn-ghost" target="_blank" rel="noopener">${t.ctaBtn3}</a>
     </div>
   </div>
@@ -410,7 +415,6 @@ const CSS = `*, *::before, *::after { box-sizing: border-box; margin: 0; padding
   --blue:      #2f6fbd;
   --blue-light:#4a8fd4;
   --red:       #c94f2c;
-  --red-light: #e06840;
   --text:      #e8edf3;
   --muted:     #8fa3bd;
   --border:    #1e3352;
@@ -452,7 +456,8 @@ body {
 .topnav-brand span { color: var(--blue-light); }
 .topnav-links {
   display: flex;
-  gap: 1.5rem;
+  align-items: center;
+  gap: 1.25rem;
 }
 .topnav-links a {
   font-size: .82rem;
@@ -462,6 +467,12 @@ body {
   white-space: nowrap;
 }
 .topnav-links a:hover { color: var(--white); }
+.topnav-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--border);
+  flex-shrink: 0;
+}
 .lang-pill {
   display: inline-flex;
   align-items: center;
@@ -491,15 +502,12 @@ body {
 }
 .lp-bracket { color: #3a5470; }
 .lp-code    { font-weight: 700; letter-spacing: .06em; }
-.lang-inactive { opacity: 1; }
-.lang-inactive .lp-flag { filter: grayscale(20%); }
 .lang-inactive .lp-code { color: var(--muted); }
 .lang-inactive:hover { border-color: rgba(255,255,255,0.08); }
-.lang-active { opacity: 1; border-color: rgba(255,255,255,0.15); }
-.lang-active .lp-flag { filter: none; }
+.lang-active { border-color: rgba(255,255,255,0.15); }
 .lang-active .lp-code { color: #7dd3fc; }
 
-@media (max-width: 500px) {
+@media (max-width: 680px) {
   .topnav-links { display: none; }
 }
 
@@ -507,12 +515,13 @@ h1, h2, h3, .section-title, .hero h1, .cta h2 {
   font-family: "Inter", sans-serif;
 }
 
+/* ── HERO ── */
 .hero {
   position: relative;
   background: radial-gradient(ellipse 80% 60% at 50% -10%, #1a3a6e 0%, var(--navy) 70%);
   color: var(--text);
   text-align: center;
-  padding: 4.5rem 1.5rem 3.5rem;
+  padding: 3.5rem 1.5rem 3rem;
   overflow: hidden;
 }
 .hero::before {
@@ -521,7 +530,7 @@ h1, h2, h3, .section-title, .hero h1, .cta h2 {
   top: -80px; left: 50%;
   transform: translateX(-50%);
   width: 600px; height: 300px;
-  background: radial-gradient(ellipse, rgba(47, 111, 189, 0.35) 0%, transparent 70%);
+  background: radial-gradient(ellipse, rgba(47,111,189,.35) 0%, transparent 70%);
   pointer-events: none;
   filter: blur(20px);
 }
@@ -530,7 +539,7 @@ h1, h2, h3, .section-title, .hero h1, .cta h2 {
   font-size: .75rem;
   letter-spacing: .08em;
   color: var(--muted);
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 .hero h1 {
   position: relative;
@@ -540,13 +549,13 @@ h1, h2, h3, .section-title, .hero h1, .cta h2 {
   color: var(--white);
   max-width: 760px;
   margin: 0 auto 1.25rem;
-  text-shadow: 0 0 60px rgba(74, 143, 212, 0.4);
+  text-shadow: 0 0 60px rgba(74,143,212,.4);
 }
 .hero p {
   position: relative;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: var(--muted);
-  max-width: 560px;
+  max-width: 540px;
   margin: 0 auto 2rem;
 }
 .install-box {
@@ -555,11 +564,11 @@ h1, h2, h3, .section-title, .hero h1, .cta h2 {
   background: var(--code-bg);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: .75rem 1.5rem;
+  padding: .7rem 1.5rem;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: .95rem;
+  font-size: .9rem;
   color: #7dd3fc;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
   cursor: pointer;
   position: relative;
   overflow-x: auto;
@@ -568,7 +577,7 @@ h1, h2, h3, .section-title, .hero h1, .cta h2 {
 }
 .install-box:hover {
   border-color: var(--blue-light);
-  box-shadow: 0 0 18px rgba(74, 143, 212, 0.25);
+  box-shadow: 0 0 18px rgba(74,143,212,.25);
 }
 .install-box .copy-hint {
   position: absolute;
@@ -585,7 +594,6 @@ h1, h2, h3, .section-title, .hero h1, .cta h2 {
   white-space: nowrap;
 }
 .install-box.copied .copy-hint { opacity: 1; }
-
 .hero-gh-btn {
   display: inline-block;
   background: var(--blue);
@@ -596,28 +604,12 @@ h1, h2, h3, .section-title, .hero h1, .cta h2 {
   padding: .6rem 1.5rem;
   border-radius: 6px;
   text-decoration: none;
-  margin-bottom: 2rem;
   transition: opacity .2s, transform .1s;
 }
 .hero-gh-btn:hover { opacity: .85; transform: translateY(-1px); }
 
-.hero-nav {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.hero-nav a {
-  color: var(--blue-light);
-  text-decoration: none;
-  font-size: .95rem;
-  transition: color .2s;
-}
-.hero-nav a:hover { color: var(--white); }
-
-section { padding: 3.5rem 1.5rem; }
+/* ── SECTIONS ── */
+section { padding: 2.5rem 1.5rem; }
 .container { max-width: 960px; margin: 0 auto; }
 
 .section-label {
@@ -626,34 +618,36 @@ section { padding: 3.5rem 1.5rem; }
   letter-spacing: .15em;
   text-transform: uppercase;
   color: var(--blue);
-  margin-bottom: .75rem;
+  margin-bottom: .6rem;
 }
 .section-title {
-  font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+  font-size: clamp(1.4rem, 3.5vw, 2.1rem);
   font-weight: 800;
   color: var(--blue);
-  margin-bottom: .75rem;
+  margin-bottom: .6rem;
 }
 .section-sub {
   color: #4a5568;
   max-width: 640px;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
 }
 
+/* ── PROBLEMA ── */
 .problema { background: #f8fafc; }
 .problems-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1px;
   background: #dde3ec;
   border: 1px solid #dde3ec;
   border-radius: 8px;
   overflow: hidden;
 }
-.problem-card { background: #fff; padding: 1.5rem 1.25rem; }
-.problem-card h3 { font-size: .95rem; font-weight: 700; color: var(--red); margin-bottom: .5rem; }
-.problem-card p  { font-size: .82rem; color: #4a5568; line-height: 1.5; }
+.problem-card { background: #fff; padding: 1.25rem; }
+.problem-card h3 { font-size: .9rem; font-weight: 700; color: var(--red); margin-bottom: .4rem; }
+.problem-card p  { font-size: .8rem; color: #4a5568; line-height: 1.5; }
 
+/* ── COMO FUNCIONA ── */
 .como { background: var(--white); }
 .pipeline {
   display: flex;
@@ -680,11 +674,11 @@ section { padding: 3.5rem 1.5rem; }
 .pipe-label.pipe-active {
   color: #fff;
   border-color: var(--blue-light);
-  box-shadow: 0 0 14px rgba(74, 143, 212, 0.45);
+  box-shadow: 0 0 14px rgba(74,143,212,.45);
 }
 .pipe-label.highlight { background: var(--blue); color: #fff; font-weight: 700; }
 .pipe-label.highlight.pipe-active {
-  box-shadow: 0 0 20px rgba(47, 111, 189, 0.7);
+  box-shadow: 0 0 20px rgba(47,111,189,.7);
   border-color: #7dd3fc;
 }
 .pipe-arrow { color: var(--border); padding: 0 .5rem; font-size: 1rem; transition: color .3s; }
@@ -693,12 +687,13 @@ section { padding: 3.5rem 1.5rem; }
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
-.feature-card { border: 1px solid #dde3ec; border-radius: 8px; padding: 1.5rem; }
-.feature-card h3 { font-size: .95rem; font-weight: 700; color: var(--blue); margin-bottom: .5rem; }
-.feature-card p  { font-size: .83rem; color: #4a5568; line-height: 1.55; }
+.feature-card { border: 1px solid #dde3ec; border-radius: 8px; padding: 1.25rem; }
+.feature-card h3 { font-size: .9rem; font-weight: 700; color: var(--blue); margin-bottom: .4rem; }
+.feature-card p  { font-size: .82rem; color: #4a5568; line-height: 1.55; }
 
+/* ── CALL SITE ── */
 .callsite { background: #f8fafc; }
 .code-block {
   background: var(--code-bg);
@@ -712,7 +707,7 @@ section { padding: 3.5rem 1.5rem; }
   overflow-x: auto;
 }
 .code-tab {
-  padding: .6rem 1.25rem;
+  padding: .55rem 1.1rem;
   font-size: .78rem;
   color: var(--muted);
   cursor: pointer;
@@ -762,6 +757,7 @@ pre {
 .var { color: #c9d8e8; }
 .num { color: #fbbf24; }
 
+/* ── CAPAS ── */
 .capas { background: var(--white); }
 .layers-table {
   width: 100%;
@@ -781,16 +777,17 @@ pre {
 .layers-table th { padding: .75rem 1.25rem; text-align: left; }
 .layers-table tbody tr:nth-child(odd)  { background: #fff; }
 .layers-table tbody tr:nth-child(even) { background: #f0f5fb; }
-.layers-table td { padding: 1rem 1.25rem; vertical-align: top; }
+.layers-table td { padding: .9rem 1.25rem; vertical-align: top; }
 .layer-name  { font-family: monospace; font-weight: 700; color: var(--blue); font-size: .9rem; }
 .layer-desc  { color: #4a5568; font-size: .85rem; line-height: 1.5; }
 .layer-scope { color: var(--muted); font-size: .82rem; }
 
+/* ── CTA ── */
 .cta {
   background: var(--navy);
   color: var(--text);
   text-align: center;
-  padding: 4rem 1.5rem;
+  padding: 3rem 1.5rem;
 }
 .cta h2 {
   font-size: clamp(1.4rem, 3vw, 2rem);
@@ -817,32 +814,49 @@ footer {
   background: var(--code-bg);
   color: var(--muted);
   text-align: center;
-  padding: 1.5rem;
+  padding: 1.25rem;
   font-size: .78rem;
 }
 footer a { color: var(--blue-light); text-decoration: none; }
 
+/* ── MOBILE ── */
 @media (max-width: 600px) {
-  section { padding: 2.5rem 1.25rem; }
-  .hero { padding: 3rem 1.25rem 2.5rem; }
+  section { padding: 2rem 1.25rem; }
+  .hero { padding: 2.5rem 1.25rem 2rem; }
   .hero p { font-size: .95rem; }
-  .install-box { font-size: .75rem; padding: .65rem 1rem; }
+  .install-box { font-size: .75rem; padding: .6rem 1rem; }
   .hero-gh-btn { display: block; text-align: center; }
-  .problems-grid { grid-template-columns: 1fr; }
+
+  /* pipeline vertical */
+  .pipeline { flex-direction: column; align-items: flex-start; gap: .4rem; padding: .875rem 1rem; }
+  .pipe-step { flex-direction: row; }
+  .pipe-arrow { display: none; }
+
+  /* problem cards: 2 columnas */
+  .problems-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* feature cards: 1 columna */
   .features-grid { grid-template-columns: 1fr; }
+
+  /* CTA buttons en columna */
   .cta-buttons { flex-direction: column; align-items: stretch; }
   .cta-buttons .btn { text-align: center; }
-  .hero-nav { gap: 1.25rem; }
+
+  /* tabla de capas en bloque */
   .layers-table thead { display: none; }
   .layers-table, .layers-table tbody, .layers-table tr, .layers-table td {
     display: block; width: 100%;
   }
   .layers-table td { padding: .75rem 1rem; }
   .line-numbers { display: none; }
+}
+
+@media (max-width: 380px) {
+  .problems-grid { grid-template-columns: 1fr; }
 }`;
 
 /* ─────────────────────────────────────────────────────────────
-   JS — verbatim de main.js
+   JS
 ───────────────────────────────────────────────────────────── */
 const JS = `
 function copyInstall(el) {
