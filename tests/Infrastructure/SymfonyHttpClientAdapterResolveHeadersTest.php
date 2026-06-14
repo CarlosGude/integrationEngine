@@ -156,9 +156,12 @@ final class SymfonyHttpClientAdapterResolveHeadersTest extends TestCase
     // ── default ───────────────────────────────────────────────────────────────
 
     #[Test]
-    public function unknownAuthTypeAddsNoAuthHeader(): void
+    public function unknownAuthTypeThrows(): void
     {
-        // Kills MatchArmRemoval for 'default' arm
+        // Kills MatchArmRemoval for 'default' arm.
+        // buildOptions() is called before the transport try-block so the
+        // InvalidArgumentException propagates directly as a config error, not
+        // wrapped as a network failure.
         $spy = new RestHeadersSpyClient();
         $adapter = new SymfonyHttpClientAdapter(httpClient: $spy, baseUrl: 'https://api.example.com');
 
@@ -171,9 +174,10 @@ final class SymfonyHttpClientAdapterResolveHeadersTest extends TestCase
             ),
         );
 
-        $adapter->send($action);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/Unknown static authorization type "unknown_type"/');
 
-        self::assertArrayNotHasKey('Authorization', $spy->lastHeaders());
+        $adapter->send($action);
     }
 
     // ── += preserves existing headers ─────────────────────────────────────────

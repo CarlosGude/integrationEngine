@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core\Batch;
 
+use IntegrationEngine\Core\Contract\AbstractAction;
 use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use IntegrationEngine\Core\Port\CachePort;
@@ -14,16 +15,17 @@ use IntegrationEngine\Core\Port\CachePort;
  * (already fresh — no retry).
  *
  * Lifecycle inside sendMany():
- *   1. observe($key, $auth)  — before the token is resolved, for every dynamic-auth item
- *   2. withStaticToken(...)  — resolves (and may cache) the token
- *   3. plan($raw)            — after dispatch: identifies 401s, drops stale cache entries
+ *   1. prepareWithToken($key, $auth, $factory) — snapshots cache state, then
+ *      resolves the token by calling $factory(); the factory cannot be reordered
+ *      because it runs inside this method
+ *   2. plan($raw) — after dispatch: identifies 401s, drops stale cache entries
  */
 final class BatchTokenRetry
 {
     /** @var array<array-key, DynamicAuthorizationConfig> */
     private array $retryable = [];
 
-    /** @var list<string> */
+    /** @var array<string, true> */
     private array $fetchedInBatch = [];
 
     public function __construct(
@@ -32,21 +34,31 @@ final class BatchTokenRetry
     ) {}
 
     /**
-     * Must be called before the token is resolved for this item.
-     * A token already in cache (but not fetched by this batch) is retryable.
-     * A token that will be fetched now counts as fresh — 401s are final.
+     * Snapshots the token's pre-fetch cache state for this item, then calls
+     * $factory() to resolve the token (which may write to the cache).
+     * Keeps the observe-then-resolve order structural rather than documental.
+     *
+     * @param callable(): AbstractAction $factory
      */
-    public function observe(int|string $key, DynamicAuthorizationConfig $auth): void
-    {
+    public function prepareWithToken(
+        int|string $key,
+        DynamicAuthorizationConfig $auth,
+        callable $factory,
+    ): AbstractAction {
         $cacheKey = $this->cacheKey($auth);
+        $isPreCached = \is_string($this->cache->get($cacheKey));
 
-        if (\is_string($this->cache->get($cacheKey))) {
-            if (!\in_array($cacheKey, $this->fetchedInBatch, true)) {
-                $this->retryable[$key] = $auth;
-            }
-        } else {
-            $this->fetchedInBatch[] = $cacheKey;
+        if ($isPreCached && !isset($this->fetchedInBatch[$cacheKey])) {
+            $this->retryable[$key] = $auth;
         }
+
+        $action = ($factory)();
+
+        if (!$isPreCached) {
+            $this->fetchedInBatch[$cacheKey] = true;
+        }
+
+        return $action;
     }
 
     /**
@@ -70,14 +82,15 @@ final class BatchTokenRetry
             }
         }
 
+        /** @var array<string, true> $dropped */
         $dropped = [];
 
         foreach ($toRetry as $auth) {
             $cacheKey = $this->cacheKey($auth);
 
-            if (!\in_array($cacheKey, $dropped, true)) {
+            if (!isset($dropped[$cacheKey])) {
                 $this->cache->delete($cacheKey);
-                $dropped[] = $cacheKey;
+                $dropped[$cacheKey] = true;
             }
         }
 
@@ -86,6 +99,6 @@ final class BatchTokenRetry
 
     private function cacheKey(DynamicAuthorizationConfig $auth): string
     {
-        return \sprintf('integration_engine.token.%s.%s', $this->integrationName, $auth->action);
+        return $auth->cacheKey($this->integrationName);
     }
 }

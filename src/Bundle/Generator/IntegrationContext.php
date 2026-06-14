@@ -64,6 +64,11 @@ final readonly class IntegrationContext
         return !$this->adapterRequiresPath && !$this->adapterRequiresMethod;
     }
 
+    public static function toSnakeCase(string $value): string
+    {
+        return strtolower(preg_replace('/(?<!^)[A-Z]/u', '_$0', $value) ?? $value);
+    }
+
     public function with(
         ?string $action = null,
         ?string $method = null,

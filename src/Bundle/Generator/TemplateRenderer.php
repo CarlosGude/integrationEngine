@@ -16,7 +16,7 @@ final readonly class TemplateRenderer
 
     public function integration(): string
     {
-        $name = $this->toSnakeCase($this->ctx->name);
+        $name = IntegrationContext::toSnakeCase($this->ctx->name);
 
         return <<<PHP
             <?php
@@ -161,10 +161,5 @@ final readonly class TemplateRenderer
                 }
             }
             PHP;
-    }
-
-    private function toSnakeCase(string $value): string
-    {
-        return strtolower(preg_replace('/(?<!^)[A-Z]/u', '_$0', $value) ?? $value);
     }
 }

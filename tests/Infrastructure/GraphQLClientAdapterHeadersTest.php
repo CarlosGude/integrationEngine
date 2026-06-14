@@ -187,9 +187,12 @@ final class GraphQLClientAdapterHeadersTest extends TestCase
     // ── default ───────────────────────────────────────────────────────────────
 
     #[Test]
-    public function unknownAuthTypeAddsNoAuthHeader(): void
+    public function unknownAuthTypeThrows(): void
     {
-        // Kills MatchArmRemoval for 'default' arm
+        // Kills MatchArmRemoval for 'default' arm.
+        // Options are built before the transport try-block so the
+        // InvalidArgumentException propagates directly as a config error, not
+        // wrapped as a network failure.
         $spy = new GQLHeadersSpyClient();
         $adapter = new GraphQLClientAdapter(httpClient: $spy, endpointUrl: 'https://api.example.com/graphql');
 
@@ -203,9 +206,10 @@ final class GraphQLClientAdapterHeadersTest extends TestCase
             ),
         );
 
-        $adapter->send($action);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/Unknown static authorization type "unknown_type"/');
 
-        self::assertArrayNotHasKey('Authorization', $spy->lastHeaders());
+        $adapter->send($action);
     }
 
     // ── += preserves existing headers ─────────────────────────────────────────

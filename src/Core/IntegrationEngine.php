@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core;
 
+use IntegrationEngine\Core\Auth\DynamicAuthHandler;
 use IntegrationEngine\Core\Batch\BatchResult;
 use IntegrationEngine\Core\Batch\BatchResultCollection;
 use IntegrationEngine\Core\Batch\BatchTokenRetry;
@@ -17,23 +18,27 @@ use IntegrationEngine\Core\Contract\ClientInterface;
 use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\ResponseInterface;
-use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
-use IntegrationEngine\Core\Exception\DynamicAuthException;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Exception\NotMappedActionException;
-use IntegrationEngine\Core\Exception\RequestResponseException;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
 use IntegrationEngine\Core\Response\EmptyResponse;
+use Psr\Log\LoggerInterface;
 
 final readonly class IntegrationEngine
 {
+    private DynamicAuthHandler $authHandler;
+
     public function __construct(
         private ConfigPort $config,
         private ClientInterface $client,
         private CachePort $cache,
         private string $integrationName,
-    ) {}
+        private ?LoggerInterface $logger = null,
+        ?DynamicAuthHandler $authHandler = null,
+    ) {
+        $this->authHandler = $authHandler ?? new DynamicAuthHandler($config, $client, $cache, $integrationName, $logger);
+    }
 
     public function send(
         string $actionName,
@@ -45,7 +50,13 @@ final readonly class IntegrationEngine
         $auth = $action->getAuthorization();
 
         if ($auth instanceof DynamicAuthorizationConfig) {
-            return $this->sendWithDynamicAuth($action, $auth, $context, $headers);
+            return $this->authHandler->handle(
+                $action,
+                $auth,
+                $context,
+                $headers,
+                fn (AbstractAction $a, array $r): ResponseInterface => $this->buildResponse($a, $r),
+            );
         }
 
         $rawResponse = $this->client->send($action, $context, $headers);
@@ -75,8 +86,11 @@ final readonly class IntegrationEngine
                 $auth = $action->getAuthorization();
 
                 if ($auth instanceof DynamicAuthorizationConfig) {
-                    $tokenRetry->observe($key, $auth);
-                    $action = $this->withStaticToken($action, $auth);
+                    $action = $tokenRetry->prepareWithToken(
+                        $key,
+                        $auth,
+                        fn (): AbstractAction => $this->authHandler->withStaticToken($action, $auth),
+                    );
                 }
 
                 $prepared[$key] = new PreparedRequest($action, $request->context, $request->headers);
@@ -185,6 +199,14 @@ final readonly class IntegrationEngine
      */
     private function retryBatch(array $requests, array $raw, array $toRetry): array
     {
+        if ([] !== $toRetry) {
+            $this->logger?->warning('Retrying batch items after 401 with a fresh token', [
+                'integration' => $this->integrationName,
+                'count' => \count($toRetry),
+                'keys' => array_keys($toRetry),
+            ]);
+        }
+
         $prepared = [];
 
         foreach ($toRetry as $key => $auth) {
@@ -192,7 +214,7 @@ final readonly class IntegrationEngine
 
             try {
                 $action = $this->config->getAction($request->actionName, $request->body);
-                $prepared[$key] = new PreparedRequest($this->withStaticToken($action, $auth), $request->context, $request->headers);
+                $prepared[$key] = new PreparedRequest($this->authHandler->withStaticToken($action, $auth), $request->context, $request->headers);
             } catch (\Throwable $e) {
                 $raw[$key] = $e;
             }
@@ -205,36 +227,6 @@ final readonly class IntegrationEngine
         return $raw;
     }
 
-    private function sendWithDynamicAuth(
-        AbstractAction $action,
-        DynamicAuthorizationConfig $auth,
-        ?ActionContextInterface $context,
-        ?RequestHeadersInterface $headers,
-    ): ResponseInterface {
-        $usedCachedToken = \is_string($this->cache->get($this->tokenCacheKey($auth)));
-
-        $authorized = $this->withStaticToken($action, $auth);
-
-        try {
-            $rawResponse = $this->client->send($authorized, $context, $headers);
-        } catch (RequestResponseException $e) {
-            // A cached token can be revoked or expire server-side before its
-            // TTL: drop it and retry once with a freshly fetched token. A
-            // fresh token rejected with 401 is not retried — fetching it
-            // again would yield the same result.
-            if (401 !== $e->statusCode || !$usedCachedToken) {
-                throw $e;
-            }
-
-            $this->cache->delete($this->tokenCacheKey($auth));
-
-            $authorized = $this->withStaticToken($action, $auth);
-            $rawResponse = $this->client->send($authorized, $context, $headers);
-        }
-
-        return $this->buildResponse($authorized, $rawResponse);
-    }
-
     /**
      * @param array<mixed> $rawResponse
      */
@@ -245,63 +237,6 @@ final readonly class IntegrationEngine
         }
 
         return $this->applyMapper($action, $rawResponse);
-    }
-
-    private function withStaticToken(
-        AbstractAction $action,
-        DynamicAuthorizationConfig $auth,
-    ): AbstractAction {
-        $token = $this->resolveToken($auth);
-
-        $isDefaultHeader = 'Authorization' === $auth->header;
-
-        return $action::create(
-            method: $action->getMethod(),
-            path: $action->getRawPath(),
-            body: $action->getBody(),
-            authorization: new StaticAuthorizationConfig(
-                type: $isDefaultHeader ? 'bearer' : 'api_key',
-                params: $isDefaultHeader
-                    ? ['token' => $token, 'prefix' => $auth->resolvedPrefix()]
-                    : ['header' => $auth->header, 'token' => $token, 'prefix' => $auth->resolvedPrefix()],
-            ),
-        );
-    }
-
-    private function tokenCacheKey(DynamicAuthorizationConfig $authConfig): string
-    {
-        return \sprintf('integration_engine.token.%s.%s', $this->integrationName, $authConfig->action);
-    }
-
-    private function resolveToken(DynamicAuthorizationConfig $authConfig): string
-    {
-        $cacheKey = $this->tokenCacheKey($authConfig);
-
-        $cached = $this->cache->get($cacheKey);
-        if (\is_string($cached)) {
-            return $cached;
-        }
-
-        $authAction = $this->config->getAction($authConfig->action, null);
-        $rawResponse = $this->client->send($authAction);
-
-        $authResponse = $this->applyMapper($authAction, $rawResponse);
-        $responseArray = $authResponse->toArray();
-
-        if (!isset($responseArray[$authConfig->tokenField])) {
-            throw DynamicAuthException::missingTokenField($authConfig->action, $authConfig->tokenField);
-        }
-
-        $tokenValue = $responseArray[$authConfig->tokenField];
-        if (!\is_scalar($tokenValue)) {
-            throw DynamicAuthException::nonScalarTokenField($authConfig->tokenField);
-        }
-
-        $token = (string) $tokenValue;
-
-        $this->cache->set($cacheKey, $token, $authConfig->ttl);
-
-        return $token;
     }
 
     /**

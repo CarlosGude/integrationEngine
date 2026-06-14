@@ -103,6 +103,83 @@ final class IntegrationFileGeneratorTest extends TestCase
         self::assertTrue($this->generator->integrationExists($ctx));
     }
 
+    // ── detectClientType ──────────────────────────────────────────────────────
+
+    #[Test]
+    public function detectClientTypeReturnRestWhenFileAbsent(): void
+    {
+        self::assertSame('rest', $this->generator->detectClientType('/nonexistent/path.yaml', 'MyApi'));
+    }
+
+    #[Test]
+    public function detectClientTypeReadsTypeFromExistingConfig(): void
+    {
+        $path = $this->writeYaml(<<<'YAML'
+            integration_engine:
+                integrations:
+                    my_api:
+                        client: graphql
+            YAML);
+
+        self::assertSame('graphql', $this->generator->detectClientType($path, 'MyApi'));
+    }
+
+    #[Test]
+    public function detectClientTypeDefaultsToRestWhenClientKeyAbsent(): void
+    {
+        $path = $this->writeYaml(<<<'YAML'
+            integration_engine:
+                integrations:
+                    my_api:
+                        base_url: 'https://example.com'
+            YAML);
+
+        self::assertSame('rest', $this->generator->detectClientType($path, 'MyApi'));
+    }
+
+    #[Test]
+    public function detectClientTypeDefaultsToRestOnMalformedYaml(): void
+    {
+        $path = $this->writeYaml(":\n  invalid: [yaml");
+
+        self::assertSame('rest', $this->generator->detectClientType($path, 'MyApi'));
+    }
+
+    // ── createBundleConfig ────────────────────────────────────────────────────
+
+    #[Test]
+    public function createBundleConfigWritesRestConfig(): void
+    {
+        $path = $this->tmpDir.'/config/packages/integration_engine.yaml';
+
+        $this->generator->createBundleConfig($path, 'MyApi', 'https://api.example.com', 'rest');
+
+        $content = (string) file_get_contents($path);
+        self::assertStringContainsString('my_api:', $content);
+        self::assertStringContainsString("base_url: 'https://api.example.com'", $content);
+        self::assertStringNotContainsString('client:', $content);
+    }
+
+    #[Test]
+    public function createBundleConfigIncludesClientLineForNonRestAdapters(): void
+    {
+        $path = $this->tmpDir.'/config/packages/integration_engine.yaml';
+
+        $this->generator->createBundleConfig($path, 'MyApi', 'https://api.example.com', 'graphql');
+
+        $content = (string) file_get_contents($path);
+        self::assertStringContainsString('client: graphql', $content);
+    }
+
+    private function writeYaml(string $content): string
+    {
+        mkdir($this->tmpDir, 0o755, true);
+        $path = $this->tmpDir.'/test.yaml';
+        file_put_contents($path, $content);
+
+        return $path;
+    }
+
     private function context(): IntegrationContext
     {
         return new IntegrationContext(

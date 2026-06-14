@@ -54,32 +54,11 @@ final class YamlConfigAdapter implements ConfigPort
             ? AuthorizationConfig::fromArray($actionConfig['authorization'])
             : null;
 
-        $body = null;
+        $body = $this->resolveBody($name, $actionConfig, $bodyData);
 
-        if (isset($actionConfig['body'])) {
-            $bodyClass = $actionConfig['body'];
-
-            if (!is_a($bodyClass, ActionBodyInterface::class, true)) {
-                throw new \InvalidArgumentException(\sprintf('Body "%s" must implement %s', $bodyClass, ActionBodyInterface::class));
-            }
-
-            $body = $bodyData ?? $bodyClass::create([]);
-        } elseif (null !== $bodyData) {
-            throw new \InvalidArgumentException(\sprintf(
-                'Action "%s" does not declare a body in its YAML config, but a body was provided (%s).',
-                $name,
-                $bodyData::class,
-            ));
-        }
-
-        /** @var string $actionClass */
         $actionClass = $actionConfig['action'];
 
-        if (!class_exists($actionClass) || !is_a($actionClass, AbstractAction::class, true)) {
-            throw new \InvalidArgumentException(
-                \sprintf('Action class "%s" does not exist or does not extend %s. Check the "action" entry in your integration YAML.', $actionClass, AbstractAction::class)
-            );
-        }
+        $this->validateActionClass($actionClass);
 
         return $actionClass::create(
             method: $actionConfig['method'] ?? 'POST',
@@ -87,5 +66,43 @@ final class YamlConfigAdapter implements ConfigPort
             body: $body,
             authorization: $authorization,
         );
+    }
+
+    /**
+     * @param array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>} $actionConfig
+     */
+    private function resolveBody(
+        string $name,
+        array $actionConfig,
+        ?ActionBodyInterface $bodyData,
+    ): ?ActionBodyInterface {
+        if (!isset($actionConfig['body'])) {
+            if (null !== $bodyData) {
+                throw new \InvalidArgumentException(\sprintf(
+                    'Action "%s" does not declare a body in its YAML config, but a body was provided (%s).',
+                    $name,
+                    $bodyData::class,
+                ));
+            }
+
+            return null;
+        }
+
+        $bodyClass = $actionConfig['body'];
+
+        if (!is_a($bodyClass, ActionBodyInterface::class, true)) {
+            throw new \InvalidArgumentException(\sprintf('Body "%s" must implement %s', $bodyClass, ActionBodyInterface::class));
+        }
+
+        return $bodyData ?? $bodyClass::create([]);
+    }
+
+    private function validateActionClass(string $actionClass): void
+    {
+        if (!class_exists($actionClass) || !is_a($actionClass, AbstractAction::class, true)) {
+            throw new \InvalidArgumentException(
+                \sprintf('Action class "%s" does not exist or does not extend %s. Check the "action" entry in your integration YAML.', $actionClass, AbstractAction::class)
+            );
+        }
     }
 }

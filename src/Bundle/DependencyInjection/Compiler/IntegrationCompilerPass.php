@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IntegrationEngine\Bundle\DependencyInjection\Compiler;
 
 use IntegrationEngine\Bundle\Exception\IntegrationConfigurationException;
+use IntegrationEngine\Core\Auth\DynamicAuthHandler;
 use IntegrationEngine\Core\Contract\ClientAdapterInterface;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Registry\IntegrationRegistry;
@@ -12,6 +13,7 @@ use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
 use IntegrationEngine\Infrastructure\Http\ClientAdapterResolver;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 
@@ -97,6 +99,19 @@ final class IntegrationCompilerPass implements CompilerPassInterface
                 $config['cache_service'] ?? 'integration_engine.cache.default'
             );
 
+            $authHandlerId = "integration_engine.auth_handler.{$name}";
+
+            $container->setDefinition($authHandlerId, new Definition(
+                DynamicAuthHandler::class,
+                [
+                    new Reference($configId),
+                    $clientRef,
+                    $cacheRef,
+                    $name,
+                    new Reference('logger', ContainerInterface::IGNORE_ON_INVALID_REFERENCE),
+                ]
+            ));
+
             $integrationId = "integration_engine.integration.{$name}";
 
             $container->setDefinition($integrationId, new Definition(
@@ -106,6 +121,8 @@ final class IntegrationCompilerPass implements CompilerPassInterface
                     $clientRef,
                     $cacheRef,
                     $name,
+                    new Reference('logger', ContainerInterface::IGNORE_ON_INVALID_REFERENCE),
+                    new Reference($authHandlerId),
                 ]
             ));
 

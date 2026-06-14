@@ -15,7 +15,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\Yaml\Yaml;
 
 #[AsCommand(
     name: 'make:integration',
@@ -95,7 +94,12 @@ final class MakeIntegrationCommand extends Command
         $io->title(\sprintf('Generating integration: %s / %s', $name, $action));
 
         if (!$bundleConfigExists && null !== $baseUrl) {
-            $this->createBundleConfig($bundleConfigPath, $name, $baseUrl, $clientType, $io);
+            try {
+                $this->generator->createBundleConfig($bundleConfigPath, $name, $baseUrl, $clientType);
+                $io->text("  created  {$bundleConfigPath}");
+            } catch (\RuntimeException $e) {
+                $io->warning($e->getMessage());
+            }
         }
 
         if (!$this->generator->integrationExists($ctx)) {
@@ -128,7 +132,7 @@ final class MakeIntegrationCommand extends Command
         string $name,
         bool $bundleConfigExists,
     ): array {
-        $clientType = $this->detectClientType($bundleConfigPath, $name);
+        $clientType = $this->generator->detectClientType($bundleConfigPath, $name);
         $baseUrl = null;
 
         if (!$bundleConfigExists) {
@@ -208,66 +212,6 @@ final class MakeIntegrationCommand extends Command
         return [\is_string($actionPath) ? $actionPath : '/', \is_string($method) ? $method : 'POST'];
     }
 
-    private function detectClientType(string $bundleConfigPath, string $name): string
-    {
-        if (!file_exists($bundleConfigPath)) {
-            return 'rest';
-        }
-
-        try {
-            /** @var array<string, mixed> $yaml */
-            $yaml = Yaml::parseFile($bundleConfigPath);
-            $snakeName = $this->toSnakeCase($name);
-
-            $engine = $yaml['integration_engine'] ?? null;
-            if (!\is_array($engine)) {
-                return 'rest';
-            }
-            $integrations = $engine['integrations'] ?? null;
-            if (!\is_array($integrations)) {
-                return 'rest';
-            }
-            $integration = $integrations[$snakeName] ?? null;
-            if (!\is_array($integration)) {
-                return 'rest';
-            }
-
-            return \is_string($integration['client'] ?? null) ? $integration['client'] : 'rest';
-        } catch (\Throwable) {
-            return 'rest';
-        }
-    }
-
-    private function createBundleConfig(
-        string $configPath,
-        string $name,
-        string $baseUrl,
-        string $clientType,
-        SymfonyStyle $io,
-    ): void {
-        $dir = \dirname($configPath);
-
-        if (!is_dir($dir) && !mkdir($dir, 0o755, true) && !is_dir($dir)) {
-            $io->warning("Could not create config directory: {$dir}");
-
-            return;
-        }
-
-        $snakeName = $this->toSnakeCase($name);
-        $clientLine = 'rest' !== $clientType ? "\n            client: {$clientType}" : '';
-
-        $content = <<<YAML
-integration_engine:
-    integrations:
-        {$snakeName}:
-            base_url: '{$baseUrl}'{$clientLine}
-            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/{$name}/{$name}.yaml'
-YAML;
-
-        file_put_contents($configPath, $content.PHP_EOL);
-        $io->text("  created  {$configPath}");
-    }
-
     private function writeFile(string $filePath, string $content, SymfonyStyle $io, bool $force): void
     {
         $dir = \dirname($filePath);
@@ -286,13 +230,12 @@ YAML;
             return;
         }
 
-        file_put_contents($filePath, $content);
-        $io->text($exists ? "  updated  {$filePath}" : "  created  {$filePath}");
-    }
+        if (false === file_put_contents($filePath, $content)) {
+            $io->error("Could not write file: {$filePath}");
 
-    private function toSnakeCase(string $value): string
-    {
-        return strtolower(preg_replace('/(?<!^)[A-Z]/u', '_$0', $value) ?? $value);
+            return;
+        }
+        $io->text($exists ? "  updated  {$filePath}" : "  created  {$filePath}");
     }
 
     /**

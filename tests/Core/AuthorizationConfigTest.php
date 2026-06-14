@@ -120,6 +120,24 @@ final class AuthorizationConfigTest extends TestCase
     }
 
     #[Test]
+    public function dynamicFromArrayThrowsWhenTtlIsNonNumericString(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('"ttl" must be a non-negative integer');
+
+        DynamicAuthorizationConfig::fromArray(['type' => 'dynamic', 'action' => 'fetch_token', 'token_field' => 'access_token', 'ttl' => 'abc']);
+    }
+
+    #[Test]
+    public function dynamicFromArrayThrowsWhenTtlIsNegative(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('"ttl" must be a non-negative integer');
+
+        DynamicAuthorizationConfig::fromArray(['type' => 'dynamic', 'action' => 'fetch_token', 'token_field' => 'access_token', 'ttl' => -1]);
+    }
+
+    #[Test]
     public function dynamicFromArrayCastsTtlToInt(): void
     {
         $config = DynamicAuthorizationConfig::fromArray(['type' => 'dynamic', 'action' => 'fetch_token', 'token_field' => 'access_token', 'ttl' => '300']);

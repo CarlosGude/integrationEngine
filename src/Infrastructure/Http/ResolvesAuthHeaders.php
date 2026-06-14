@@ -42,7 +42,10 @@ trait ResolvesAuthHeaders
             'basic' => ['Authorization' => \sprintf('Basic %s', base64_encode($username.':'.$password))],
             // api_key carries the bare token unless a prefix is explicitly set.
             'api_key' => [$headerKey => null !== $prefix && '' !== $prefix ? \sprintf('%s %s', $prefix, $token) : $token],
-            default => [],
+            default => throw new \InvalidArgumentException(\sprintf(
+                'Unknown static authorization type "%s". Supported types: bearer, basic, api_key.',
+                $auth->type,
+            )),
         };
     }
 }

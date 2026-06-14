@@ -52,12 +52,13 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
     ): array {
         $path = $action->getPath($context);
         $method = $action->getMethod();
+        $options = $this->buildOptions($action, $headers);
 
         try {
             $response = $this->httpClient->request(
                 $method,
                 $this->baseUrl.$path,
-                $this->buildOptions($action, $headers),
+                $options,
             );
 
             return $this->consume($response, $method, $path);
@@ -79,6 +80,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
      */
     public function sendMany(array $requests): array
     {
+        /** @var array<array-key, DispatchedRequest> $dispatched */
         $dispatched = [];
         $results = [];
 
@@ -96,23 +98,23 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
             $method = $request->action->getMethod();
 
             try {
-                $dispatched[$key] = [
+                $dispatched[$key] = new DispatchedRequest(
                     $this->httpClient->request($method, $this->baseUrl.$path, $this->buildOptions($request->action, $request->headers)),
                     $method,
                     $path,
-                ];
+                );
             } catch (\Throwable $e) {
                 $results[$key] = $this->networkError($method, $path, $e);
             }
         }
 
-        foreach ($dispatched as $key => [$response, $method, $path]) {
+        foreach ($dispatched as $key => $item) {
             try {
-                $results[$key] = $this->consume($response, $method, $path);
+                $results[$key] = $this->consume($item->response, $item->method, $item->path);
             } catch (RequestResponseException $e) {
                 $results[$key] = $e;
             } catch (\Throwable $e) {
-                $results[$key] = $this->networkError($method, $path, $e);
+                $results[$key] = $this->networkError($item->method, $item->path, $e);
             }
         }
 

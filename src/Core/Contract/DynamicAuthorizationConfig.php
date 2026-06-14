@@ -25,6 +25,23 @@ final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
         return $this->prefix ?? ('Authorization' === $this->header ? 'Bearer' : '');
     }
 
+    public function cacheKey(string $integrationName): string
+    {
+        return \sprintf('integration_engine.token.%s.%s', $integrationName, $this->action);
+    }
+
+    public function toStaticConfig(string $token): StaticAuthorizationConfig
+    {
+        $isDefaultHeader = 'Authorization' === $this->header;
+
+        return new StaticAuthorizationConfig(
+            type: $isDefaultHeader ? 'bearer' : 'api_key',
+            params: $isDefaultHeader
+                ? ['token' => $token, 'prefix' => $this->resolvedPrefix()]
+                : ['header' => $this->header, 'token' => $token, 'prefix' => $this->resolvedPrefix()],
+        );
+    }
+
     /** @param array<string, mixed> $config */
     public static function fromArray(array $config): self
     {
@@ -34,8 +51,14 @@ final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
             }
         }
 
-        if (!\is_string($config['action']) || !\is_string($config['token_field']) || !\is_scalar($config['ttl'])) {
-            throw new \InvalidArgumentException('Dynamic authorization config fields "action", "token_field" must be strings and "ttl" must be scalar.');
+        if (!\is_string($config['action']) || !\is_string($config['token_field'])) {
+            throw new \InvalidArgumentException('Dynamic authorization config fields "action" and "token_field" must be strings.');
+        }
+        if (!\is_int($config['ttl']) && !\is_float($config['ttl']) && !(\is_string($config['ttl']) && ctype_digit($config['ttl']))) {
+            throw new \InvalidArgumentException('Dynamic authorization config field "ttl" must be a non-negative integer.');
+        }
+        if ((float) $config['ttl'] < 0) {
+            throw new \InvalidArgumentException('Dynamic authorization config field "ttl" must be a non-negative integer.');
         }
 
         return new self(

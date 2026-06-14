@@ -9,7 +9,6 @@ abstract readonly class AuthorizationConfig
     public const TYPE = 'type';
 
     public const DYNAMIC_TYPE = 'dynamic';
-    public const STATIC_TYPE = 'static';
 
     public function __construct(
         public readonly string $type,

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Bundle\Generator;
 
+use Symfony\Component\Yaml\Yaml;
+
 final class IntegrationFileGenerator
 {
     /** @return array<string, string> */
@@ -14,7 +16,6 @@ final class IntegrationFileGenerator
 
         return [
             "{$root}/{$ctx->name}Integration.php" => $tpl->integration(),
-            // HttpClient removed — the bundle's default client is used
         ];
     }
 
@@ -51,6 +52,77 @@ final class IntegrationFileGenerator
         }
 
         return $configPath;
+    }
+
+    public static function toSnakeCase(string $value): string
+    {
+        return strtolower(preg_replace('/(?<!^)[A-Z]/u', '_$0', $value) ?? $value);
+    }
+
+    public function detectClientType(string $bundleConfigPath, string $integrationName): string
+    {
+        if (!file_exists($bundleConfigPath)) {
+            return 'rest';
+        }
+
+        try {
+            /** @var array<string, mixed> $yaml */
+            $yaml = Yaml::parseFile($bundleConfigPath);
+            $snakeName = self::toSnakeCase($integrationName);
+
+            $engine = $yaml['integration_engine'] ?? null;
+            if (!\is_array($engine)) {
+                return 'rest';
+            }
+            $integrations = $engine['integrations'] ?? null;
+            if (!\is_array($integrations)) {
+                return 'rest';
+            }
+            $integration = $integrations[$snakeName] ?? null;
+            if (!\is_array($integration)) {
+                return 'rest';
+            }
+
+            return \is_string($integration['client'] ?? null) ? $integration['client'] : 'rest';
+        } catch (\Throwable) {
+            return 'rest';
+        }
+    }
+
+    /**
+     * Writes the initial integration_engine.yaml bundle config.
+     *
+     * @throws \RuntimeException if the config directory cannot be created
+     */
+    public function createBundleConfig(
+        string $configPath,
+        string $integrationName,
+        string $baseUrl,
+        string $clientType,
+    ): void {
+        $dir = \dirname($configPath);
+
+        if (!is_dir($dir) && !mkdir($dir, 0o755, true) && !is_dir($dir)) {
+            throw new \RuntimeException("Could not create config directory: {$dir}");
+        }
+
+        $snakeName = self::toSnakeCase($integrationName);
+
+        $integrationConfig = ['base_url' => $baseUrl];
+        if ('rest' !== $clientType) {
+            $integrationConfig['client'] = $clientType;
+        }
+        $integrationConfig['config_path'] = "%kernel.project_dir%/src/Infrastructure/Integrations/{$integrationName}/{$integrationName}.yaml";
+
+        $content = Yaml::dump(
+            ['integration_engine' => ['integrations' => [$snakeName => $integrationConfig]]],
+            6,
+            4,
+        );
+
+        if (false === file_put_contents($configPath, $content)) {
+            throw new \RuntimeException("Could not write config file: {$configPath}");
+        }
     }
 
     public function integrationExists(IntegrationContext $ctx): bool
