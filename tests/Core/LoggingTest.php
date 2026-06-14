@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Core;
 
 use IntegrationEngine\Core\Batch\EngineRequest;
-use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
+use IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Tests\Fake\FakeLogger;

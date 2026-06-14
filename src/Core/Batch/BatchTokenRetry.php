@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core\Batch;
 
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use IntegrationEngine\Core\Port\CachePort;
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Fake;
 
-use IntegrationEngine\Core\Contract\ActionContextInterface;
+use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 
 final class FakeContext implements ActionContextInterface
 {

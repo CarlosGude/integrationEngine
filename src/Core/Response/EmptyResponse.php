@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core\Response;
 
-use IntegrationEngine\Core\Contract\ResponseInterface;
+use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 
 final readonly class EmptyResponse implements ResponseInterface
 {

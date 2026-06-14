@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Core;
 
-use IntegrationEngine\Core\Contract\AuthorizationConfig;
-use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
-use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
+use IntegrationEngine\Core\Contract\Auth\AuthorizationConfig;
+use IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig;
+use IntegrationEngine\Core\Contract\Auth\StaticAuthorizationConfig;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 

@@ -6,7 +6,7 @@ namespace IntegrationEngine\Tests\Fake;
 
 use IntegrationEngine\Core\Batch\AbstractBatchMapper;
 use IntegrationEngine\Core\Batch\BatchResultCollection;
-use IntegrationEngine\Core\Contract\ResponseInterface;
+use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 
 final class FakeBatchMapper extends AbstractBatchMapper
 {

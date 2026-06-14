@@ -10,14 +10,14 @@ use IntegrationEngine\Core\Batch\BatchResultCollection;
 use IntegrationEngine\Core\Batch\BatchTokenRetry;
 use IntegrationEngine\Core\Batch\EngineRequest;
 use IntegrationEngine\Core\Batch\PreparedRequest;
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\ActionBodyInterface;
-use IntegrationEngine\Core\Contract\ActionContextInterface;
-use IntegrationEngine\Core\Contract\BatchClientInterface;
-use IntegrationEngine\Core\Contract\ClientInterface;
-use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
-use IntegrationEngine\Core\Contract\RequestHeadersInterface;
-use IntegrationEngine\Core\Contract\ResponseInterface;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Action\ActionBodyInterface;
+use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
+use IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig;
+use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
+use IntegrationEngine\Core\Contract\Client\ClientInterface;
+use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
+use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Exception\NotMappedActionException;
 use IntegrationEngine\Core\Port\CachePort;
@@ -39,6 +39,8 @@ final readonly class IntegrationEngine
     ) {
         $this->authHandler = $authHandler ?? new DynamicAuthHandler($config, $client, $cache, $integrationName, $logger);
     }
+
+    // ── Single request ─────────────────────────────────────────────────────────
 
     public function send(
         string $actionName,
@@ -63,6 +65,8 @@ final readonly class IntegrationEngine
 
         return $this->buildResponse($action, $rawResponse);
     }
+
+    // ── Batch requests ─────────────────────────────────────────────────────────
 
     /**
      * Sends all requests as one batch and returns one BatchResult per input
@@ -159,6 +163,8 @@ final readonly class IntegrationEngine
         return $responses;
     }
 
+    // ── Batch internals ────────────────────────────────────────────────────────
+
     /**
      * @param array<array-key, PreparedRequest> $prepared
      *
@@ -226,6 +232,8 @@ final readonly class IntegrationEngine
 
         return $raw;
     }
+
+    // ── Response building ──────────────────────────────────────────────────────
 
     /**
      * @param array<mixed> $rawResponse

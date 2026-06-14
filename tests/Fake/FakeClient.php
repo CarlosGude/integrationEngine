@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Fake;
 
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\ActionContextInterface;
-use IntegrationEngine\Core\Contract\ClientInterface;
-use IntegrationEngine\Core\Contract\RequestHeadersInterface;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
+use IntegrationEngine\Core\Contract\Client\ClientInterface;
+use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 
 final class FakeClient implements ClientInterface
 {

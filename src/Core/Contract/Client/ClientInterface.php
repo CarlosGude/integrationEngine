@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-namespace IntegrationEngine\Core\Contract;
+namespace IntegrationEngine\Core\Contract\Client;
+
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 
 interface ClientInterface
 {

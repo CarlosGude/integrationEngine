@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Core;
 
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\PathResolvableContextInterface;
-use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Action\PathResolvableContextInterface;
+use IntegrationEngine\Core\Contract\Auth\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\PathResolutionException;
 use IntegrationEngine\Tests\Fake\FakeContext;
 use PHPUnit\Framework\Attributes\Test;

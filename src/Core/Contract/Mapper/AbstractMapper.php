@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
-namespace IntegrationEngine\Core\Contract;
+namespace IntegrationEngine\Core\Contract\Mapper;
 
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 
 abstract class AbstractMapper

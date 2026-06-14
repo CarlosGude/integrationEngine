@@ -6,7 +6,7 @@ namespace IntegrationEngine\Bundle\Command;
 
 use IntegrationEngine\Bundle\Generator\IntegrationContext;
 use IntegrationEngine\Bundle\Generator\IntegrationFileGenerator;
-use IntegrationEngine\Core\Contract\ClientAdapterInterface;
+use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 use IntegrationEngine\Infrastructure\Http\ClientAdapterResolver;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;

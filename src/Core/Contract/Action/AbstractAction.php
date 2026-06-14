@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
-namespace IntegrationEngine\Core\Contract;
+namespace IntegrationEngine\Core\Contract\Action;
 
+use IntegrationEngine\Core\Contract\Auth\AuthorizationConfig;
+use IntegrationEngine\Core\Contract\Mapper\AbstractMapper;
 use IntegrationEngine\Core\Exception\PathResolutionException;
 
 abstract class AbstractAction
@@ -74,7 +76,7 @@ abstract class AbstractAction
         $contextData = $context?->toArray() ?? [];
 
         return preg_replace_callback(
-            '/\{(\w+)\}/',
+            '/\{(\w+)}/',
             static function (array $matches) use ($contextData, $path) {
                 $key = $matches[1];
 

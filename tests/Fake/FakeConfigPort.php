@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Fake;
 
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\ActionBodyInterface;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Action\ActionBodyInterface;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\Port\ConfigPort;
 

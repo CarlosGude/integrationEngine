@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Core;
 
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\AbstractMapper;
-use IntegrationEngine\Core\Contract\ResponseInterface;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Mapper\AbstractMapper;
+use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Exception\NotMappedActionException;

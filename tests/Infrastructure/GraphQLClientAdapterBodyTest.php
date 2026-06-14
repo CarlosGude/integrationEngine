@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Infrastructure;
 
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\GraphQLBodyInterface;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Action\GraphQLBodyInterface;
 use IntegrationEngine\Infrastructure\Http\GraphQLClientAdapter;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;

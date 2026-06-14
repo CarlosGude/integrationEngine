@@ -15,15 +15,19 @@ final class Configuration implements ConfigurationInterface
 
         $treeBuilder->getRootNode()
             ->children()
+                // ── integrations map ──────────────────────────────────────────
             ->arrayNode('integrations')
             ->defaultValue([])
             ->useAttributeAsKey('name')
             ->arrayPrototype()
             ->children()
+                        // ── action definitions ────────────────────────────────
             ->scalarNode('config_path')
             ->defaultNull()
             ->info('Absolute path to the YAML file defining the actions for this integration.')
             ->end()
+
+                        // ── HTTP transport ────────────────────────────────────
             ->scalarNode('base_url')
             ->defaultNull()
             ->info('Base URL for the built-in SymfonyHttpClientAdapter. Required unless client_service is set.')
@@ -40,10 +44,14 @@ final class Configuration implements ConfigurationInterface
             ->thenInvalid('Client type cannot be empty.')
             ->end()
             ->end()
+
+                        // ── cache ─────────────────────────────────────────────
             ->scalarNode('cache_service')
             ->defaultNull()
             ->info('Custom CachePort service ID. Defaults to InMemoryCacheAdapter.')
             ->end()
+
+                        // ── default headers ───────────────────────────────────
             ->arrayNode('headers')
             ->info('Default HTTP headers sent with every request for this integration. Auth headers are merged on top.')
             ->normalizeKeys(false)
@@ -52,6 +60,8 @@ final class Configuration implements ConfigurationInterface
             ->defaultValue([])
             ->end()
             ->end()
+
+                    // ── cross-field validation ────────────────────────────────
             ->validate()
             ->ifTrue(static function (mixed $v): bool {
                 return \is_array($v) && null === $v['base_url'] && null === $v['client_service'];

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace IntegrationEngine\Core\Contract;
+namespace IntegrationEngine\Core\Contract\Action;
 
-interface ActionContextInterface
+interface ActionBodyInterface
 {
     /** @param array<string, mixed> $data */
     public static function create(array $data): self;

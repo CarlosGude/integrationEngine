@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Infrastructure\Http;
 
-use IntegrationEngine\Core\Contract\ClientAdapterInterface;
+use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 
 final class ClientAdapterResolver
 {

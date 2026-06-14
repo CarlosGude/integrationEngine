@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Infrastructure;
 
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\ActionBodyInterface;
-use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
-use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Action\ActionBodyInterface;
+use IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig;
+use IntegrationEngine\Core\Contract\Auth\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
 use IntegrationEngine\Tests\Fake\FakePathAction;

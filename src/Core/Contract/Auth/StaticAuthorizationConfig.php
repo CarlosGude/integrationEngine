@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace IntegrationEngine\Core\Contract;
+namespace IntegrationEngine\Core\Contract\Auth;
 
 final readonly class StaticAuthorizationConfig extends AuthorizationConfig
 {

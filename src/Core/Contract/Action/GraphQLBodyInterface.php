@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace IntegrationEngine\Core\Contract;
+namespace IntegrationEngine\Core\Contract\Action;
 
 interface GraphQLBodyInterface extends ActionBodyInterface
 {

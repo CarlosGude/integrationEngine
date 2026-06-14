@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace IntegrationEngine\Core\Contract;
+namespace IntegrationEngine\Core\Contract\Auth;
 
 abstract readonly class AuthorizationConfig
 {

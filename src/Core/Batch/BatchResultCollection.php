@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core\Batch;
 
-use IntegrationEngine\Core\Contract\ResponseInterface;
+use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 use IntegrationEngine\Core\Exception\BatchMapperActionMismatchException;
 
 /**

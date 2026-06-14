@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace IntegrationEngine\Core\Contract;
+namespace IntegrationEngine\Core\Contract\Client;
 
 /**
  * Implement this interface to register a custom HTTP adapter.

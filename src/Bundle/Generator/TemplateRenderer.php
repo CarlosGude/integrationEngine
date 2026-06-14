@@ -67,7 +67,7 @@ final readonly class TemplateRenderer
             : '';
 
         $graphqlBodyUse = $this->ctx->needsGraphQLBodyHint()
-            ? "\nuse IntegrationEngine\\Core\\Contract\\GraphQLBodyInterface;"
+            ? "\nuse IntegrationEngine\\Core\\Contract\\Action\\GraphQLBodyInterface;"
             : '';
 
         $graphqlBodyHint = $this->ctx->needsGraphQLBodyHint()
@@ -81,7 +81,7 @@ final readonly class TemplateRenderer
 
             namespace {$this->ctx->requestNamespace()};
 
-            use IntegrationEngine\\Core\\Contract\\AbstractAction;{$mapperUse}{$graphqlBodyUse}
+            use IntegrationEngine\\Core\\Contract\\Action\\AbstractAction;{$mapperUse}{$graphqlBodyUse}
 
             final class {$this->ctx->action}Action extends AbstractAction
             {{$graphqlBodyHint}
@@ -119,9 +119,9 @@ final readonly class TemplateRenderer
 
             namespace {$this->ctx->responseNamespace()};
 
-            use IntegrationEngine\\Core\\Contract\\AbstractAction;
-            use IntegrationEngine\\Core\\Contract\\AbstractMapper;
-            use IntegrationEngine\\Core\\Contract\\ResponseInterface;
+            use IntegrationEngine\\Core\\Contract\\Action\\AbstractAction;
+            use IntegrationEngine\\Core\\Contract\\Mapper\\AbstractMapper;
+            use IntegrationEngine\\Core\\Contract\\Response\\ResponseInterface;
             use {$this->ctx->requestNamespace()}\\{$this->ctx->action}Action;
 
             final class {$this->ctx->action}Mapper extends AbstractMapper
@@ -151,7 +151,7 @@ final readonly class TemplateRenderer
 
             namespace {$this->ctx->responseNamespace()};
 
-            use IntegrationEngine\\Core\\Contract\\ResponseInterface;
+            use IntegrationEngine\\Core\\Contract\\Response\\ResponseInterface;
 
             final readonly class {$this->ctx->action}Response implements ResponseInterface
             {

@@ -51,7 +51,7 @@ final class TemplateRendererTest extends TestCase
     {
         $code = $this->renderer(adapterRequiresPath: false, adapterRequiresMethod: false)->action();
 
-        self::assertStringContainsString('use IntegrationEngine\Core\Contract\GraphQLBodyInterface;', $code);
+        self::assertStringContainsString('use IntegrationEngine\Core\Contract\Action\GraphQLBodyInterface;', $code);
         self::assertStringContainsString('// Attach a GraphQLBodyInterface implementation when calling send().', $code);
     }
 

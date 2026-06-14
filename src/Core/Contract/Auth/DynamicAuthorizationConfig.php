@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace IntegrationEngine\Core\Contract;
+namespace IntegrationEngine\Core\Contract\Auth;
 
 final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
 {
@@ -54,9 +54,11 @@ final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
         if (!\is_string($config['action']) || !\is_string($config['token_field'])) {
             throw new \InvalidArgumentException('Dynamic authorization config fields "action" and "token_field" must be strings.');
         }
+
         if (!\is_int($config['ttl']) && !\is_float($config['ttl']) && !(\is_string($config['ttl']) && ctype_digit($config['ttl']))) {
             throw new \InvalidArgumentException('Dynamic authorization config field "ttl" must be a non-negative integer.');
         }
+
         if ((float) $config['ttl'] < 0) {
             throw new \InvalidArgumentException('Dynamic authorization config field "ttl" must be a non-negative integer.');
         }

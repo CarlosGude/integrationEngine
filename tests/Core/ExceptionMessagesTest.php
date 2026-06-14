@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Core;
 
-use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
+use IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\Exception\BatchMapperActionMismatchException;
 use IntegrationEngine\Core\Exception\DynamicAuthException;

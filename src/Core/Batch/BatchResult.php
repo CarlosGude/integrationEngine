@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core\Batch;
 
-use IntegrationEngine\Core\Contract\ResponseInterface;
+use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 
 /**
  * The outcome of one request inside a batch: either the mapped response

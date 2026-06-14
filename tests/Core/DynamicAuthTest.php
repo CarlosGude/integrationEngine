@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Core;
 
-use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
-use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
+use IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig;
+use IntegrationEngine\Core\Contract\Auth\StaticAuthorizationConfig;
 use IntegrationEngine\Tests\Fake\FakeContext;
 use IntegrationEngine\Tests\Fake\FakePathAction;
 use IntegrationEngine\Tests\Fake\FakeProtectedAction;

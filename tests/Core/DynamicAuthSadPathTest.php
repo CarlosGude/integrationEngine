@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Core;
 
-use IntegrationEngine\Core\Contract\DynamicAuthorizationConfig;
-use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
+use IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig;
+use IntegrationEngine\Core\Contract\Auth\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\DynamicAuthException;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use IntegrationEngine\Tests\Fake\FakeProtectedAction;

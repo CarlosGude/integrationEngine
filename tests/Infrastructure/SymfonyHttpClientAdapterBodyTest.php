@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Infrastructure;
 
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\ActionBodyInterface;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Action\ActionBodyInterface;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use PHPUnit\Framework\Attributes\Test;

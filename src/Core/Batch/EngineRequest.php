@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core\Batch;
 
-use IntegrationEngine\Core\Contract\ActionBodyInterface;
-use IntegrationEngine\Core\Contract\ActionContextInterface;
-use IntegrationEngine\Core\Contract\RequestHeadersInterface;
+use IntegrationEngine\Core\Contract\Action\ActionBodyInterface;
+use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
+use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 
 /**
  * One request inside a batch — the same four values accepted by

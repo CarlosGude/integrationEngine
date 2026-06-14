@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Infrastructure\Http;
 
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\StaticAuthorizationConfig;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Auth\StaticAuthorizationConfig;
 
 trait ResolvesAuthHeaders
 {

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core\Batch;
 
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\ActionContextInterface;
-use IntegrationEngine\Core\Contract\RequestHeadersInterface;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
+use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 
 /**
  * A batch item after the engine has resolved config and authorization:

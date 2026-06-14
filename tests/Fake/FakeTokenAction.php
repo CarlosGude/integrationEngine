@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Fake;
 
-use IntegrationEngine\Core\Contract\AbstractAction;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
 
 final class FakeTokenAction extends AbstractAction
 {

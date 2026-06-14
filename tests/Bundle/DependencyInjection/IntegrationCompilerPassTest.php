@@ -46,24 +46,33 @@ final class IntegrationCompilerPassTest extends TestCase
     }
 
     #[Test]
-    public function skipsTaggedServicesThatAreNotValidAdapters(): void
+    public function throwsWhenTaggedAdapterClassDoesNotExist(): void
     {
         $container = $this->containerWithCoreServices([]);
 
-        $missingClass = new Definition('App\Does\Not\Exist');
-        $missingClass->addTag('integration_engine.client_adapter');
-        $container->setDefinition('bogus_adapter', $missingClass);
+        $bogus = new Definition('App\Does\Not\Exist');
+        $bogus->addTag('integration_engine.client_adapter');
+        $container->setDefinition('bogus_adapter', $bogus);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/bogus_adapter.*App\\\Does\\\Not\\\Exist/');
+
+        (new IntegrationCompilerPass())->process($container);
+    }
+
+    #[Test]
+    public function throwsWhenTaggedServiceDoesNotImplementClientAdapterInterface(): void
+    {
+        $container = $this->containerWithCoreServices([]);
 
         $notAnAdapter = new Definition(\stdClass::class);
         $notAnAdapter->addTag('integration_engine.client_adapter');
         $container->setDefinition('not_an_adapter', $notAnAdapter);
 
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/not_an_adapter.*stdClass/');
+
         (new IntegrationCompilerPass())->process($container);
-
-        $calls = $container->getDefinition(ClientAdapterResolver::class)->getMethodCalls();
-
-        // Only the two valid built-ins must be registered.
-        self::assertCount(2, $calls);
     }
 
     #[Test]

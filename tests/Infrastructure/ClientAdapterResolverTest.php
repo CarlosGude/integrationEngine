@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Infrastructure;
 
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\ActionContextInterface;
-use IntegrationEngine\Core\Contract\ClientAdapterInterface;
-use IntegrationEngine\Core\Contract\RequestHeadersInterface;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
+use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
+use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 use IntegrationEngine\Infrastructure\Http\ClientAdapterResolver;
 use IntegrationEngine\Infrastructure\Http\GraphQLClientAdapter;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
