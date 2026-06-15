@@ -153,7 +153,7 @@ body {
 .cpanel.bad  .panel-dot { background: #dc2626; }
 .cpanel.good .panel-dot { background: #1d4ed8; }
 .file-label { background: #161b22; color: #8a96a4; font-family: 'JetBrains Mono', monospace; font-size: .68rem; padding: .3rem 1.1rem; border-bottom: 1px solid #21262d; letter-spacing: .02em; }
-.code-block { background: #0d1117; padding: .9rem 1.1rem; font-family: 'JetBrains Mono', monospace; font-size: .72rem; line-height: 1.75; white-space: pre; overflow-x: auto; }
+.code-block { background: #0d1117; color: #c9d8e8; padding: .9rem 1.1rem; font-family: 'JetBrains Mono', monospace; font-size: .72rem; line-height: 1.75; white-space: pre; overflow-x: auto; }
 .kw  { color: #ff7b72; }
 .fn  { color: #d2a8ff; }
 .str { color: #a5d6ff; }
