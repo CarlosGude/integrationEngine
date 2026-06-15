@@ -29,7 +29,6 @@ export function getHTML() {
   <a class="topnav-brand" href="#">Integration<span>Engine</span></a>
   <div class="topnav-links">
     <a href="#problem">Problem</a>
-    <a href="#demo">Demo</a>
     <a href="#pattern">The Pattern</a>
     <span class="topnav-sep"></span>
     <a href="https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION.md" target="_blank" rel="noopener">Docs</a>
@@ -130,59 +129,6 @@ export function getHTML() {
         &boxvr;&boxh;&boxh; <span class="key">GetStationByIdResponse.php</span>
         &boxur;&boxh;&boxh; <span class="key">GetStationByIdMapper.php</span></pre>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- LIVE DEMO -->
-<section id="demo" class="s-dark" style="padding-top:0;border-top:1px solid var(--border)">
-  <div class="container" style="padding-top:3.5rem">
-    <div class="eyebrow lt">Live Demo</div>
-    <h2 class="s-heading lt">The same endpoints. Two implementations.</h2>
-    <p class="s-sub lt">3 stations in batch. Run both versions and observe the difference in code and response time.</p>
-
-    <div class="demo-split">
-      <div class="demo-panel bad">
-        <div class="demo-head"><span class="demo-dot"></span>Without pattern &mdash; sequential <code>foreach</code></div>
-        <div class="demo-code"><span class="kw">foreach</span> (<span class="var">$pairs</span> <span class="kw">as</span> <span class="var">$pair</span>) {
-    [<span class="var">$cc</span>, <span class="var">$id</span>] = <span class="fn">explode</span>(<span class="str">'/'</span>, <span class="var">$pair</span>);
-
-    <span class="bad-hl"><span class="cm">// blocks &mdash; others wait here</span>
-    <span class="var">$s</span> = <span class="var">$this</span>-&gt;<span class="var">api</span>-&gt;<span class="fn">fetchStation</span>(<span class="var">$cc</span>, <span class="var">$id</span>);</span>
-
-    <span class="var">$result</span>[<span class="var">$pair</span>] = [<span class="str">'title'</span> =&gt; <span class="var">$s</span>[<span class="str">'title'</span>]];
-}
-<span class="cm">// 3 stations &times; 250ms = ~750ms</span></div>
-        <div class="demo-output" id="trad-output"><div class="out-idle">Waiting for execution&hellip;</div></div>
-        <div class="demo-timer">
-          <span class="timer-label">Time:</span>
-          <span class="timer-val idle" id="trad-timer">&mdash;</span>
-        </div>
-      </div>
-
-      <div class="demo-panel good">
-        <div class="demo-head"><span class="demo-dot"></span>Engine pattern &mdash; <code>sendManyOrFail()</code></div>
-        <div class="demo-code"><span class="kw">foreach</span> (<span class="var">$stations</span> <span class="kw">as</span> <span class="var">$key</span> =&gt; <span class="var">$params</span>) {
-    <span class="var">$requests</span>[<span class="var">$key</span>] = <span class="cls">EngineRequest</span>::<span class="fn">create</span>(
-        <span class="key">actionName</span>: <span class="cls">GetStationByIdAction</span>::<span class="fn">getName</span>(),
-        <span class="key">context</span>:    <span class="cls">DefaultActionContext</span>::<span class="fn">create</span>(<span class="var">$params</span>),
-    );
-}
-
-<span class="good-hl"><span class="cm">// all go out at the same time</span>
-<span class="kw">return</span> <span class="var">$this</span>-&gt;<span class="var">engine</span>-&gt;<span class="fn">sendManyOrFail</span>(<span class="var">$requests</span>);</span>
-<span class="cm">// 3 stations &rarr; ~250ms (the slowest)</span></div>
-        <div class="demo-output" id="eng-output"><div class="out-idle">Waiting for execution&hellip;</div></div>
-        <div class="demo-timer">
-          <span class="timer-label">Time:</span>
-          <span class="timer-val idle" id="eng-timer">&mdash;</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="demo-controls">
-      <button class="run-btn" id="run-btn" onclick="runDemo()">&#9654; Run both</button>
-      <span class="demo-note">Calling <code>api.railway-stations.org</code> in real time</span>
     </div>
   </div>
 </section>
