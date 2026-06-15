@@ -127,13 +127,13 @@ body {
 /* ── STRUCTURE ── */
 .struct-split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2rem; }
 @media (max-width: 700px) { .struct-split { grid-template-columns: 1fr; } }
-.struct-panel { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-.struct-header { background: var(--navy-mid); padding: .55rem 1rem; font-size: .7rem; font-weight: 700; color: var(--blue-light); letter-spacing: .08em; }
-.struct-panel pre { background: var(--code-bg); padding: 1rem 1.2rem; font-family: 'JetBrains Mono', monospace; font-size: .73rem; color: var(--muted); line-height: 1.8; overflow-x: auto; }
+.struct-panel { border: 1px solid rgba(74,143,212,.25); border-radius: 10px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,.55); }
+.struct-header { background: #152d52; padding: .55rem 1rem; font-size: .7rem; font-weight: 700; color: var(--blue-light); letter-spacing: .08em; }
+.struct-panel pre { background: #060e1a; padding: 1rem 1.2rem; font-family: 'JetBrains Mono', monospace; font-size: .73rem; color: var(--muted); line-height: 1.8; overflow-x: auto; }
 .struct-panel pre .hl  { color: #7dd3fc; }
 .struct-panel pre .key { color: #7ee787; }
 .struct-panel pre .val { color: #a5d6ff; }
-.struct-panel pre .cm  { color: #3a5470; font-style: italic; }
+.struct-panel pre .cm  { color: #4e7090; font-style: italic; }
 .struct-panel pre .ph  { color: #f59e0b; }
 
 /* ── PATTERN ── */
@@ -152,12 +152,12 @@ body {
 .panel-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .cpanel.bad  .panel-dot { background: #dc2626; }
 .cpanel.good .panel-dot { background: #1d4ed8; }
-.file-label { background: #161b22; color: #6b7280; font-family: 'JetBrains Mono', monospace; font-size: .68rem; padding: .3rem 1.1rem; border-bottom: 1px solid #21262d; letter-spacing: .02em; }
+.file-label { background: #161b22; color: #8a96a4; font-family: 'JetBrains Mono', monospace; font-size: .68rem; padding: .3rem 1.1rem; border-bottom: 1px solid #21262d; letter-spacing: .02em; }
 .code-block { background: #0d1117; padding: .9rem 1.1rem; font-family: 'JetBrains Mono', monospace; font-size: .72rem; line-height: 1.75; white-space: pre; overflow-x: auto; }
 .kw  { color: #ff7b72; }
 .fn  { color: #d2a8ff; }
 .str { color: #a5d6ff; }
-.cm  { color: #6b7280; font-style: italic; }
+.cm  { color: #8b9aaa; font-style: italic; }
 .cls { color: #ffa657; }
 .var { color: #79c0ff; }
 .key { color: #7ee787; }
