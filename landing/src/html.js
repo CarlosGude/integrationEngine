@@ -104,7 +104,7 @@ export function getHTML(lang = 'en') {
   </div>
   <div class="hero-actions">
     <a href="#pattern" class="btn-primary">${t.heroBtn1}</a>
-    <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" class="btn-outline">${t.heroBtn2}</a>
+    <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener noreferrer" class="btn-outline">${t.heroBtn2}</a>
   </div>
 </section>
 
@@ -715,11 +715,11 @@ MyApi/
   <div class="container">
     <span class="footer-brand">Integration<span>Engine</span></span>
     <p>
-      <a href="https://integrationengine.dev" target="_blank">integrationengine.dev</a>
+      <a href="https://integrationengine.dev" target="_blank" rel="noopener noreferrer">integrationengine.dev</a>
       &nbsp;&middot;&nbsp;
-      <a href="https://github.com/CarlosGude/integrationEngine" target="_blank">GitHub</a>
+      <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener noreferrer">GitHub</a>
       &nbsp;&middot;&nbsp;
-      <a href="https://packagist.org/packages/carlosgude/integration-engine" target="_blank">Packagist</a>
+      <a href="https://packagist.org/packages/carlosgude/integration-engine" target="_blank" rel="noopener noreferrer">Packagist</a>
     </p>
   </div>
 </footer>

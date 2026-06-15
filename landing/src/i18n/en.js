@@ -76,24 +76,6 @@ export default {
     midCtaBtn:  'Read the documentation',
     midCtaAlt:  'See the full pattern',
 
-    // Structure section
-    structureEyebrow:   'The Solution',
-    structureH2:        'One predictable structure for every integration',
-    structureSub:       'If you know one integration, you know them all. The engine enforces the same shape across every API you integrate.',
-    structureYamlHdr:   'ACTION MAP (YAML)',
-    structureDirHdr:    'TYPICAL DIRECTORY',
-
-    // Structure code comments
-    cmContract:  '# RailwayStations.yaml &mdash; contract visible at a glance',
-    cmFacade:    '&larr; facade',
-    cmActionMap: '&larr; action map',
-
-    // Structure auth panel
-    structureAuthHdr:  'DYNAMIC AUTH (OAUTH2 &middot; BEARER &middot; API KEY)',
-    cmAuthOnce:        '# Token fetched once, cached 60 min, retried automatically on 401',
-    cmAuthField:       '&larr; field in the token response',
-    cmAuthCached:      '&larr; cached per integration, shared across workers',
-
     // Get started section
     startEyebrow:    'Get started',
     startH2:         'Three steps. First integration running.',
@@ -170,23 +152,6 @@ export default {
     p5CmAllSame:    '// all go out at the same time &mdash; total time &asymp; the slowest',
     p5CmBatchGood:  '//  3 stations &rarr; ~250ms   (the slowest, not the sum)\n// 10 stations &rarr; ~250ms   (does not scale)',
     p5Insight:      '<strong>Why it matters:</strong> individual failures never abort the batch &mdash; each key resolves independently. <code>sendMany()</code> returns a <code>BatchResultCollection</code> where you inspect each outcome; <code>sendManyOrFail()</code> throws on the first failure after the full batch has run. The default REST client already implements <code>BatchClientInterface</code> via lazy Symfony HttpClient responses &mdash; zero additional configuration.',
-
-    // Summary
-    summaryEyebrow:    'Summary',
-    summaryH2:         'Without pattern vs Engine pattern',
-    summaryThConcept:  'Concept',
-    summaryThWithout:  'Without pattern',
-    summaryThEngine:   'Engine pattern',
-    summaryRows: [
-        { concept: 'Endpoint declaration',        without: '&#10007; Scattered across God class methods',                engine: '&#10003; One YAML file per integration' },
-        { concept: 'URL building',                without: '&#10007; String concatenation, fails silently',             engine: '&#10003; <code>{placeholders}</code> validated at runtime' },
-        { concept: 'API fields in code',          without: '&#10007; Leaked to all layers',                             engine: '&#10003; Encapsulated in <code>Mapper</code> + <code>DTO</code>' },
-        { concept: 'Return type',                 without: '&#10007; <code>array&lt;string,&nbsp;mixed&gt;</code> + <code>_</code> conventions', engine: '&#10003; Typed <code>ResponseInterface</code>' },
-        { concept: 'Anti-Corruption Layer',       without: '&#10007; None &mdash; controller coupled to HTTP client',   engine: '&#10003; <code>StationService</code> as the only boundary' },
-        { concept: 'Auth (Bearer, Basic, OAuth2)',without: 'Manual headers in each <code>request()</code>',             engine: '&#10003; Declared in YAML, managed by the engine' },
-        { concept: 'Adding a new endpoint',       without: 'Method + URL + parsing + mapping scattered',                engine: '&#10003; Action + Mapper + Response + 3 YAML lines' },
-        { concept: 'Batch',                       without: '&#10007; Sequential <code>foreach</code>, linear time',     engine: '&#10003; <code>sendManyOrFail()</code>, constant time' },
-    ],
 
     // Thanks section
     thanksEyebrow: 'Before you go',

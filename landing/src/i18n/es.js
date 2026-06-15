@@ -76,24 +76,6 @@ export default {
     midCtaBtn:  'Leer la documentación',
     midCtaAlt:  'Ver el patrón completo',
 
-    // Structure section
-    structureEyebrow:   'La Solución',
-    structureH2:        'Una estructura predecible para cada integración',
-    structureSub:       'Si conoces una integración, conoces todas. El engine impone la misma forma en cada API que integras.',
-    structureYamlHdr:   'MAPA DE ACCIONES (YAML)',
-    structureDirHdr:    'DIRECTORIO TIPO',
-
-    // Structure code comments
-    cmContract:  '# RailwayStations.yaml &mdash; contrato visible de un vistazo',
-    cmFacade:    '&larr; fachada',
-    cmActionMap: '&larr; mapa de acciones',
-
-    // Structure auth panel
-    structureAuthHdr:  'AUTH DINÁMICA (OAUTH2 &middot; BEARER &middot; API KEY)',
-    cmAuthOnce:        '# Token obtenido una vez, cacheado 60 min, reintentado automáticamente en 401',
-    cmAuthField:       '&larr; campo en la respuesta del token',
-    cmAuthCached:      '&larr; cacheado por integración, compartido entre workers',
-
     // Get started section
     startEyebrow:    'Empieza',
     startH2:         'Tres pasos. Primera integración funcionando.',
@@ -170,23 +152,6 @@ export default {
     p5CmAllSame:    '// todas salen al mismo tiempo &mdash; tiempo total &asymp; la más lenta',
     p5CmBatchGood:  '//  3 estaciones &rarr; ~250ms   (la más lenta, no la suma)\n// 10 estaciones &rarr; ~250ms   (no escala)',
     p5Insight:      '<strong>Por qué importa:</strong> los fallos individuales nunca abortan el batch &mdash; cada clave se resuelve de forma independiente. <code>sendMany()</code> devuelve un <code>BatchResultCollection</code> donde inspeccionas cada resultado; <code>sendManyOrFail()</code> lanza en el primer fallo después de que todo el batch haya ejecutado. El cliente REST por defecto ya implementa <code>BatchClientInterface</code> mediante las lazy responses de Symfony HttpClient &mdash; cero configuración adicional.',
-
-    // Summary
-    summaryEyebrow:   'Resumen',
-    summaryH2:        'Sin patrón vs Engine pattern',
-    summaryThConcept: 'Concepto',
-    summaryThWithout: 'Sin patrón',
-    summaryThEngine:  'Engine pattern',
-    summaryRows: [
-        { concept: 'Declaración de endpoints',     without: '&#10007; Dispersa en métodos de la God class',                 engine: '&#10003; Un fichero YAML por integración' },
-        { concept: 'Construcción de URLs',          without: '&#10007; Concatenación de strings, falla en silencio',         engine: '&#10003; <code>{placeholders}</code> validados en tiempo de ejecución' },
-        { concept: 'Campos de la API en el código', without: '&#10007; Filtrados a todas las capas',                         engine: '&#10003; Encapsulados en <code>Mapper</code> + <code>DTO</code>' },
-        { concept: 'Tipo de retorno',               without: '&#10007; <code>array&lt;string,&nbsp;mixed&gt;</code> + convenciones <code>_</code>', engine: '&#10003; <code>ResponseInterface</code> tipada' },
-        { concept: 'Anti-Corruption Layer',         without: '&#10007; No existe &mdash; controller acoplado al cliente HTTP', engine: '&#10003; <code>StationService</code> como única frontera' },
-        { concept: 'Auth (Bearer, Basic, OAuth2)',  without: 'Headers manuales en cada <code>request()</code>',              engine: '&#10003; Declarado en YAML, gestionado por el engine' },
-        { concept: 'Añadir un nuevo endpoint',      without: 'Método + URL + parseo + mapeo dispersos',                      engine: '&#10003; Action + Mapper + Response + 3 líneas YAML' },
-        { concept: 'Batch',                         without: '&#10007; <code>foreach</code> secuencial, tiempo lineal',       engine: '&#10003; <code>sendManyOrFail()</code>, tiempo constante' },
-    ],
 
     // Thanks section
     thanksEyebrow: 'Antes de irte',
