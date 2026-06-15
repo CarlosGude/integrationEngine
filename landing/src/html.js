@@ -1,23 +1,44 @@
 import { CSS } from './css.js';
 import { JS }  from './client.js';
+import en from './i18n/en.js';
+import es from './i18n/es.js';
 
-export function getHTML() {
+const translations = { en, es };
+
+export function getHTML(lang = 'en') {
+    const t = translations[lang] ?? translations.en;
+
+    const problemCards = t.problems.map(p => `
+      <div class="problem-card">
+        <div class="problem-icon">&#127381;</div>
+        <h3>${p.title}</h3>
+        <p>${p.desc}</p>
+      </div>`).join('');
+
+    const summaryRows = t.summaryRows.map(r => `
+        <tr>
+          <td>${r.concept}</td>
+          <td class="tbad">${r.without}</td>
+          <td class="tgood">${r.engine}</td>
+        </tr>`).join('');
+
+    const isEs = lang === 'es';
+    const docsHref = isEs
+        ? 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION_ES.md'
+        : 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION.md';
+
     return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${t.lang}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IntegrationEngine &mdash; Demo</title>
-<meta name="description" content="One standard for every external API in your Symfony projects. Ship faster. Onboard instantly. Stop doing archaeology." />
+<meta name="description" content="One standard for every external API in your Symfony projects." />
 <meta property="og:type"        content="website" />
-<meta property="og:url"         content="https://integrationengine.dev/" />
+<meta property="og:url"         content="https://integrationengine.dev/?lang=${lang}" />
 <meta property="og:title"       content="IntegrationEngine &mdash; Demo" />
 <meta property="og:description" content="One standard for every external API in your Symfony projects." />
-<meta property="og:site_name"   content="IntegrationEngine" />
-<meta name="twitter:card"        content="summary" />
-<meta name="twitter:title"       content="IntegrationEngine &mdash; Demo" />
-<meta name="twitter:description" content="One standard for every external API in your Symfony projects." />
-<link rel="canonical" href="https://integrationengine.dev/" />
+<link rel="canonical" href="https://integrationengine.dev/?lang=${lang}" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>${CSS}</style>
@@ -26,21 +47,21 @@ export function getHTML() {
 
 <!-- NAV -->
 <nav class="topnav">
-  <a class="topnav-brand" href="#">Integration<span>Engine</span></a>
+  <a class="topnav-brand" href="?lang=${lang}">Integration<span>Engine</span></a>
   <div class="topnav-links">
-    <a href="#problem">Problem</a>
-    <a href="#pattern">The Pattern</a>
+    <a href="#problem">${t.navProblem}</a>
+    <a href="#pattern">${t.navPattern}</a>
     <span class="topnav-sep"></span>
-    <a href="https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION.md" target="_blank" rel="noopener">Docs</a>
+    <a href="${docsHref}" target="_blank" rel="noopener">Docs</a>
     <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener">GitHub</a>
   </div>
   <div class="lang-pill">
-    <a href="?lang=es" class="lang-opt lang-inactive">
-      <span class="lp-flag">🇪🇸</span>
+    <a href="?lang=es" class="lang-opt ${isEs ? 'lang-active' : 'lang-inactive'}">
+      <span class="lp-flag">&#127466;&#127480;</span>
       <span class="lp-string"><span class="lp-bracket">'</span><span class="lp-code">ES</span><span class="lp-bracket">'</span></span>
     </a>
-    <a href="?lang=en" class="lang-opt lang-active">
-      <span class="lp-flag">🇬🇧</span>
+    <a href="?lang=en" class="lang-opt ${!isEs ? 'lang-active' : 'lang-inactive'}">
+      <span class="lp-flag">&#127468;&#127463;</span>
       <span class="lp-string"><span class="lp-bracket">'</span><span class="lp-code">EN</span><span class="lp-bracket">'</span></span>
     </a>
   </div>
@@ -49,40 +70,25 @@ export function getHTML() {
 <!-- HERO -->
 <section class="hero">
   <div class="hero-badge">Symfony Bundle &middot; PHP 8.2+ &middot; Symfony 7+</div>
-  <h1>Your external integrations<br>deserve a pattern</h1>
-  <p>Without structure, every API ends up with its own shape, its own logic, its own technical debt. After a few months you don&rsquo;t have integrations. You have a zoo.</p>
+  <h1>${t.heroH1}</h1>
+  <p>${t.heroP}</p>
   <div class="install-box" onclick="copyInstall(this)">
-    <span class="copy-hint">Copied!</span>
+    <span class="copy-hint">${t.copyHint}</span>
     composer require carlosgude/integration-engine
   </div>
   <div class="hero-actions">
-    <a href="#demo" class="btn-primary">See live demo</a>
-    <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" class="btn-outline">Source code</a>
+    <a href="#pattern" class="btn-primary">${t.heroBtn1}</a>
+    <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" class="btn-outline">${t.heroBtn2}</a>
   </div>
 </section>
 
 <!-- THE PROBLEM -->
 <section id="problem" class="s-light">
   <div class="container">
-    <div class="eyebrow">The Problem</div>
-    <h2 class="s-heading">Why integrations degenerate</h2>
-    <p class="s-sub">Without a pattern, entropy wins. Every integration brings its own conventions and the code becomes archaeology.</p>
-    <div class="problems-grid">
-      <div class="problem-card">
-        <div class="problem-icon">&#127381;</div>
-        <h3>Inevitable god class</h3>
-        <p>Without a defined entry point, HTTP methods, parsing and logic pile up in a single class. Impossible to test, impossible to scale.</p>
-      </div>
-      <div class="problem-card">
-        <div class="problem-icon">&#128279;</div>
-        <h3>Implicit contracts</h3>
-        <p>Responses travel as <code>array&lt;string, mixed&gt;</code>. Every layer that touches them has to know the exact field names of the API.</p>
-      </div>
-      <div class="problem-card">
-        <div class="problem-icon">&#9203;</div>
-        <h3>Sequential batch</h3>
-        <p>The <code>foreach</code> blocks: each request waits for the previous one. 10 items = 10&times; the time of one. It doesn&rsquo;t scale, and nothing warns you.</p>
-      </div>
+    <div class="eyebrow">${t.problemEyebrow}</div>
+    <h2 class="s-heading">${t.problemH2}</h2>
+    <p class="s-sub">${t.problemSub}</p>
+    <div class="problems-grid">${problemCards}
     </div>
   </div>
 </section>
@@ -90,13 +96,13 @@ export function getHTML() {
 <!-- THE SOLUTION -->
 <section id="structure" class="s-dark">
   <div class="container">
-    <div class="eyebrow lt">The Solution</div>
-    <h2 class="s-heading lt">One predictable structure for every integration</h2>
-    <p class="s-sub lt">If you know one integration, you know them all. The engine enforces the same shape across every API you integrate.</p>
+    <div class="eyebrow lt">${t.structureEyebrow}</div>
+    <h2 class="s-heading lt">${t.structureH2}</h2>
+    <p class="s-sub lt">${t.structureSub}</p>
     <div class="struct-split">
       <div class="struct-panel">
-        <div class="struct-header">ACTION MAP (YAML)</div>
-        <pre><span class="cm"># RailwayStations.yaml &mdash; contract visible at a glance</span>
+        <div class="struct-header">${t.structureYamlHdr}</div>
+        <pre><span class="cm">${t.cmContract}</span>
 
 <span class="key">GetStats</span>:
     <span class="val">action</span>: App\\...\\<span class="hl">GetStatsAction</span>
@@ -114,10 +120,10 @@ export function getHTML() {
     <span class="val">path</span>:   /photoStationById/<span class="ph">{country}</span>/<span class="ph">{stationId}</span></pre>
       </div>
       <div class="struct-panel">
-        <div class="struct-header">TYPICAL DIRECTORY</div>
+        <div class="struct-header">${t.structureDirHdr}</div>
         <pre>src/Infrastructure/Integrations/<span class="hl">RailwayStations</span>/
-&boxvr;&boxh;&boxh; <span class="hl">RailwayStationsIntegration.php</span>  <span class="cm">&larr; facade</span>
-&boxvr;&boxh;&boxh; <span class="hl">RailwayStations.yaml</span>             <span class="cm">&larr; action map</span>
+&boxvr;&boxh;&boxh; <span class="hl">RailwayStationsIntegration.php</span>  <span class="cm">${t.cmFacade}</span>
+&boxvr;&boxh;&boxh; <span class="hl">RailwayStations.yaml</span>             <span class="cm">${t.cmActionMap}</span>
 &boxvr;&boxh;&boxh; GetStats/
 &boxv;   &boxvr;&boxh;&boxh; Request/<span class="key">GetStatsAction.php</span>
 &boxv;   &boxur;&boxh;&boxh; Response/
@@ -136,9 +142,9 @@ export function getHTML() {
 <!-- THE PATTERN -->
 <section id="pattern" class="s-white">
   <div class="container">
-    <div class="eyebrow">The Pattern</div>
-    <h2 class="s-heading">Five antipatterns the engine solves</h2>
-    <p class="s-sub">The same endpoints, two implementations. Each section shows the real classes from the project.</p>
+    <div class="eyebrow">${t.patternEyebrow}</div>
+    <h2 class="s-heading">${t.patternH2}</h2>
+    <p class="s-sub">${t.patternSub}</p>
 
     <div class="patron-grid">
 
@@ -147,14 +153,14 @@ export function getHTML() {
         <div class="patron-header">
           <div class="patron-num">1</div>
           <div class="patron-meta">
-            <h3>Integration configuration</h3>
-            <div class="anti">&#10007; The base URL and paths live hardcoded in each method. There&rsquo;s no single place to see which endpoints exist.</div>
-            <div class="sol">&#10003; One YAML file per integration declares base_url, paths and auth. Complete contract at a glance.</div>
+            <h3>${t.p1Title}</h3>
+            <div class="anti">${t.p1Anti}</div>
+            <div class="sol">${t.p1Sol}</div>
           </div>
         </div>
         <div class="split">
           <div class="cpanel bad">
-            <div class="cpanel-head"><span class="panel-dot"></span>Without pattern</div>
+            <div class="cpanel-head"><span class="panel-dot"></span>${t.withoutPattern}</div>
             <div class="file-label">src/Traditional/RailwayApiService.php</div>
             <div class="code-block"><span class="kw">namespace</span> App\\Traditional;
 
@@ -162,14 +168,8 @@ export function getHTML() {
 
 <span class="kw">class</span> <span class="cls">RailwayApiService</span>
 {
-    <span class="cm">// Base URL lives here, not in any config file.</span>
+    <span class="cm">${t.p1CmBase}</span>
     <span class="kw">private const</span> <span class="key">BASE</span> = <span class="bad-hl"><span class="str">'https://api.railway-stations.org'</span></span>;
-
-    <span class="kw">private</span> <span class="cls">array</span> <span class="var">$countryCache</span> = [];
-
-    <span class="kw">public function</span> <span class="fn">__construct</span>(
-        <span class="kw">private</span> <span class="cls">HttpClientInterface</span> <span class="var">$http</span>,
-    ) {}
 
     <span class="kw">public function</span> <span class="fn">fetchStats</span>(): <span class="cls">array</span>
     {
@@ -193,32 +193,22 @@ export function getHTML() {
                 : <span class="kw">null</span>;
             <span class="var">$stations</span>[] = <span class="var">$s</span>;
         }
-        <span class="var">$this</span>-&gt;<span class="var">countryCache</span>[<span class="var">$countryCode</span>] = <span class="var">$stations</span>;
         <span class="kw">return</span> <span class="var">$stations</span>;
     }
 
-    <span class="kw">public function</span> <span class="fn">fetchStation</span>(<span class="cls">string</span> <span class="var">$countryCode</span>, <span class="cls">string</span> <span class="var">$stationId</span>): ?<span class="cls">array</span>
+    <span class="kw">public function</span> <span class="fn">fetchStation</span>(<span class="cls">string</span> <span class="var">$cc</span>, <span class="cls">string</span> <span class="var">$id</span>): ?<span class="cls">array</span>
     {
         <span class="var">$raw</span> = <span class="var">$this</span>-&gt;<span class="var">http</span>
             -&gt;<span class="fn">request</span>(<span class="bad-hl"><span class="str">'GET'</span>,
                 <span class="str">self::BASE . '/photoStationById/'
-                    . </span><span class="var">$countryCode</span> <span class="str">. '/' . </span><span class="var">$stationId</span></span>)
+                    . </span><span class="var">$cc</span> <span class="str">. '/' . </span><span class="var">$id</span></span>)
             -&gt;<span class="fn">toArray</span>();
-        <span class="var">$base</span>     = <span class="var">$raw</span>[<span class="str">'photoBaseUrl'</span>];
-        <span class="var">$stations</span> = <span class="var">$raw</span>[<span class="str">'stations'</span>] ?? [];
-        <span class="kw">if</span> (<span class="fn">empty</span>(<span class="var">$stations</span>)) { <span class="kw">return null</span>; }
-        <span class="var">$s</span>               = <span class="var">$stations</span>[0];
-        <span class="var">$s</span>[<span class="str">'_photoBase'</span>] = <span class="var">$base</span>;
-        <span class="var">$s</span>[<span class="str">'_hasPhoto'</span>]  = <span class="fn">isset</span>(<span class="var">$s</span>[<span class="str">'photos'</span>][0]);
-        <span class="var">$s</span>[<span class="str">'_photoUrl'</span>]  = <span class="fn">isset</span>(<span class="var">$s</span>[<span class="str">'photos'</span>][0])
-            ? <span class="var">$base</span> . <span class="var">$s</span>[<span class="str">'photos'</span>][0][<span class="str">'path'</span>]
-            : <span class="kw">null</span>;
-        <span class="kw">return</span> <span class="var">$s</span>;
+        <span class="kw">return</span> <span class="var">$raw</span>[<span class="str">'stations'</span>][0] ?? <span class="kw">null</span>;
     }
 }</div>
           </div>
           <div class="cpanel good">
-            <div class="cpanel-head"><span class="panel-dot"></span>Engine pattern</div>
+            <div class="cpanel-head"><span class="panel-dot"></span>${t.enginePattern}</div>
             <div class="file-label">src/Engine/Infrastructure/Integrations/RailwayStations/RailwayStations.yaml</div>
             <div class="code-block"><span class="good-hl"><span class="key">GetStats</span>:
     <span class="key">action</span>: <span class="str">App\\...\\GetStatsAction</span>
@@ -244,7 +234,7 @@ export function getHTML() {
                          RailwayStations/RailwayStations.yaml'</span></div>
           </div>
         </div>
-        <div class="insight"><strong>Why it matters:</strong> with 20 endpoints, finding which one calls which URL requires reading every method of the God class. With YAML, a new developer opens one file and sees the complete contract. If you change <code>base_url</code> or add authentication, there is a single point of change.</div>
+        <div class="insight">${t.p1Insight}</div>
       </div>
 
       <!-- 2. ROUTES -->
@@ -252,16 +242,16 @@ export function getHTML() {
         <div class="patron-header">
           <div class="patron-num">2</div>
           <div class="patron-meta">
-            <h3>Route building with parameters</h3>
-            <div class="anti">&#10007; Concatenating strings to build URLs is prone to silent typos. A <code>null</code> produces a valid but semantically incorrect URL.</div>
-            <div class="sol">&#10003; <code>{placeholder}</code> templates in YAML resolved by <code>DefaultActionContext</code>. The engine throws an immediate exception if a parameter is missing.</div>
+            <h3>${t.p2Title}</h3>
+            <div class="anti">${t.p2Anti}</div>
+            <div class="sol">${t.p2Sol}</div>
           </div>
         </div>
         <div class="split">
           <div class="cpanel bad">
-            <div class="cpanel-head"><span class="panel-dot"></span>Without pattern</div>
-            <div class="file-label">src/Traditional/RailwayApiService.php &mdash; URL methods</div>
-            <div class="code-block"><span class="cm">// One parameter in the path</span>
+            <div class="cpanel-head"><span class="panel-dot"></span>${t.withoutPattern}</div>
+            <div class="file-label">src/Traditional/RailwayApiService.php</div>
+            <div class="code-block"><span class="cm">${t.p2CmOneParam}</span>
 <span class="kw">public function</span> <span class="fn">fetchStations</span>(<span class="cls">string</span> <span class="var">$countryCode</span>): <span class="cls">array</span>
 {
     <span class="var">$raw</span> = <span class="var">$this</span>-&gt;<span class="var">http</span>-&gt;<span class="fn">request</span>(
@@ -270,7 +260,7 @@ export function getHTML() {
     )-&gt;<span class="fn">toArray</span>();
 }
 
-<span class="cm">// Two parameters in the path</span>
+<span class="cm">${t.p2CmTwoParam}</span>
 <span class="kw">public function</span> <span class="fn">fetchStation</span>(<span class="cls">string</span> <span class="var">$countryCode</span>, <span class="cls">string</span> <span class="var">$stationId</span>): ?<span class="cls">array</span>
 {
     <span class="var">$raw</span> = <span class="var">$this</span>-&gt;<span class="var">http</span>-&gt;<span class="fn">request</span>(
@@ -283,13 +273,10 @@ export function getHTML() {
     )-&gt;<span class="fn">toArray</span>();
 }
 
-<span class="cm">// If $stationId === null:
-// &rarr; /photoStationById/de/
-// &rarr; HTTP 404 with no descriptive exception.
-// The error surfaces late, far from the source.</span></div>
+<span class="cm">${t.p2CmNull}</span></div>
           </div>
           <div class="cpanel good">
-            <div class="cpanel-head"><span class="panel-dot"></span>Engine pattern</div>
+            <div class="cpanel-head"><span class="panel-dot"></span>${t.enginePattern}</div>
             <div class="file-label">src/Engine/Infrastructure/Integrations/RailwayStations/RailwayStationsIntegration.php</div>
             <div class="code-block"><span class="kw">public function</span> <span class="fn">getStationById</span>(<span class="cls">string</span> <span class="var">$country</span>, <span class="cls">string</span> <span class="var">$stationId</span>): <span class="cls">GetStationByIdResponse</span>
 {
@@ -304,11 +291,10 @@ export function getHTML() {
     <span class="kw">return</span> <span class="var">$response</span>;
 }
 
-<span class="cm">// If 'stationId' is missing: immediate, descriptive exception
-// before the HTTP call is made.</span></div>
+<span class="cm">${t.p2CmMissing}</span></div>
           </div>
         </div>
-        <div class="insight"><strong>Why it matters:</strong> string concatenation fails silently. The engine&rsquo;s placeholders are contracts: if one is missing, the error is immediate and descriptive, not a mysterious 404 two layers below.</div>
+        <div class="insight">${t.p2Insight}</div>
       </div>
 
       <!-- 3. MAPPING -->
@@ -316,67 +302,62 @@ export function getHTML() {
         <div class="patron-header">
           <div class="patron-num">3</div>
           <div class="patron-meta">
-            <h3>Response mapping</h3>
-            <div class="anti">&#10007; Raw API fields (<code>'title'</code>, <code>'photos'</code>, <code>'photoBaseUrl'</code>) leak to all layers. If the API renames a field, the error appears in multiple files.</div>
-            <div class="sol">&#10003; One <code>Mapper</code> accesses the raw fields. The rest of the code talks to typed DTOs.</div>
+            <h3>${t.p3Title}</h3>
+            <div class="anti">${t.p3Anti}</div>
+            <div class="sol">${t.p3Sol}</div>
           </div>
         </div>
         <div class="split">
           <div class="cpanel bad">
-            <div class="cpanel-head"><span class="panel-dot"></span>Without pattern</div>
+            <div class="cpanel-head"><span class="panel-dot"></span>${t.withoutPattern}</div>
             <div class="file-label">src/Traditional/Controller/GetStationsByCountryController.php</div>
             <div class="code-block"><span class="kw">foreach</span> (<span class="var">$stations</span> <span class="kw">as</span> <span class="var">$s</span>) {
     <span class="var">$result</span>[] = [
         <span class="str">'id'</span>        =&gt; <span class="var">$s</span>[<span class="bad-hl"><span class="str">'id'</span></span>],
-        <span class="str">'title'</span>     =&gt; <span class="var">$s</span>[<span class="bad-hl"><span class="str">'title'</span></span>],       <span class="cm">// raw API field</span>
+        <span class="str">'title'</span>     =&gt; <span class="var">$s</span>[<span class="bad-hl"><span class="str">'title'</span></span>],       <span class="cm">${t.p3CmRawField}</span>
         <span class="str">'lat'</span>       =&gt; <span class="var">$s</span>[<span class="bad-hl"><span class="str">'lat'</span></span>],
-        <span class="str">'lon'</span>       =&gt; <span class="var">$s</span>[<span class="bad-hl"><span class="str">'lon'</span></span>],         <span class="cm">// not 'lng', not 'longitude'</span>
-        <span class="str">'has_photo'</span> =&gt; <span class="var">$s</span>[<span class="bad-hl"><span class="key">'_hasPhoto'</span></span>],  <span class="cm">// private convention</span>
-        <span class="str">'photo_url'</span> =&gt; <span class="var">$s</span>[<span class="bad-hl"><span class="key">'_photoUrl'</span></span>],  <span class="cm">// private convention</span>
+        <span class="str">'lon'</span>       =&gt; <span class="var">$s</span>[<span class="bad-hl"><span class="str">'lon'</span></span>],         <span class="cm">${t.p3CmNotLng}</span>
+        <span class="str">'has_photo'</span> =&gt; <span class="var">$s</span>[<span class="bad-hl"><span class="key">'_hasPhoto'</span></span>],  <span class="cm">${t.p3CmPrivate}</span>
+        <span class="str">'photo_url'</span> =&gt; <span class="var">$s</span>[<span class="bad-hl"><span class="key">'_photoUrl'</span></span>],  <span class="cm">${t.p3CmPrivate}</span>
     ];
 }
-<span class="cm">// If the API renames 'title' to 'name': search and fix EVERY
-// file that accesses the array. How many are there?</span></div>
+<span class="cm">${t.p3CmRenameEvery}</span></div>
           </div>
           <div class="cpanel good">
-            <div class="cpanel-head"><span class="panel-dot"></span>Engine pattern</div>
+            <div class="cpanel-head"><span class="panel-dot"></span>${t.enginePattern}</div>
             <div class="file-label">src/Engine/.../GetStationsByCountryMapper.php</div>
             <div class="code-block"><span class="kw">final class</span> <span class="cls">GetStationsByCountryMapper</span> <span class="kw">extends</span> <span class="cls">AbstractMapper</span>
 {
     <span class="kw">protected static function</span> <span class="fn">transform</span>(
         <span class="cls">AbstractAction</span> <span class="var">$action</span>, <span class="cls">array</span> <span class="var">$response</span>
     ): <span class="cls">ResponseInterface</span> {
-        <span class="var">$photoBaseUrl</span> = <span class="var">$response</span>[<span class="good-hl"><span class="str">'photoBaseUrl'</span></span>];  <span class="cm">// only place</span>
+        <span class="var">$photoBaseUrl</span> = <span class="var">$response</span>[<span class="good-hl"><span class="str">'photoBaseUrl'</span></span>];  <span class="cm">${t.p3CmOnlyPlace}</span>
         <span class="var">$stations</span> = <span class="fn">array_map</span>(
             <span class="kw">fn</span>(<span class="cls">array</span> <span class="var">$s</span>) =&gt; <span class="cls">StationDto</span>::<span class="fn">fromApiData</span>(<span class="var">$s</span>, <span class="var">$photoBaseUrl</span>),
-            <span class="var">$response</span>[<span class="good-hl"><span class="str">'stations'</span></span>],              <span class="cm">// only place</span>
+            <span class="var">$response</span>[<span class="good-hl"><span class="str">'stations'</span></span>],              <span class="cm">${t.p3CmOnlyPlace}</span>
         );
         <span class="kw">return new</span> <span class="cls">GetStationsByCountryResponse</span>(<span class="var">$stations</span>);
     }
 }</div>
             <div class="file-label">src/Engine/.../StationDto.php</div>
-            <div class="code-block"><span class="kw">final readonly class</span> <span class="cls">StationDto</span>
+            <div class="code-block"><span class="kw">public static function</span> <span class="fn">fromApiData</span>(<span class="cls">array</span> <span class="var">$station</span>, <span class="cls">string</span> <span class="var">$photoBaseUrl</span>): <span class="cls">self</span>
 {
-    <span class="kw">public static function</span> <span class="fn">fromApiData</span>(<span class="cls">array</span> <span class="var">$station</span>, <span class="cls">string</span> <span class="var">$photoBaseUrl</span>): <span class="cls">self</span>
-    {
-        <span class="var">$firstPhoto</span> = <span class="var">$station</span>[<span class="good-hl"><span class="str">'photos'</span></span>][0] ?? <span class="kw">null</span>;  <span class="cm">// only place</span>
-        <span class="kw">return new</span> <span class="cls">self</span>(
-            <span class="key">id</span>:       <span class="var">$station</span>[<span class="good-hl"><span class="str">'id'</span></span>],
-            <span class="key">title</span>:    <span class="var">$station</span>[<span class="good-hl"><span class="str">'title'</span></span>],
-            <span class="key">lat</span>:      (<span class="cls">float</span>) <span class="var">$station</span>[<span class="good-hl"><span class="str">'lat'</span></span>],
-            <span class="key">lon</span>:      (<span class="cls">float</span>) <span class="var">$station</span>[<span class="good-hl"><span class="str">'lon'</span></span>],
-            <span class="key">hasPhoto</span>: <span class="var">$firstPhoto</span> !== <span class="kw">null</span>,
-            <span class="key">photoUrl</span>: <span class="var">$firstPhoto</span> !== <span class="kw">null</span>
-                ? <span class="var">$photoBaseUrl</span> . <span class="var">$firstPhoto</span>[<span class="good-hl"><span class="str">'path'</span></span>]
-                : <span class="kw">null</span>,
-        );
-    }
+    <span class="var">$firstPhoto</span> = <span class="var">$station</span>[<span class="good-hl"><span class="str">'photos'</span></span>][0] ?? <span class="kw">null</span>;  <span class="cm">${t.p3CmOnlyPlace}</span>
+    <span class="kw">return new</span> <span class="cls">self</span>(
+        <span class="key">id</span>:       <span class="var">$station</span>[<span class="good-hl"><span class="str">'id'</span></span>],
+        <span class="key">title</span>:    <span class="var">$station</span>[<span class="good-hl"><span class="str">'title'</span></span>],
+        <span class="key">lat</span>:      (<span class="cls">float</span>) <span class="var">$station</span>[<span class="good-hl"><span class="str">'lat'</span></span>],
+        <span class="key">lon</span>:      (<span class="cls">float</span>) <span class="var">$station</span>[<span class="good-hl"><span class="str">'lon'</span></span>],
+        <span class="key">hasPhoto</span>: <span class="var">$firstPhoto</span> !== <span class="kw">null</span>,
+        <span class="key">photoUrl</span>: <span class="var">$firstPhoto</span> !== <span class="kw">null</span>
+            ? <span class="var">$photoBaseUrl</span> . <span class="var">$firstPhoto</span>[<span class="good-hl"><span class="str">'path'</span></span>]
+            : <span class="kw">null</span>,
+    );
 }
-<span class="cm">// If the API renames 'title' to 'name': only this line changes.
-// No other file touches raw API fields.</span></div>
+<span class="cm">${t.p3CmRenameOne}</span></div>
           </div>
         </div>
-        <div class="insight"><strong>Why it matters:</strong> without a mapper, knowledge of the API fields leaks into every class that processes the response. With the engine, <code>StationDto::fromApiData()</code> is the only point of contact. If the API renames a field, there is exactly one place to fix.</div>
+        <div class="insight">${t.p3Insight}</div>
       </div>
 
       <!-- 4. ACL -->
@@ -384,14 +365,14 @@ export function getHTML() {
         <div class="patron-header">
           <div class="patron-num">4</div>
           <div class="patron-meta">
-            <h3>Anti-Corruption Layer</h3>
-            <div class="anti">&#10007; The controller imports the HTTP client directly. Changing the API provider means touching every controller that consumes it.</div>
-            <div class="sol">&#10003; <code>StationService</code> is the only boundary between the domain and the integration. Controllers only see their own domain objects.</div>
+            <h3>${t.p4Title}</h3>
+            <div class="anti">${t.p4Anti}</div>
+            <div class="sol">${t.p4Sol}</div>
           </div>
         </div>
         <div class="split">
           <div class="cpanel bad">
-            <div class="cpanel-head"><span class="panel-dot"></span>Without pattern</div>
+            <div class="cpanel-head"><span class="panel-dot"></span>${t.withoutPattern}</div>
             <div class="file-label">src/Traditional/Controller/GetStationsByCountryController.php</div>
             <div class="code-block"><span class="kw">namespace</span> App\\Traditional\\Controller;
 
@@ -405,15 +386,14 @@ export function getHTML() {
     <span class="kw">public function</span> <span class="fn">__invoke</span>(<span class="cls">string</span> <span class="var">$country</span>): <span class="cls">JsonResponse</span>
     {
         <span class="var">$stations</span> = <span class="var">$this</span>-&gt;<span class="var">api</span>-&gt;<span class="fn">fetchStations</span>(<span class="var">$country</span>);
-        <span class="cm">// maps raw _hasPhoto, _photoUrl conventions...</span>
+        <span class="cm">${t.p4CmMapsConv}</span>
         <span class="kw">return new</span> <span class="cls">JsonResponse</span>(<span class="var">$result</span>);
     }
 }
-<span class="cm">// Switch API &rarr; touch this controller,
-// and all others that do the same.</span></div>
+<span class="cm">${t.p4CmSwitchBad}</span></div>
           </div>
           <div class="cpanel good">
-            <div class="cpanel-head"><span class="panel-dot"></span>Engine pattern</div>
+            <div class="cpanel-head"><span class="panel-dot"></span>${t.enginePattern}</div>
             <div class="file-label">src/Engine/Controller/GetStationsByCountryController.php</div>
             <div class="code-block"><span class="kw">namespace</span> App\\Engine\\Controller;
 
@@ -432,9 +412,8 @@ export function getHTML() {
         );
     }
 }
-<span class="cm">// Switch API &rarr; StationService absorbs the change.
-// This controller does not change.</span></div>
-            <div class="file-label">src/Engine/Application/StationService.php &mdash; Anti-Corruption Layer</div>
+<span class="cm">${t.p4CmSwitchGood}</span></div>
+            <div class="file-label">src/Engine/Application/StationService.php</div>
             <div class="code-block"><span class="kw">final class</span> <span class="cls">StationService</span>
 {
     <span class="kw">public function</span> <span class="fn">__construct</span>(
@@ -461,7 +440,7 @@ export function getHTML() {
 }</div>
           </div>
         </div>
-        <div class="insight"><strong>Why it matters:</strong> without an ACL, the controller is coupled to <code>RailwayApiService</code> and its private conventions (<code>_hasPhoto</code>). With <code>StationService</code> as the only boundary, controllers only import domain objects and the cost of switching providers is reduced to a single file.</div>
+        <div class="insight">${t.p4Insight}</div>
       </div>
 
       <!-- 5. BATCH -->
@@ -469,31 +448,28 @@ export function getHTML() {
         <div class="patron-header">
           <div class="patron-num">5</div>
           <div class="patron-meta">
-            <h3>Request batching</h3>
-            <div class="anti">&#10007; The sequential <code>foreach</code> blocks: each request waits for the previous one. Total time scales linearly.</div>
-            <div class="sol">&#10003; <code>sendManyOrFail()</code> dispatches all in parallel. Total time &asymp; the slowest request, regardless of the number of items.</div>
+            <h3>${t.p5Title}</h3>
+            <div class="anti">${t.p5Anti}</div>
+            <div class="sol">${t.p5Sol}</div>
           </div>
         </div>
         <div class="split">
           <div class="cpanel bad">
-            <div class="cpanel-head"><span class="panel-dot"></span>Without pattern</div>
+            <div class="cpanel-head"><span class="panel-dot"></span>${t.withoutPattern}</div>
             <div class="file-label">src/Traditional/Controller/GetStationsBatchController.php</div>
             <div class="code-block"><span class="kw">foreach</span> (<span class="var">$pairs</span> <span class="kw">as</span> <span class="var">$pair</span>) {
     [<span class="var">$country</span>, <span class="var">$stationId</span>] = <span class="fn">explode</span>(<span class="str">'/'</span>, <span class="var">$pair</span>, 2) + [<span class="str">''</span>, <span class="str">''</span>];
 
-    <span class="bad-hl"><span class="cm">// HTTP request &mdash; others wait here, blocked</span>
+    <span class="bad-hl"><span class="cm">${t.p5CmBlocked}</span>
     <span class="var">$s</span> = <span class="var">$this</span>-&gt;<span class="var">api</span>-&gt;<span class="fn">fetchStation</span>(<span class="var">$country</span>, <span class="var">$stationId</span>);</span>
 
-    <span class="var">$result</span>[<span class="var">$pair</span>] = [
-        <span class="str">'title'</span> =&gt; <span class="var">$s</span>[<span class="str">'title'</span>], <span class="str">'lat'</span> =&gt; <span class="var">$s</span>[<span class="str">'lat'</span>],
-    ];
+    <span class="var">$result</span>[<span class="var">$pair</span>] = [<span class="str">'title'</span> =&gt; <span class="var">$s</span>[<span class="str">'title'</span>], <span class="str">'lat'</span> =&gt; <span class="var">$s</span>[<span class="str">'lat'</span>]];
 }
-<span class="cm">//  3 stations &times; 250ms = ~750ms
-// 10 stations &times; 250ms = ~2500ms  &larr; scales linearly</span></div>
+<span class="cm">${t.p5CmBatchBad}</span></div>
           </div>
           <div class="cpanel good">
-            <div class="cpanel-head"><span class="panel-dot"></span>Engine pattern</div>
-            <div class="file-label">src/Engine/.../RailwayStationsIntegration.php &mdash; getManyStationsById()</div>
+            <div class="cpanel-head"><span class="panel-dot"></span>${t.enginePattern}</div>
+            <div class="file-label">src/Engine/.../RailwayStationsIntegration.php</div>
             <div class="code-block"><span class="kw">public function</span> <span class="fn">getManyStationsById</span>(<span class="cls">array</span> <span class="var">$stations</span>): <span class="cls">array</span>
 {
     <span class="var">$requests</span> = [];
@@ -507,14 +483,13 @@ export function getHTML() {
         );
     }
 
-    <span class="good-hl"><span class="cm">// all go out at the same time &mdash; total time &asymp; the slowest</span>
+    <span class="good-hl"><span class="cm">${t.p5CmAllSame}</span>
     <span class="kw">return</span> <span class="var">$this</span>-&gt;<span class="var">engine</span>-&gt;<span class="fn">sendManyOrFail</span>(<span class="var">$requests</span>);</span>
 }
-<span class="cm">//  3 stations &rarr; ~250ms   (the slowest, not the sum)
-// 10 stations &rarr; ~250ms   (does not scale)</span></div>
+<span class="cm">${t.p5CmBatchGood}</span></div>
           </div>
         </div>
-        <div class="insight"><strong>Why it matters:</strong> <code>sendManyOrFail()</code> dispatches in parallel. The default REST client already implements <code>BatchClientInterface</code> &mdash; zero additional configuration. If one request fails, the exception identifies exactly which one, and the rest of the batch has already executed.</div>
+        <div class="insight">${t.p5Insight}</div>
       </div>
 
     </div>
@@ -524,55 +499,37 @@ export function getHTML() {
 <!-- SUMMARY -->
 <section id="summary" class="s-light">
   <div class="container">
-    <div class="eyebrow">Summary</div>
-    <h2 class="s-heading">Without pattern vs Engine pattern</h2>
+    <div class="eyebrow">${t.summaryEyebrow}</div>
+    <h2 class="s-heading">${t.summaryH2}</h2>
     <table class="summary-table">
       <thead>
-        <tr><th>Concept</th><th>Without pattern</th><th>Engine pattern</th></tr>
+        <tr>
+          <th>${t.summaryThConcept}</th>
+          <th>${t.summaryThWithout}</th>
+          <th>${t.summaryThEngine}</th>
+        </tr>
       </thead>
-      <tbody>
-        <tr>
-          <td>Endpoint declaration</td>
-          <td class="tbad"><span class="cross">&#10007;</span> Scattered across God class methods</td>
-          <td class="tgood"><span class="check">&#10003;</span> One YAML file per integration</td>
-        </tr>
-        <tr>
-          <td>URL building</td>
-          <td class="tbad"><span class="cross">&#10007;</span> String concatenation, fails silently</td>
-          <td class="tgood"><span class="check">&#10003;</span> <code>{placeholders}</code> validated at runtime</td>
-        </tr>
-        <tr>
-          <td>API fields in code</td>
-          <td class="tbad"><span class="cross">&#10007;</span> Leaked to all layers</td>
-          <td class="tgood"><span class="check">&#10003;</span> Encapsulated in <code>Mapper</code> + <code>DTO</code></td>
-        </tr>
-        <tr>
-          <td>Return type</td>
-          <td class="tbad"><span class="cross">&#10007;</span> <code>array&lt;string, mixed&gt;</code> + <code>_</code> conventions</td>
-          <td class="tgood"><span class="check">&#10003;</span> Typed <code>ResponseInterface</code></td>
-        </tr>
-        <tr>
-          <td>Anti-Corruption Layer</td>
-          <td class="tbad"><span class="cross">&#10007;</span> None &mdash; controller coupled to HTTP client</td>
-          <td class="tgood"><span class="check">&#10003;</span> <code>StationService</code> as the only boundary</td>
-        </tr>
-        <tr>
-          <td>Auth (Bearer, Basic, OAuth2)</td>
-          <td class="tbad">Manual headers in each <code>request()</code></td>
-          <td class="tgood"><span class="check">&#10003;</span> Declared in YAML, managed by the engine</td>
-        </tr>
-        <tr>
-          <td>Adding a new endpoint</td>
-          <td class="tbad">Method + URL + parsing + mapping scattered</td>
-          <td class="tgood"><span class="check">&#10003;</span> Action + Mapper + Response + 3 YAML lines</td>
-        </tr>
-        <tr>
-          <td>Batch</td>
-          <td class="tbad"><span class="cross">&#10007;</span> Sequential <code>foreach</code>, linear time</td>
-          <td class="tgood"><span class="check">&#10003;</span> <code>sendManyOrFail()</code>, constant time</td>
-        </tr>
+      <tbody>${summaryRows}
       </tbody>
     </table>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="contact" class="s-dark cta-section">
+  <div class="container cta-inner">
+    <div class="eyebrow lt">${t.ctaEyebrow}</div>
+    <h2 class="s-heading lt">${t.ctaH2}</h2>
+    <p class="s-sub lt">${t.ctaSub}</p>
+    <div class="cta-actions">
+      <a href="${t.ctaEmailHref}" class="btn-primary cta-btn">
+        <span class="cta-icon">&#9993;</span> ${t.ctaEmailLabel}
+        <span class="cta-email-addr">${t.ctaEmail}</span>
+      </a>
+      <a href="https://github.com/CarlosGude/integrationEngine/discussions" target="_blank" rel="noopener" class="btn-outline cta-btn">
+        <span class="cta-icon">&#128172;</span> ${t.ctaDiscuss}
+      </a>
+    </div>
   </div>
 </section>
 
@@ -586,8 +543,6 @@ export function getHTML() {
       <a href="https://github.com/CarlosGude/integrationEngine" target="_blank">GitHub</a>
       &nbsp;&middot;&nbsp;
       <a href="https://packagist.org/packages/carlosgude/integration-engine" target="_blank">Packagist</a>
-      &nbsp;&middot;&nbsp;
-      Data: <a href="https://api.railway-stations.org" target="_blank">api.railway-stations.org</a>
     </p>
   </div>
 </footer>
