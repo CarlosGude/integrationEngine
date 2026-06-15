@@ -15,6 +15,13 @@ export function getHTML(lang = 'en') {
         <p>${p.desc}</p>
       </div>`).join('');
 
+    const adoptionCards = t.adoptionCards.map(c => `
+      <div class="adoption-card">
+        <div class="adoption-icon">${c.icon}</div>
+        <h3>${c.title}</h3>
+        <p>${c.desc}</p>
+      </div>`).join('');
+
     const summaryRows = t.summaryRows.map(r => `
         <tr>
           <td>${r.concept}</td>
@@ -135,6 +142,36 @@ export function getHTML(lang = 'en') {
         &boxvr;&boxh;&boxh; <span class="key">GetStationByIdResponse.php</span>
         &boxur;&boxh;&boxh; <span class="key">GetStationByIdMapper.php</span></pre>
       </div>
+    </div>
+    <div class="struct-panel struct-panel--full">
+      <div class="struct-header">${t.structureAuthHdr}</div>
+      <pre><span class="cm">${t.cmAuthOnce}</span>
+
+<span class="key">GetToken</span>:
+    <span class="val">action</span>: App\\...\\<span class="hl">GetTokenAction</span>
+    <span class="val">method</span>: POST
+    <span class="val">path</span>:   /oauth/token
+
+<span class="key">GetStationById</span>:
+    <span class="val">action</span>: App\\...\\<span class="hl">GetStationByIdAction</span>
+    <span class="val">method</span>: GET
+    <span class="val">path</span>:   /photoStationById/<span class="ph">{country}</span>/<span class="ph">{stationId}</span>
+    <span class="val">authorization</span>:
+        <span class="val">type</span>:         <span class="hl">dynamic</span>
+        <span class="val">action</span>:       <span class="hl">GetToken</span>
+        <span class="val">token_field</span>:  access_token  <span class="cm">${t.cmAuthField}</span>
+        <span class="val">ttl</span>:          3600           <span class="cm">${t.cmAuthCached}</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ADOPTION -->
+<section id="adoption" class="s-light">
+  <div class="container">
+    <div class="eyebrow">${t.adoptionEyebrow}</div>
+    <h2 class="s-heading">${t.adoptionH2}</h2>
+    <p class="s-sub">${t.adoptionSub}</p>
+    <div class="adoption-grid">${adoptionCards}
     </div>
   </div>
 </section>

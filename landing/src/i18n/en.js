@@ -6,8 +6,8 @@ export default {
     navPattern:  'The Pattern',
 
     // Hero
-    heroH1:  'Your external integrations<br>deserve a pattern',
-    heroP:   'Without structure, every API ends up with its own shape, its own logic, its own technical debt. After a few months you don&rsquo;t have integrations. You have a zoo.',
+    heroH1:  'You already have integrations.<br>The next one shouldn&rsquo;t make it worse.',
+    heroP:   'After the third API, the god class already exists. The inconsistencies already exist. IntegrationEngine doesn&rsquo;t ask you to rewrite them &mdash; it gives you the pattern so the next integration isn&rsquo;t another problem waiting to happen.',
     heroBtn1: 'Explore the pattern',
     heroBtn2: 'Source code',
 
@@ -17,9 +17,9 @@ export default {
     // Problem section
     problemEyebrow: 'The Problem',
     problemH2:  'Why integrations degenerate',
-    problemSub: 'Without a pattern, entropy wins. Every integration brings its own conventions and the code becomes archaeology.',
+    problemSub: 'You already know this. Each integration added without a standard has made the next one a little harder to maintain, test, and hand off to another developer.',
     problems: [
-        { title: 'Inevitable god class',  desc: 'Without a defined entry point, HTTP methods, parsing and logic pile up in a single class. Impossible to test, impossible to scale.' },
+        { title: 'The god class is already there',  desc: 'It might be called <code>StripeService</code> or <code>SalesforceClient</code>. It has 600 lines, three developers have touched it, and nobody wants to add the next endpoint.' },
         { title: 'Implicit contracts',    desc: 'Responses travel as <code>array&lt;string, mixed&gt;</code>. Every layer that touches them has to know the exact field names of the API.' },
         { title: 'Sequential batch',      desc: 'The <code>foreach</code> blocks: each request waits for the previous one. 10 items = 10&times; the time of one. It doesn&rsquo;t scale, and nothing warns you.' },
     ],
@@ -35,6 +35,22 @@ export default {
     cmContract:  '# RailwayStations.yaml &mdash; contract visible at a glance',
     cmFacade:    '&larr; facade',
     cmActionMap: '&larr; action map',
+
+    // Structure auth panel
+    structureAuthHdr:  'DYNAMIC AUTH (OAUTH2 &middot; BEARER &middot; API KEY)',
+    cmAuthOnce:        '# Token fetched once, cached 60 min, retried automatically on 401',
+    cmAuthField:       '&larr; field in the token response',
+    cmAuthCached:      '&larr; cached per integration, shared across workers',
+
+    // Adoption section
+    adoptionEyebrow: 'Incremental adoption',
+    adoptionH2:      'Start with the next one',
+    adoptionSub:     'No big-bang rewrite. IntegrationEngine installs alongside your existing code. Each new API follows the pattern &mdash; existing ones migrate only when you choose.',
+    adoptionCards: [
+        { icon: '&#9881;', title: 'Zero coupling',        desc: 'Your existing services and HTTP clients keep working. The bundle adds no runtime dependency on your current integrations.' },
+        { icon: '&#128336;', title: 'Migrate at your pace', desc: 'New integration? Use the pattern. Legacy god class? Leave it until the next feature touches it. No forced cutover.' },
+        { icon: '&#128193;', title: 'Self-contained',       desc: 'Every integration lives in its own directory with its own YAML contract. The full surface of an API visible at a glance.' },
+    ],
 
     // Pattern section
     patternEyebrow: 'The Pattern',
@@ -89,7 +105,7 @@ export default {
     p5CmBatchBad:   '//  3 stations &times; 250ms = ~750ms\n// 10 stations &times; 250ms = ~2500ms  &larr; scales linearly',
     p5CmAllSame:    '// all go out at the same time &mdash; total time &asymp; the slowest',
     p5CmBatchGood:  '//  3 stations &rarr; ~250ms   (the slowest, not the sum)\n// 10 stations &rarr; ~250ms   (does not scale)',
-    p5Insight:      '<strong>Why it matters:</strong> <code>sendManyOrFail()</code> dispatches in parallel. The default REST client already implements <code>BatchClientInterface</code> &mdash; zero additional configuration. If one request fails, the exception identifies exactly which one, and the rest of the batch has already executed.',
+    p5Insight:      '<strong>Why it matters:</strong> individual failures never abort the batch &mdash; each key resolves independently. <code>sendMany()</code> returns a <code>BatchResultCollection</code> where you inspect each outcome; <code>sendManyOrFail()</code> throws on the first failure after the full batch has run. The default REST client already implements <code>BatchClientInterface</code> via lazy Symfony HttpClient responses &mdash; zero additional configuration.',
 
     // CTA
     ctaEyebrow:   'Get in touch',

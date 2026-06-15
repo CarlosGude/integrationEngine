@@ -6,8 +6,8 @@ export default {
     navPattern:  'El Patrón',
 
     // Hero
-    heroH1:  'Tus integraciones externas<br>merecen un patrón',
-    heroP:   'Sin estructura, cada API acaba con su propia forma, su propia lógica, su propia deuda técnica. Al cabo de unos meses no tienes integraciones. Tienes un zoo.',
+    heroH1:  'Ya tienes integraciones.<br>La siguiente no debería empeorar las cosas.',
+    heroP:   'Después de la tercera API la God class ya existe. Las inconsistencias ya existen. IntegrationEngine no te pide que las reescribas &mdash; te da el patrón para que la siguiente integración no sea otro problema esperando a ocurrir.',
     heroBtn1: 'Explorar el patrón',
     heroBtn2: 'Código fuente',
 
@@ -17,9 +17,9 @@ export default {
     // Problem section
     problemEyebrow: 'El Problema',
     problemH2:  'Por qué las integraciones degeneran',
-    problemSub: 'Sin un patrón, la entropía gana. Cada integración introduce sus propias convenciones y el código se vuelve arqueología.',
+    problemSub: 'Ya lo sabes. Cada integración añadida sin un estándar ha hecho que la siguiente sea un poco más difícil de mantener, testear y delegar a otro desarrollador.',
     problems: [
-        { title: 'God class inevitable',  desc: 'Sin un punto de entrada definido, los métodos HTTP, el parseo y la lógica se acumulan en una sola clase. Imposible de testear, imposible de escalar.' },
+        { title: 'La God class ya está ahí',  desc: 'Puede llamarse <code>StripeService</code> o <code>SalesforceClient</code>. Tiene 600 líneas, la han tocado tres desarrolladores distintos y nadie quiere añadir el siguiente endpoint.' },
         { title: 'Contratos implícitos',  desc: 'Las respuestas viajan como <code>array&lt;string, mixed&gt;</code>. Cada capa que las toca tiene que conocer los nombres exactos de los campos de la API.' },
         { title: 'Batch secuencial',      desc: 'El <code>foreach</code> bloquea: cada petición espera a la anterior. 10 items = 10&times; el tiempo de uno. No escala, y no hay nada que te lo avise.' },
     ],
@@ -35,6 +35,22 @@ export default {
     cmContract:  '# RailwayStations.yaml &mdash; contrato visible de un vistazo',
     cmFacade:    '&larr; fachada',
     cmActionMap: '&larr; mapa de acciones',
+
+    // Structure auth panel
+    structureAuthHdr:  'AUTH DINÁMICA (OAUTH2 &middot; BEARER &middot; API KEY)',
+    cmAuthOnce:        '# Token obtenido una vez, cacheado 60 min, reintentado automáticamente en 401',
+    cmAuthField:       '&larr; campo en la respuesta del token',
+    cmAuthCached:      '&larr; cacheado por integración, compartido entre workers',
+
+    // Adoption section
+    adoptionEyebrow: 'Adopción incremental',
+    adoptionH2:      'Empieza con la siguiente',
+    adoptionSub:     'Sin reescritura masiva. IntegrationEngine se instala junto al código existente. Cada nueva API sigue el patrón &mdash; las antiguas migran solo cuando tú decidas.',
+    adoptionCards: [
+        { icon: '&#9881;', title: 'Sin acoplamiento',     desc: 'Tus servicios e HTTP clients actuales siguen funcionando. El bundle no impone ninguna dependencia en tiempo de ejecución sobre tu código existente.' },
+        { icon: '&#128336;', title: 'A tu ritmo',           desc: '¿Nueva integración? Usa el patrón. ¿God class legacy? Déjala hasta que el próximo feature la toque. Sin cutover forzado.' },
+        { icon: '&#128193;', title: 'Autocontenida',        desc: 'Cada integración vive en su propio directorio con su propio contrato YAML. La superficie completa de una API visible de un vistazo.' },
+    ],
 
     // Pattern section
     patternEyebrow: 'El Patrón',
@@ -89,7 +105,7 @@ export default {
     p5CmBatchBad:   '//  3 estaciones &times; 250ms = ~750ms\n// 10 estaciones &times; 250ms = ~2500ms  &larr; escala linealmente',
     p5CmAllSame:    '// todas salen al mismo tiempo &mdash; tiempo total &asymp; la más lenta',
     p5CmBatchGood:  '//  3 estaciones &rarr; ~250ms   (la más lenta, no la suma)\n// 10 estaciones &rarr; ~250ms   (no escala)',
-    p5Insight:      '<strong>Por qué importa:</strong> <code>sendManyOrFail()</code> despacha en paralelo. El cliente REST por defecto ya implementa <code>BatchClientInterface</code> &mdash; cero configuración adicional. Si una petición falla, la excepción identifica exactamente cuál, y el resto del batch ya se ha ejecutado.',
+    p5Insight:      '<strong>Por qué importa:</strong> los fallos individuales nunca abortan el batch &mdash; cada clave se resuelve de forma independiente. <code>sendMany()</code> devuelve un <code>BatchResultCollection</code> donde inspeccionas cada resultado; <code>sendManyOrFail()</code> lanza en el primer fallo después de que todo el batch haya ejecutado. El cliente REST por defecto ya implementa <code>BatchClientInterface</code> mediante las lazy responses de Symfony HttpClient &mdash; cero configuración adicional.',
 
     // CTA
     ctaEyebrow:   'Contacto',

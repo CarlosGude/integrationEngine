@@ -113,6 +113,15 @@ body {
 .struct-panel pre .cm  { color: #4e7090; font-style: italic; }
 .struct-panel pre .ph  { color: #f59e0b; }
 
+/* ── ADOPTION ── */
+.adoption-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; margin-top: 2rem; }
+@media (max-width: 700px) { .adoption-grid { grid-template-columns: 1fr; } }
+.adoption-card { background: #fff; border: 1px solid #dde3ec; border-radius: 12px; padding: 1.5rem; }
+.adoption-icon { font-size: 1.75rem; margin-bottom: .75rem; }
+.adoption-card h3 { font-size: 1rem; font-weight: 700; color: var(--navy); margin-bottom: .5rem; }
+.adoption-card p  { font-size: .87rem; color: #4a5568; line-height: 1.65; }
+.struct-panel--full { margin-top: 1.5rem; }
+
 /* ── PATTERN ── */
 .patron-grid { display: flex; flex-direction: column; gap: 3.5rem; margin-top: 2rem; }
 .patron-header { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem; }
