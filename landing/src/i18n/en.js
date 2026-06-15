@@ -4,25 +4,77 @@ export default {
     // Nav
     navProblem: 'Problem',
     navPattern:  'The Pattern',
+    navExample:  'Example',
 
     // Hero
-    heroH1:  'You already have integrations.<br>The next one shouldn&rsquo;t make it worse.',
-    heroP:   'After the third API, the god class already exists. The inconsistencies already exist. IntegrationEngine doesn&rsquo;t ask you to rewrite them &mdash; it gives you the pattern so the next integration isn&rsquo;t another problem waiting to happen.',
-    heroBtn1: 'Explore the pattern',
-    heroBtn2: 'Source code',
+    heroH1:  'Stop writing integration code twice.',
+    heroP:   'Every integration your team ships follows the same predictable standard. New developers understand any existing API in minutes &mdash; not days. Automatic OAuth2, parallel requests and typed DTOs built in. One Symfony bundle &mdash; distilled from three years of production integrations.',
+    heroBenefits: [
+        '&#10003;&nbsp;OAuth2, Bearer &amp; API Key',
+        '&#10003;&nbsp;Parallel requests',
+        '&#10003;&nbsp;Typed DTOs',
+        '&#10003;&nbsp;Symfony native',
+    ],
+    heroBtn1: 'See the pattern',
+    heroBtn2: 'GitHub',
 
     // Install box
     copyHint: 'Copied!',
 
+    // Business value section
+    bizEyebrow: 'Why it matters',
+    bizH2:      'The cost of no standard compounds.',
+    bizItems: [
+        { stat: 'Days &rarr; Hours',  desc: 'Time from zero to a working, tested integration &mdash; including OAuth, parallel calls and typed responses.' },
+        { stat: '1 command',          desc: 'Scaffold the action, mapper and response for any endpoint. Your whole team generates the same structure, every time.' },
+        { stat: 'Zero rewrites',      desc: 'Installs alongside your existing code. New endpoints follow the standard; legacy integrations migrate at your pace.' },
+    ],
+
+    // Extension points section
+    extEyebrow: 'Built to extend',
+    extH2:      'Replace any part. Keep the rest.',
+    extSub:     'Every infrastructure boundary is an interface. Swap the HTTP client, customise path resolution, or add batch support &mdash; without touching the engine.',
+    extItems: [
+        { iface: 'ClientInterface',               desc: 'Replace the HTTP client. Tag your implementation and the engine discovers it automatically via Symfony DI.' },
+        { iface: 'PathResolvableContextInterface', desc: 'Complex path logic beyond {placeholders}. Return null to fall back to the default placeholder resolver.' },
+        { iface: 'BatchClientInterface',           desc: 'Mark your client as batch-capable for concurrent dispatch. The built-in REST client already implements this.' },
+        { iface: 'FakeClient &middot; FakeCache',  desc: 'Built-in test doubles. Test your mappers and actions in isolation &mdash; no mocks, no real HTTP required.' },
+    ],
+
     // Problem section
     problemEyebrow: 'The Problem',
-    problemH2:  'Why integrations degenerate',
-    problemSub: 'You already know this. Each integration added without a standard has made the next one a little harder to maintain, test, and hand off to another developer.',
-    problems: [
-        { title: 'The god class is already there',  desc: 'It might be called <code>StripeService</code> or <code>SalesforceClient</code>. It has 600 lines, three developers have touched it, and nobody wants to add the next endpoint.' },
-        { title: 'Implicit contracts',    desc: 'Responses travel as <code>array&lt;string, mixed&gt;</code>. Every layer that touches them has to know the exact field names of the API.' },
-        { title: 'Sequential batch',      desc: 'The <code>foreach</code> blocks: each request waits for the previous one. 10 items = 10&times; the time of one. It doesn&rsquo;t scale, and nothing warns you.' },
+    problemH2:  'Integration debt accumulates by default.',
+    problemSub: 'Each new API added without a standard costs your team days to set up and compounds with every new integration. Hardcoded URLs, duplicated OAuth logic, arrays leaking into domain code &mdash; the next one is always harder than the last.',
+    compareWithout: 'Without a standard',
+    compareWith:    'With Integration Engine',
+    compareItems: [
+        { without: '700-line god classes',              with: 'One typed action per endpoint' },
+        { without: 'OAuth logic duplicated everywhere', with: 'Auth declared once in YAML' },
+        { without: 'Arrays leaking into domain',        with: 'Typed DTOs from every response' },
+        { without: 'Sequential HTTP calls',             with: 'Parallel execution built in' },
     ],
+
+    // Parallel section
+    parallelEyebrow:      'Parallel Requests',
+    parallelH2:           'Stop waiting for APIs one by one.',
+    parallelSub:          '<code>sendManyOrFail()</code> dispatches all requests concurrently. Total time &asymp; the slowest single request &mdash; regardless of how many you send. In production, a Booking.com availability search requires 4 parallel queries for a small city and 17 for Paris &mdash; per customer. This handles it.',
+    parallelBefore:       'Sequential (foreach)',
+    parallelAfter:        'Parallel (sendManyOrFail)',
+    parallelBeforeTime:   '4.2s',
+    parallelAfterTime:    '0.8s',
+    parallelBeforeDetail: '10 requests &times; 420ms each',
+    parallelAfterDetail:  '10 requests, runs concurrently',
+
+    // Stripe example section
+    stripeEyebrow: 'Real Example',
+    stripeH2:      'A Stripe integration in under 30 lines.',
+    stripeSub:     'One YAML entry. One mapper. One typed response. OAuth2 token refresh is handled automatically &mdash; no token logic in your application code.',
+    stripeBtn:     'View source on GitHub',
+
+    // Mid-page CTA
+    midCtaText: 'Ready to add the pattern to your next project?',
+    midCtaBtn:  'Read the documentation',
+    midCtaAlt:  'See the full pattern',
 
     // Structure section
     structureEyebrow:   'The Solution',
@@ -42,20 +94,32 @@ export default {
     cmAuthField:       '&larr; field in the token response',
     cmAuthCached:      '&larr; cached per integration, shared across workers',
 
-    // Adoption section
-    adoptionEyebrow: 'Incremental adoption',
-    adoptionH2:      'Start with the next one',
-    adoptionSub:     'No big-bang rewrite. IntegrationEngine installs alongside your existing code. Each new API follows the pattern &mdash; existing ones migrate only when you choose.',
-    adoptionCards: [
-        { icon: '&#9881;', title: 'Zero coupling',        desc: 'Your existing services and HTTP clients keep working. The bundle adds no runtime dependency on your current integrations.' },
-        { icon: '&#128336;', title: 'Migrate at your pace', desc: 'New integration? Use the pattern. Legacy god class? Leave it until the next feature touches it. No forced cutover.' },
-        { icon: '&#128193;', title: 'Self-contained',       desc: 'Every integration lives in its own directory with its own YAML contract. The full surface of an API visible at a glance.' },
-    ],
+    // Get started section
+    startEyebrow:    'Get started',
+    startH2:         'Three steps. First integration running.',
+    startStep1Title: 'Install',
+    startStep1Code:  'composer require carlosgude/integration-engine',
+    startStep2Title: 'Scaffold',
+    startStep2Code:  'php bin/console make:integration MyApi GetUser',
+    startStep2Desc:  'Add the logic and 3 lines to MyApi.yaml &mdash; done.',
+    startSub:        'Installs alongside your existing code. No big-bang rewrite &mdash; use the pattern for the next new endpoint and migrate legacy at your own pace.',
+    startStep3Title: 'Go deeper',
+    startStep3Desc:  'Dynamic auth, batch requests and custom contexts are all in the documentation.',
+    startStep3Link:  'Read the docs →',
+    startGenYaml:             '← add your endpoint entry here',
+    startGenAction:           '← HTTP method, path, auth',
+    startGenResponse:         '← typed DTO',
+    startGenMapper:           '← raw array → DTO',
+    startGenIncrementalLabel: '# New endpoint, same integration:',
+    startGenIncrementalNote:  '# → Adds CreateOrder/ alongside GetUser/. Existing files are never overwritten.',
+    startGenDocsLink:         'What goes inside the generated files? See the docs →',
 
     // Pattern section
-    patternEyebrow: 'The Pattern',
-    patternH2:      'Five antipatterns the engine solves',
-    patternSub:     'The same endpoints, two implementations. Each section shows the real classes from the project.',
+    patternEyebrow:    'The Pattern',
+    patternH2:         'Five antipatterns the engine solves',
+    patternExpandLabel:   'Show all 5 antipatterns in detail',
+    patternCollapseLabel: 'Hide details',
+    patternSub:           'The same endpoints, two implementations. Each section shows the real classes from the project.',
     withoutPattern: 'Without pattern',
     enginePattern:  'Engine pattern',
 
@@ -77,16 +141,16 @@ export default {
     p2Insight:     '<strong>Why it matters:</strong> string concatenation fails silently. The engine&rsquo;s placeholders are contracts: if one is missing, the error is immediate and descriptive, not a mysterious 404 two layers below.',
 
     // Pattern 3
-    p3Title:        'Response mapping',
-    p3Anti:         '&#10007; Raw API fields (<code>\'title\'</code>, <code>\'photos\'</code>, <code>\'photoBaseUrl\'</code>) leak to all layers. If the API renames a field, the error appears in multiple files.',
-    p3Sol:          '&#10003; One <code>Mapper</code> accesses the raw fields. The rest of the code talks to typed DTOs.',
-    p3CmRawField:   '// raw API field',
-    p3CmNotLng:     '// not &apos;lng&apos;, not &apos;longitude&apos;',
-    p3CmPrivate:    '// private convention',
-    p3CmRenameEvery:'// If the API renames &apos;title&apos; to &apos;name&apos;: search and fix EVERY\n// file that accesses the array. How many are there?',
-    p3CmOnlyPlace:  '// only place',
-    p3CmRenameOne:  '// If the API renames &apos;title&apos; to &apos;name&apos;: only this line changes.\n// No other file touches raw API fields.',
-    p3Insight:      '<strong>Why it matters:</strong> without a mapper, knowledge of the API fields leaks into every class that processes the response. With the engine, <code>StationDto::fromApiData()</code> is the only point of contact. If the API renames a field, there is exactly one place to fix.',
+    p3Title:         'Response mapping',
+    p3Anti:          '&#10007; Raw API fields (<code>\'title\'</code>, <code>\'photos\'</code>, <code>\'photoBaseUrl\'</code>) leak to all layers. If the API renames a field, the error appears in multiple files.',
+    p3Sol:           '&#10003; One <code>Mapper</code> accesses the raw fields. The rest of the code talks to typed DTOs.',
+    p3CmRawField:    '// raw API field',
+    p3CmNotLng:      '// not &apos;lng&apos;, not &apos;longitude&apos;',
+    p3CmPrivate:     '// private convention',
+    p3CmRenameEvery: '// If the API renames &apos;title&apos; to &apos;name&apos;: search and fix EVERY\n// file that accesses the array. How many are there?',
+    p3CmOnlyPlace:   '// only place',
+    p3CmRenameOne:   '// If the API renames &apos;title&apos; to &apos;name&apos;: only this line changes.\n// No other file touches raw API fields.',
+    p3Insight:       '<strong>Why it matters:</strong> without a mapper, knowledge of the API fields leaks into every class that processes the response. With the engine, <code>StationDto::fromApiData()</code> is the only point of contact. If the API renames a field, there is exactly one place to fix.',
 
     // Pattern 4
     p4Title:       'Anti-Corruption Layer',
@@ -107,29 +171,34 @@ export default {
     p5CmBatchGood:  '//  3 stations &rarr; ~250ms   (the slowest, not the sum)\n// 10 stations &rarr; ~250ms   (does not scale)',
     p5Insight:      '<strong>Why it matters:</strong> individual failures never abort the batch &mdash; each key resolves independently. <code>sendMany()</code> returns a <code>BatchResultCollection</code> where you inspect each outcome; <code>sendManyOrFail()</code> throws on the first failure after the full batch has run. The default REST client already implements <code>BatchClientInterface</code> via lazy Symfony HttpClient responses &mdash; zero additional configuration.',
 
+    // Summary
+    summaryEyebrow:    'Summary',
+    summaryH2:         'Without pattern vs Engine pattern',
+    summaryThConcept:  'Concept',
+    summaryThWithout:  'Without pattern',
+    summaryThEngine:   'Engine pattern',
+    summaryRows: [
+        { concept: 'Endpoint declaration',        without: '&#10007; Scattered across God class methods',                engine: '&#10003; One YAML file per integration' },
+        { concept: 'URL building',                without: '&#10007; String concatenation, fails silently',             engine: '&#10003; <code>{placeholders}</code> validated at runtime' },
+        { concept: 'API fields in code',          without: '&#10007; Leaked to all layers',                             engine: '&#10003; Encapsulated in <code>Mapper</code> + <code>DTO</code>' },
+        { concept: 'Return type',                 without: '&#10007; <code>array&lt;string,&nbsp;mixed&gt;</code> + <code>_</code> conventions', engine: '&#10003; Typed <code>ResponseInterface</code>' },
+        { concept: 'Anti-Corruption Layer',       without: '&#10007; None &mdash; controller coupled to HTTP client',   engine: '&#10003; <code>StationService</code> as the only boundary' },
+        { concept: 'Auth (Bearer, Basic, OAuth2)',without: 'Manual headers in each <code>request()</code>',             engine: '&#10003; Declared in YAML, managed by the engine' },
+        { concept: 'Adding a new endpoint',       without: 'Method + URL + parsing + mapping scattered',                engine: '&#10003; Action + Mapper + Response + 3 YAML lines' },
+        { concept: 'Batch',                       without: '&#10007; Sequential <code>foreach</code>, linear time',     engine: '&#10003; <code>sendManyOrFail()</code>, constant time' },
+    ],
+
+    // Thanks section
+    thanksEyebrow: 'Before you go',
+    thanksH2:      'Thanks for reading.',
+    thanksP:       'I&rsquo;ve been using this pattern in production for three years &mdash; integrating Booking.com, Iberia, Lleego, Hostalia and more. Booking.com availability alone requires 4 parallel queries for a small city, 17 for Paris, per customer. An earlier version of this engine handled that without breaking a sweat. This bundle is what those three years taught me: made explicit, tested, and open.',
+
     // CTA
     ctaEyebrow:   'Get in touch',
-    ctaH2:        'Questions? Ideas? Feedback?',
-    ctaSub:       'Drop us a line or join the conversation on GitHub Discussions.',
+    ctaH2:        'Start building your next integration today.',
+    ctaSub:       'Drop us a line, open a GitHub Discussion, or install it and give it a try.',
     ctaEmailLabel:'Send us an email',
     ctaEmail:     'hi@integration.dev',
     ctaEmailHref: 'mailto:hi@integration.dev',
     ctaDiscuss:   'Join Discussions',
-
-    // Summary
-    summaryEyebrow: 'Summary',
-    summaryH2:      'Without pattern vs Engine pattern',
-    summaryThConcept: 'Concept',
-    summaryThWithout: 'Without pattern',
-    summaryThEngine:  'Engine pattern',
-    summaryRows: [
-        { concept: 'Endpoint declaration',   without: '&#10007; Scattered across God class methods',                engine: '&#10003; One YAML file per integration' },
-        { concept: 'URL building',           without: '&#10007; String concatenation, fails silently',             engine: '&#10003; <code>{placeholders}</code> validated at runtime' },
-        { concept: 'API fields in code',     without: '&#10007; Leaked to all layers',                             engine: '&#10003; Encapsulated in <code>Mapper</code> + <code>DTO</code>' },
-        { concept: 'Return type',            without: '&#10007; <code>array&lt;string,&nbsp;mixed&gt;</code> + <code>_</code> conventions', engine: '&#10003; Typed <code>ResponseInterface</code>' },
-        { concept: 'Anti-Corruption Layer',  without: '&#10007; None &mdash; controller coupled to HTTP client',   engine: '&#10003; <code>StationService</code> as the only boundary' },
-        { concept: 'Auth (Bearer, Basic, OAuth2)', without: 'Manual headers in each <code>request()</code>',       engine: '&#10003; Declared in YAML, managed by the engine' },
-        { concept: 'Adding a new endpoint',  without: 'Method + URL + parsing + mapping scattered',                engine: '&#10003; Action + Mapper + Response + 3 YAML lines' },
-        { concept: 'Batch',                  without: '&#10007; Sequential <code>foreach</code>, linear time',     engine: '&#10003; <code>sendManyOrFail()</code>, constant time' },
-    ],
 };

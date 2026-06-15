@@ -8,43 +8,44 @@ const translations = { en, es };
 export function getHTML(lang = 'en') {
     const t = translations[lang] ?? translations.en;
 
-    const problemCards = t.problems.map(p => `
-      <div class="problem-card">
-        <div class="problem-icon">&#127381;</div>
-        <h3>${p.title}</h3>
-        <p>${p.desc}</p>
-      </div>`).join('');
-
-    const adoptionCards = t.adoptionCards.map(c => `
-      <div class="adoption-card">
-        <div class="adoption-icon">${c.icon}</div>
-        <h3>${c.title}</h3>
-        <p>${c.desc}</p>
-      </div>`).join('');
-
-    const summaryRows = t.summaryRows.map(r => `
-        <tr>
-          <td>${r.concept}</td>
-          <td class="tbad">${r.without}</td>
-          <td class="tgood">${r.engine}</td>
-        </tr>`).join('');
+    const benefitPills = t.heroBenefits.map(b => `<span class="benefit-pill">${b}</span>`).join('');
 
     const isEs = lang === 'es';
     const docsHref = isEs
         ? 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION_ES.md'
         : 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION.md';
 
+    const compareLeft  = t.compareItems.map(i => `
+      <div class="compare-item"><span class="ci-icon">&#10007;</span>${i.without}</div>`).join('');
+    const compareRight = t.compareItems.map(i => `
+      <div class="compare-item"><span class="ci-icon">&#10003;</span>${i.with}</div>`).join('');
+
+    const bizCards = t.bizItems.map(i => `
+      <div class="biz-card">
+        <div class="biz-stat">${i.stat}</div>
+        <p>${i.desc}</p>
+      </div>`).join('');
+
+    const extCards = t.extItems.map(i => `
+      <div class="ext-card">
+        <div class="ext-iface">${i.iface}</div>
+        <p>${i.desc}</p>
+      </div>`).join('');
+
     return `<!DOCTYPE html>
 <html lang="${t.lang}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IntegrationEngine &mdash; Demo</title>
-<meta name="description" content="One standard for every external API in your Symfony projects." />
+<title>IntegrationEngine &mdash; Symfony API Integration Bundle</title>
+<meta name="description" content="Build Stripe, SAP, Salesforce or any external API in Symfony without god classes. Automatic OAuth2, parallel requests and typed DTOs. One standard for every integration." />
 <meta property="og:type"        content="website" />
 <meta property="og:url"         content="https://integrationengine.dev/?lang=${lang}" />
-<meta property="og:title"       content="IntegrationEngine &mdash; Demo" />
-<meta property="og:description" content="One standard for every external API in your Symfony projects." />
+<meta property="og:title"       content="IntegrationEngine &mdash; Symfony API Integration Bundle" />
+<meta property="og:description" content="Build external API integrations in Symfony without god classes. Automatic OAuth2, parallel requests, typed DTOs." />
+<meta name="twitter:card"        content="summary_large_image" />
+<meta name="twitter:title"       content="IntegrationEngine &mdash; Symfony API Integration Bundle" />
+<meta name="twitter:description" content="Build external API integrations in Symfony without god classes. Automatic OAuth2, parallel requests, typed DTOs." />
 <link rel="canonical" href="https://integrationengine.dev/?lang=${lang}" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -57,10 +58,18 @@ export function getHTML(lang = 'en') {
   <a class="topnav-brand" href="?lang=${lang}">Integration<span>Engine</span></a>
   <div class="topnav-links">
     <a href="#problem">${t.navProblem}</a>
+    <a href="#example">${t.navExample}</a>
     <a href="#pattern">${t.navPattern}</a>
-    <span class="topnav-sep"></span>
-    <a href="${docsHref}" target="_blank" rel="noopener">Docs</a>
-    <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener">GitHub</a>
+  </div>
+  <div class="topnav-actions">
+    <a href="${docsHref}" target="_blank" rel="noopener" class="nav-btn">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+      Docs
+    </a>
+    <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener" class="nav-btn nav-btn-github">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+      GitHub
+    </a>
   </div>
   <div class="lang-pill">
     <a href="?lang=es" class="lang-opt ${isEs ? 'lang-active' : 'lang-inactive'}">
@@ -72,13 +81,23 @@ export function getHTML(lang = 'en') {
       <span class="lp-string"><span class="lp-bracket">'</span><span class="lp-code">EN</span><span class="lp-bracket">'</span></span>
     </a>
   </div>
+  <button class="nav-hamburger" onclick="toggleNav()" aria-label="Menu">&#9776;</button>
 </nav>
+<div class="nav-mobile-menu" id="nav-mobile-menu">
+  <a href="#problem" onclick="toggleNav()">${t.navProblem}</a>
+  <a href="#example" onclick="toggleNav()">${t.navExample}</a>
+  <a href="#pattern" onclick="toggleNav()">${t.navPattern}</a>
+  <hr class="nav-mobile-sep">
+  <a href="${docsHref}" target="_blank" rel="noopener">Docs ↗</a>
+  <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener">GitHub ↗</a>
+</div>
 
 <!-- HERO -->
 <section class="hero">
   <div class="hero-badge">Symfony Bundle &middot; PHP 8.2+ &middot; Symfony 7+</div>
   <h1>${t.heroH1}</h1>
   <p>${t.heroP}</p>
+  <div class="hero-benefits">${benefitPills}</div>
   <div class="install-box" onclick="copyInstall(this)">
     <span class="copy-hint">${t.copyHint}</span>
     composer require carlosgude/integration-engine
@@ -89,92 +108,214 @@ export function getHTML(lang = 'en') {
   </div>
 </section>
 
+<!-- TRUST BAR -->
+<div class="trust-bar">
+  <span class="trust-item">
+    <img src="https://img.shields.io/packagist/v/carlosgude/integration-engine?style=flat-square&labelColor=0d1b2e&color=2f6fbd&label=version" alt="Latest version" height="18" loading="lazy">
+  </span>
+  <span class="trust-sep">&middot;</span>
+  <span class="trust-item trust-compat">PHP 8.2+ &middot; Symfony 7+</span>
+</div>
+
 <!-- THE PROBLEM -->
 <section id="problem" class="s-light">
   <div class="container">
     <div class="eyebrow">${t.problemEyebrow}</div>
     <h2 class="s-heading">${t.problemH2}</h2>
     <p class="s-sub">${t.problemSub}</p>
-    <div class="problems-grid">${problemCards}
+    <div class="compare-wrap">
+      <div class="compare-col bad-col">
+        <div class="compare-col-header">&#10007;&ensp;${t.compareWithout}</div>
+        <div class="compare-col-body">${compareLeft}
+        </div>
+      </div>
+      <div class="compare-col good-col">
+        <div class="compare-col-header">&#10003;&ensp;${t.compareWith}</div>
+        <div class="compare-col-body">${compareRight}
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- THE SOLUTION -->
-<section id="structure" class="s-dark">
+<!-- BUSINESS VALUE -->
+<section class="s-white biz-section">
   <div class="container">
-    <div class="eyebrow lt">${t.structureEyebrow}</div>
-    <h2 class="s-heading lt">${t.structureH2}</h2>
-    <p class="s-sub lt">${t.structureSub}</p>
-    <div class="struct-split">
-      <div class="struct-panel">
-        <div class="struct-header">${t.structureYamlHdr}</div>
-        <pre><span class="cm">${t.cmContract}</span>
+    <div class="eyebrow">${t.bizEyebrow}</div>
+    <h2 class="s-heading">${t.bizH2}</h2>
+    <div class="biz-grid">${bizCards}
+    </div>
+  </div>
+</section>
 
-<span class="key">GetStats</span>:
-    <span class="val">action</span>: App\\...\\<span class="hl">GetStatsAction</span>
-    <span class="val">method</span>: GET
-    <span class="val">path</span>:   /stats
-
-<span class="key">GetStationsByCountry</span>:
-    <span class="val">action</span>: App\\...\\<span class="hl">GetStationsByCountryAction</span>
-    <span class="val">method</span>: GET
-    <span class="val">path</span>:   /photoStationsByCountry/<span class="ph">{country}</span>
-
-<span class="key">GetStationById</span>:
-    <span class="val">action</span>: App\\...\\<span class="hl">GetStationByIdAction</span>
-    <span class="val">method</span>: GET
-    <span class="val">path</span>:   /photoStationById/<span class="ph">{country}</span>/<span class="ph">{stationId}</span></pre>
+<!-- PARALLEL EXECUTION -->
+<section id="parallel" class="s-dark">
+  <div class="container">
+    <div class="eyebrow lt">${t.parallelEyebrow}</div>
+    <h2 class="s-heading lt">${t.parallelH2}</h2>
+    <p class="s-sub lt">${t.parallelSub}</p>
+    <div class="parallel-timing">
+      <div class="timing-block t-bad">
+        <div class="timing-label">${t.parallelBefore}</div>
+        <div class="timing-number">${t.parallelBeforeTime}</div>
+        <div class="timing-detail">${t.parallelBeforeDetail}</div>
       </div>
-      <div class="struct-panel">
-        <div class="struct-header">${t.structureDirHdr}</div>
-        <pre>src/Infrastructure/Integrations/<span class="hl">RailwayStations</span>/
-&boxvr;&boxh;&boxh; <span class="hl">RailwayStationsIntegration.php</span>  <span class="cm">${t.cmFacade}</span>
-&boxvr;&boxh;&boxh; <span class="hl">RailwayStations.yaml</span>             <span class="cm">${t.cmActionMap}</span>
-&boxvr;&boxh;&boxh; GetStats/
-&boxv;   &boxvr;&boxh;&boxh; Request/<span class="key">GetStatsAction.php</span>
-&boxv;   &boxur;&boxh;&boxh; Response/
-&boxv;       &boxvr;&boxh;&boxh; <span class="key">GetStatsResponse.php</span>
-&boxv;       &boxur;&boxh;&boxh; <span class="key">GetStatsMapper.php</span>
-&boxur;&boxh;&boxh; GetStationById/
-    &boxvr;&boxh;&boxh; Request/<span class="key">GetStationByIdAction.php</span>
-    &boxur;&boxh;&boxh; Response/
-        &boxvr;&boxh;&boxh; <span class="key">GetStationByIdResponse.php</span>
-        &boxur;&boxh;&boxh; <span class="key">GetStationByIdMapper.php</span></pre>
+      <div class="timing-block t-good">
+        <div class="timing-label">${t.parallelAfter}</div>
+        <div class="timing-number">${t.parallelAfterTime}</div>
+        <div class="timing-detail">${t.parallelAfterDetail}</div>
       </div>
     </div>
-    <div class="struct-panel struct-panel--full">
-      <div class="struct-header">${t.structureAuthHdr}</div>
-      <pre><span class="cm">${t.cmAuthOnce}</span>
+    <div class="struct-panel">
+      <div class="struct-header">PHP</div>
+      <pre><span class="var">$requests</span> = [];
+<span class="kw">foreach</span> (<span class="var">$stationIds</span> <span class="kw">as</span> <span class="var">$key</span> =&gt; <span class="var">$params</span>) {
+    <span class="var">$requests</span>[<span class="var">$key</span>] = <span class="cls">EngineRequest</span>::<span class="fn">create</span>(
+        <span class="key">actionName</span>: <span class="cls">GetStationByIdAction</span>::<span class="fn">getName</span>(),
+        <span class="key">context</span>:    <span class="cls">DefaultActionContext</span>::<span class="fn">create</span>(<span class="var">$params</span>),
+    );
+}
 
-<span class="key">GetToken</span>:
+<span class="cm">// All dispatched concurrently &mdash; total time &asymp; slowest request</span>
+<span class="var">$results</span> = <span class="var">$this</span>-&gt;<span class="var">engine</span>-&gt;<span class="hl">sendManyOrFail</span>(<span class="var">$requests</span>);</pre>
+    </div>
+  </div>
+</section>
+
+<!-- GET STARTED -->
+<section id="start" class="s-light">
+  <div class="container">
+    <div class="eyebrow">${t.startEyebrow}</div>
+    <h2 class="s-heading">${t.startH2}</h2>
+    <p class="s-sub start-sub">${t.startSub}</p>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>${t.startStep1Title}</h3>
+        <div class="step-code">${t.startStep1Code}</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>${t.startStep2Title}</h3>
+        <div class="step-code">${t.startStep2Code}</div>
+        <p>${t.startStep2Desc}</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>${t.startStep3Title}</h3>
+        <p>${t.startStep3Desc}</p>
+        <a href="${docsHref}" target="_blank" rel="noopener">${t.startStep3Link}</a>
+      </div>
+    </div>
+    <div class="struct-panel generator-panel">
+      <div class="struct-header">MAKE:INTEGRATION OUTPUT</div>
+      <pre><span class="cm">$ php bin/console make:integration MyApi GetUser</span>
+
+MyApi/
+<span class="key">├─</span> MyApi.yaml                    <span class="cm">${t.startGenYaml}</span>
+<span class="key">└─</span> GetUser/
+   <span class="key">├─</span> Request/<span class="hl">GetUserAction.php</span>    <span class="cm">${t.startGenAction}</span>
+   <span class="key">└─</span> Response/
+      <span class="key">├─</span> <span class="hl">GetUserResponse.php</span>       <span class="cm">${t.startGenResponse}</span>
+      <span class="key">└─</span> <span class="hl">GetUserMapper.php</span>         <span class="cm">${t.startGenMapper}</span>
+
+<span class="cm">${t.startGenIncrementalLabel}</span>
+<span class="cm">$ php bin/console make:integration MyApi CreateOrder</span>
+<span class="cm">${t.startGenIncrementalNote}</span></pre>
+      <a href="${docsHref}" target="_blank" rel="noopener" class="btn-primary gen-docs-link">${t.startGenDocsLink}</a>
+    </div>
+  </div>
+</section>
+
+<!-- STRIPE EXAMPLE -->
+<section id="example" class="s-light">
+  <div class="container">
+    <div class="eyebrow">${t.stripeEyebrow}</div>
+    <h2 class="s-heading">${t.stripeH2}</h2>
+    <p class="s-sub">${t.stripeSub}</p>
+    <div class="example-panels">
+
+      <!-- YAML -->
+      <div class="struct-panel">
+        <div class="struct-header">STRIPE.YAML</div>
+        <pre><span class="key">GetToken</span>:
     <span class="val">action</span>: App\\...\\<span class="hl">GetTokenAction</span>
     <span class="val">method</span>: POST
-    <span class="val">path</span>:   /oauth/token
+    <span class="val">path</span>:   /v1/oauth/token
 
-<span class="key">GetStationById</span>:
-    <span class="val">action</span>: App\\...\\<span class="hl">GetStationByIdAction</span>
-    <span class="val">method</span>: GET
-    <span class="val">path</span>:   /photoStationById/<span class="ph">{country}</span>/<span class="ph">{stationId}</span>
+<span class="key">CreatePaymentIntent</span>:
+    <span class="val">action</span>: App\\...\\<span class="hl">CreatePaymentIntentAction</span>
+    <span class="val">method</span>: POST
+    <span class="val">path</span>:   /v1/payment_intents
     <span class="val">authorization</span>:
         <span class="val">type</span>:         <span class="hl">dynamic</span>
         <span class="val">action</span>:       <span class="hl">GetToken</span>
-        <span class="val">token_field</span>:  access_token  <span class="cm">${t.cmAuthField}</span>
-        <span class="val">ttl</span>:          3600           <span class="cm">${t.cmAuthCached}</span></pre>
+        <span class="val">token_field</span>:  access_token
+        <span class="val">ttl</span>:          3600</pre>
+      </div>
+
+      <!-- MAPPER -->
+      <div class="example-code-panel">
+        <div class="file-label">CreatePaymentIntentMapper.php</div>
+        <div class="code-block"><span class="kw">final class</span> <span class="cls">CreatePaymentIntentMapper</span> <span class="kw">extends</span> <span class="cls">AbstractMapper</span>
+{
+    <span class="kw">public static function</span> <span class="fn">getAction</span>(): <span class="cls">string</span>
+    {
+        <span class="kw">return</span> <span class="cls">CreatePaymentIntentAction</span>::<span class="kw">class</span>;
+    }
+
+    <span class="kw">protected static function</span> <span class="fn">transform</span>(
+        <span class="cls">AbstractAction</span> <span class="var">$a</span>, <span class="cls">array</span> <span class="var">$r</span>
+    ): <span class="cls">ResponseInterface</span> {
+        <span class="kw">return new</span> <span class="cls">CreatePaymentIntentResponse</span>(
+            <span class="key">id</span>:     <span class="var">$r</span>[<span class="str">'id'</span>],
+            <span class="key">secret</span>: <span class="var">$r</span>[<span class="str">'client_secret'</span>],
+            <span class="key">status</span>: <span class="var">$r</span>[<span class="str">'status'</span>],
+        );
+    }
+}</div>
+      </div>
+
+      <!-- USAGE (full width) -->
+      <div class="example-code-panel example-panel-full">
+        <div class="file-label">PaymentService.php &mdash; OAuth2 token is fetched, cached and refreshed automatically</div>
+        <div class="code-block"><span class="var">$intent</span> = <span class="var">$this</span>-&gt;<span class="var">stripe</span>-&gt;<span class="fn">createPaymentIntent</span>(<span class="key">amount</span>: 2000, <span class="key">currency</span>: <span class="str">'eur'</span>);
+
+<span class="fn">assert</span>(<span class="var">$intent</span> <span class="kw">instanceof</span> <span class="cls">CreatePaymentIntentResponse</span>);
+
+<span class="kw">echo</span> <span class="var">$intent</span>-&gt;<span class="var">id</span>;     <span class="cm">// pi_3OqfK8LnFoNEqOv0abc123</span>
+<span class="kw">echo</span> <span class="var">$intent</span>-&gt;<span class="var">secret</span>; <span class="cm">// pi_3OqfK8..._secret_XYZ</span>
+<span class="kw">echo</span> <span class="var">$intent</span>-&gt;<span class="var">status</span>; <span class="cm">// requires_payment_method</span></div>
+      </div>
+
+    </div>
+    <div class="example-cta">
+      <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener" class="btn-primary">${t.stripeBtn}</a>
     </div>
   </div>
 </section>
 
-<!-- ADOPTION -->
-<section id="adoption" class="s-light">
+<!-- EXTENSION POINTS -->
+<section class="s-dark ext-section">
   <div class="container">
-    <div class="eyebrow">${t.adoptionEyebrow}</div>
-    <h2 class="s-heading">${t.adoptionH2}</h2>
-    <p class="s-sub">${t.adoptionSub}</p>
-    <div class="adoption-grid">${adoptionCards}
+    <div class="eyebrow lt">${t.extEyebrow}</div>
+    <h2 class="s-heading lt">${t.extH2}</h2>
+    <p class="s-sub lt">${t.extSub}</p>
+    <div class="ext-grid">${extCards}
     </div>
   </div>
 </section>
+
+<!-- MID-PAGE CTA -->
+<div class="mid-cta">
+  <div class="container">
+    <p>${t.midCtaText}</p>
+    <div class="mid-cta-actions">
+      <a href="${docsHref}" target="_blank" rel="noopener" class="btn-primary"><span class="cta-icon">&#128214;</span> ${t.midCtaBtn}</a>
+      <a href="#pattern" onclick="event.preventDefault();openAndScrollToPattern()" class="btn-outline mid-cta-outline"><span class="cta-icon">&#8595;</span> ${t.midCtaAlt}</a>
+    </div>
+  </div>
+</div>
 
 <!-- THE PATTERN -->
 <section id="pattern" class="s-white">
@@ -182,7 +323,15 @@ export function getHTML(lang = 'en') {
     <div class="eyebrow">${t.patternEyebrow}</div>
     <h2 class="s-heading">${t.patternH2}</h2>
     <p class="s-sub">${t.patternSub}</p>
+    <button class="pattern-expand-btn" id="pattern-expand-btn"
+      onclick="togglePattern()"
+      data-label-open="${t.patternExpandLabel}"
+      data-label-close="${t.patternCollapseLabel}">
+      <span id="peb-label">${t.patternExpandLabel}</span>
+      <span class="peb-chevron">&#8964;</span>
+    </button>
 
+    <div class="patron-collapsible" id="patron-collapsible">
     <div class="patron-grid">
 
       <!-- 1. CONFIGURATION -->
@@ -530,25 +679,16 @@ export function getHTML(lang = 'en') {
       </div>
 
     </div>
+    </div>
   </div>
 </section>
 
-<!-- SUMMARY -->
-<section id="summary" class="s-light">
+<!-- THANKS -->
+<section class="s-white thanks-section">
   <div class="container">
-    <div class="eyebrow">${t.summaryEyebrow}</div>
-    <h2 class="s-heading">${t.summaryH2}</h2>
-    <table class="summary-table">
-      <thead>
-        <tr>
-          <th>${t.summaryThConcept}</th>
-          <th>${t.summaryThWithout}</th>
-          <th>${t.summaryThEngine}</th>
-        </tr>
-      </thead>
-      <tbody>${summaryRows}
-      </tbody>
-    </table>
+    <div class="eyebrow">${t.thanksEyebrow}</div>
+    <h2 class="s-heading">${t.thanksH2}</h2>
+    <p class="thanks-p">${t.thanksP}</p>
   </div>
 </section>
 
