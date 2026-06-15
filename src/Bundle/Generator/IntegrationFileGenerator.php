@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Bundle\Generator;
 
+use IntegrationEngine\Bundle\Exception\IntegrationGeneratorException;
 use Symfony\Component\Yaml\Yaml;
 
 final class IntegrationFileGenerator
@@ -66,27 +67,21 @@ final class IntegrationFileGenerator
         }
 
         try {
-            /** @var array<string, mixed> $yaml */
-            $yaml = Yaml::parseFile($bundleConfigPath);
-            $snakeName = self::toSnakeCase($integrationName);
-
-            $engine = $yaml['integration_engine'] ?? null;
-            if (!\is_array($engine)) {
-                return 'rest';
-            }
-            $integrations = $engine['integrations'] ?? null;
-            if (!\is_array($integrations)) {
-                return 'rest';
-            }
-            $integration = $integrations[$snakeName] ?? null;
-            if (!\is_array($integration)) {
-                return 'rest';
-            }
-
-            return \is_string($integration['client'] ?? null) ? $integration['client'] : 'rest';
+            return $this->resolveClientType(Yaml::parseFile($bundleConfigPath), self::toSnakeCase($integrationName));
         } catch (\Throwable) {
             return 'rest';
         }
+    }
+
+    private function resolveClientType(mixed $yaml, string $snakeName): string
+    {
+        $engine = \is_array($yaml) ? ($yaml['integration_engine'] ?? null) : null;
+        $integrations = \is_array($engine) ? ($engine['integrations'] ?? null) : null;
+        $integration = \is_array($integrations) ? ($integrations[$snakeName] ?? null) : null;
+
+        return \is_array($integration) && \is_string($integration['client'] ?? null)
+            ? $integration['client']
+            : 'rest';
     }
 
     /**
@@ -103,7 +98,7 @@ final class IntegrationFileGenerator
         $dir = \dirname($configPath);
 
         if (!is_dir($dir) && !mkdir($dir, 0o755, true) && !is_dir($dir)) {
-            throw new \RuntimeException("Could not create config directory: {$dir}");
+            throw IntegrationGeneratorException::cannotCreateDirectory($dir);
         }
 
         $snakeName = self::toSnakeCase($integrationName);
@@ -121,7 +116,7 @@ final class IntegrationFileGenerator
         );
 
         if (false === file_put_contents($configPath, $content)) {
-            throw new \RuntimeException("Could not write config file: {$configPath}");
+            throw IntegrationGeneratorException::cannotWriteFile($configPath);
         }
     }
 

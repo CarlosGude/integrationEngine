@@ -184,7 +184,7 @@ final class GQLErrorSpyClient implements HttpClientInterface
             public function getContent(bool $throw = true): string
             {
                 if ($throw && $this->throwOnGetContentTrue) {
-                    throw new \RuntimeException('getContent called with throw: true');
+                    throw new \LogicException('getContent called with throw: true');
                 }
 
                 return json_encode($this->body) ?: '{}';

@@ -200,7 +200,9 @@ final class AbstractActionTestFixture extends AbstractAction
 
 final class ContextWithCustomResolver implements PathResolvableContextInterface
 {
-    private function __construct() {}
+    private function __construct()
+    { // Intentionally empty: use factory method
+    }
 
     public static function create(array $data): self
     {
@@ -244,7 +246,9 @@ final class ContextThatAppendsQueryString implements PathResolvableContextInterf
 
 final class ContextThatReturnsEmptyString implements PathResolvableContextInterface
 {
-    private function __construct() {}
+    private function __construct()
+    { // Intentionally empty: use factory method
+    }
 
     public static function create(array $data): self
     {

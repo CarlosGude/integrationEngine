@@ -20,4 +20,9 @@ final class PathResolutionException extends \RuntimeException
     {
         return new self('Path resolver returned an empty string; return null to fall back to placeholder resolution.');
     }
+
+    public static function pcreError(string $path): self
+    {
+        return new self(\sprintf('PCRE error resolving path "%s".', $path));
+    }
 }

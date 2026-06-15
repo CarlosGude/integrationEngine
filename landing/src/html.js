@@ -76,7 +76,7 @@ export function getHTML(lang = 'en') {
       <span class="lp-flag">&#127466;&#127480;</span>
       <span class="lp-string"><span class="lp-bracket">'</span><span class="lp-code">ES</span><span class="lp-bracket">'</span></span>
     </a>
-    <a href="?lang=en" class="lang-opt ${!isEs ? 'lang-active' : 'lang-inactive'}">
+    <a href="?lang=en" class="lang-opt ${isEs ? 'lang-inactive' : 'lang-active'}">
       <span class="lp-flag">&#127468;&#127463;</span>
       <span class="lp-string"><span class="lp-bracket">'</span><span class="lp-code">EN</span><span class="lp-bracket">'</span></span>
     </a>
@@ -724,7 +724,7 @@ MyApi/
   </div>
 </footer>
 
-<script>${JS}<\/script>
+<script>${JS}</script>
 </body>
 </html>`;
 }

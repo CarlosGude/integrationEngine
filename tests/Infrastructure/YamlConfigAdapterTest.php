@@ -40,7 +40,7 @@ final class YamlConfigAdapterTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Integration config file not found');
 
-        new YamlConfigAdapter($this->tmpDir.'/missing.yaml');
+        $_ = new YamlConfigAdapter($this->tmpDir.'/missing.yaml');
     }
 
     #[Test]
@@ -51,7 +51,7 @@ final class YamlConfigAdapterTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('is empty or invalid');
 
-        new YamlConfigAdapter($path);
+        $_ = new YamlConfigAdapter($path);
     }
 
     #[Test]
@@ -62,7 +62,7 @@ final class YamlConfigAdapterTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('is empty or invalid');
 
-        new YamlConfigAdapter($path);
+        $_ = new YamlConfigAdapter($path);
     }
 
     #[Test]
@@ -73,7 +73,7 @@ final class YamlConfigAdapterTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Action "get_employee" must define a string "action" class');
 
-        new YamlConfigAdapter($path);
+        $_ = new YamlConfigAdapter($path);
     }
 
     #[Test]
@@ -88,7 +88,7 @@ final class YamlConfigAdapterTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Action "get_employee" must define a string "action" class');
 
-        new YamlConfigAdapter($path);
+        $_ = new YamlConfigAdapter($path);
     }
 
     // ── getAction ────────────────────────────────────────────────────────────

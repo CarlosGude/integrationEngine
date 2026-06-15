@@ -92,6 +92,6 @@ abstract class AbstractAction
                 return (string) $value;
             },
             $path
-        ) ?? throw new \RuntimeException(\sprintf('PCRE error resolving path "%s".', $path));
+        ) ?? throw PathResolutionException::pcreError($path);
     }
 }
