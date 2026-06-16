@@ -104,7 +104,7 @@ final readonly class IntegrationEngine
         }
 
         $raw = $this->dispatchBatch($prepared);
-        $raw = $this->retryBatch($requests, $raw, $tokenRetry->plan($raw));
+        $raw = $this->retryBatch($raw, $tokenRetry->plan($raw), $prepared);
 
         $results = [];
 
@@ -197,13 +197,13 @@ final readonly class IntegrationEngine
      * Executes the retry batch produced by BatchTokenRetry::plan(): re-prepares
      * each item with a freshly resolved token and dispatches them together.
      *
-     * @param array<array-key, EngineRequest>              $requests
      * @param array<array-key, array<mixed>|\Throwable>    $raw
      * @param array<array-key, DynamicAuthorizationConfig> $toRetry
+     * @param array<array-key, PreparedRequest>            $originalPrepared
      *
      * @return array<array-key, array<mixed>|\Throwable>
      */
-    private function retryBatch(array $requests, array $raw, array $toRetry): array
+    private function retryBatch(array $raw, array $toRetry, array $originalPrepared): array
     {
         if ([] !== $toRetry) {
             $this->logger?->warning('Retrying batch items after 401 with a fresh token', [
@@ -216,11 +216,12 @@ final readonly class IntegrationEngine
         $prepared = [];
 
         foreach ($toRetry as $key => $auth) {
-            $request = $requests[$key];
-
             try {
-                $action = $this->config->getAction($request->actionName, $request->body);
-                $prepared[$key] = new PreparedRequest($this->authHandler->withStaticToken($action, $auth), $request->context, $request->headers);
+                $prepared[$key] = new PreparedRequest(
+                    $this->authHandler->withStaticToken($originalPrepared[$key]->action, $auth),
+                    $originalPrepared[$key]->context,
+                    $originalPrepared[$key]->headers,
+                );
             } catch (\Throwable $e) {
                 $raw[$key] = $e;
             }
