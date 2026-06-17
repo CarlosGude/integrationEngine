@@ -46,6 +46,9 @@ $employee = $dummyRestApi->getEmployee(123);
 
 No HTTP clients. No request builders. No mappers. Just integrations.
 
+See it wired into a real Symfony app — REST, GraphQL, and dynamic OAuth2 — in the
+[demo repository](https://github.com/CarlosGude/integrationEngine-use-example).
+
 ---
 
 ## Installation
@@ -93,7 +96,8 @@ integration_engine:
             headers:              # optional — sent with every request
                 X-Api-Version: '2'
             cache_service: ~      # optional — defaults to cache.app
-            client_service: ~     # optional — fully custom ClientInterface
+            client: rest          # optional — "rest" (default) or "graphql"
+            client_service: ~     # optional — fully custom ClientInterface, overrides client
 ```
 
 The action map YAML maps each action name to its class, method, and path:
@@ -303,6 +307,16 @@ Two adapters are included:
 | `SymfonyHttpClientAdapter` | `rest` | Standard REST APIs |
 | `GraphQLClientAdapter` | `graphql` | GraphQL endpoints |
 
+Select one with the `client` key — no `client_service` needed for either built-in:
+
+```yaml
+integration_engine:
+    integrations:
+        rick_and_morty:
+            base_url: 'https://rickandmortyapi.com/graphql'
+            client: graphql       # switches to GraphQLClientAdapter; no method/path per action
+```
+
 For GraphQL actions, the body must implement `GraphQLBodyInterface`:
 
 ```php
@@ -372,6 +386,8 @@ It generates the `Action`, `Mapper`, `Response`, and updates the YAML action map
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — setup, code quality tools, and how to run the test suite.
 - [`docs/`](./docs/) — per-topic references: actions, authorization, batch requests, clients,
   context and path resolution, mappers and responses.
+- [`integrationEngine-use-example`](https://github.com/CarlosGude/integrationEngine-use-example) —
+  full working demo app showing the bundle wired into a real Symfony project.
 
 ---
 
