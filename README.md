@@ -41,7 +41,8 @@ IntegrationEngine removes:
 ## Quick usage
 
 ```php
-$employee = $dummyRestApi->getEmployee(123);
+$response = $dummyRestApi->getEmployee(123); // typed Response DTO
+$employee = $dummyRestApiGateway->find(123); // domain object, via the ACL Gateway
 ```
 
 No HTTP clients. No request builders. No mappers. Just integrations.
@@ -140,12 +141,12 @@ integration facade — never call the registry directly from a controller or ser
 
 ```php
 use IntegrationEngine\Core\Batch\EngineRequest;
-use IntegrationEngine\Core\Contract\DefaultActionContext;
+use IntegrationEngine\Core\Contract\Action\DefaultActionContext;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Registry\IntegrationName;
 use IntegrationEngine\Core\Registry\IntegrationRegistry;
 
-// 1. Facade (infrastructure layer)
+// 1. Facade (infrastructure layer) — returns typed Response DTOs, nothing else
 final class MyApiIntegration implements IntegrationName
 {
     public const string NAME = 'my_api';
@@ -185,22 +186,38 @@ final class MyApiIntegration implements IntegrationName
             throw array_values($results->errors())[0];
         }
 
-        return array_map(fn($dto) => Employee::fromDto($dto), $results->responses());
+        return $results->responses(); // array<int, GetEmployeeResponse>
     }
 }
 
-// 2. Application service — translates infrastructure DTOs to domain objects
-final class EmployeeService
+// 2. Gateway (the Anti-Corruption Layer) — the only class that knows both
+// the integration's DTOs and the domain model
+final class MyApiGateway
 {
     public function __construct(private MyApiIntegration $integration) {}
 
     public function find(int $id): Employee // domain object
     {
-        $dto = $this->integration->getEmployee($id);
-        return new Employee(id: $dto->employee->id, name: $dto->employee->name);
+        $dto = $this->integration->getEmployee($id)->employee;
+        return new Employee(id: $dto->id, name: $dto->name);
+    }
+
+    /** @return list<Employee> */
+    public function findMany(int ...$ids): array
+    {
+        $employees = [];
+        foreach ($this->integration->getManyEmployees($ids) as $id => $response) {
+            $employees[$id] = new Employee(id: $response->employee->id, name: $response->employee->name);
+        }
+        return $employees;
     }
 }
 ```
+
+Controllers and other application code depend only on the Gateway — never on the
+integration facade or its DTOs directly. Without this boundary, a breaking change in
+the external API propagates straight into your domain model; with it, adapting to an
+API change means updating one Gateway class.
 
 `sendMany()` returns a `BatchResultCollection` — one result per key, successes and
 failures independent. Real concurrency requires the client to implement
