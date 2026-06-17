@@ -61,6 +61,23 @@ Requires PHP 8.2+ and Symfony 7.0+. The bundle registers itself automatically vi
 
 ---
 
+## Scaffolding
+
+Generate a full integration skeleton with the built-in command:
+
+```bash
+# New integration + first action
+php bin/console make:integration MyApi GetEmployee
+
+# Add an action to an existing integration
+php bin/console make:integration MyApi CreateEmployee
+```
+
+The command is interactive — it asks for base URL, client type, HTTP method, and path.
+It generates the `Action`, `Mapper`, `Response`, and updates the YAML action map.
+
+---
+
 ## Structure
 
 Each integration follows the same predictable directory layout:
@@ -356,23 +373,6 @@ App\Infrastructure\Http\SoapClientAdapter:
 ```
 
 Project adapters override bundle built-ins when registered with the same `getClientType()`.
-
----
-
-## Scaffolding
-
-Generate a full integration skeleton with the built-in command:
-
-```bash
-# New integration + first action
-php bin/console make:integration MyApi GetEmployee
-
-# Add an action to an existing integration
-php bin/console make:integration MyApi CreateEmployee
-```
-
-The command is interactive — it asks for base URL, client type, HTTP method, and path.
-It generates the `Action`, `Mapper`, `Response`, and updates the YAML action map.
 
 ---
 
