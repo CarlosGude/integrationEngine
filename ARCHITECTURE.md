@@ -362,3 +362,28 @@ In `sendMany()`, requests in the same batch are grouped by resolved `baseUrl` be
 dispatch: each group runs through a single client (concurrently if it implements
 `BatchClientInterface`), preserving the original batch's keys. This avoids a batch with
 mixed URLs silently degrading all concurrency into sequential sends.
+
+## 9. Observability — why a decorator, not engine instrumentation
+
+The Symfony Profiler integration (`TraceableClient`/`TraceableBatchClient`) decorates
+`ClientInterface`, the same boundary `DynamicBaseUrlClientInterface` and
+`BatchClientInterface` already operate at — not `IntegrationEngine::send()`.
+
+The trade-off this implies: the collector sees the request that actually went over the
+wire (method, path, duration, status, exception), not the engine's internal view. It does
+not see the Action's logical name from inside `send()`'s flow, because that flow is never
+touched. It recovers the name anyway via `$action::getName()` — the same `AbstractAction`
+instance the client already receives as a `send()` argument — so the panel reads the
+Action's name, not just the raw HTTP method and path.
+
+This is accepted deliberately. Instrumenting inside `IntegrationEngine` would mean adding
+observability concerns to the one class every request flows through — the same class the
+Mapper Invariant and the dynamic-auth retry logic depend on staying simple. A decorator
+keeps that class untouched: the feature is opt-in, wired only when `kernel.debug` is true,
+`DataCollectorInterface` exists, and a `profiler` service is actually registered — the
+last check matters because `symfony/http-kernel` alone (present in nearly every Symfony
+app) doesn't mean `symfony/web-profiler-bundle` is installed; without it nothing would
+read the collected data, so the pass skips the decoration rather than paying for it for
+nothing. A project that never installs `symfony/http-kernel` is entirely unaffected — the
+decorator classes have no dependency on it, and the collector itself is excluded from the
+bundle's service autodiscovery, registered only when all three conditions hold.

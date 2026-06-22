@@ -12,6 +12,12 @@ services:
             - '../../../Infrastructure/Http/SymfonyHttpClientAdapter.php'
             - '../../../Infrastructure/Http/GraphQLClientAdapter.php'
             - '../../../Core/IntegrationEngine.php'
+            # Implements symfony/http-kernel's DataCollectorInterface, which is
+            # not a required dependency of this bundle. Autodiscovery requires
+            # every matched file to register its declared classes — that would
+            # fatal in a project without symfony/http-kernel. Registered
+            # manually and conditionally by IntegrationCompilerPass instead.
+            - '../../../Infrastructure/Debug/IntegrationEngineDataCollector.php'
 
     # Built-in adapters — explicitly registered.
     # To add a custom adapter, tag your service with integration_engine.client_adapter

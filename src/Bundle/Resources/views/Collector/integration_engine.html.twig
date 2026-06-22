@@ -1,0 +1,101 @@
+{% extends '@WebProfiler/Profiler/layout.html.twig' %}
+
+{% block toolbar %}
+    {% if collector.totalCalls > 0 %}
+        {% set icon %}
+            <span class="sf-toolbar-value">{{ collector.totalCalls }}</span>
+            <span class="sf-toolbar-label">{{ collector.totalCalls == 1 ? 'call' : 'calls' }}</span>
+        {% endset %}
+        {% set text %}
+            <div class="sf-toolbar-info-piece">
+                <b>Outgoing calls</b>
+                <span>{{ collector.totalCalls }}</span>
+            </div>
+            <div class="sf-toolbar-info-piece">
+                <b>Total time</b>
+                <span>{{ collector.totalDurationMs|number_format(1) }} ms</span>
+            </div>
+            {% if collector.errorCount > 0 %}
+                <div class="sf-toolbar-info-piece">
+                    <b>Errors</b>
+                    <span class="sf-toolbar-status sf-toolbar-status-red">{{ collector.errorCount }}</span>
+                </div>
+            {% endif %}
+        {% endset %}
+        {{ include('@WebProfiler/Profiler/toolbar_item.html.twig', {
+            link: profiler_url,
+            status: collector.errorCount > 0 ? 'red' : '',
+        }) }}
+    {% endif %}
+{% endblock %}
+
+{% block menu %}
+    <span class="label {{ collector.errorCount > 0 ? 'label-status-error' : '' }}">
+        <span class="icon"><span class="sf-toolbar-icon">IE</span></span>
+        <strong>IntegrationEngine</strong>
+        {% if collector.totalCalls > 0 %}
+            <span class="count"><span>{{ collector.totalCalls }}</span></span>
+        {% endif %}
+    </span>
+{% endblock %}
+
+{% block panel %}
+    <h2>Integration Engine — outgoing calls</h2>
+
+    {% if collector.totalCalls == 0 %}
+        <div class="empty">
+            <p>No calls were made through integrationEngine during this request.</p>
+        </div>
+    {% else %}
+        <div class="metrics">
+            <div class="metric">
+                <span class="value">{{ collector.totalCalls }}</span>
+                <span class="label">Total calls</span>
+            </div>
+            <div class="metric">
+                <span class="value">{{ collector.totalDurationMs|number_format(1) }} ms</span>
+                <span class="label">Total time</span>
+            </div>
+            <div class="metric">
+                <span class="value">{{ collector.errorCount }}</span>
+                <span class="label">Errors</span>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Integration</th>
+                    <th>Action</th>
+                    <th>Method</th>
+                    <th>Path</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for call in collector.calls %}
+                    <tr{{ call.error ? ' class="status-error"' : '' }}>
+                        <td>{{ call.integrationName }}</td>
+                        <td>{{ call.actionName }}</td>
+                        <td>{{ call.method }}</td>
+                        <td><code>{{ call.path }}</code></td>
+                        <td>{{ call.durationMs|number_format(1) }} ms</td>
+                        <td>
+                            {% if call.error %}
+                                <span class="label status-error">{{ call.statusCode ?: 'error' }}</span>
+                            {% else %}
+                                <span class="label status-success">{{ call.statusCode ?: 'ok' }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% if call.error %}
+                        <tr{{ call.error ? ' class="status-error"' : '' }}>
+                            <td colspan="6"><code>{{ call.error }}</code></td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}

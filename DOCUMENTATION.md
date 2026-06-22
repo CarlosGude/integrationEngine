@@ -181,6 +181,17 @@ my_api:
 
 ---
 
+## Debugging — Symfony Profiler
+
+In `dev`/`test`, every outgoing call made through any configured integration shows up
+in the Symfony Toolbar/Profiler automatically — no configuration needed. In `prod`, the
+real client is used unwrapped: zero overhead.
+
+→ [Debugging](docs/debugging.md) — what the panel shows, why it's a decorator and not
+engine instrumentation, how it relates to the optional `LoggerInterface` logging.
+
+---
+
 ## Anti-Corruption Layer
 
 Integration DTOs must never reach the domain layer. The translation happens in an

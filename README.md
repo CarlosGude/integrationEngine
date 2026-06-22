@@ -406,6 +406,21 @@ It's optional and fully backward-compatible: omit it and the engine keeps using 
 it silently unless it implements `DynamicBaseUrlClientInterface`. The bundle does not
 resolve or persist that URL — that's the calling code's responsibility.
 
+### Symfony Profiler integration
+
+In `dev`/`test`, every outgoing call made through a configured integration shows up
+automatically in the Symfony Toolbar — integration, action, method, path, duration, and
+status, with no configuration needed:
+
+```
+IntegrationEngine          3 calls · 184.2 ms
+  GetEmployee   GET  /api/v1/employee/42      62.1 ms   200
+  GetArtist     GET  /v1/artists/4Z8W...       91.0 ms   200
+  FetchToken    POST /api/token                31.1 ms   200
+```
+
+It's purely additive: in `prod` the real client is used unwrapped, with zero overhead.
+
 ---
 
 ## Further reading
