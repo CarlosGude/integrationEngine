@@ -20,6 +20,7 @@ final readonly class EngineRequest
         public ?ActionContextInterface $context,
         public ?ActionBodyInterface $body,
         public ?RequestHeadersInterface $headers,
+        public ?string $baseUrl,
     ) {}
 
     public static function create(
@@ -27,7 +28,8 @@ final readonly class EngineRequest
         ?ActionContextInterface $context = null,
         ?ActionBodyInterface $body = null,
         ?RequestHeadersInterface $headers = null,
+        ?string $baseUrl = null,
     ): self {
-        return new self($actionName, $context, $body, $headers);
+        return new self($actionName, $context, $body, $headers, $baseUrl);
     }
 }

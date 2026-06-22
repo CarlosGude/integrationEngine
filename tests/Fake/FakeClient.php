@@ -7,25 +7,37 @@ namespace IntegrationEngine\Tests\Fake;
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Client\ClientInterface;
+use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 
-final class FakeClient implements ClientInterface
+final class FakeClient implements ClientInterface, DynamicBaseUrlClientInterface
 {
-    /** @var array<string, array<mixed>> */
-    private array $responses = [];
+    /**
+     * Shared with every instance returned by withBaseUrl(), so recordings
+     * made on a resolved-per-request clone stay visible through the
+     * original instance the test holds onto.
+     */
+    private readonly FakeClientState $state;
 
-    /** @var array<string, int> */
-    private array $callCount = [];
+    public function __construct(?FakeClientState $state = null, private readonly ?string $baseUrl = null)
+    {
+        $this->state = $state ?? new FakeClientState();
+    }
 
-    /** @var array<string, list<\Throwable>> */
-    private array $pendingExceptions = [];
-    private ?AbstractAction $lastAction = null;
-    private ?ActionContextInterface $lastContext = null;
+    public function withBaseUrl(string $baseUrl): static
+    {
+        return new self($this->state, $baseUrl);
+    }
+
+    public function baseUrl(): ?string
+    {
+        return $this->baseUrl;
+    }
 
     /** @param array<mixed> $response */
     public function setResponse(string $name, array $response): void
     {
-        $this->responses[$name] = $response;
+        $this->state->responses[$name] = $response;
     }
 
     /**
@@ -35,22 +47,27 @@ final class FakeClient implements ClientInterface
      */
     public function queueException(string $name, \Throwable $exception): void
     {
-        $this->pendingExceptions[$name][] = $exception;
+        $this->state->pendingExceptions[$name][] = $exception;
     }
 
     public function callCount(string $name): int
     {
-        return $this->callCount[$name] ?? 0;
+        return $this->state->callCount[$name] ?? 0;
     }
 
     public function lastAction(): ?AbstractAction
     {
-        return $this->lastAction;
+        return $this->state->lastAction;
     }
 
     public function lastContext(): ?ActionContextInterface
     {
-        return $this->lastContext;
+        return $this->state->lastContext;
+    }
+
+    public function lastBaseUrl(): ?string
+    {
+        return $this->state->lastBaseUrl;
     }
 
     /** @return array<mixed> */
@@ -59,14 +76,34 @@ final class FakeClient implements ClientInterface
         ?ActionContextInterface $context = null,
         ?RequestHeadersInterface $headers = null,
     ): array {
-        $this->lastAction = $action;
-        $this->lastContext = $context;
-        $this->callCount[$action::getName()] = ($this->callCount[$action::getName()] ?? 0) + 1;
+        $this->state->lastAction = $action;
+        $this->state->lastContext = $context;
+        $this->state->lastBaseUrl = $this->baseUrl;
+        $this->state->callCount[$action::getName()] = ($this->state->callCount[$action::getName()] ?? 0) + 1;
 
-        if (!empty($this->pendingExceptions[$action::getName()])) {
-            throw array_shift($this->pendingExceptions[$action::getName()]);
+        if (!empty($this->state->pendingExceptions[$action::getName()])) {
+            throw array_shift($this->state->pendingExceptions[$action::getName()]);
         }
 
-        return $this->responses[$action::getName()] ?? [];
+        return $this->state->responses[$action::getName()] ?? [];
     }
+}
+
+/**
+ * Mutable recording shared across a FakeClient and every clone produced
+ * by withBaseUrl(), so a test can assert on the original instance.
+ */
+final class FakeClientState
+{
+    /** @var array<string, array<mixed>> */
+    public array $responses = [];
+
+    /** @var array<string, int> */
+    public array $callCount = [];
+
+    /** @var array<string, list<\Throwable>> */
+    public array $pendingExceptions = [];
+    public ?AbstractAction $lastAction = null;
+    public ?ActionContextInterface $lastContext = null;
+    public ?string $lastBaseUrl = null;
 }

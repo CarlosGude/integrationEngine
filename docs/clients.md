@@ -181,3 +181,43 @@ final class ConcurrentGraphQLClient implements ClientInterface, BatchClientInter
 
 The engine detects `BatchClientInterface` at runtime and falls back to sequential sends
 transparently when it is absent — no configuration, no error.
+
+---
+
+## Dynamic base URL per request — `DynamicBaseUrlClientInterface`
+
+For integrations without one fixed base URL — e.g. an installable app where each
+store/customer lives on its own domain — pass `baseUrl` to `send()`/`sendMany()` instead
+of resolving a per-tenant client service yourself:
+
+```php
+$engine->send('get_orders', context: $context, baseUrl: $tenant->domain());
+```
+
+A client opts in by implementing:
+
+```php
+use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
+
+interface DynamicBaseUrlClientInterface
+{
+    public function withBaseUrl(string $baseUrl): static;
+}
+```
+
+| Client | Implements it? |
+|---|---|
+| `SymfonyHttpClientAdapter` | Yes — returns a new instance with `$baseUrl` swapped in |
+| `GraphQLClientAdapter` | Yes — returns a new instance with `$endpointUrl` swapped in |
+| Custom `ClientInterface` | Optional — if absent, an explicit `baseUrl` is silently ignored |
+
+The engine checks `instanceof DynamicBaseUrlClientInterface` before calling
+`withBaseUrl()`; clients that don't implement it keep using their configured URL with no
+error. Omitting `baseUrl` entirely behaves exactly as before — this is purely additive.
+
+In `sendMany()`, requests are grouped by their resolved `baseUrl` before dispatch, so a
+batch mixing several target URLs still runs each group through `BatchClientInterface`
+concurrently rather than falling back to sequential sends for the whole batch.
+
+The bundle does not resolve or persist that URL — deciding *which* URL to pass (resolving
+the active tenant/store) is the calling application's responsibility.

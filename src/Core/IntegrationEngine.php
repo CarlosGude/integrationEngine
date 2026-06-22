@@ -16,6 +16,7 @@ use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
 use IntegrationEngine\Core\Contract\Client\ClientInterface;
+use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
@@ -47,21 +48,24 @@ final readonly class IntegrationEngine
         ?ActionContextInterface $context = null,
         ?ActionBodyInterface $body = null,
         ?RequestHeadersInterface $headers = null,
+        ?string $baseUrl = null,
     ): ResponseInterface {
         $action = $this->config->getAction($actionName, $body);
         $auth = $action->getAuthorization();
+        $client = $this->resolveClient($baseUrl);
 
         if ($auth instanceof DynamicAuthorizationConfig) {
             return $this->authHandler->handle(
-                $action,
-                $auth,
-                $context,
-                $headers,
-                fn (AbstractAction $a, array $r): ResponseInterface => $this->buildResponse($a, $r),
+                action: $action,
+                auth: $auth,
+                context: $context,
+                headers: $headers,
+                buildResponse: fn (AbstractAction $a, array $r): ResponseInterface => $this->buildResponse($a, $r),
+                client: $client,
             );
         }
 
-        $rawResponse = $this->client->send($action, $context, $headers);
+        $rawResponse = $client->send($action, $context, $headers);
 
         return $this->buildResponse($action, $rawResponse);
     }
@@ -88,16 +92,17 @@ final readonly class IntegrationEngine
             try {
                 $action = $this->config->getAction($request->actionName, $request->body);
                 $auth = $action->getAuthorization();
+                $client = $this->resolveClient($request->baseUrl);
 
                 if ($auth instanceof DynamicAuthorizationConfig) {
                     $action = $tokenRetry->prepareWithToken(
                         $key,
                         $auth,
-                        fn (): AbstractAction => $this->authHandler->withStaticToken($action, $auth),
+                        fn (): AbstractAction => $this->authHandler->withStaticToken($action, $auth, client: $client),
                     );
                 }
 
-                $prepared[$key] = new PreparedRequest($action, $request->context, $request->headers);
+                $prepared[$key] = new PreparedRequest($action, $request->context, $request->headers, $request->baseUrl);
             } catch (\Throwable $e) {
                 $failures[$key] = $e;
             }
@@ -166,6 +171,11 @@ final readonly class IntegrationEngine
     // ── Batch internals ────────────────────────────────────────────────────────
 
     /**
+     * Groups requests by their resolved base URL so that each group can be
+     * dispatched through a single client instance — preserving the
+     * concurrency BatchClientInterface offers within a group, while still
+     * supporting requests that target different base URLs in one batch.
+     *
      * @param array<array-key, PreparedRequest> $prepared
      *
      * @return array<array-key, array<mixed>|\Throwable>
@@ -176,21 +186,49 @@ final readonly class IntegrationEngine
             return [];
         }
 
-        if ($this->client instanceof BatchClientInterface) {
-            return $this->client->sendMany($prepared);
+        $groups = [];
+        foreach ($prepared as $key => $request) {
+            $groups[$request->baseUrl ?? ''][$key] = $request;
+        }
+
+        $raw = [];
+        foreach ($groups as $baseUrl => $groupPrepared) {
+            $client = $this->resolveClient('' === $baseUrl ? null : $baseUrl);
+            $raw += $this->dispatchGroup($client, $groupPrepared);
+        }
+
+        return $raw;
+    }
+
+    /**
+     * @param array<array-key, PreparedRequest> $prepared
+     *
+     * @return array<array-key, array<mixed>|\Throwable>
+     */
+    private function dispatchGroup(ClientInterface $client, array $prepared): array
+    {
+        if ($client instanceof BatchClientInterface) {
+            return $client->sendMany($prepared);
         }
 
         $raw = [];
 
         foreach ($prepared as $key => $request) {
             try {
-                $raw[$key] = $this->client->send($request->action, $request->context, $request->headers);
+                $raw[$key] = $client->send($request->action, $request->context, $request->headers);
             } catch (\Throwable $e) {
                 $raw[$key] = $e;
             }
         }
 
         return $raw;
+    }
+
+    private function resolveClient(?string $baseUrl): ClientInterface
+    {
+        return (null !== $baseUrl && $this->client instanceof DynamicBaseUrlClientInterface)
+            ? $this->client->withBaseUrl($baseUrl)
+            : $this->client;
     }
 
     /**
@@ -217,10 +255,13 @@ final readonly class IntegrationEngine
 
         foreach ($toRetry as $key => $auth) {
             try {
+                $original = $originalPrepared[$key];
+                $client = $this->resolveClient($original->baseUrl);
                 $prepared[$key] = new PreparedRequest(
-                    $this->authHandler->withStaticToken($originalPrepared[$key]->action, $auth),
-                    $originalPrepared[$key]->context,
-                    $originalPrepared[$key]->headers,
+                    $this->authHandler->withStaticToken($original->action, $auth, client: $client),
+                    $original->context,
+                    $original->headers,
+                    $original->baseUrl,
                 );
             } catch (\Throwable $e) {
                 $raw[$key] = $e;

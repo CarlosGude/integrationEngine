@@ -8,11 +8,12 @@ use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Action\GraphQLBodyInterface;
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
+use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
-final readonly class GraphQLClientAdapter implements ClientAdapterInterface
+final readonly class GraphQLClientAdapter implements ClientAdapterInterface, DynamicBaseUrlClientInterface
 {
     use ResolvesAuthHeaders;
 
@@ -22,6 +23,11 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface
         /** @var array<string, string> */
         private array $defaultHeaders = [],
     ) {}
+
+    public function withBaseUrl(string $baseUrl): static
+    {
+        return new self($this->httpClient, $baseUrl, $this->defaultHeaders);
+    }
 
     public static function getClientType(): string
     {

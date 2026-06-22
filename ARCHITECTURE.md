@@ -339,3 +339,26 @@ my_api:
 Use `client:` to select a protocol adapter (rest, graphql, or a custom registered type).
 Use `client_service:` when you want total control over the HTTP layer for a specific
 integration. The two options are mutually exclusive per integration.
+
+## 8. Dynamic `base_url` — why it's opt-in and doesn't break the invariant
+
+`base_url` historically lived only at build-time, fixed on the HTTP adapter when the
+container compiles — the same argument as static `client_service:`: simplicity for the
+common case, where an integration always targets the same host.
+
+Passing an optional `baseUrl` to `send()`/`sendMany()` is not a new concept: it follows
+the same pattern `RequestHeadersInterface` already uses for per-request dynamic auth — a
+value that varies per call gets injected at the engine's entry point instead of fixed in
+config, and only the client decides whether to use it. What changed is that `base_url`
+had been left out of that pattern while the auth token already followed it.
+
+The capability is exposed through `DynamicBaseUrlClientInterface`, not as a mandatory
+signature change on `ClientInterface`. The engine checks `instanceof` before using it: a
+client that doesn't implement it simply receives the `baseUrl` and ignores it — no
+exception, no breakage. This is deliberate: third-party custom adapters that don't need
+dynamic URLs don't have to implement anything new to keep compiling.
+
+In `sendMany()`, requests in the same batch are grouped by resolved `baseUrl` before
+dispatch: each group runs through a single client (concurrently if it implements
+`BatchClientInterface`), preserving the original batch's keys. This avoids a batch with
+mixed URLs silently degrading all concurrency into sequential sends.

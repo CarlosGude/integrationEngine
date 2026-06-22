@@ -19,5 +19,6 @@ final readonly class PreparedRequest
         public AbstractAction $action,
         public ?ActionContextInterface $context,
         public ?RequestHeadersInterface $headers,
+        public ?string $baseUrl = null,
     ) {}
 }

@@ -391,6 +391,21 @@ App\Infrastructure\Http\SoapClientAdapter:
 
 Project adapters override bundle built-ins when registered with the same `getClientType()`.
 
+### Dynamic base URL per request
+
+Some integrations don't have one fixed base URL — for example, an installable app where
+each store/customer lives on its own domain. For those cases, pass `baseUrl` to `send()`:
+
+```php
+$engine->send('get_orders', context: $context, baseUrl: $tenant->domain());
+```
+
+It's optional and fully backward-compatible: omit it and the engine keeps using the
+`base_url` from configuration, exactly as before. Both built-in adapters
+(`SymfonyHttpClientAdapter`, `GraphQLClientAdapter`) support it; a custom client ignores
+it silently unless it implements `DynamicBaseUrlClientInterface`. The bundle does not
+resolve or persist that URL — that's the calling code's responsibility.
+
 ---
 
 ## Further reading
