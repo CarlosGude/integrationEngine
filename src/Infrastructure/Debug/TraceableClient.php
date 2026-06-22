@@ -7,6 +7,7 @@ namespace IntegrationEngine\Infrastructure\Debug;
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Client\ClientInterface;
+use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 
@@ -19,13 +20,26 @@ use IntegrationEngine\Core\Exception\RequestResponseException;
  * Only wired by IntegrationCompilerPass when kernel.debug is true — the
  * decorated client is used as-is in any other environment.
  */
-class TraceableClient implements ClientInterface
+final class TraceableClient implements ClientInterface, DynamicBaseUrlClientInterface
 {
     public function __construct(
-        protected readonly ClientInterface $decorated,
-        protected readonly string $integrationName,
-        protected readonly IntegrationEngineDataCollector $collector,
+        private readonly ClientInterface $decorated,
+        private readonly string $integrationName,
+        private readonly IntegrationEngineDataCollector $collector,
     ) {}
+
+    public function withBaseUrl(string $baseUrl): static
+    {
+        if (!$this->decorated instanceof DynamicBaseUrlClientInterface) {
+            return $this;
+        }
+
+        return new self(
+            $this->decorated->withBaseUrl($baseUrl),
+            $this->integrationName,
+            $this->collector,
+        );
+    }
 
     public function send(
         AbstractAction $action,

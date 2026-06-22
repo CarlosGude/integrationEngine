@@ -387,3 +387,9 @@ read the collected data, so the pass skips the decoration rather than paying for
 nothing. A project that never installs `symfony/http-kernel` is entirely unaffected — the
 decorator classes have no dependency on it, and the collector itself is excluded from the
 bundle's service autodiscovery, registered only when all three conditions hold.
+
+Any new `ClientInterface` decorator must replicate every optional capability interface
+(`DynamicBaseUrlClientInterface` today, any added later) of the client it wraps, or
+explicitly document why it doesn't apply — `TraceableClient` originally omitted
+`DynamicBaseUrlClientInterface`, which silently broke multi-tenant `base_url` resolution
+whenever `kernel.debug` was true.
