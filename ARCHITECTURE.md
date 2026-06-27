@@ -363,33 +363,53 @@ dispatch: each group runs through a single client (concurrently if it implements
 `BatchClientInterface`), preserving the original batch's keys. This avoids a batch with
 mixed URLs silently degrading all concurrency into sequential sends.
 
-## 9. Observability — why a decorator, not engine instrumentation
+## 9. Middleware pipeline — observability, caching, and extensibility
 
-The Symfony Profiler integration (`TraceableClient`/`TraceableBatchClient`) decorates
-`ClientInterface`, the same boundary `DynamicBaseUrlClientInterface` and
-`BatchClientInterface` already operate at — not `IntegrationEngine::send()`.
+Every outgoing request passes through `MiddlewareClient` before reaching the HTTP adapter.
+`MiddlewareClient` holds an ordered list of `ClientMiddlewareInterface` implementations
+and chains them into a pipeline: middleware[0] is outermost (first to execute, last to
+return); the HTTP adapter is the terminal node.
 
-The trade-off this implies: the collector sees the request that actually went over the
-wire (method, path, duration, status, exception), not the engine's internal view. It does
-not see the Action's logical name from inside `send()`'s flow, because that flow is never
-touched. It recovers the name anyway via `$action::getName()` — the same `AbstractAction`
-instance the client already receives as a `send()` argument — so the panel reads the
-Action's name, not just the raw HTTP method and path.
+**Why a pipeline, not decorator pairs.** The previous design used `TraceableClient` and
+`TraceableBatchClient` as separate decorator classes. Every new cross-cutting concern
+required two new classes, and each decorator had to replicate every optional capability
+interface (`BatchClientInterface`, `DynamicBaseUrlClientInterface`) of the client it
+wrapped. Missing one caused a silent downgrade — dynamic `base_url` silently broke
+whenever `kernel.debug` was true, because `TraceableClient` had not implemented
+`DynamicBaseUrlClientInterface`. A pipeline collapses this: one `MiddlewareClient` always
+implements every capability interface; individual middlewares only implement `process()`
+and, optionally, `processMany()`.
 
-This is accepted deliberately. Instrumenting inside `IntegrationEngine` would mean adding
-observability concerns to the one class every request flows through — the same class the
-Mapper Invariant and the dynamic-auth retry logic depend on staying simple. A decorator
-keeps that class untouched: the feature is opt-in, wired only when `kernel.debug` is true,
-`DataCollectorInterface` exists, and a `profiler` service is actually registered — the
-last check matters because `symfony/http-kernel` alone (present in nearly every Symfony
-app) doesn't mean `symfony/web-profiler-bundle` is installed; without it nothing would
-read the collected data, so the pass skips the decoration rather than paying for it for
-nothing. A project that never installs `symfony/http-kernel` is entirely unaffected — the
-decorator classes have no dependency on it, and the collector itself is excluded from the
-bundle's service autodiscovery, registered only when all three conditions hold.
+**Fixed layer invariants.** Two positions in the chain are non-negotiable:
 
-Any new `ClientInterface` decorator must replicate every optional capability interface
-(`DynamicBaseUrlClientInterface` today, any added later) of the client it wraps, or
-explicitly document why it doesn't apply — `TraceableClient` originally omitted
-`DynamicBaseUrlClientInterface`, which silently broke multi-tenant `base_url` resolution
-whenever `kernel.debug` was true.
+- `CachingMiddleware` is always outermost. A cache hit must bypass all downstream layers —
+  including user middlewares — or they pay overhead for a request that never goes over the
+  wire.
+- `TracingMiddleware` is always the innermost built-in (debug only). It sits as close to
+  the HTTP adapter as possible so it measures the actual network call, not the time spent
+  in user middlewares. Cache hits are recorded separately by `CachingMiddleware` itself
+  with a duration of 0 ms.
+
+User middlewares are injected between these two anchors, ordered by descending `priority`
+(higher = outermost). The `priority` attribute on the `integration_engine.middleware` tag
+follows the same convention as Symfony event listeners and kernel middleware — no new
+mental model needed.
+
+**`IntegrationEngine` stays untouched.** Caching, tracing, and any user-added concerns
+are all outside the engine's scope. The Mapper Invariant, dynamic-auth retry logic, and
+batch orchestration remain in `IntegrationEngine` without observability noise. The
+middleware chain is the right extension point precisely because it sits at the HTTP
+boundary, not at the engine boundary.
+
+**Tracing opt-in conditions.** `TracingMiddleware` is wired only when `kernel.debug` is
+true, `DataCollectorInterface` exists (checks for `symfony/http-kernel`), and a `profiler`
+service is actually registered. The last check matters: `symfony/http-kernel` alone is
+present in nearly every Symfony project; without `symfony/web-profiler-bundle` nothing
+would read the collected data. A project that omits the web profiler bundle pays no cost.
+
+**Batch timing trade-off.** In `processMany()`, `TracingMiddleware` records one duration
+per item but uses the total elapsed time for the whole batch — with a concurrent batch you
+cannot isolate per-request latencies. The recorded duration is accurate for sequential
+batches and represents wall-clock time per item for concurrent ones. This is accepted
+deliberately: the profiler panel is useful for identifying slow integrations, not for
+sub-millisecond per-request profiling.

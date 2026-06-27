@@ -391,6 +391,49 @@ App\Infrastructure\Http\SoapClientAdapter:
 
 Project adapters override bundle built-ins when registered with the same `getClientType()`.
 
+### Custom middleware
+
+Every outgoing request passes through an ordered middleware pipeline before reaching the
+HTTP adapter. You can inject your own layers — rate limiting, retry logic, circuit
+breaking, custom logging — by implementing `ClientMiddlewareInterface` and tagging the
+service:
+
+```php
+use IntegrationEngine\Core\Contract\Client\AbstractClientMiddleware;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
+use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
+
+final class RateLimitMiddleware extends AbstractClientMiddleware
+{
+    public function process(
+        AbstractAction $action,
+        ?ActionContextInterface $context,
+        ?RequestHeadersInterface $headers,
+        callable $next,
+    ): array {
+        $this->limiter->consume(); // your rate-limiting logic
+        return $next($action, $context, $headers);
+    }
+}
+```
+
+```yaml
+# services.yaml
+App\Infrastructure\Http\RateLimitMiddleware:
+    tags:
+        - { name: integration_engine.middleware, priority: 10 }
+```
+
+The `priority` attribute controls layer order — higher values run first (outermost).
+This follows the same convention as Symfony event listeners. The bundle guarantees
+`CachingMiddleware` is always the outermost layer and `TracingMiddleware` (debug only)
+is always the innermost built-in; your middlewares sit between them.
+
+Override `processMany()` as well if you need batch-aware behaviour (e.g. splitting a
+batch by rate-limit bucket). The default passthrough from `AbstractClientMiddleware` is
+correct for most cases.
+
 ### Dynamic base URL per request
 
 Some integrations don't have one fixed base URL — for example, an installable app where
@@ -419,7 +462,7 @@ IntegrationEngine          3 calls · 184.2 ms
   FetchToken    POST /api/token                31.1 ms   200
 ```
 
-It's purely additive: in `prod` the real client is used unwrapped, with zero overhead.
+It's purely additive: in `prod` the `TracingMiddleware` is not wired, so there is zero profiling overhead.
 
 ---
 

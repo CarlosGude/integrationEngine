@@ -58,6 +58,8 @@ make stan PATHS='src/Core/IntegrationEngine.php'
 - **`ConfigPort`** — loads action config from YAML (`YamlConfigAdapter`)
 - **`ClientInterface`** — executes HTTP. Built-in: `SymfonyHttpClientAdapter` (REST) and `GraphQLClientAdapter`. Tagged `integration_engine.client_adapter`; multiple adapters are discovered automatically
 - **`BatchClientInterface`** — optional capability: executes a batch of `PreparedRequest`s concurrently, returning raw payload or Throwable per key. `SymfonyHttpClientAdapter` implements it (lazy responses: dispatch all, then consume). Clients without it fall back to sequential sends
+- **`ClientMiddlewareInterface`** — cross-cutting concern hook with `process()` (single) and `processMany()` (batch). `AbstractClientMiddleware` provides a default `processMany()` passthrough — override only when batch-aware behaviour is needed. Tag services with `integration_engine.middleware` and an optional `priority` attribute to inject into the chain
+- **`MiddlewareClient`** — always wraps the HTTP adapter. Layer order (outermost → innermost): `CachingMiddleware` → user middlewares by descending priority → `TracingMiddleware` (debug only) → HTTP adapter. Always implements `BatchClientInterface` and `DynamicBaseUrlClientInterface`
 - **`CachePort`** — caches dynamic auth tokens with `get`/`set`/`delete` (`Psr6CacheAdapter` wrapping Symfony's PSR-6 cache)
 
 ### Data Flow
@@ -68,7 +70,11 @@ Application service
   → engine->send(actionName, context, body, headers)
   → ConfigPort::getAction()
   → [if dynamic auth] fetch + cache token, rebuild action with static auth
-  → ClientInterface::send(action, context, headers) → raw array
+  → MiddlewareClient::send(action, context, headers)
+      → CachingMiddleware   (cache hit → return early; miss → continue)
+      → [user middlewares, outermost first by descending priority]
+      → TracingMiddleware   (dev/test only — records timing, action, status)
+      → HTTP adapter        → raw array
   → AbstractMapper::map(action, rawArray) → ResponseInterface
   → return DTO to application service
 ```
@@ -109,7 +115,7 @@ Tests live in `tests/` with `Fake/` subdirectories containing minimal test doubl
 - `tests/Core/` — engine contract, action path resolution, dynamic auth (including 401 retry), mapper invariant
 - `tests/Infrastructure/` — HTTP adapter headers, GraphQL adapter, PSR-6 cache, adapter resolver
 - `tests/Bundle/` — bundle configuration, DI extension, compiler pass, generator, `make:integration` command
-- `tests/Fake/` — `FakeClient`, `FakeCache`, `FakeConfigPort`, `FakeContext`, etc.
+- `tests/Fake/` — `FakeClient`, `FakeCache`, `FakeConfigPort`, `FakeContext`, `FakeMiddleware`, etc.
 
 ## Creating a New Integration
 
