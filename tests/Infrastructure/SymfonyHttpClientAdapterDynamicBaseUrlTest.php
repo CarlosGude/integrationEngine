@@ -53,7 +53,7 @@ final class SymfonyHttpClientAdapterDynamicBaseUrlTest extends TestCase
         $resolved = $original->withBaseUrl('https://tenant-one.example.com');
         $resolved->send(FakePathAction::create('GET', '/items'));
 
-        self::assertSame('2', $spy->lastOptions()['headers']['X-Api-Version']);
+        self::assertSame('2', $spy->lastHeader('X-Api-Version'));
     }
 }
 
@@ -75,6 +75,13 @@ final class DynBaseUrlSpyHttpClient implements HttpClientInterface
     public function lastOptions(): array
     {
         return $this->lastOptions;
+    }
+
+    public function lastHeader(string $name): ?string
+    {
+        $headers = $this->lastOptions['headers'] ?? null;
+
+        return \is_array($headers) && \is_string($headers[$name] ?? null) ? $headers[$name] : null;
     }
 
     /** @param array<string, mixed> $options */

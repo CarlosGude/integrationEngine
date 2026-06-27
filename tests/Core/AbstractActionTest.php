@@ -115,6 +115,24 @@ final class AbstractActionTest extends TestCase
         self::assertSame('/orders/2', $action->getPath($ctx2));
     }
 
+    // ── getCacheTtl ───────────────────────────────────────────────────────────
+
+    #[Test]
+    public function getCacheTtlReturnsNullByDefault(): void
+    {
+        $action = AbstractActionTestFixture::create(method: 'GET', path: '/hello');
+
+        self::assertNull($action->getCacheTtl());
+    }
+
+    #[Test]
+    public function getCacheTtlReturnsSetValue(): void
+    {
+        $action = AbstractActionTestFixture::create(method: 'GET', path: '/hello', cacheTtl: 300);
+
+        self::assertSame(300, $action->getCacheTtl());
+    }
+
     // ── getAuthorization ──────────────────────────────────────────────────────
 
     #[Test]

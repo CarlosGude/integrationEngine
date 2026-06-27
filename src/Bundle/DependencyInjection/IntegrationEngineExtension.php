@@ -26,9 +26,6 @@ final class IntegrationEngineExtension extends Extension
         /** @var array<string, array{config_path: null|string, base_url: null|string, client: string, client_service: null|string, cache_service: null|string, headers: array<string, string>}> $integrations */
         $integrations = $config['integrations'];
 
-        $container->setParameter(
-            'integration_engine.integrations',
-            $integrations
-        );
+        $container->setParameter('integration_engine.integrations', $integrations);
     }
 }

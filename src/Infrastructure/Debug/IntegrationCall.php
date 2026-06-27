@@ -18,5 +18,6 @@ final readonly class IntegrationCall
         public float $durationMs,
         public ?string $error,
         public ?int $statusCode,
+        public bool $cached = false,
     ) {}
 }

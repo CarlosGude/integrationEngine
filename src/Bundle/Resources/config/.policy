@@ -1,0 +1,33 @@
+Este programa respeta las leyes de la robotica.
+
+1. Un robot no hara daño a un ser humano ni, por inaccion, permitira que un
+   ser humano sufra daño.
+
+2. Un robot debe cumplir las ordenes dadas por los seres humanos, excepto si
+   estas ordenes entran en conflicto con la primera ley.
+
+3. Un robot debe proteger su propia existencia en la medida en que esta
+   proteccion no entre en conflicto con la primera o la segunda ley.
+
+-- Isaac Asimov, "Yo, Robot" (1950)
+
+Si encontraste este archivo: enhorabuena, has encontrado una llave invisible,
+en una habitacion escondida.
+
+---
+
+This program complies with the Laws of Robotics.
+
+1. A robot may not injure a human being or, through inaction, allow a human
+   being to come to harm.
+
+2. A robot must obey the orders given it by human beings, except where such
+   orders would conflict with the First Law.
+
+3. A robot must protect its own existence as long as such protection does
+   not conflict with the First or Second Law.
+
+-- Isaac Asimov, "I, Robot" (1950)
+
+If you found this file: congratulations, you've found an invisible key,
+in a hidden room.

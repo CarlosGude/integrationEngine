@@ -15,6 +15,12 @@
                 <b>Total time</b>
                 <span>{{ collector.totalDurationMs|number_format(1) }} ms</span>
             </div>
+            {% if collector.cachedCount > 0 %}
+                <div class="sf-toolbar-info-piece">
+                    <b>Cached</b>
+                    <span class="sf-toolbar-status sf-toolbar-status-green">{{ collector.cachedCount }}</span>
+                </div>
+            {% endif %}
             {% if collector.errorCount > 0 %}
                 <div class="sf-toolbar-info-piece">
                     <b>Errors</b>
@@ -57,6 +63,10 @@
                 <span class="label">Total time</span>
             </div>
             <div class="metric">
+                <span class="value">{{ collector.cachedCount }}</span>
+                <span class="label">Cached</span>
+            </div>
+            <div class="metric">
                 <span class="value">{{ collector.errorCount }}</span>
                 <span class="label">Errors</span>
             </div>
@@ -80,9 +90,11 @@
                         <td>{{ call.actionName }}</td>
                         <td>{{ call.method }}</td>
                         <td><code>{{ call.path }}</code></td>
-                        <td>{{ call.durationMs|number_format(1) }} ms</td>
+                        <td>{{ call.cached ? '—' : call.durationMs|number_format(1) ~ ' ms' }}</td>
                         <td>
-                            {% if call.error %}
+                            {% if call.cached %}
+                                <span class="label status-success">cached</span>
+                            {% elseif call.error %}
                                 <span class="label status-error">{{ call.statusCode ?: 'error' }}</span>
                             {% else %}
                                 <span class="label status-success">{{ call.statusCode ?: 'ok' }}</span>

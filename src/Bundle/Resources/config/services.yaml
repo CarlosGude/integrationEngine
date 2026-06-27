@@ -18,6 +18,10 @@ services:
             # fatal in a project without symfony/http-kernel. Registered
             # manually and conditionally by IntegrationCompilerPass instead.
             - '../../../Infrastructure/Debug/IntegrationEngineDataCollector.php'
+            # Registered manually per-integration by IntegrationCompilerPass.
+            - '../../../Infrastructure/Client/MiddlewareClient.php'
+            - '../../../Infrastructure/Cache/CachingMiddleware.php'
+            - '../../../Infrastructure/Debug/TracingMiddleware.php'
 
     # Built-in adapters — explicitly registered.
     # To add a custom adapter, tag your service with integration_engine.client_adapter

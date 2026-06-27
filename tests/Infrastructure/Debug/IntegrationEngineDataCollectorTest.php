@@ -52,6 +52,20 @@ final class IntegrationEngineDataCollectorTest extends TestCase
     }
 
     #[Test]
+    public function getCachedCountCountsOnlyCachedCalls(): void
+    {
+        $collector = new IntegrationEngineDataCollector();
+
+        $collector->recordCall('my_api', 'A', 'GET', '/a', 0.0, null, cached: true);
+        $collector->recordCall('my_api', 'B', 'GET', '/b', 10.0, null);
+        $collector->recordCall('my_api', 'C', 'GET', '/c', 0.0, null, cached: true);
+
+        self::assertSame(2, $collector->getCachedCount());
+        self::assertTrue($collector->getCalls()[0]->cached);
+        self::assertFalse($collector->getCalls()[1]->cached);
+    }
+
+    #[Test]
     public function resetClearsAccumulatedState(): void
     {
         $collector = new IntegrationEngineDataCollector();

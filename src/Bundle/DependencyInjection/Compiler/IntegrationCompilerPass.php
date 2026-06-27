@@ -6,14 +6,15 @@ namespace IntegrationEngine\Bundle\DependencyInjection\Compiler;
 
 use IntegrationEngine\Bundle\Exception\IntegrationConfigurationException;
 use IntegrationEngine\Core\Auth\DynamicAuthHandler;
-use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
+use IntegrationEngine\Core\Contract\Client\ClientMiddlewareInterface;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Registry\IntegrationRegistry;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
+use IntegrationEngine\Infrastructure\Cache\CachingMiddleware;
+use IntegrationEngine\Infrastructure\Client\MiddlewareClient;
 use IntegrationEngine\Infrastructure\Debug\IntegrationEngineDataCollector;
-use IntegrationEngine\Infrastructure\Debug\TraceableBatchClient;
-use IntegrationEngine\Infrastructure\Debug\TraceableClient;
+use IntegrationEngine\Infrastructure\Debug\TracingMiddleware;
 use IntegrationEngine\Infrastructure\Http\ClientAdapterResolver;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -33,22 +34,79 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         /** @var array<string, array{config_path: null|string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, headers: array<string, string>}> $integrations */
         $integrations = $container->getParameter('integration_engine.integrations');
 
+        $userMiddlewares = $this->resolveTaggedMiddlewares($container);
+
         $adapterMap = $this->buildAdapterMap($container);
 
         $registry = $container->findDefinition(IntegrationRegistry::class);
 
         foreach ($integrations as $name => $config) {
-            $this->wireIntegration($container, $registry, $name, $config, $adapterMap);
+            $this->wireIntegration($container, $registry, $name, $config, $adapterMap, $userMiddlewares);
         }
+    }
+
+    // ── Tagged middleware discovery ────────────────────────────────────────────
+
+    /**
+     * Collects services tagged with "integration_engine.middleware", validates they
+     * implement ClientMiddlewareInterface, and returns their IDs sorted by descending
+     * priority (higher priority = outermost layer, same convention as Symfony event listeners).
+     *
+     * @return list<string>
+     */
+    private function resolveTaggedMiddlewares(ContainerBuilder $container): array
+    {
+        $tagged = $container->findTaggedServiceIds('integration_engine.middleware');
+
+        if ([] === $tagged) {
+            return [];
+        }
+
+        $entries = [];
+
+        foreach ($tagged as $serviceId => $tags) {
+            $definition = $container->getDefinition($serviceId);
+            $class = $definition->getClass() ?? $serviceId;
+
+            if (!class_exists($class)) {
+                throw new \InvalidArgumentException(\sprintf(
+                    'Service "%s" is tagged as "integration_engine.middleware" but its class "%s" does not exist.',
+                    $serviceId,
+                    $class,
+                ));
+            }
+
+            if (!is_a($class, ClientMiddlewareInterface::class, true)) {
+                throw new \InvalidArgumentException(\sprintf(
+                    'Service "%s" (%s) is tagged as "integration_engine.middleware" but does not implement %s.',
+                    $serviceId,
+                    $class,
+                    ClientMiddlewareInterface::class,
+                ));
+            }
+
+            $entries[] = [$serviceId, $this->tagPriority($tags)];
+        }
+
+        usort($entries, static fn (array $a, array $b): int => $b[1] <=> $a[1]);
+
+        return array_column($entries, 0);
+    }
+
+    private function tagPriority(mixed $tags): int
+    {
+        if (!\is_array($tags) || !isset($tags[0]) || !\is_array($tags[0])) {
+            return 0;
+        }
+
+        $raw = $tags[0]['priority'] ?? 0;
+
+        return is_numeric($raw) ? (int) $raw : 0;
     }
 
     // ── Adapter discovery ──────────────────────────────────────────────────────
 
     /**
-     * Scans services tagged with `integration_engine.client_adapter`, validates
-     * each one, and registers them in the resolver. Throws for invalid tags so
-     * misconfigurations are caught at compile time rather than at runtime.
-     *
      * @return array<string, class-string<ClientAdapterInterface>>
      */
     private function buildAdapterMap(ContainerBuilder $container): array
@@ -89,11 +147,9 @@ final class IntegrationCompilerPass implements CompilerPassInterface
     // ── Integration wiring ─────────────────────────────────────────────────────
 
     /**
-     * Wires one named integration: config adapter → HTTP client → cache →
-     * auth handler → engine → registry registration.
-     *
      * @param array{config_path: null|string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, headers: array<string, string>} $config
      * @param array<string, class-string<ClientAdapterInterface>>                                                                                                             $adapterMap
+     * @param list<string>                                                                                                                                                    $userMiddlewares
      */
     private function wireIntegration(
         ContainerBuilder $container,
@@ -101,6 +157,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         string $name,
         array $config,
         array $adapterMap,
+        array $userMiddlewares,
     ): void {
         if (null === $config['config_path']) {
             throw IntegrationConfigurationException::missingConfigPath($name);
@@ -112,13 +169,14 @@ final class IntegrationCompilerPass implements CompilerPassInterface
             [$config['config_path']],
         ));
 
-        $clientRef = $this->resolveClientRef($container, $name, $config, $adapterMap);
-
         $cacheRef = new Reference(
             $config['cache_service'] ?? 'integration_engine.cache.default',
         );
 
         $loggerRef = new Reference('logger', ContainerInterface::IGNORE_ON_INVALID_REFERENCE);
+
+        $httpClientRef = $this->resolveHttpClientRef($container, $name, $config, $adapterMap);
+        $clientRef = $this->buildMiddlewareClient($container, $name, $httpClientRef, $cacheRef, $userMiddlewares);
 
         $authHandlerId = "integration_engine.auth_handler.{$name}";
         $container->setDefinition($authHandlerId, new Definition(
@@ -136,26 +194,19 @@ final class IntegrationCompilerPass implements CompilerPassInterface
     }
 
     /**
-     * Returns a Reference to the HTTP client for this integration: either the
-     * custom client_service declared in config, or a freshly defined adapter
-     * instance built from the discovered adapter map.
+     * Returns a Reference to the raw HTTP adapter for this integration.
      *
      * @param array{config_path: null|string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, headers: array<string, string>} $config
      * @param array<string, class-string<ClientAdapterInterface>>                                                                                                             $adapterMap
      */
-    private function resolveClientRef(
+    private function resolveHttpClientRef(
         ContainerBuilder $container,
         string $name,
         array $config,
         array $adapterMap,
     ): Reference {
         if ($config['client_service']) {
-            $clientRef = new Reference($config['client_service']);
-
-            return $this->decorateForDebug($container, $name, $clientRef, $this->resolveServiceClass(
-                $container,
-                $config['client_service'],
-            ));
+            return new Reference($config['client_service']);
         }
 
         if (!isset($adapterMap[$config['client']])) {
@@ -178,47 +229,56 @@ final class IntegrationCompilerPass implements CompilerPassInterface
             ],
         ));
 
-        return $this->decorateForDebug($container, $name, new Reference($httpClientId), $adapterClass);
+        return new Reference($httpClientId);
     }
 
-    // ── Profiler decoration (dev/test only) ──────────────────────────────────────
+    // ── Middleware client ──────────────────────────────────────────────────────
 
     /**
-     * Wraps $clientRef in TraceableClient/TraceableBatchClient when
-     * kernel.debug is true, symfony/http-kernel's DataCollectorInterface is
-     * available (it is not a required dependency of this bundle), AND a
-     * "profiler" service is actually registered in the container — the
-     * signal that symfony/web-profiler-bundle is installed and active, i.e.
-     * something will actually read the collected data. Without that last
-     * check, a project with http-kernel but no web-profiler-bundle would pay
-     * for the decoration with nothing to show for it. In any other case,
-     * returns $clientRef unchanged — no overhead, no behaviour change.
+     * Wraps the raw HTTP adapter in a MiddlewareClient. Layer order (outermost → innermost):
+     * CachingMiddleware → user middlewares → TracingMiddleware (debug only) → HTTP adapter.
+     *
+     * Cache hits short-circuit the entire chain. Tracing wraps only the actual HTTP call,
+     * not the user-middleware overhead.
+     *
+     * @param list<string> $userMiddlewares service IDs of ClientMiddlewareInterface implementations
      */
-    private function decorateForDebug(
+    private function buildMiddlewareClient(
         ContainerBuilder $container,
         string $name,
-        Reference $clientRef,
-        ?string $clientClass,
+        Reference $httpClientRef,
+        Reference $cacheRef,
+        array $userMiddlewares,
     ): Reference {
-        if (
-            !$this->isDebugging($container)
-            || !interface_exists(DataCollectorInterface::class)
-            || !$container->has('profiler')
-        ) {
-            return $clientRef;
+        $collectorRef = new Reference(IntegrationEngineDataCollector::class, ContainerInterface::NULL_ON_INVALID_REFERENCE);
+
+        $cachingId = "integration_engine.middleware.caching.{$name}";
+        $container->setDefinition($cachingId, new Definition(CachingMiddleware::class, [$cacheRef, $name, $collectorRef]));
+
+        $middlewares = [new Reference($cachingId)];
+
+        foreach ($userMiddlewares as $serviceId) {
+            $middlewares[] = new Reference($serviceId);
         }
 
-        $collectorRef = $this->registerDataCollector($container);
-        $isBatch = null !== $clientClass && is_a($clientClass, BatchClientInterface::class, true);
-        $traceableClass = $isBatch ? TraceableBatchClient::class : TraceableClient::class;
-        $traceableId = "integration_engine.traceable_client.{$name}";
+        if ($this->shouldTrace($container)) {
+            $tracingCollectorRef = $this->registerDataCollector($container);
+            $tracingId = "integration_engine.middleware.tracing.{$name}";
+            $container->setDefinition($tracingId, new Definition(TracingMiddleware::class, [$name, $tracingCollectorRef]));
+            $middlewares[] = new Reference($tracingId);
+        }
 
-        $container->setDefinition($traceableId, new Definition(
-            $traceableClass,
-            [$clientRef, $name, $collectorRef],
-        ));
+        $clientId = "integration_engine.client.{$name}";
+        $container->setDefinition($clientId, new Definition(MiddlewareClient::class, [$httpClientRef, $middlewares]));
 
-        return new Reference($traceableId);
+        return new Reference($clientId);
+    }
+
+    private function shouldTrace(ContainerBuilder $container): bool
+    {
+        return $this->isDebugging($container)
+            && interface_exists(DataCollectorInterface::class)
+            && $container->has('profiler');
     }
 
     private function isDebugging(ContainerBuilder $container): bool
@@ -227,20 +287,13 @@ final class IntegrationCompilerPass implements CompilerPassInterface
     }
 
     /**
-     * Registers the (single, shared) data collector definition the first
-     * time it's needed, so every traced integration reports to the same
-     * collector instance for the current app request.
+     * Registers the (single, shared) data collector definition the first time
+     * it's needed — every integration reports to the same collector per request.
      */
     private function registerDataCollector(ContainerBuilder $container): Reference
     {
         $id = IntegrationEngineDataCollector::class;
 
-        // Excluding this class from the blanket resource scan (services.yaml)
-        // does not make it disappear from the container — Symfony registers
-        // an *abstract* placeholder definition for every excluded class, so
-        // excluded-but-unrelated code can still detect it was deliberately
-        // skipped. hasDefinition() alone can't distinguish that placeholder
-        // from a real one, so check isAbstract() too before reusing it.
         if (!$container->hasDefinition($id) || $container->getDefinition($id)->isAbstract()) {
             $definition = new Definition($id);
             $definition->addTag('data_collector', [
@@ -251,20 +304,5 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         }
 
         return new Reference($id);
-    }
-
-    /**
-     * Resolves the FQCN behind a client_service id, so the engine can decide
-     * whether it needs TraceableBatchClient (BatchClientInterface) instead
-     * of TraceableClient. Returns null when it cannot be determined — the
-     * caller then falls back to the non-batch decorator.
-     */
-    private function resolveServiceClass(ContainerBuilder $container, string $serviceId): ?string
-    {
-        if ($container->hasDefinition($serviceId)) {
-            return $container->getDefinition($serviceId)->getClass() ?? $serviceId;
-        }
-
-        return class_exists($serviceId) ? $serviceId : null;
     }
 }

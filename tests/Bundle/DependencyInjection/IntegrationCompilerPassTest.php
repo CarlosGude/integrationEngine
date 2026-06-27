@@ -9,9 +9,12 @@ use IntegrationEngine\Bundle\Exception\IntegrationConfigurationException;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Registry\IntegrationRegistry;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
+use IntegrationEngine\Infrastructure\Cache\CachingMiddleware;
+use IntegrationEngine\Infrastructure\Client\MiddlewareClient;
 use IntegrationEngine\Infrastructure\Http\ClientAdapterResolver;
 use IntegrationEngine\Infrastructure\Http\GraphQLClientAdapter;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
+use IntegrationEngine\Tests\Fake\FakeMiddleware;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -23,8 +26,6 @@ final class IntegrationCompilerPassTest extends TestCase
     #[Test]
     public function doesNothingWhenIntegrationsParameterIsMissing(): void
     {
-        // No parameter, no core service definitions: the pass must return
-        // before calling findDefinition() — otherwise it would throw.
         $container = new ContainerBuilder();
 
         (new IntegrationCompilerPass())->process($container);
@@ -88,16 +89,19 @@ final class IntegrationCompilerPassTest extends TestCase
         self::assertSame(YamlConfigAdapter::class, $configDef->getClass());
         self::assertSame('/tmp/MyApi.yaml', $configDef->getArgument(0));
 
-        $clientDef = $container->getDefinition('integration_engine.http_client.my_api');
-        self::assertSame(SymfonyHttpClientAdapter::class, $clientDef->getClass());
-        self::assertSame('http_client', $this->referencedServiceId($clientDef->getArgument(0)));
-        self::assertSame('https://api.example.com', $clientDef->getArgument(1));
-        self::assertSame(['X-Tenant' => 'acme'], $clientDef->getArgument(2));
+        $httpClientDef = $container->getDefinition('integration_engine.http_client.my_api');
+        self::assertSame(SymfonyHttpClientAdapter::class, $httpClientDef->getClass());
+        self::assertSame('https://api.example.com', $httpClientDef->getArgument(1));
+        self::assertSame(['X-Tenant' => 'acme'], $httpClientDef->getArgument(2));
+
+        $clientDef = $container->getDefinition('integration_engine.client.my_api');
+        self::assertSame(MiddlewareClient::class, $clientDef->getClass());
+        self::assertSame('integration_engine.http_client.my_api', $this->referencedServiceId($clientDef->getArgument(0)));
 
         $engineDef = $container->getDefinition('integration_engine.integration.my_api');
         self::assertSame(IntegrationEngine::class, $engineDef->getClass());
         self::assertSame('integration_engine.config.my_api', $this->referencedServiceId($engineDef->getArgument(0)));
-        self::assertSame('integration_engine.http_client.my_api', $this->referencedServiceId($engineDef->getArgument(1)));
+        self::assertSame('integration_engine.client.my_api', $this->referencedServiceId($engineDef->getArgument(1)));
         self::assertSame('integration_engine.cache.default', $this->referencedServiceId($engineDef->getArgument(2)));
         self::assertSame('my_api', $engineDef->getArgument(3));
 
@@ -106,10 +110,7 @@ final class IntegrationCompilerPassTest extends TestCase
         self::assertCount(1, $registryCalls);
         self::assertSame('register', $registryCalls[0][0]);
         self::assertSame('my_api', $registryCalls[0][1][0]);
-        self::assertSame(
-            'integration_engine.integration.my_api',
-            $this->referencedServiceId($registryCalls[0][1][1])
-        );
+        self::assertSame('integration_engine.integration.my_api', $this->referencedServiceId($registryCalls[0][1][1]));
     }
 
     #[Test]
@@ -121,8 +122,108 @@ final class IntegrationCompilerPassTest extends TestCase
 
         (new IntegrationCompilerPass())->process($container);
 
-        $clientDef = $container->getDefinition('integration_engine.http_client.my_api');
-        self::assertSame(GraphQLClientAdapter::class, $clientDef->getClass());
+        $httpClientDef = $container->getDefinition('integration_engine.http_client.my_api');
+        self::assertSame(GraphQLClientAdapter::class, $httpClientDef->getClass());
+    }
+
+    #[Test]
+    public function alwaysUsesMiddlewareClientRegardlessOfBatchCapability(): void
+    {
+        foreach (['rest', 'graphql'] as $clientType) {
+            $container = $this->containerWithCoreServices([
+                'my_api' => $this->integrationConfig(['client' => $clientType]),
+            ]);
+
+            (new IntegrationCompilerPass())->process($container);
+
+            $clientDef = $container->getDefinition('integration_engine.client.my_api');
+            self::assertSame(MiddlewareClient::class, $clientDef->getClass(), "Expected MiddlewareClient for {$clientType}");
+        }
+    }
+
+    #[Test]
+    public function wiresCachingMiddlewareAlways(): void
+    {
+        $container = $this->containerWithCoreServices([
+            'my_api' => $this->integrationConfig(),
+        ]);
+
+        (new IntegrationCompilerPass())->process($container);
+
+        $cachingDef = $container->getDefinition('integration_engine.middleware.caching.my_api');
+        self::assertSame(CachingMiddleware::class, $cachingDef->getClass());
+        self::assertSame('integration_engine.cache.default', $this->referencedServiceId($cachingDef->getArgument(0)));
+        self::assertSame('my_api', $cachingDef->getArgument(1));
+    }
+
+    #[Test]
+    public function taggedMiddlewaresAreInjectedBetweenCachingAndAdapter(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig()]);
+        $this->tagMiddleware($container, 'app.rate_limit', FakeMiddleware::class, priority: 10);
+        $this->tagMiddleware($container, 'app.retry', FakeMiddleware::class, priority: 5);
+
+        (new IntegrationCompilerPass())->process($container);
+
+        $middlewares = $container->getDefinition('integration_engine.client.my_api')->getArgument(1);
+        self::assertCount(3, $middlewares);
+
+        $cachingDef = $container->getDefinition($this->referencedServiceId($middlewares[0]));
+        self::assertSame(CachingMiddleware::class, $cachingDef->getClass());
+
+        self::assertSame('app.rate_limit', $this->referencedServiceId($middlewares[1]));
+        self::assertSame('app.retry', $this->referencedServiceId($middlewares[2]));
+    }
+
+    #[Test]
+    public function taggedMiddlewaresAreSortedByDescendingPriority(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig()]);
+        $this->tagMiddleware($container, 'app.inner', FakeMiddleware::class, priority: 5);
+        $this->tagMiddleware($container, 'app.outer', FakeMiddleware::class, priority: 20);
+        $this->tagMiddleware($container, 'app.middle', FakeMiddleware::class, priority: 10);
+
+        (new IntegrationCompilerPass())->process($container);
+
+        $middlewares = $container->getDefinition('integration_engine.client.my_api')->getArgument(1);
+        self::assertSame('app.outer', $this->referencedServiceId($middlewares[1]));
+        self::assertSame('app.middle', $this->referencedServiceId($middlewares[2]));
+        self::assertSame('app.inner', $this->referencedServiceId($middlewares[3]));
+    }
+
+    #[Test]
+    public function withNoTaggedMiddlewaresOnlyCachingIsInTheChain(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig()]);
+
+        (new IntegrationCompilerPass())->process($container);
+
+        $middlewares = $container->getDefinition('integration_engine.client.my_api')->getArgument(1);
+        self::assertCount(1, $middlewares);
+    }
+
+    #[Test]
+    public function throwsWhenTaggedMiddlewareClassDoesNotExist(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig()]);
+        $this->tagMiddleware($container, 'app.bogus', 'App\Does\Not\Exist');
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/app\.bogus.*App\\\Does\\\Not\\\Exist/');
+
+        (new IntegrationCompilerPass())->process($container);
+    }
+
+    #[Test]
+    public function throwsWhenTaggedMiddlewareDoesNotImplementInterface(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig()]);
+        $this->tagMiddleware($container, 'app.not_a_mw', \stdClass::class);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/app\.not_a_mw.*stdClass/');
+
+        (new IntegrationCompilerPass())->process($container);
     }
 
     #[Test]
@@ -136,8 +237,8 @@ final class IntegrationCompilerPassTest extends TestCase
 
         self::assertFalse($container->hasDefinition('integration_engine.http_client.my_api'));
 
-        $engineDef = $container->getDefinition('integration_engine.integration.my_api');
-        self::assertSame('app.custom_client', $this->referencedServiceId($engineDef->getArgument(1)));
+        $clientDef = $container->getDefinition('integration_engine.client.my_api');
+        self::assertSame('app.custom_client', $this->referencedServiceId($clientDef->getArgument(0)));
     }
 
     #[Test]
@@ -179,10 +280,6 @@ final class IntegrationCompilerPassTest extends TestCase
         (new IntegrationCompilerPass())->process($container);
     }
 
-    /**
-     * References are value objects rebuilt by the pass — identity can never
-     * hold, so we compare the referenced service id instead.
-     */
     private function referencedServiceId(mixed $argument): string
     {
         self::assertInstanceOf(Reference::class, $argument);
@@ -190,12 +287,14 @@ final class IntegrationCompilerPassTest extends TestCase
         return (string) $argument;
     }
 
-    /**
-     * Builds a container with the definitions the pass expects to find:
-     * resolver, registry and the two built-in adapters tagged.
-     *
-     * @param array<string, array<string, mixed>> $integrations
-     */
+    private function tagMiddleware(ContainerBuilder $container, string $serviceId, string $class, int $priority = 0): void
+    {
+        $def = new Definition($class);
+        $def->addTag('integration_engine.middleware', ['priority' => $priority]);
+        $container->setDefinition($serviceId, $def);
+    }
+
+    /** @param array<string, array<string, mixed>> $integrations */
     private function containerWithCoreServices(array $integrations): ContainerBuilder
     {
         $container = new ContainerBuilder();
@@ -213,13 +312,7 @@ final class IntegrationCompilerPassTest extends TestCase
         return $container;
     }
 
-    /**
-     * A fully-resolved integration config as produced by Configuration.
-     *
-     * @param array<string, mixed> $overrides
-     *
-     * @return array<string, mixed>
-     */
+    /** @param array<string, mixed> $overrides @return array<string, mixed> */
     private function integrationConfig(array $overrides = []): array
     {
         return array_merge([

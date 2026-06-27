@@ -209,6 +209,39 @@ final class YamlConfigAdapterTest extends TestCase
         self::assertSame(300, $authorization->ttl);
     }
 
+    // ── cache_ttl ────────────────────────────────────────────────────────────
+
+    #[Test]
+    public function getActionReturnsCacheTtlFromYaml(): void
+    {
+        $adapter = $this->buildAdapter(<<<'YAML'
+            get_employee:
+                action: '%s'
+                method: GET
+                path: /employees
+                cache_ttl: 300
+            YAML);
+
+        $action = $adapter->getAction('get_employee');
+
+        self::assertSame(300, $action->getCacheTtl());
+    }
+
+    #[Test]
+    public function getActionReturnsNullCacheTtlWhenNotSet(): void
+    {
+        $adapter = $this->buildAdapter(<<<'YAML'
+            get_employee:
+                action: '%s'
+                method: GET
+                path: /employees
+            YAML);
+
+        $action = $adapter->getAction('get_employee');
+
+        self::assertNull($action->getCacheTtl());
+    }
+
     // ── body ─────────────────────────────────────────────────────────────────
 
     #[Test]

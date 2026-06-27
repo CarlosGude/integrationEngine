@@ -77,6 +77,7 @@ final readonly class DynamicAuthHandler
             path: $action->getRawPath(),
             body: $action->getBody(),
             authorization: $auth->toStaticConfig($token),
+            cacheTtl: $action->getCacheTtl(),
         );
     }
 

@@ -15,6 +15,7 @@ abstract class AbstractAction
         private readonly string $path,
         private readonly ?ActionBodyInterface $body,
         private readonly ?AuthorizationConfig $authorization,
+        private readonly ?int $cacheTtl = null,
     ) {}
 
     final public static function create(
@@ -22,8 +23,9 @@ abstract class AbstractAction
         string $path,
         ?ActionBodyInterface $body = null,
         ?AuthorizationConfig $authorization = null,
+        ?int $cacheTtl = null,
     ): static {
-        return new static($method, $path, $body, $authorization);
+        return new static($method, $path, $body, $authorization, $cacheTtl);
     }
 
     final public function getMethod(): string
@@ -60,6 +62,11 @@ abstract class AbstractAction
     final public function getAuthorization(): ?AuthorizationConfig
     {
         return $this->authorization;
+    }
+
+    final public function getCacheTtl(): ?int
+    {
+        return $this->cacheTtl;
     }
 
     abstract public static function getName(): string;

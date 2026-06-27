@@ -35,6 +35,7 @@ final class IntegrationEngineDataCollector implements DataCollectorInterface
         float $durationMs,
         ?\Throwable $error,
         ?int $statusCode = null,
+        bool $cached = false,
     ): void {
         $this->calls[] = new IntegrationCall(
             integrationName: $integrationName,
@@ -44,6 +45,7 @@ final class IntegrationEngineDataCollector implements DataCollectorInterface
             durationMs: $durationMs,
             error: $error?->getMessage(),
             statusCode: $statusCode,
+            cached: $cached,
         );
     }
 
@@ -82,6 +84,14 @@ final class IntegrationEngineDataCollector implements DataCollectorInterface
         return \count(array_filter(
             $this->calls,
             static fn (IntegrationCall $call): bool => null !== $call->error,
+        ));
+    }
+
+    public function getCachedCount(): int
+    {
+        return \count(array_filter(
+            $this->calls,
+            static fn (IntegrationCall $call): bool => $call->cached,
         ));
     }
 

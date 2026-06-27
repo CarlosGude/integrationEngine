@@ -73,17 +73,6 @@ final class IntegrationFileGenerator
         }
     }
 
-    private function resolveClientType(mixed $yaml, string $snakeName): string
-    {
-        $engine = \is_array($yaml) ? ($yaml['integration_engine'] ?? null) : null;
-        $integrations = \is_array($engine) ? ($engine['integrations'] ?? null) : null;
-        $integration = \is_array($integrations) ? ($integrations[$snakeName] ?? null) : null;
-
-        return \is_array($integration) && \is_string($integration['client'] ?? null)
-            ? $integration['client']
-            : 'rest';
-    }
-
     /**
      * Writes the initial integration_engine.yaml bundle config.
      *
@@ -128,6 +117,17 @@ final class IntegrationFileGenerator
     public function configPath(IntegrationContext $ctx): string
     {
         return $this->root($ctx).'/'.$ctx->name.'.yaml';
+    }
+
+    private function resolveClientType(mixed $yaml, string $snakeName): string
+    {
+        $engine = \is_array($yaml) ? ($yaml['integration_engine'] ?? null) : null;
+        $integrations = \is_array($engine) ? ($engine['integrations'] ?? null) : null;
+        $integration = \is_array($integrations) ? ($integrations[$snakeName] ?? null) : null;
+
+        return \is_array($integration) && \is_string($integration['client'] ?? null)
+            ? $integration['client']
+            : 'rest';
     }
 
     private function root(IntegrationContext $ctx): string

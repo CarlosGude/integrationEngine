@@ -13,7 +13,7 @@ use Symfony\Component\Yaml\Yaml;
 
 final class YamlConfigAdapter implements ConfigPort
 {
-    /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>}> */
+    /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>, cache_ttl?: int}> */
     private array $config;
 
     public function __construct(string $configPath)
@@ -38,7 +38,7 @@ final class YamlConfigAdapter implements ConfigPort
             }
         }
 
-        /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>}> $parsed */
+        /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>, cache_ttl?: int}> $parsed */
         $this->config = $parsed;
     }
 
@@ -65,6 +65,7 @@ final class YamlConfigAdapter implements ConfigPort
             path: $actionConfig['path'] ?? '/',
             body: $body,
             authorization: $authorization,
+            cacheTtl: isset($actionConfig['cache_ttl']) ? (int) $actionConfig['cache_ttl'] : null,
         );
     }
 

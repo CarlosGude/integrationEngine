@@ -25,4 +25,10 @@ final class FakeCache implements CachePort
     {
         unset($this->data[$key]);
     }
+
+    /** @return array<string, mixed> */
+    public function all(): array
+    {
+        return $this->data;
+    }
 }
