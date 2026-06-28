@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Bundle\Generator;
 
+use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
+
 final readonly class IntegrationContext
 {
     public function __construct(
@@ -13,7 +15,7 @@ final readonly class IntegrationContext
         public string $path,
         public string $baseNamespace,
         public string $basePath,
-        public string $clientType = 'rest',
+        public string $clientType = SymfonyHttpClientAdapter::CLIENT_TYPE,
         public bool $adapterRequiresPath = true,
         public bool $adapterRequiresMethod = true,
     ) {}

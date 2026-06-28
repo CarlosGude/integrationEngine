@@ -17,6 +17,8 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Dyn
 {
     use ResolvesAuthHeaders;
 
+    public const CLIENT_TYPE = 'graphql';
+
     public function __construct(
         private HttpClientInterface $httpClient,
         private string $endpointUrl,
@@ -31,7 +33,7 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Dyn
 
     public static function getClientType(): string
     {
-        return 'graphql';
+        return self::CLIENT_TYPE;
     }
 
     public static function requiresPath(): bool

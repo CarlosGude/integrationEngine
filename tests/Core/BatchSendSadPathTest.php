@@ -38,8 +38,8 @@ final class BatchSendSadPathTest extends IntegrationEngineTestCase
         $this->client->queueException(FakePathAction::getName(), $error);
 
         $results = $this->engine->sendMany([
-            'ok' => EngineRequest::create(FakeTokenAction::getName()),
-            'broken' => EngineRequest::create(FakePathAction::getName()),
+            'ok' => new EngineRequest(FakeTokenAction::getName()),
+            'broken' => new EngineRequest(FakePathAction::getName()),
         ]);
 
         self::assertTrue($results['ok']->isSuccess());
@@ -54,8 +54,8 @@ final class BatchSendSadPathTest extends IntegrationEngineTestCase
         $this->client->setResponse(FakePathAction::getName(), []);
 
         $results = $this->engine->sendMany([
-            'missing' => EngineRequest::create('does_not_exist'),
-            'ok' => EngineRequest::create(FakePathAction::getName()),
+            'missing' => new EngineRequest('does_not_exist'),
+            'ok' => new EngineRequest(FakePathAction::getName()),
         ]);
 
         self::assertFalse($results['missing']->isSuccess());
@@ -72,8 +72,8 @@ final class BatchSendSadPathTest extends IntegrationEngineTestCase
         $this->client->setResponse(FakePathAction::getName(), []);
 
         $results = $this->engine->sendMany([
-            'mismatch' => EngineRequest::create(BatchMismatchAction::getName()),
-            'ok' => EngineRequest::create(FakePathAction::getName()),
+            'mismatch' => new EngineRequest(BatchMismatchAction::getName()),
+            'ok' => new EngineRequest(FakePathAction::getName()),
         ]);
 
         self::assertInstanceOf(MapperActionMismatchException::class, $results['mismatch']->error());
@@ -92,8 +92,8 @@ final class BatchSendSadPathTest extends IntegrationEngineTestCase
 
         try {
             $this->engine->sendManyOrFail([
-                'a' => EngineRequest::create(FakePathAction::getName()),
-                'b' => EngineRequest::create(FakeTokenAction::getName()),
+                'a' => new EngineRequest(FakePathAction::getName()),
+                'b' => new EngineRequest(FakeTokenAction::getName()),
             ]);
             self::fail('Expected the first failure to be thrown.');
         } catch (RequestResponseException $caught) {
@@ -111,8 +111,8 @@ final class BatchSendSadPathTest extends IntegrationEngineTestCase
         $this->client->setResponse(FakeProtectedAction::getName(), []);
 
         $results = $this->engine->sendMany([
-            'one' => EngineRequest::create(FakeProtectedAction::getName()),
-            'two' => EngineRequest::create(FakeProtectedAction::getName()),
+            'one' => new EngineRequest(FakeProtectedAction::getName()),
+            'two' => new EngineRequest(FakeProtectedAction::getName()),
         ]);
 
         self::assertTrue($results['one']->isSuccess());
@@ -136,8 +136,8 @@ final class BatchSendSadPathTest extends IntegrationEngineTestCase
         $this->client->queueException(FakeProtectedAction::getName(), new RequestResponseException(statusCode: 401, context: 'unauthorized'));
 
         $results = $this->engine->sendMany([
-            'one' => EngineRequest::create(FakeProtectedAction::getName()),
-            'two' => EngineRequest::create(FakeProtectedAction::getName()),
+            'one' => new EngineRequest(FakeProtectedAction::getName()),
+            'two' => new EngineRequest(FakeProtectedAction::getName()),
         ]);
 
         self::assertTrue($results['one']->isSuccess());
@@ -157,8 +157,8 @@ final class BatchSendSadPathTest extends IntegrationEngineTestCase
         $this->client->queueException(FakeProtectedAction::getName(), new RequestResponseException(statusCode: 401, context: 'unauthorized'));
 
         $results = $this->engine->sendMany([
-            'one' => EngineRequest::create(FakeProtectedAction::getName()),
-            'two' => EngineRequest::create(FakeProtectedAction::getName()),
+            'one' => new EngineRequest(FakeProtectedAction::getName()),
+            'two' => new EngineRequest(FakeProtectedAction::getName()),
         ]);
 
         // The token was fetched while preparing this batch — refetching it
@@ -179,7 +179,7 @@ final class BatchSendSadPathTest extends IntegrationEngineTestCase
         $this->client->queueException(FakeProtectedAction::getName(), $error);
 
         $results = $this->engine->sendMany([
-            'one' => EngineRequest::create(FakeProtectedAction::getName()),
+            'one' => new EngineRequest(FakeProtectedAction::getName()),
         ]);
 
         self::assertSame($error, $results['one']->error());
@@ -198,7 +198,7 @@ final class BatchSendSadPathTest extends IntegrationEngineTestCase
         $this->client->queueException(FakeTokenAction::getName(), $refetchError);
 
         $results = $this->engine->sendMany([
-            'one' => EngineRequest::create(FakeProtectedAction::getName()),
+            'one' => new EngineRequest(FakeProtectedAction::getName()),
         ]);
 
         self::assertSame($refetchError, $results['one']->error());
@@ -220,8 +220,8 @@ final class BatchSendSadPathTest extends IntegrationEngineTestCase
         $this->config->register(FakePathAction::getName(), FakePathAction::create('GET', '/orders'));
 
         $results = $engine->sendMany([
-            'kept' => EngineRequest::create(FakePathAction::getName()),
-            'dropped' => EngineRequest::create(FakePathAction::getName()),
+            'kept' => new EngineRequest(FakePathAction::getName()),
+            'dropped' => new EngineRequest(FakePathAction::getName()),
         ]);
 
         self::assertTrue($results['kept']->isSuccess());

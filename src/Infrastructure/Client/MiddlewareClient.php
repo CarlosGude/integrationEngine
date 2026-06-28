@@ -8,8 +8,8 @@ use IntegrationEngine\Core\Batch\PreparedRequest;
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
+use IntegrationEngine\Core\Contract\Client\AbstractClientMiddleware;
 use IntegrationEngine\Core\Contract\Client\ClientInterface;
-use IntegrationEngine\Core\Contract\Client\ClientMiddlewareInterface;
 use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 
@@ -22,7 +22,7 @@ use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
  */
 final class MiddlewareClient implements ClientInterface, BatchClientInterface, DynamicBaseUrlClientInterface
 {
-    /** @param list<ClientMiddlewareInterface> $middlewares */
+    /** @param list<AbstractClientMiddleware> $middlewares */
     public function __construct(
         private readonly ClientInterface $inner,
         private readonly array $middlewares,
@@ -74,14 +74,14 @@ final class MiddlewareClient implements ClientInterface, BatchClientInterface, D
      *
      * @return callable(array<array-key, PreparedRequest>): array<array-key, array<mixed>|\Throwable>
      */
-    private function wrapBatch(ClientMiddlewareInterface $middleware, callable $next): callable
+    private function wrapBatch(AbstractClientMiddleware $middleware, callable $next): callable
     {
         return new class($middleware, $next) {
             /** @var callable(array<array-key, PreparedRequest>): array<array-key, array<mixed>|\Throwable> */
             private $next;
 
             public function __construct(
-                private readonly ClientMiddlewareInterface $middleware,
+                private readonly AbstractClientMiddleware $middleware,
                 callable $next,
             ) {
                 $this->next = $next;

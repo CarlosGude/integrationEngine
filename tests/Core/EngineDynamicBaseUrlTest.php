@@ -67,8 +67,8 @@ final class EngineDynamicBaseUrlTest extends IntegrationEngineTestCase
         $this->client->setResponse(FakePathAction::getName(), []);
 
         $results = $this->engine->sendMany([
-            'a' => EngineRequest::create(FakePathAction::getName(), baseUrl: 'https://tenant-a.example.com'),
-            'b' => EngineRequest::create(FakePathAction::getName(), baseUrl: 'https://tenant-b.example.com'),
+            'a' => new EngineRequest(FakePathAction::getName(), baseUrl: 'https://tenant-a.example.com'),
+            'b' => new EngineRequest(FakePathAction::getName(), baseUrl: 'https://tenant-b.example.com'),
         ]);
 
         self::assertTrue($results['a']->isSuccess());

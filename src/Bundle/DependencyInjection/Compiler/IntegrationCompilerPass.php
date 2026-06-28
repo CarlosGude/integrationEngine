@@ -6,8 +6,8 @@ namespace IntegrationEngine\Bundle\DependencyInjection\Compiler;
 
 use IntegrationEngine\Bundle\Exception\IntegrationConfigurationException;
 use IntegrationEngine\Core\Auth\DynamicAuthHandler;
+use IntegrationEngine\Core\Contract\Client\AbstractClientMiddleware;
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
-use IntegrationEngine\Core\Contract\Client\ClientMiddlewareInterface;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Registry\IntegrationRegistry;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
@@ -31,17 +31,17 @@ final class IntegrationCompilerPass implements CompilerPassInterface
             return;
         }
 
-        /** @var array<string, array{config_path: null|string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, headers: array<string, string>}> $integrations */
+        /** @var array<string, array{config_path: null|string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, headers: array<string, string>, middlewares: list<string>}> $integrations */
         $integrations = $container->getParameter('integration_engine.integrations');
 
-        $userMiddlewares = $this->resolveTaggedMiddlewares($container);
+        $registeredMiddlewares = $this->resolveTaggedMiddlewares($container);
 
         $adapterMap = $this->buildAdapterMap($container);
 
         $registry = $container->findDefinition(IntegrationRegistry::class);
 
         foreach ($integrations as $name => $config) {
-            $this->wireIntegration($container, $registry, $name, $config, $adapterMap, $userMiddlewares);
+            $this->wireIntegration($container, $registry, $name, $config, $adapterMap, $registeredMiddlewares);
         }
     }
 
@@ -49,20 +49,15 @@ final class IntegrationCompilerPass implements CompilerPassInterface
 
     /**
      * Collects services tagged with "integration_engine.middleware", validates they
-     * implement ClientMiddlewareInterface, and returns their IDs sorted by descending
-     * priority (higher priority = outermost layer, same convention as Symfony event listeners).
+     * extend AbstractClientMiddleware, and returns their IDs as a set.
+     * Order is determined per-integration by the "middlewares" config key.
      *
-     * @return list<string>
+     * @return array<string, true>
      */
     private function resolveTaggedMiddlewares(ContainerBuilder $container): array
     {
         $tagged = $container->findTaggedServiceIds('integration_engine.middleware');
-
-        if ([] === $tagged) {
-            return [];
-        }
-
-        $entries = [];
+        $registered = [];
 
         foreach ($tagged as $serviceId => $tags) {
             $definition = $container->getDefinition($serviceId);
@@ -76,32 +71,43 @@ final class IntegrationCompilerPass implements CompilerPassInterface
                 ));
             }
 
-            if (!is_a($class, ClientMiddlewareInterface::class, true)) {
+            if (!is_a($class, AbstractClientMiddleware::class, true)) {
                 throw new \InvalidArgumentException(\sprintf(
-                    'Service "%s" (%s) is tagged as "integration_engine.middleware" but does not implement %s.',
+                    'Service "%s" (%s) is tagged as "integration_engine.middleware" but does not extend %s.',
                     $serviceId,
                     $class,
-                    ClientMiddlewareInterface::class,
+                    AbstractClientMiddleware::class,
                 ));
             }
 
-            $entries[] = [$serviceId, $this->tagPriority($tags)];
+            $registered[$serviceId] = true;
         }
 
-        usort($entries, static fn (array $a, array $b): int => $b[1] <=> $a[1]);
-
-        return array_column($entries, 0);
+        return $registered;
     }
 
-    private function tagPriority(mixed $tags): int
+    /**
+     * Resolves the ordered middleware list for one integration, validating that
+     * every declared service ID is registered (tagged with integration_engine.middleware).
+     *
+     * @param list<string>          $declared
+     * @param array<string, true>   $registered
+     *
+     * @return list<string>
+     */
+    private function resolveIntegrationMiddlewares(array $declared, array $registered, string $integrationName): array
     {
-        if (!\is_array($tags) || !isset($tags[0]) || !\is_array($tags[0])) {
-            return 0;
+        foreach ($declared as $serviceId) {
+            if (!isset($registered[$serviceId])) {
+                throw new \InvalidArgumentException(\sprintf(
+                    'Integration "%s" declares middleware "%s" but no service with that ID is tagged as "integration_engine.middleware".',
+                    $integrationName,
+                    $serviceId,
+                ));
+            }
         }
 
-        $raw = $tags[0]['priority'] ?? 0;
-
-        return is_numeric($raw) ? (int) $raw : 0;
+        return $declared;
     }
 
     // ── Adapter discovery ──────────────────────────────────────────────────────
@@ -147,9 +153,9 @@ final class IntegrationCompilerPass implements CompilerPassInterface
     // ── Integration wiring ─────────────────────────────────────────────────────
 
     /**
-     * @param array{config_path: null|string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, headers: array<string, string>} $config
-     * @param array<string, class-string<ClientAdapterInterface>>                                                                                                             $adapterMap
-     * @param list<string>                                                                                                                                                    $userMiddlewares
+     * @param array{config_path: null|string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, headers: array<string, string>, middlewares: list<string>} $config
+     * @param array<string, class-string<ClientAdapterInterface>>                                                                                                                                        $adapterMap
+     * @param array<string, true>                                                                                                                                                                        $registeredMiddlewares
      */
     private function wireIntegration(
         ContainerBuilder $container,
@@ -157,7 +163,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         string $name,
         array $config,
         array $adapterMap,
-        array $userMiddlewares,
+        array $registeredMiddlewares,
     ): void {
         if (null === $config['config_path']) {
             throw IntegrationConfigurationException::missingConfigPath($name);
@@ -176,7 +182,8 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         $loggerRef = new Reference('logger', ContainerInterface::IGNORE_ON_INVALID_REFERENCE);
 
         $httpClientRef = $this->resolveHttpClientRef($container, $name, $config, $adapterMap);
-        $clientRef = $this->buildMiddlewareClient($container, $name, $httpClientRef, $cacheRef, $userMiddlewares);
+        $integrationMiddlewares = $this->resolveIntegrationMiddlewares($config['middlewares'], $registeredMiddlewares, $name);
+        $clientRef = $this->buildMiddlewareClient($container, $name, $httpClientRef, $cacheRef, $integrationMiddlewares);
 
         $authHandlerId = "integration_engine.auth_handler.{$name}";
         $container->setDefinition($authHandlerId, new Definition(
@@ -241,7 +248,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
      * Cache hits short-circuit the entire chain. Tracing wraps only the actual HTTP call,
      * not the user-middleware overhead.
      *
-     * @param list<string> $userMiddlewares service IDs of ClientMiddlewareInterface implementations
+     * @param list<string> $userMiddlewares service IDs of AbstractClientMiddleware subclasses
      */
     private function buildMiddlewareClient(
         ContainerBuilder $container,

@@ -53,11 +53,13 @@ final class IntegrationCompilerPassDebugTest extends TestCase
     }
 
     #[Test]
-    public function taggedMiddlewaresArePositionedBetweenCachingAndTracingInDebugMode(): void
+    public function declaredMiddlewaresArePositionedBetweenCachingAndTracingInDebugMode(): void
     {
-        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig()], debug: true);
-        $this->tagMiddleware($container, 'app.rate_limit', FakeMiddleware::class, priority: 10);
-        $this->tagMiddleware($container, 'app.retry', FakeMiddleware::class, priority: 5);
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig([
+            'middlewares' => ['app.rate_limit', 'app.retry'],
+        ])], debug: true);
+        $this->tagMiddleware($container, 'app.rate_limit', FakeMiddleware::class);
+        $this->tagMiddleware($container, 'app.retry', FakeMiddleware::class);
 
         (new IntegrationCompilerPass())->process($container);
 
@@ -232,6 +234,7 @@ final class IntegrationCompilerPassDebugTest extends TestCase
             'client_service' => null,
             'cache_service' => null,
             'headers' => [],
+            'middlewares' => [],
         ], $overrides);
     }
 }

@@ -27,8 +27,8 @@ final class BatchSendTest extends IntegrationEngineTestCase
         $this->client->setResponse(FakePathAction::getName(), []);
 
         $results = $this->engine->sendMany([
-            'token' => EngineRequest::create(FakeTokenAction::getName()),
-            'path' => EngineRequest::create(FakePathAction::getName()),
+            'token' => new EngineRequest(FakeTokenAction::getName()),
+            'path' => new EngineRequest(FakePathAction::getName()),
         ]);
 
         self::assertSame(['token', 'path'], $results->keys());
@@ -48,8 +48,8 @@ final class BatchSendTest extends IntegrationEngineTestCase
         $this->client->setResponse(FakePathAction::getName(), []);
 
         $results = $this->engine->sendMany([
-            'token' => EngineRequest::create(FakeTokenAction::getName()),
-            'path' => EngineRequest::create(FakePathAction::getName()),
+            'token' => new EngineRequest(FakeTokenAction::getName()),
+            'path' => new EngineRequest(FakePathAction::getName()),
         ]);
 
         self::assertSame(FakeTokenAction::class, $results->actionClassFor('token'));
@@ -95,8 +95,8 @@ final class BatchSendTest extends IntegrationEngineTestCase
         $this->client->setResponse(FakePathAction::getName(), []);
 
         $responses = $this->engine->sendManyOrFail([
-            'token' => EngineRequest::create(FakeTokenAction::getName()),
-            'path' => EngineRequest::create(FakePathAction::getName()),
+            'token' => new EngineRequest(FakeTokenAction::getName()),
+            'path' => new EngineRequest(FakePathAction::getName()),
         ]);
 
         self::assertSame(['token', 'path'], array_keys($responses));
@@ -120,8 +120,8 @@ final class BatchSendTest extends IntegrationEngineTestCase
         $batchClient->inner()->setResponse(FakePathAction::getName(), []);
 
         $results = $engine->sendMany([
-            'a' => EngineRequest::create(FakePathAction::getName()),
-            'b' => EngineRequest::create(FakePathAction::getName()),
+            'a' => new EngineRequest(FakePathAction::getName()),
+            'b' => new EngineRequest(FakePathAction::getName()),
         ]);
 
         self::assertSame(1, $batchClient->batchCount());

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Bundle\DependencyInjection;
 
+use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
@@ -37,7 +38,7 @@ final class Configuration implements ConfigurationInterface
             ->info('Custom ClientInterface service ID. Overrides base_url and client if set.')
             ->end()
             ->scalarNode('client')
-            ->defaultValue('rest')
+            ->defaultValue(SymfonyHttpClientAdapter::CLIENT_TYPE)
             ->info('Client type to use: "rest" (default) or "graphql". Ignored when client_service is set.')
             ->validate()
             ->ifTrue(static fn (mixed $v): bool => \is_scalar($v) && '' === trim((string) $v))
@@ -49,6 +50,13 @@ final class Configuration implements ConfigurationInterface
             ->scalarNode('cache_service')
             ->defaultNull()
             ->info('Custom CachePort service ID. Defaults to InMemoryCacheAdapter.')
+            ->end()
+
+                        // ── middlewares ───────────────────────────────────────
+            ->arrayNode('middlewares')
+            ->info('Ordered list of middleware service IDs (outermost first). Only services tagged with integration_engine.middleware are accepted.')
+            ->scalarPrototype()->end()
+            ->defaultValue([])
             ->end()
 
                         // ── default headers ───────────────────────────────────

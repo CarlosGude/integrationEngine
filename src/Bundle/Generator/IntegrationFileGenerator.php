@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IntegrationEngine\Bundle\Generator;
 
 use IntegrationEngine\Bundle\Exception\IntegrationGeneratorException;
+use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use Symfony\Component\Yaml\Yaml;
 
 final class IntegrationFileGenerator
@@ -55,21 +56,16 @@ final class IntegrationFileGenerator
         return $configPath;
     }
 
-    public static function toSnakeCase(string $value): string
-    {
-        return strtolower(preg_replace('/(?<!^)[A-Z]/u', '_$0', $value) ?? $value);
-    }
-
     public function detectClientType(string $bundleConfigPath, string $integrationName): string
     {
         if (!file_exists($bundleConfigPath)) {
-            return 'rest';
+            return SymfonyHttpClientAdapter::CLIENT_TYPE;
         }
 
         try {
-            return $this->resolveClientType(Yaml::parseFile($bundleConfigPath), self::toSnakeCase($integrationName));
+            return $this->resolveClientType(Yaml::parseFile($bundleConfigPath), IntegrationContext::toSnakeCase($integrationName));
         } catch (\Throwable) {
-            return 'rest';
+            return SymfonyHttpClientAdapter::CLIENT_TYPE;
         }
     }
 
@@ -90,10 +86,10 @@ final class IntegrationFileGenerator
             throw IntegrationGeneratorException::cannotCreateDirectory($dir);
         }
 
-        $snakeName = self::toSnakeCase($integrationName);
+        $snakeName = IntegrationContext::toSnakeCase($integrationName);
 
         $integrationConfig = ['base_url' => $baseUrl];
-        if ('rest' !== $clientType) {
+        if (SymfonyHttpClientAdapter::CLIENT_TYPE !== $clientType) {
             $integrationConfig['client'] = $clientType;
         }
         $integrationConfig['config_path'] = "%kernel.project_dir%/src/Infrastructure/Integrations/{$integrationName}/{$integrationName}.yaml";
@@ -127,7 +123,7 @@ final class IntegrationFileGenerator
 
         return \is_array($integration) && \is_string($integration['client'] ?? null)
             ? $integration['client']
-            : 'rest';
+            : SymfonyHttpClientAdapter::CLIENT_TYPE;
     }
 
     private function root(IntegrationContext $ctx): string

@@ -19,6 +19,8 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
 {
     use ResolvesAuthHeaders;
 
+    public const CLIENT_TYPE = 'rest';
+
     public function __construct(
         private HttpClientInterface $httpClient,
         private string $baseUrl,
@@ -33,7 +35,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
 
     public static function getClientType(): string
     {
-        return 'rest';
+        return self::CLIENT_TYPE;
     }
 
     public static function requiresPath(): bool

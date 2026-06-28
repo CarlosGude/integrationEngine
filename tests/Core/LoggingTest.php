@@ -91,7 +91,7 @@ final class LoggingTest extends IntegrationEngineTestCase
         $this->client->setResponse(FakeProtectedAction::getName(), []);
         $this->client->queueException(FakeProtectedAction::getName(), new RequestResponseException(401, 'revoked'));
 
-        $this->engine->sendMany(['one' => EngineRequest::create(FakeProtectedAction::getName())]);
+        $this->engine->sendMany(['one' => new EngineRequest(FakeProtectedAction::getName())]);
 
         self::assertTrue($this->logger->hasEntry('warning', 'Retrying batch items'));
     }

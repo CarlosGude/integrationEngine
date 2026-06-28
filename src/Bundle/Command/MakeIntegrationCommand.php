@@ -8,6 +8,8 @@ use IntegrationEngine\Bundle\Generator\IntegrationContext;
 use IntegrationEngine\Bundle\Generator\IntegrationFileGenerator;
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 use IntegrationEngine\Infrastructure\Http\ClientAdapterResolver;
+use IntegrationEngine\Infrastructure\Http\GraphQLClientAdapter;
+use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -149,10 +151,10 @@ final class MakeIntegrationCommand extends Command
             );
 
             $availableTypes = array_keys($this->adapterResolver->all());
-            $clientType = $io->choice('Client type', $availableTypes, 'rest');
+            $clientType = $io->choice('Client type', $availableTypes, SymfonyHttpClientAdapter::CLIENT_TYPE);
         }
 
-        return [\is_string($clientType) ? $clientType : 'rest', \is_string($baseUrl) ? $baseUrl : null];
+        return [\is_string($clientType) ? $clientType : SymfonyHttpClientAdapter::CLIENT_TYPE, \is_string($baseUrl) ? $baseUrl : null];
     }
 
     /**

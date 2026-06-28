@@ -157,11 +157,13 @@ final class IntegrationCompilerPassTest extends TestCase
     }
 
     #[Test]
-    public function taggedMiddlewaresAreInjectedBetweenCachingAndAdapter(): void
+    public function declaredMiddlewaresAreInjectedBetweenCachingAndAdapter(): void
     {
-        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig()]);
-        $this->tagMiddleware($container, 'app.rate_limit', FakeMiddleware::class, priority: 10);
-        $this->tagMiddleware($container, 'app.retry', FakeMiddleware::class, priority: 5);
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig([
+            'middlewares' => ['app.rate_limit', 'app.retry'],
+        ])]);
+        $this->tagMiddleware($container, 'app.rate_limit', FakeMiddleware::class);
+        $this->tagMiddleware($container, 'app.retry', FakeMiddleware::class);
 
         (new IntegrationCompilerPass())->process($container);
 
@@ -176,12 +178,14 @@ final class IntegrationCompilerPassTest extends TestCase
     }
 
     #[Test]
-    public function taggedMiddlewaresAreSortedByDescendingPriority(): void
+    public function middlewareOrderFollowsDeclarationOrder(): void
     {
-        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig()]);
-        $this->tagMiddleware($container, 'app.inner', FakeMiddleware::class, priority: 5);
-        $this->tagMiddleware($container, 'app.outer', FakeMiddleware::class, priority: 20);
-        $this->tagMiddleware($container, 'app.middle', FakeMiddleware::class, priority: 10);
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig([
+            'middlewares' => ['app.outer', 'app.middle', 'app.inner'],
+        ])]);
+        $this->tagMiddleware($container, 'app.inner', FakeMiddleware::class);
+        $this->tagMiddleware($container, 'app.outer', FakeMiddleware::class);
+        $this->tagMiddleware($container, 'app.middle', FakeMiddleware::class);
 
         (new IntegrationCompilerPass())->process($container);
 
@@ -189,6 +193,35 @@ final class IntegrationCompilerPassTest extends TestCase
         self::assertSame('app.outer', $this->referencedServiceId($middlewares[1]));
         self::assertSame('app.middle', $this->referencedServiceId($middlewares[2]));
         self::assertSame('app.inner', $this->referencedServiceId($middlewares[3]));
+    }
+
+    #[Test]
+    public function taggedMiddlewareNotDeclaredInIntegrationIsNotInjected(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig([
+            'middlewares' => ['app.rate_limit'],
+        ])]);
+        $this->tagMiddleware($container, 'app.rate_limit', FakeMiddleware::class);
+        $this->tagMiddleware($container, 'app.retry', FakeMiddleware::class);
+
+        (new IntegrationCompilerPass())->process($container);
+
+        $middlewares = $container->getDefinition('integration_engine.client.my_api')->getArgument(1);
+        self::assertCount(2, $middlewares);
+        self::assertSame('app.rate_limit', $this->referencedServiceId($middlewares[1]));
+    }
+
+    #[Test]
+    public function throwsWhenDeclaredMiddlewareIsNotTagged(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig([
+            'middlewares' => ['app.not_registered'],
+        ])]);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/my_api.*app\.not_registered/');
+
+        (new IntegrationCompilerPass())->process($container);
     }
 
     #[Test]
@@ -322,6 +355,7 @@ final class IntegrationCompilerPassTest extends TestCase
             'client_service' => null,
             'cache_service' => null,
             'headers' => [],
+            'middlewares' => [],
         ], $overrides);
     }
 }

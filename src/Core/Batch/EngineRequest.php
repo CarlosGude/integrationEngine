@@ -15,21 +15,11 @@ use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
  */
 final readonly class EngineRequest
 {
-    private function __construct(
+    public function __construct(
         public string $actionName,
-        public ?ActionContextInterface $context,
-        public ?ActionBodyInterface $body,
-        public ?RequestHeadersInterface $headers,
-        public ?string $baseUrl,
+        public ?ActionContextInterface $context = null,
+        public ?ActionBodyInterface $body = null,
+        public ?RequestHeadersInterface $headers = null,
+        public ?string $baseUrl = null,
     ) {}
-
-    public static function create(
-        string $actionName,
-        ?ActionContextInterface $context = null,
-        ?ActionBodyInterface $body = null,
-        ?RequestHeadersInterface $headers = null,
-        ?string $baseUrl = null,
-    ): self {
-        return new self($actionName, $context, $body, $headers, $baseUrl);
-    }
 }
