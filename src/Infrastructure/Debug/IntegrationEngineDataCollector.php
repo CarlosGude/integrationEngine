@@ -9,11 +9,12 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\DataCollector\DataCollectorInterface;
 
 /**
- * Collects every outgoing call made through TraceableClient/TraceableBatchClient
- * during one incoming HTTP request, for display in the Symfony profiler.
+ * Collects every outgoing call made through TracingMiddleware (and cache hits
+ * recorded by CachingMiddleware) during one incoming HTTP request, for display
+ * in the Symfony profiler.
  *
  * One instance lives for the lifetime of a single app request — calls are
- * recorded eagerly via recordCall() as TraceableClient executes, not gathered
+ * recorded eagerly via recordCall() as each middleware executes, not gathered
  * at collect() time, since the engine has no single point where every
  * outgoing call funnels through before the response is built.
  *

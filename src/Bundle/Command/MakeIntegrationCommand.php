@@ -8,7 +8,6 @@ use IntegrationEngine\Bundle\Generator\IntegrationContext;
 use IntegrationEngine\Bundle\Generator\IntegrationFileGenerator;
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 use IntegrationEngine\Infrastructure\Http\ClientAdapterResolver;
-use IntegrationEngine\Infrastructure\Http\GraphQLClientAdapter;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;

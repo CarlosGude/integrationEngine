@@ -66,6 +66,8 @@ final class CachingMiddleware extends AbstractClientMiddleware
     {
         $hits = [];
         $misses = [];
+        /** @var array<array-key, array{string, int}> $missCache — [cacheKey, ttl] for cacheable misses */
+        $missCache = [];
 
         foreach ($requests as $key => $request) {
             $ttl = $request->action->getCacheTtl();
@@ -86,6 +88,7 @@ final class CachingMiddleware extends AbstractClientMiddleware
                 $this->recordHit($request->action);
             } else {
                 $misses[$key] = $request;
+                $missCache[$key] = [$cacheKey, $ttl];
             }
         }
 
@@ -93,15 +96,9 @@ final class CachingMiddleware extends AbstractClientMiddleware
 
         if ([] !== $misses) {
             foreach ($next($misses) as $key => $result) {
-                if (!$result instanceof \Throwable) {
-                    $ttl = $misses[$key]->action->getCacheTtl();
-                    if (null !== $ttl) {
-                        $this->cache->set(
-                            $this->buildKey($misses[$key]->action, $misses[$key]->context, $misses[$key]->headers),
-                            $result,
-                            $ttl,
-                        );
-                    }
+                if (!$result instanceof \Throwable && isset($missCache[$key])) {
+                    [$cacheKey, $ttl] = $missCache[$key];
+                    $this->cache->set($cacheKey, $result, $ttl);
                 }
                 $results[$key] = $result;
             }
@@ -110,7 +107,7 @@ final class CachingMiddleware extends AbstractClientMiddleware
         return $results;
     }
 
-    public function buildKey(
+    private function buildKey(
         AbstractAction $action,
         ?ActionContextInterface $context,
         ?RequestHeadersInterface $headers,
@@ -118,11 +115,11 @@ final class CachingMiddleware extends AbstractClientMiddleware
         return \sprintf(
             'ie_response_%s_%s',
             $this->integrationName,
-            sha1(serialize([
+            sha1(json_encode([
                 $action::class,
                 $context?->toArray() ?? [],
                 $headers?->toArray() ?? [],
-            ])),
+            ], \JSON_THROW_ON_ERROR)),
         );
     }
 

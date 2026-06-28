@@ -58,8 +58,8 @@ make stan PATHS='src/Core/IntegrationEngine.php'
 - **`ConfigPort`** — loads action config from YAML (`YamlConfigAdapter`)
 - **`ClientInterface`** — executes HTTP. Built-in: `SymfonyHttpClientAdapter` (REST) and `GraphQLClientAdapter`. Tagged `integration_engine.client_adapter`; multiple adapters are discovered automatically
 - **`BatchClientInterface`** — optional capability: executes a batch of `PreparedRequest`s concurrently, returning raw payload or Throwable per key. `SymfonyHttpClientAdapter` implements it (lazy responses: dispatch all, then consume). Clients without it fall back to sequential sends
-- **`ClientMiddlewareInterface`** — cross-cutting concern hook with `process()` (single) and `processMany()` (batch). `AbstractClientMiddleware` provides a default `processMany()` passthrough — override only when batch-aware behaviour is needed. Tag services with `integration_engine.middleware` and an optional `priority` attribute to inject into the chain
-- **`MiddlewareClient`** — always wraps the HTTP adapter. Layer order (outermost → innermost): `CachingMiddleware` → user middlewares by descending priority → `TracingMiddleware` (debug only) → HTTP adapter. Always implements `BatchClientInterface` and `DynamicBaseUrlClientInterface`
+- **`AbstractClientMiddleware`** — base class for cross-cutting concern hooks with `process()` (single) and `processMany()` (batch). Provides a default `processMany()` passthrough — override only when batch-aware behaviour is needed. Tag services with `integration_engine.middleware` to register them; declare them under `middlewares:` in each integration's config to control injection order
+- **`MiddlewareClient`** — always wraps the HTTP adapter. Layer order (outermost → innermost): `CachingMiddleware` → user middlewares in declaration order → `TracingMiddleware` (debug only) → HTTP adapter. Always implements `BatchClientInterface` and `DynamicBaseUrlClientInterface`
 - **`CachePort`** — caches dynamic auth tokens with `get`/`set`/`delete` (`Psr6CacheAdapter` wrapping Symfony's PSR-6 cache)
 
 ### Data Flow
@@ -72,7 +72,7 @@ Application service
   → [if dynamic auth] fetch + cache token, rebuild action with static auth
   → MiddlewareClient::send(action, context, headers)
       → CachingMiddleware   (cache hit → return early; miss → continue)
-      → [user middlewares, outermost first by descending priority]
+      → [user middlewares, in declaration order under middlewares:]
       → TracingMiddleware   (dev/test only — records timing, action, status)
       → HTTP adapter        → raw array
   → AbstractMapper::map(action, rawArray) → ResponseInterface

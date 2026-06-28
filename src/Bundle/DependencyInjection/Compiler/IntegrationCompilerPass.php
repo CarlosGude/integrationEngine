@@ -90,8 +90,8 @@ final class IntegrationCompilerPass implements CompilerPassInterface
      * Resolves the ordered middleware list for one integration, validating that
      * every declared service ID is registered (tagged with integration_engine.middleware).
      *
-     * @param list<string>          $declared
-     * @param array<string, true>   $registered
+     * @param list<string>        $declared
+     * @param array<string, true> $registered
      *
      * @return list<string>
      */
@@ -301,7 +301,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
     {
         $id = IntegrationEngineDataCollector::class;
 
-        if (!$container->hasDefinition($id) || $container->getDefinition($id)->isAbstract()) {
+        if (!$container->hasDefinition($id)) {
             $definition = new Definition($id);
             $definition->addTag('data_collector', [
                 'template' => '@IntegrationEngine/Collector/integration_engine.html.twig',

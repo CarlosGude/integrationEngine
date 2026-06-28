@@ -395,7 +395,7 @@ Project adapters override bundle built-ins when registered with the same `getCli
 
 Every outgoing request passes through an ordered middleware pipeline before reaching the
 HTTP adapter. You can inject your own layers — rate limiting, retry logic, circuit
-breaking, custom logging — by implementing `ClientMiddlewareInterface` and tagging the
+breaking, custom logging — by extending `AbstractClientMiddleware` and tagging the
 service:
 
 ```php
@@ -422,13 +422,20 @@ final class RateLimitMiddleware extends AbstractClientMiddleware
 # services.yaml
 App\Infrastructure\Http\RateLimitMiddleware:
     tags:
-        - { name: integration_engine.middleware, priority: 10 }
+        - { name: integration_engine.middleware }
+
+# integration_engine.yaml
+integration_engine:
+    integrations:
+        my_api:
+            middlewares:
+                - App\Infrastructure\Http\RateLimitMiddleware  # outermost first
 ```
 
-The `priority` attribute controls layer order — higher values run first (outermost).
-This follows the same convention as Symfony event listeners. The bundle guarantees
-`CachingMiddleware` is always the outermost layer and `TracingMiddleware` (debug only)
-is always the innermost built-in; your middlewares sit between them.
+The `middlewares:` key under each integration controls injection order — first entry is
+outermost (runs before the HTTP call). The bundle guarantees `CachingMiddleware` is
+always prepended as the outermost layer and `TracingMiddleware` (debug only) is always
+the innermost built-in; your middlewares sit between them.
 
 Override `processMany()` as well if you need batch-aware behaviour (e.g. splitting a
 batch by rate-limit bucket). The default passthrough from `AbstractClientMiddleware` is
