@@ -76,6 +76,38 @@ final class MakeIntegrationCommandTest extends TestCase
     }
 
     #[Test]
+    public function interactiveActionNameIsUsedWhenArgumentOmitted(): void
+    {
+        $this->writeBundleConfig('my_api');
+
+        $tester = $this->tester();
+        $tester->setInputs(['GetEmployees', '/employees', 'GET']);
+        $exitCode = $tester->execute(['name' => 'MyApi']);
+
+        self::assertSame(Command::SUCCESS, $exitCode);
+        self::assertStringContainsString('Name of the first action', $tester->getDisplay());
+
+        $root = $this->projectDir.'/src/Infrastructure/Integrations/MyApi';
+        self::assertFileExists($root.'/GetEmployees/Request/GetEmployeesAction.php');
+    }
+
+    #[Test]
+    public function interactiveActionNamePromptRejectsEmptyInputBeforeAccepting(): void
+    {
+        $this->writeBundleConfig('my_api');
+
+        $tester = $this->tester();
+        $tester->setInputs(['', 'GetEmployees', '/employees', 'GET']);
+        $exitCode = $tester->execute(['name' => 'MyApi']);
+
+        self::assertSame(Command::SUCCESS, $exitCode);
+        self::assertStringContainsString('Action name cannot be empty.', $tester->getDisplay());
+
+        $root = $this->projectDir.'/src/Infrastructure/Integrations/MyApi';
+        self::assertFileExists($root.'/GetEmployees/Request/GetEmployeesAction.php');
+    }
+
+    #[Test]
     public function deleteActionGeneratesNoResponseLayer(): void
     {
         $this->writeBundleConfig('my_api');
