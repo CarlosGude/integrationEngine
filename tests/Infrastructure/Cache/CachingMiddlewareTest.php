@@ -6,10 +6,12 @@ namespace IntegrationEngine\Tests\Infrastructure\Cache;
 
 use IntegrationEngine\Core\Batch\PreparedRequest;
 use IntegrationEngine\Core\Contract\Action\DefaultActionContext;
+use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 use IntegrationEngine\Infrastructure\Cache\CachingMiddleware;
 use IntegrationEngine\Infrastructure\Debug\IntegrationEngineDataCollector;
 use IntegrationEngine\Tests\Fake\FakeCache;
 use IntegrationEngine\Tests\Fake\FakePathAction;
+use IntegrationEngine\Tests\Fake\FakeProtectedAction;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -111,6 +113,65 @@ final class CachingMiddlewareTest extends TestCase
 
         $mw->process($action, DefaultActionContext::create(['id' => '1']), null, $next);
         $mw->process($action, DefaultActionContext::create(['id' => '2']), null, $next);
+
+        self::assertSame(2, $calls);
+        self::assertCount(2, $cache->all());
+    }
+
+    // ── process(): different action classes → different keys ──────────────────
+
+    /**
+     * The cache key is built from the action's class, not its method/path —
+     * a given AbstractAction subclass represents exactly one endpoint in
+     * production (fixed method/path from YAML config). Two different actions
+     * must never collide on the same cache entry.
+     */
+    #[Test]
+    public function processUsesSeparateCacheEntriesForDifferentActionClasses(): void
+    {
+        $calls = 0;
+        $next = static function () use (&$calls): array {
+            ++$calls;
+
+            return [];
+        };
+        $cache = new FakeCache();
+        $mw = new CachingMiddleware($cache, 'my_api');
+
+        $mw->process(FakePathAction::create('GET', '/items', cacheTtl: 60), null, null, $next);
+        $mw->process(FakeProtectedAction::create('GET', '/items', cacheTtl: 60), null, null, $next);
+
+        self::assertSame(2, $calls);
+        self::assertCount(2, $cache->all());
+    }
+
+    // ── process(): different headers → different keys ──────────────────────────
+
+    #[Test]
+    public function processUsesSeparateCacheEntriesForDifferentHeaders(): void
+    {
+        $calls = 0;
+        $next = static function () use (&$calls): array {
+            ++$calls;
+
+            return [];
+        };
+        $cache = new FakeCache();
+        $mw = new CachingMiddleware($cache, 'my_api');
+        $action = FakePathAction::create('GET', '/items', cacheTtl: 60);
+
+        $mw->process($action, null, new class implements RequestHeadersInterface {
+            public function toArray(): array
+            {
+                return ['X-Tenant' => 'a'];
+            }
+        }, $next);
+        $mw->process($action, null, new class implements RequestHeadersInterface {
+            public function toArray(): array
+            {
+                return ['X-Tenant' => 'b'];
+            }
+        }, $next);
 
         self::assertSame(2, $calls);
         self::assertCount(2, $cache->all());

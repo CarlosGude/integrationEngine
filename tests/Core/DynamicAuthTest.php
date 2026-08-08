@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Core;
 
+use IntegrationEngine\Core\Auth\DynamicAuthHandler;
 use IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\Auth\StaticAuthorizationConfig;
+use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Tests\Fake\FakeContext;
 use IntegrationEngine\Tests\Fake\FakePathAction;
 use IntegrationEngine\Tests\Fake\FakeProtectedAction;
@@ -55,6 +57,49 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
         $auth = $this->client->lastAction()?->getAuthorization();
         self::assertInstanceOf(StaticAuthorizationConfig::class, $auth);
         self::assertSame('raw_token', $auth->params['token']);
+    }
+
+    /**
+     * Regression: the bundle's compiler pass builds a DynamicAuthHandler as a
+     * separate service and injects it into IntegrationEngine's constructor
+     * (see IntegrationCompilerPass::registerIntegration()). If that seam were
+     * ever ignored in favour of always building a fresh handler internally,
+     * every test in this suite would still pass — none of them pass an
+     * authHandler — while the real DI-wired path would silently regress.
+     */
+    #[Test]
+    public function injectedAuthHandlerIsUsedInsteadOfBuildingANewOne(): void
+    {
+        $this->config->register(FakeTokenAction::getName(), FakeTokenAction::create('GET', '/token'));
+        $this->config->register(FakeProtectedAction::getName(), FakeProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
+            action: FakeTokenAction::getName(),
+            tokenField: 'access_token',
+            ttl: 60,
+        )));
+        $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'injected_token']);
+        $this->client->setResponse(FakeProtectedAction::getName(), []);
+
+        $injectedAuthHandler = new DynamicAuthHandler($this->config, $this->client, $this->cache, 'injected_integration');
+
+        $engine = new IntegrationEngine(
+            config: $this->config,
+            client: $this->client,
+            cache: $this->cache,
+            integrationName: 'test_integration',
+            authHandler: $injectedAuthHandler,
+        );
+
+        $engine->send(FakeProtectedAction::getName());
+
+        // The token is cached under the *injected* handler's integration name,
+        // proving the constructor used it instead of building its own.
+        self::assertSame(
+            'injected_token',
+            $this->cache->get('integration_engine.token.injected_integration.'.FakeTokenAction::getName()),
+        );
+        self::assertNull(
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName()),
+        );
     }
 
     #[Test]
