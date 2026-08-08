@@ -7,9 +7,11 @@ namespace IntegrationEngine\Tests\Core;
 use IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\Auth\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\DynamicAuthException;
+use IntegrationEngine\Core\Exception\NotMappedActionException;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use IntegrationEngine\Tests\Fake\FakeProtectedAction;
 use IntegrationEngine\Tests\Fake\FakeTokenAction;
+use IntegrationEngine\Tests\Fake\FakeUnmappedTokenAction;
 use PHPUnit\Framework\Attributes\Test;
 
 final class DynamicAuthSadPathTest extends IntegrationEngineTestCase
@@ -47,6 +49,23 @@ final class DynamicAuthSadPathTest extends IntegrationEngineTestCase
 
         $this->expectException(DynamicAuthException::class);
         $this->expectExceptionMessage('Token field "access_token" must be a scalar value.');
+
+        $this->engine->send(FakeProtectedAction::getName());
+    }
+
+    #[Test]
+    public function dynamicAuthThrowsWhenTokenActionHasResponseButNoMapper(): void
+    {
+        $this->config->register(FakeUnmappedTokenAction::getName(), FakeUnmappedTokenAction::create('GET', '/token'));
+        $this->config->register(FakeProtectedAction::getName(), FakeProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
+            action: FakeUnmappedTokenAction::getName(),
+            tokenField: 'access_token',
+            ttl: 60,
+        )));
+        $this->client->setResponse(FakeUnmappedTokenAction::getName(), ['access_token' => 'token']);
+
+        $this->expectException(NotMappedActionException::class);
+        $this->expectExceptionMessageMatches('/requires a mapper but none was defined/');
 
         $this->engine->send(FakeProtectedAction::getName());
     }

@@ -34,6 +34,29 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
         self::assertSame('resolved_token', $auth->params['token']);
     }
 
+    /**
+     * A token action with no declared response/mapper is valid — the raw
+     * response array is used directly to read the token field.
+     */
+    #[Test]
+    public function dynamicAuthResolvesTokenFromActionWithoutResponseMapper(): void
+    {
+        $this->config->register(FakePathAction::getName(), FakePathAction::create('GET', '/token'));
+        $this->config->register(FakeProtectedAction::getName(), FakeProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
+            action: FakePathAction::getName(),
+            tokenField: 'access_token',
+            ttl: 60,
+        )));
+        $this->client->setResponse(FakePathAction::getName(), ['access_token' => 'raw_token']);
+        $this->client->setResponse(FakeProtectedAction::getName(), []);
+
+        $this->engine->send(FakeProtectedAction::getName());
+
+        $auth = $this->client->lastAction()?->getAuthorization();
+        self::assertInstanceOf(StaticAuthorizationConfig::class, $auth);
+        self::assertSame('raw_token', $auth->params['token']);
+    }
+
     #[Test]
     public function dynamicAuthCastsIntegerTokenToString(): void
     {
