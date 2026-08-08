@@ -54,6 +54,27 @@ final class MiddlewareClientTest extends TestCase
     // ── sendMany() uses inner batch when available ────────────────────────────
 
     #[Test]
+    public function sendManyCallsMiddlewaresInOrderAndDelegatesToInner(): void
+    {
+        $inner = new FakeBatchClient();
+        $inner->inner()->setResponse(FakePathAction::getName(), ['result' => 1]);
+        $log = [];
+
+        $client = new MiddlewareClient($inner, [
+            new SpyMiddleware('A', $log),
+            new SpyMiddleware('B', $log),
+        ]);
+
+        $results = $client->sendMany([
+            'a' => new PreparedRequest(FakePathAction::create('GET', '/items'), null, null),
+        ]);
+
+        self::assertSame(['result' => 1], $results['a']);
+        self::assertSame(['A:before-batch', 'B:before-batch', 'B:after-batch', 'A:after-batch'], $log);
+        self::assertSame(1, $inner->batchCount());
+    }
+
+    #[Test]
     public function sendManyUsesBatchClientWhenInnerSupportsBatch(): void
     {
         $inner = new FakeBatchClient();
@@ -153,6 +174,21 @@ final class SpyMiddleware extends AbstractClientMiddleware
         $this->log[] = "{$this->name}:before";
         $result = $next($action, $context, $headers);
         $this->log[] = "{$this->name}:after";
+
+        return $result;
+    }
+
+    /**
+     * @param array<array-key, PreparedRequest>                                                      $requests
+     * @param callable(array<array-key, PreparedRequest>): array<array-key, array<mixed>|\Throwable> $next
+     *
+     * @return array<array-key, array<mixed>|\Throwable>
+     */
+    public function processMany(array $requests, callable $next): array
+    {
+        $this->log[] = "{$this->name}:before-batch";
+        $result = $next($requests);
+        $this->log[] = "{$this->name}:after-batch";
 
         return $result;
     }
