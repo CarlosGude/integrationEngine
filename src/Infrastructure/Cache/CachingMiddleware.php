@@ -66,6 +66,7 @@ final class CachingMiddleware extends AbstractClientMiddleware
     {
         $hits = [];
         $misses = [];
+
         /** @var array<array-key, array{string, int}> $missCache — [cacheKey, ttl] for cacheable misses */
         $missCache = [];
 
@@ -119,7 +120,7 @@ final class CachingMiddleware extends AbstractClientMiddleware
                 $action::class,
                 $context?->toArray() ?? [],
                 $headers?->toArray() ?? [],
-            ], \JSON_THROW_ON_ERROR)),
+            ], JSON_THROW_ON_ERROR)),
         );
     }
 

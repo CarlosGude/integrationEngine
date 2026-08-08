@@ -301,7 +301,9 @@ final class IntegrationCompilerPass implements CompilerPassInterface
     {
         $id = IntegrationEngineDataCollector::class;
 
-        if (!$container->hasDefinition($id)) {
+        // Symfony may have registered an excluded abstract placeholder instead of a real
+        // definition, so check isAbstract() too before reusing it.
+        if (!$container->hasDefinition($id) || $container->getDefinition($id)->isAbstract()) {
             $definition = new Definition($id);
             $definition->addTag('data_collector', [
                 'template' => '@IntegrationEngine/Collector/integration_engine.html.twig',
