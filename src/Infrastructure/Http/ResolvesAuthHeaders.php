@@ -31,11 +31,11 @@ trait ResolvesAuthHeaders
             return [];
         }
 
-        $token = isset($auth->params['token']) && \is_string($auth->params['token']) ? $auth->params['token'] : '';
-        $username = isset($auth->params['username']) && \is_string($auth->params['username']) ? $auth->params['username'] : '';
-        $password = isset($auth->params['password']) && \is_string($auth->params['password']) ? $auth->params['password'] : '';
-        $headerKey = isset($auth->params['header']) && \is_string($auth->params['header']) ? $auth->params['header'] : 'X-Api-Key';
-        $prefix = isset($auth->params['prefix']) && \is_string($auth->params['prefix']) ? $auth->params['prefix'] : null;
+        $token = $this->stringParam($auth->params, 'token', '');
+        $username = $this->stringParam($auth->params, 'username', '');
+        $password = $this->stringParam($auth->params, 'password', '');
+        $headerKey = $this->stringParam($auth->params, 'header', 'X-Api-Key');
+        $prefix = $this->nullableStringParam($auth->params, 'prefix');
 
         return match ($auth->type) {
             'bearer' => ['Authorization' => \sprintf('%s %s', $prefix ?? 'Bearer', $token)],
@@ -47,5 +47,42 @@ trait ResolvesAuthHeaders
                 $auth->type,
             )),
         };
+    }
+
+    /**
+     * Reads a string-typed auth param. A missing key falls back to $default
+     * (many params are optional per auth type); a key present with a
+     * non-string value fails loudly instead of silently degrading to an
+     * empty credential.
+     *
+     * @param array<string, mixed> $params
+     */
+    private function stringParam(array $params, string $key, string $default): string
+    {
+        return $this->nullableStringParam($params, $key) ?? $default;
+    }
+
+    /**
+     * Same as stringParam(), but a missing key returns null instead of a
+     * default — for params where "not set" and "set to empty string" are
+     * meaningfully different (e.g. prefix).
+     *
+     * @param array<string, mixed> $params
+     */
+    private function nullableStringParam(array $params, string $key): ?string
+    {
+        if (!\array_key_exists($key, $params)) {
+            return null;
+        }
+
+        if (!\is_string($params[$key])) {
+            throw new \InvalidArgumentException(\sprintf(
+                'Static authorization param "%s" must be a string, got %s.',
+                $key,
+                get_debug_type($params[$key]),
+            ));
+        }
+
+        return $params[$key];
     }
 }

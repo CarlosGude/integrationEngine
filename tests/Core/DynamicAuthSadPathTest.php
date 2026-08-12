@@ -75,7 +75,7 @@ final class DynamicAuthSadPathTest extends IntegrationEngineTestCase
     #[Test]
     public function rejectedCachedTokenIsDroppedAndRequestRetriedWithFreshToken(): void
     {
-        $cacheKey = 'integration_engine.token.test_integration.'.FakeTokenAction::getName();
+        $cacheKey = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('');
         $this->cache->set($cacheKey, 'stale_token', 60);
 
         $this->config->register(FakeTokenAction::getName(), FakeTokenAction::create('GET', '/token'));
@@ -126,7 +126,7 @@ final class DynamicAuthSadPathTest extends IntegrationEngineTestCase
     #[Test]
     public function non401ErrorWithCachedTokenIsNotRetried(): void
     {
-        $cacheKey = 'integration_engine.token.test_integration.'.FakeTokenAction::getName();
+        $cacheKey = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('');
         $this->cache->set($cacheKey, 'valid_token', 60);
 
         $this->config->register(FakeProtectedAction::getName(), FakeProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
@@ -151,7 +151,7 @@ final class DynamicAuthSadPathTest extends IntegrationEngineTestCase
     #[Test]
     public function second401AfterRetryPropagates(): void
     {
-        $cacheKey = 'integration_engine.token.test_integration.'.FakeTokenAction::getName();
+        $cacheKey = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('');
         $this->cache->set($cacheKey, 'stale_token', 60);
 
         $this->config->register(FakeTokenAction::getName(), FakeTokenAction::create('GET', '/token'));

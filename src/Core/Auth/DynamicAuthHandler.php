@@ -37,11 +37,12 @@ final readonly class DynamicAuthHandler
         ?RequestHeadersInterface $headers,
         \Closure $buildResponse,
         ?ClientInterface $client = null,
+        ?string $baseUrl = null,
     ): ResponseInterface {
         $client ??= $this->client;
-        $cached = $this->cache->get($this->cacheKey($auth));
+        $cached = $this->cache->get($this->cacheKey($auth, $baseUrl));
         $usedCachedToken = \is_string($cached);
-        $authorized = $this->withStaticToken($action, $auth, $cached, $client);
+        $authorized = $this->withStaticToken($action, $auth, $cached, $client, $baseUrl);
 
         try {
             $rawResponse = $client->send($authorized, $context, $headers);
@@ -56,8 +57,8 @@ final readonly class DynamicAuthHandler
                 'token_action' => $auth->action,
             ]);
 
-            $this->cache->delete($this->cacheKey($auth));
-            $authorized = $this->withStaticToken($action, $auth, client: $client);
+            $this->cache->delete($this->cacheKey($auth, $baseUrl));
+            $authorized = $this->withStaticToken($action, $auth, client: $client, baseUrl: $baseUrl);
             $rawResponse = $client->send($authorized, $context, $headers);
         }
 
@@ -69,8 +70,9 @@ final readonly class DynamicAuthHandler
         DynamicAuthorizationConfig $auth,
         mixed $preloadedCache = null,
         ?ClientInterface $client = null,
+        ?string $baseUrl = null,
     ): AbstractAction {
-        $token = $this->resolveToken($auth, $preloadedCache, $client);
+        $token = $this->resolveToken($auth, $preloadedCache, $client, $baseUrl);
 
         return $action::create(
             method: $action->getMethod(),
@@ -101,17 +103,18 @@ final readonly class DynamicAuthHandler
         return $mapperClass::map($action, $rawResponse)->toArray();
     }
 
-    private function cacheKey(DynamicAuthorizationConfig $auth): string
+    private function cacheKey(DynamicAuthorizationConfig $auth, ?string $baseUrl = null): string
     {
-        return $auth->cacheKey($this->integrationName);
+        return $auth->cacheKey($this->integrationName, $baseUrl);
     }
 
     private function resolveToken(
         DynamicAuthorizationConfig $authConfig,
         mixed $preloadedCache = null,
         ?ClientInterface $client = null,
+        ?string $baseUrl = null,
     ): string {
-        $cacheKey = $this->cacheKey($authConfig);
+        $cacheKey = $this->cacheKey($authConfig, $baseUrl);
         $cached = \is_string($preloadedCache) ? $preloadedCache : $this->cache->get($cacheKey);
 
         if (\is_string($cached)) {
@@ -132,7 +135,7 @@ final readonly class DynamicAuthHandler
         $rawResponse = ($client ?? $this->client)->send($authAction);
         $responseArray = $this->mapTokenResponse($authAction, $rawResponse);
 
-        if (!isset($responseArray[$authConfig->tokenField])) {
+        if (!\array_key_exists($authConfig->tokenField, $responseArray)) {
             throw DynamicAuthException::missingTokenField($authConfig->action, $authConfig->tokenField);
         }
 

@@ -95,10 +95,10 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
         // proving the constructor used it instead of building its own.
         self::assertSame(
             'injected_token',
-            $this->cache->get('integration_engine.token.injected_integration.'.FakeTokenAction::getName()),
+            $this->cache->get('integration_engine.token.injected_integration.'.FakeTokenAction::getName().'.'.sha1('')),
         );
         self::assertNull(
-            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName()),
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('')),
         );
     }
 
@@ -230,7 +230,7 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
     #[Test]
     public function dynamicAuthUsesTokenFromCacheWhenAvailable(): void
     {
-        $this->cache->set('integration_engine.token.test_integration.'.FakeTokenAction::getName(), 'pre_cached_token', 60);
+        $this->cache->set('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1(''), 'pre_cached_token', 60);
 
         $this->config->register(FakeProtectedAction::getName(), FakeProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
             action: FakeTokenAction::getName(),
@@ -244,6 +244,49 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
         $auth = $this->client->lastAction()?->getAuthorization();
         self::assertInstanceOf(StaticAuthorizationConfig::class, $auth);
         self::assertSame('pre_cached_token', $auth->params['token']);
+    }
+
+    /**
+     * Multi-connection requirement: the same integration serving several
+     * connections through a per-call baseUrl must never let one
+     * connection's token leak into another's cache entry, and a repeat
+     * call for a connection must reuse only that connection's token.
+     */
+    #[Test]
+    public function differentBaseUrlsGetIsolatedTokenCacheEntries(): void
+    {
+        $this->config->register(FakeTokenAction::getName(), FakeTokenAction::create('GET', '/token'));
+        $this->config->register(FakeProtectedAction::getName(), FakeProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
+            action: FakeTokenAction::getName(),
+            tokenField: 'access_token',
+            ttl: 60,
+        )));
+        $this->client->setResponse(FakeProtectedAction::getName(), []);
+
+        $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'token_a']);
+        $this->engine->send(FakeProtectedAction::getName(), baseUrl: 'https://tenant-a.example.com');
+
+        $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'token_b']);
+        $this->engine->send(FakeProtectedAction::getName(), baseUrl: 'https://tenant-b.example.com');
+
+        self::assertSame(
+            'token_a',
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('https://tenant-a.example.com')),
+        );
+        self::assertSame(
+            'token_b',
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('https://tenant-b.example.com')),
+        );
+
+        // A repeat call for tenant A must reuse tenant A's own cached
+        // token — no refetch, and definitely not tenant B's token.
+        $callsBeforeReuse = $this->client->callCount(FakeTokenAction::getName());
+        $this->engine->send(FakeProtectedAction::getName(), baseUrl: 'https://tenant-a.example.com');
+
+        self::assertSame($callsBeforeReuse, $this->client->callCount(FakeTokenAction::getName()));
+        $auth = $this->client->lastAction()?->getAuthorization();
+        self::assertInstanceOf(StaticAuthorizationConfig::class, $auth);
+        self::assertSame('token_a', $auth->params['token']);
     }
 
     /**

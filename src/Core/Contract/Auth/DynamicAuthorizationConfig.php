@@ -25,9 +25,14 @@ final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
         return $this->prefix ?? ('Authorization' === $this->header ? 'Bearer' : '');
     }
 
-    public function cacheKey(string $integrationName): string
+    /**
+     * $baseUrl namespaces the cache entry per per-call base URL — the same
+     * integration serving several tenants via a different baseUrl per call
+     * must never share one tenant's token with another's.
+     */
+    public function cacheKey(string $integrationName, ?string $baseUrl = null): string
     {
-        return \sprintf('integration_engine.token.%s.%s', $integrationName, $this->action);
+        return \sprintf('integration_engine.token.%s.%s.%s', $integrationName, $this->action, sha1($baseUrl ?? ''));
     }
 
     public function toStaticConfig(string $token): StaticAuthorizationConfig

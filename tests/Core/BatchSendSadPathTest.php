@@ -24,7 +24,8 @@ use PHPUnit\Framework\Attributes\Test;
 
 final class BatchSendSadPathTest extends IntegrationEngineTestCase
 {
-    private const TOKEN_CACHE_KEY = 'integration_engine.token.test_integration.fake_fetch_token';
+    // Trailing segment is sha1('') — the baseUrl component of the key when no baseUrl is used.
+    private const TOKEN_CACHE_KEY = 'integration_engine.token.test_integration.fake_fetch_token.da39a3ee5e6b4b0d3255bfef95601890afd80709';
 
     // ── Partial failures ──────────────────────────────────────────────────────
 
@@ -186,6 +187,68 @@ final class BatchSendSadPathTest extends IntegrationEngineTestCase
         self::assertSame(0, $this->client->callCount(FakeTokenAction::getName()));
         self::assertSame(1, $this->client->callCount(FakeProtectedAction::getName()));
         self::assertSame('cached_token', $this->cache->get(self::TOKEN_CACHE_KEY));
+    }
+
+    /**
+     * Regression: BatchTokenRetry must key its pre-cache check and cache
+     * invalidation by the item's baseUrl, exactly like DynamicAuthHandler
+     * does when actually resolving the token. Before this fix, a stale
+     * token cached under a baseUrl-scoped key was invisible to
+     * BatchTokenRetry (which checked the bare, baseUrl-less key), so the
+     * item was never marked retryable and the 401 propagated without ever
+     * attempting the fresh-token retry.
+     */
+    #[Test]
+    public function sendManyRetriesAStaleTokenCachedUnderABaseUrl(): void
+    {
+        $this->registerProtectedActionPair();
+        $baseUrl = 'https://tenant-a.example.com';
+        $cacheKey = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1($baseUrl);
+        $this->cache->set($cacheKey, 'stale_token', 60);
+        $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'fresh_token']);
+        $this->client->setResponse(FakeProtectedAction::getName(), []);
+        $this->client->queueException(FakeProtectedAction::getName(), new RequestResponseException(statusCode: 401, context: 'unauthorized'));
+
+        $results = $this->engine->sendMany([
+            'one' => new EngineRequest(FakeProtectedAction::getName(), baseUrl: $baseUrl),
+        ]);
+
+        self::assertTrue($results['one']->isSuccess());
+        self::assertSame(1, $this->client->callCount(FakeTokenAction::getName()));
+        self::assertSame('fresh_token', $this->cache->get($cacheKey));
+    }
+
+    /**
+     * Multi-connection requirement inside a single batch: an item whose
+     * connection already has a cached token must reuse it without
+     * refetching, while a different item's connection with nothing cached
+     * triggers exactly one fetch — and neither write clobbers the other's
+     * cache entry.
+     */
+    #[Test]
+    public function sendManyKeepsTokenCacheIsolatedAcrossBaseUrlsInOneBatch(): void
+    {
+        $this->registerProtectedActionPair();
+        $baseUrlA = 'https://tenant-a.example.com';
+        $baseUrlB = 'https://tenant-b.example.com';
+        $cacheKeyA = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1($baseUrlA);
+        $cacheKeyB = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1($baseUrlB);
+        $this->cache->set($cacheKeyA, 'token_a', 60);
+        $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'token_b']);
+        $this->client->setResponse(FakeProtectedAction::getName(), []);
+
+        $results = $this->engine->sendMany([
+            'a' => new EngineRequest(FakeProtectedAction::getName(), baseUrl: $baseUrlA),
+            'b' => new EngineRequest(FakeProtectedAction::getName(), baseUrl: $baseUrlB),
+        ]);
+
+        self::assertTrue($results['a']->isSuccess());
+        self::assertTrue($results['b']->isSuccess());
+        // Tenant A's pre-cached token is reused — only tenant B fetches.
+        self::assertSame(1, $this->client->callCount(FakeTokenAction::getName()));
+        self::assertSame('token_b', $this->cache->get($cacheKeyB));
+        // Tenant A's entry is untouched by tenant B's fetch.
+        self::assertSame('token_a', $this->cache->get($cacheKeyA));
     }
 
     #[Test]

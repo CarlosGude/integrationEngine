@@ -15,14 +15,14 @@ use IntegrationEngine\Core\Port\CachePort;
  * (already fresh — no retry).
  *
  * Lifecycle inside sendMany():
- *   1. prepareWithToken($key, $auth, $factory) — snapshots cache state, then
+ *   1. prepareWithToken($key, $auth, $baseUrl, $factory) — snapshots cache state, then
  *      resolves the token by calling $factory(); the factory cannot be reordered
  *      because it runs inside this method
  *   2. plan($raw) — after dispatch: identifies 401s, drops stale cache entries
  */
 final class BatchTokenRetry
 {
-    /** @var array<array-key, DynamicAuthorizationConfig> */
+    /** @var array<array-key, array{auth: DynamicAuthorizationConfig, baseUrl: ?string}> */
     private array $retryable = [];
 
     /** @var array<string, true> */
@@ -38,18 +38,24 @@ final class BatchTokenRetry
      * $factory() to resolve the token (which may write to the cache).
      * Keeps the observe-then-resolve order structural rather than documental.
      *
+     * $baseUrl must match what the factory resolves the token against —
+     * DynamicAuthorizationConfig::cacheKey() namespaces by baseUrl, so a
+     * mismatch here would make this class check one connection's cache
+     * entry while the factory reads/writes another's.
+     *
      * @param callable(): AbstractAction $factory
      */
     public function prepareWithToken(
         int|string $key,
         DynamicAuthorizationConfig $auth,
+        ?string $baseUrl,
         callable $factory,
     ): AbstractAction {
-        $cacheKey = $this->cacheKey($auth);
+        $cacheKey = $this->cacheKey($auth, $baseUrl);
         $isPreCached = \is_string($this->cache->get($cacheKey));
 
         if ($isPreCached && !isset($this->fetchedInBatch[$cacheKey])) {
-            $this->retryable[$key] = $auth;
+            $this->retryable[$key] = ['auth' => $auth, 'baseUrl' => $baseUrl];
         }
 
         $action = ($factory)();
@@ -64,7 +70,9 @@ final class BatchTokenRetry
     /**
      * After dispatch: returns the subset of items that received HTTP 401 and
      * hold a retryable cached token, and drops those stale tokens from cache.
-     * Multiple items sharing one token action share a single cache deletion.
+     * Items sharing one token action AND one baseUrl share a single cache
+     * deletion; the same action against different base URLs is dropped
+     * separately since each holds its own cache entry.
      *
      * @param array<array-key, array<mixed>|\Throwable> $raw
      *
@@ -74,19 +82,19 @@ final class BatchTokenRetry
     {
         $toRetry = [];
 
-        foreach ($this->retryable as $key => $auth) {
+        foreach ($this->retryable as $key => $entry) {
             $result = $raw[$key] ?? null;
 
             if ($result instanceof RequestResponseException && 401 === $result->statusCode) {
-                $toRetry[$key] = $auth;
+                $toRetry[$key] = $entry['auth'];
             }
         }
 
         /** @var array<string, true> $dropped */
         $dropped = [];
 
-        foreach ($toRetry as $auth) {
-            $cacheKey = $this->cacheKey($auth);
+        foreach ($toRetry as $key => $auth) {
+            $cacheKey = $this->cacheKey($auth, $this->retryable[$key]['baseUrl']);
 
             if (!isset($dropped[$cacheKey])) {
                 $this->cache->delete($cacheKey);
@@ -97,8 +105,8 @@ final class BatchTokenRetry
         return $toRetry;
     }
 
-    private function cacheKey(DynamicAuthorizationConfig $auth): string
+    private function cacheKey(DynamicAuthorizationConfig $auth, ?string $baseUrl): string
     {
-        return $auth->cacheKey($this->integrationName);
+        return $auth->cacheKey($this->integrationName, $baseUrl);
     }
 }

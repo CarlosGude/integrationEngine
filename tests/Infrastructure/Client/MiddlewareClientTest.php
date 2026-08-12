@@ -8,6 +8,7 @@ use IntegrationEngine\Core\Batch\PreparedRequest;
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Client\AbstractClientMiddleware;
+use IntegrationEngine\Core\Contract\Client\BaseUrlAwareMiddlewareInterface;
 use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
 use IntegrationEngine\Core\Contract\Client\ClientInterface;
 use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
@@ -155,6 +156,35 @@ final class MiddlewareClientTest extends TestCase
 
         self::assertSame($client, $client->withBaseUrl('https://tenant.example.com'));
     }
+
+    /**
+     * withBaseUrl() must rebuild only middlewares that declare they vary by
+     * base URL (BaseUrlAwareMiddlewareInterface, e.g. CachingMiddleware
+     * namespacing its cache keys) and reuse every other middleware
+     * instance untouched.
+     */
+    #[Test]
+    public function withBaseUrlRebuildsBaseUrlAwareMiddlewaresAndReusesOthers(): void
+    {
+        $awareLog = [];
+        $plainLog = [];
+        $client = new MiddlewareClient(new FakeClient(), [
+            new BaseUrlAwareIdentitySpyMiddleware($awareLog),
+            new IdentitySpyMiddleware($plainLog),
+        ]);
+
+        $client->send(FakePathAction::create('GET', '/items'));
+        $resolved = $client->withBaseUrl('https://tenant.example.com');
+        $resolved->send(FakePathAction::create('GET', '/items'));
+
+        self::assertCount(2, $awareLog);
+        self::assertNull($awareLog[0]['baseUrl']);
+        self::assertSame('https://tenant.example.com', $awareLog[1]['baseUrl']);
+        self::assertNotSame($awareLog[0]['id'], $awareLog[1]['id'], 'BaseUrlAware middleware should have been rebuilt.');
+
+        self::assertCount(2, $plainLog);
+        self::assertSame($plainLog[0], $plainLog[1], 'Non-BaseUrlAware middleware should be the same reused instance.');
+    }
 }
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -202,5 +232,46 @@ final class StaticOnlyClient implements ClientInterface
         ?RequestHeadersInterface $headers = null,
     ): array {
         return [];
+    }
+}
+
+/** Records its own object id on each call, to prove instance reuse vs rebuild. */
+final class IdentitySpyMiddleware extends AbstractClientMiddleware
+{
+    /** @param list<int> $log */
+    public function __construct(private array &$log) {}
+
+    public function process(
+        AbstractAction $action,
+        ?ActionContextInterface $context,
+        ?RequestHeadersInterface $headers,
+        callable $next,
+    ): array {
+        $this->log[] = spl_object_id($this);
+
+        return $next($action, $context, $headers);
+    }
+}
+
+/** Same as IdentitySpyMiddleware, but rebuildable via withBaseUrl(). */
+final class BaseUrlAwareIdentitySpyMiddleware extends AbstractClientMiddleware implements BaseUrlAwareMiddlewareInterface
+{
+    /** @param list<array{id: int, baseUrl: ?string}> $log */
+    public function __construct(private array &$log, private readonly ?string $baseUrl = null) {}
+
+    public function withBaseUrl(string $baseUrl): static
+    {
+        return new self($this->log, $baseUrl);
+    }
+
+    public function process(
+        AbstractAction $action,
+        ?ActionContextInterface $context,
+        ?RequestHeadersInterface $headers,
+        callable $next,
+    ): array {
+        $this->log[] = ['id' => spl_object_id($this), 'baseUrl' => $this->baseUrl];
+
+        return $next($action, $context, $headers);
     }
 }

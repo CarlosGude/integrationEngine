@@ -234,6 +234,54 @@ final class CachingMiddlewareTest extends TestCase
         self::assertEmpty($cache->all());
     }
 
+    // ── withBaseUrl(): cache keys are namespaced per base URL ──────────────────
+
+    #[Test]
+    public function withBaseUrlReturnsANewInstanceWithoutMutatingTheOriginal(): void
+    {
+        $mw = new CachingMiddleware(new FakeCache(), 'my_api');
+
+        $resolved = $mw->withBaseUrl('https://tenant.example.com');
+
+        self::assertNotSame($mw, $resolved);
+    }
+
+    /**
+     * Multi-connection requirement: one integration serving several
+     * tenants through a per-call baseUrl must never share a cached
+     * response between tenants.
+     */
+    #[Test]
+    public function processUsesSeparateCacheEntriesForDifferentBaseUrls(): void
+    {
+        $calls = 0;
+        $next = static function () use (&$calls): array {
+            ++$calls;
+
+            return ['data' => $calls];
+        };
+        $cache = new FakeCache();
+        $mw = new CachingMiddleware($cache, 'my_api');
+        $action = FakePathAction::create('GET', '/items', cacheTtl: 60);
+
+        $mwA = $mw->withBaseUrl('https://tenant-a.example.com');
+        $mwB = $mw->withBaseUrl('https://tenant-b.example.com');
+
+        $resultA = $mwA->process($action, null, null, $next);
+        $resultB = $mwB->process($action, null, null, $next);
+
+        self::assertSame(['data' => 1], $resultA);
+        self::assertSame(['data' => 2], $resultB);
+        self::assertSame(2, $calls);
+        self::assertCount(2, $cache->all());
+
+        // A repeat call for tenant A must hit tenant A's own entry, not
+        // trigger another fetch and not return tenant B's cached value.
+        $resultA2 = $mwA->process($action, null, null, $next);
+        self::assertSame(['data' => 1], $resultA2);
+        self::assertSame(2, $calls);
+    }
+
     #[Test]
     public function processManySkipsItemsWithNoTtl(): void
     {

@@ -94,9 +94,13 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
 
         foreach ($requests as $key => $request) {
             try {
-                // Kept distinct from transport errors: path resolution
-                // failures propagate their own exception type, as in send().
+                // Kept distinct from transport errors: path resolution and
+                // option building (incl. auth header resolution) are
+                // configuration concerns and propagate their own exception
+                // type raw, exactly as in send() where they sit outside the
+                // network try/catch below.
                 $path = $request->action->getPath($request->context);
+                $options = $this->buildOptions($request->action, $request->headers);
             } catch (\Throwable $e) {
                 $results[$key] = $e;
 
@@ -107,7 +111,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
 
             try {
                 $dispatched[$key] = new DispatchedRequest(
-                    $this->httpClient->request($method, $this->baseUrl.$path, $this->buildOptions($request->action, $request->headers)),
+                    $this->httpClient->request($method, $this->baseUrl.$path, $options),
                     $method,
                     $path,
                 );

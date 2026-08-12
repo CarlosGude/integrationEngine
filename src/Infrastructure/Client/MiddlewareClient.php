@@ -8,6 +8,7 @@ use IntegrationEngine\Core\Batch\PreparedRequest;
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Client\AbstractClientMiddleware;
+use IntegrationEngine\Core\Contract\Client\BaseUrlAwareMiddlewareInterface;
 use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
 use IntegrationEngine\Core\Contract\Client\ClientInterface;
 use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
@@ -34,7 +35,14 @@ final class MiddlewareClient implements ClientInterface, BatchClientInterface, D
             return $this;
         }
 
-        return new self($this->inner->withBaseUrl($baseUrl), $this->middlewares);
+        $middlewares = array_map(
+            static fn (AbstractClientMiddleware $middleware): AbstractClientMiddleware => $middleware instanceof BaseUrlAwareMiddlewareInterface
+                ? $middleware->withBaseUrl($baseUrl)
+                : $middleware,
+            $this->middlewares,
+        );
+
+        return new self($this->inner->withBaseUrl($baseUrl), $middlewares);
     }
 
     /** @return array<mixed> */

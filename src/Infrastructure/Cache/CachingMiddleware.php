@@ -8,6 +8,7 @@ use IntegrationEngine\Core\Batch\PreparedRequest;
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Client\AbstractClientMiddleware;
+use IntegrationEngine\Core\Contract\Client\BaseUrlAwareMiddlewareInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Infrastructure\Debug\IntegrationEngineDataCollector;
@@ -17,14 +18,25 @@ use IntegrationEngine\Infrastructure\Debug\IntegrationEngineDataCollector;
  * Actions without cache_ttl pass through with zero overhead.
  * In sendMany(), cache hits are resolved before dispatching — only misses
  * reach the inner adapter, preserving concurrency for uncached requests.
+ *
+ * baseUrl is part of the cache key: MiddlewareClient::withBaseUrl() rebuilds
+ * this middleware via withBaseUrl() below, so one integration serving
+ * several tenants through a per-call baseUrl never shares a cache entry
+ * between tenants.
  */
-final class CachingMiddleware extends AbstractClientMiddleware
+final class CachingMiddleware extends AbstractClientMiddleware implements BaseUrlAwareMiddlewareInterface
 {
     public function __construct(
         private readonly CachePort $cache,
         private readonly string $integrationName,
         private readonly ?IntegrationEngineDataCollector $collector = null,
+        private readonly ?string $baseUrl = null,
     ) {}
+
+    public function withBaseUrl(string $baseUrl): static
+    {
+        return new self($this->cache, $this->integrationName, $this->collector, $baseUrl);
+    }
 
     /** @return array<mixed> */
     public function process(
@@ -118,6 +130,7 @@ final class CachingMiddleware extends AbstractClientMiddleware
             $this->integrationName,
             sha1(json_encode([
                 $action::class,
+                $this->baseUrl,
                 $context?->toArray() ?? [],
                 $headers?->toArray() ?? [],
             ], JSON_THROW_ON_ERROR)),
