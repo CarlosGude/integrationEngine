@@ -52,9 +52,22 @@ final class Configuration implements ConfigurationInterface
             ->info('Custom CachePort service ID. Defaults to InMemoryCacheAdapter.')
             ->end()
 
+                        // ── runtime connection resolution ─────────────────────
+            ->scalarNode('connection_resolver')
+            ->defaultNull()
+            ->info('Service ID implementing ConnectionResolverInterface, for integrations whose base_url/authorization vary per call via the $connection argument to send()/sendMany(). Optional — integrations that never pass $connection do not need one.')
+            ->end()
+
                         // ── middlewares ───────────────────────────────────────
             ->arrayNode('middlewares')
             ->info('Ordered list of middleware service IDs (outermost first). Only services tagged with integration_engine.middleware are accepted.')
+            ->scalarPrototype()->end()
+            ->defaultValue([])
+            ->end()
+
+                        // ── request middlewares ────────────────────────────────
+            ->arrayNode('request_middlewares')
+            ->info('Ordered list of RequestMiddlewareInterface service IDs (outermost first), run on the fully-built request just before the HTTP call — e.g. request signing (OAuth 1.0a). Only services tagged with integration_engine.request_middleware are accepted. Only applies to the built-in rest/graphql clients, not client_service.')
             ->scalarPrototype()->end()
             ->defaultValue([])
             ->end()

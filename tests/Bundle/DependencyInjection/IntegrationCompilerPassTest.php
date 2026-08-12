@@ -15,6 +15,7 @@ use IntegrationEngine\Infrastructure\Http\ClientAdapterResolver;
 use IntegrationEngine\Infrastructure\Http\GraphQLClientAdapter;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use IntegrationEngine\Tests\Fake\FakeMiddleware;
+use IntegrationEngine\Tests\Fake\FakeRequestMiddleware;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -259,6 +260,96 @@ final class IntegrationCompilerPassTest extends TestCase
         (new IntegrationCompilerPass())->process($container);
     }
 
+    // ── request_middlewares ──────────────────────────────────────────────────
+
+    #[Test]
+    public function declaredRequestMiddlewaresAreInjectedAsTheFourthAdapterArgument(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig([
+            'request_middlewares' => ['app.oauth_signer'],
+        ])]);
+        $this->tagRequestMiddleware($container, 'app.oauth_signer', FakeRequestMiddleware::class);
+
+        (new IntegrationCompilerPass())->process($container);
+
+        $httpClientDef = $container->getDefinition('integration_engine.http_client.my_api');
+        $requestMiddlewares = $httpClientDef->getArgument(3);
+        self::assertCount(1, $requestMiddlewares);
+        self::assertSame('app.oauth_signer', $this->referencedServiceId($requestMiddlewares[0]));
+    }
+
+    #[Test]
+    public function requestMiddlewareOrderFollowsDeclarationOrder(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig([
+            'request_middlewares' => ['app.outer', 'app.inner'],
+        ])]);
+        $this->tagRequestMiddleware($container, 'app.outer', FakeRequestMiddleware::class);
+        $this->tagRequestMiddleware($container, 'app.inner', FakeRequestMiddleware::class);
+
+        (new IntegrationCompilerPass())->process($container);
+
+        $requestMiddlewares = $container->getDefinition('integration_engine.http_client.my_api')->getArgument(3);
+        self::assertSame('app.outer', $this->referencedServiceId($requestMiddlewares[0]));
+        self::assertSame('app.inner', $this->referencedServiceId($requestMiddlewares[1]));
+    }
+
+    #[Test]
+    public function withNoRequestMiddlewaresTheAdapterGetsOnlyThreeArguments(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig()]);
+
+        (new IntegrationCompilerPass())->process($container);
+
+        $httpClientDef = $container->getDefinition('integration_engine.http_client.my_api');
+        self::assertCount(3, $httpClientDef->getArguments());
+    }
+
+    #[Test]
+    public function throwsWhenDeclaredRequestMiddlewareIsNotTagged(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig([
+            'request_middlewares' => ['app.not_registered'],
+        ])]);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/my_api.*app\.not_registered/');
+
+        (new IntegrationCompilerPass())->process($container);
+    }
+
+    #[Test]
+    public function throwsWhenTaggedRequestMiddlewareDoesNotImplementInterface(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig([
+            'request_middlewares' => ['app.not_a_signer'],
+        ])]);
+        $this->tagRequestMiddleware($container, 'app.not_a_signer', \stdClass::class);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/app\.not_a_signer.*stdClass/');
+
+        (new IntegrationCompilerPass())->process($container);
+    }
+
+    #[Test]
+    public function requestMiddlewaresAreIgnoredWhenUsingACustomClientService(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig([
+            'client_service' => 'app.custom_client',
+            'base_url' => null,
+            'request_middlewares' => ['app.oauth_signer'],
+        ])]);
+        $this->tagRequestMiddleware($container, 'app.oauth_signer', FakeRequestMiddleware::class);
+
+        (new IntegrationCompilerPass())->process($container);
+
+        self::assertFalse($container->hasDefinition('integration_engine.http_client.my_api'));
+
+        $clientDef = $container->getDefinition('integration_engine.client.my_api');
+        self::assertSame('app.custom_client', $this->referencedServiceId($clientDef->getArgument(0)));
+    }
+
     #[Test]
     public function usesCustomClientServiceInsteadOfBuildingAnAdapter(): void
     {
@@ -285,6 +376,32 @@ final class IntegrationCompilerPassTest extends TestCase
 
         $engineDef = $container->getDefinition('integration_engine.integration.my_api');
         self::assertSame('app.redis_cache', $this->referencedServiceId($engineDef->getArgument(2)));
+    }
+
+    #[Test]
+    public function usesCustomConnectionResolverWhenConfigured(): void
+    {
+        $container = $this->containerWithCoreServices([
+            'my_api' => $this->integrationConfig(['connection_resolver' => 'app.my_api_connection_resolver']),
+        ]);
+
+        (new IntegrationCompilerPass())->process($container);
+
+        $engineDef = $container->getDefinition('integration_engine.integration.my_api');
+        self::assertSame('app.my_api_connection_resolver', $this->referencedServiceId($engineDef->getArgument(6)));
+    }
+
+    #[Test]
+    public function connectionResolverArgumentIsNullWhenNotConfigured(): void
+    {
+        $container = $this->containerWithCoreServices([
+            'my_api' => $this->integrationConfig(),
+        ]);
+
+        (new IntegrationCompilerPass())->process($container);
+
+        $engineDef = $container->getDefinition('integration_engine.integration.my_api');
+        self::assertNull($engineDef->getArgument(6));
     }
 
     #[Test]
@@ -327,6 +444,13 @@ final class IntegrationCompilerPassTest extends TestCase
         $container->setDefinition($serviceId, $def);
     }
 
+    private function tagRequestMiddleware(ContainerBuilder $container, string $serviceId, string $class): void
+    {
+        $def = new Definition($class);
+        $def->addTag('integration_engine.request_middleware');
+        $container->setDefinition($serviceId, $def);
+    }
+
     /** @param array<string, array<string, mixed>> $integrations */
     private function containerWithCoreServices(array $integrations): ContainerBuilder
     {
@@ -354,8 +478,10 @@ final class IntegrationCompilerPassTest extends TestCase
             'client' => 'rest',
             'client_service' => null,
             'cache_service' => null,
+            'connection_resolver' => null,
             'headers' => [],
             'middlewares' => [],
+            'request_middlewares' => [],
         ], $overrides);
     }
 }

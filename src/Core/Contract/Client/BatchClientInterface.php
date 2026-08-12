@@ -17,14 +17,14 @@ interface BatchClientInterface
     /**
      * Executes all requests, concurrently where the transport allows it.
      *
-     * Must return one entry per input key, preserving keys: the raw
-     * response payload on success, or the Throwable that the equivalent
-     * ClientInterface::send() call would have thrown. One failed request
-     * must never abort the rest of the batch.
+     * Must return one entry per input key, preserving keys: the
+     * {body, headers} payload on success (the same shape ClientInterface::send()
+     * returns), or the Throwable that the equivalent send() call would have
+     * thrown. One failed request must never abort the rest of the batch.
      *
      * @param array<array-key, PreparedRequest> $requests
      *
-     * @return array<array-key, array<mixed>|\Throwable>
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
      */
     public function sendMany(array $requests): array;
 }

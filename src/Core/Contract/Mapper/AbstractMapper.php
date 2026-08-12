@@ -22,29 +22,37 @@ abstract class AbstractMapper
      * Validates the action and delegates to transform().
      * Called automatically by the engine — do not override.
      *
-     * @param array<mixed> $response
+     * $headers defaults to an empty array for callers that only care about
+     * the body (e.g. testing a mapper directly, outside the engine flow).
+     *
+     * @param array<mixed>                $response
+     * @param array<string, list<string>> $headers
      *
      * @throws MapperActionMismatchException
      */
     final public static function map(
         AbstractAction $action,
         array $response,
+        array $headers = [],
     ): ResponseInterface {
         if ($action::class !== static::getAction()) {
             throw new MapperActionMismatchException(mapperClass: static::class, expectedActionClass: static::getAction(), actualActionClass: $action::class);
         }
 
-        return static::transform($action, $response);
+        return static::transform($action, $response, $headers);
     }
 
     /**
-     * Transforms the raw response array into a typed ResponseInterface.
-     * Implement this in your mapper — the action type is guaranteed to match getAction().
+     * Transforms the raw response body and HTTP response headers into a
+     * typed ResponseInterface. Implement this in your mapper — the action
+     * type is guaranteed to match getAction().
      *
-     * @param array<mixed> $response
+     * @param array<mixed>                $response
+     * @param array<string, list<string>> $headers
      */
     abstract protected static function transform(
         AbstractAction $action,
         array $response,
+        array $headers,
     ): ResponseInterface;
 }

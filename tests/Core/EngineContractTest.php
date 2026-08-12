@@ -131,7 +131,7 @@ final class EngBasicMapper extends AbstractMapper
     /**
      * @param array<string, mixed> $response
      */
-    protected static function transform(AbstractAction $action, array $response): ResponseInterface
+    protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
     {
         return new FakeTokenResponse($response);
     }
@@ -201,7 +201,7 @@ final class EngMismatchMapper extends AbstractMapper
     /**
      * @param array<string, mixed> $response
      */
-    protected static function transform(AbstractAction $action, array $response): ResponseInterface
+    protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
     {
         return new FakeTokenResponse($response);
     }

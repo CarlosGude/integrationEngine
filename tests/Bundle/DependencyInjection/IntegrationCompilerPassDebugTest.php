@@ -233,8 +233,10 @@ final class IntegrationCompilerPassDebugTest extends TestCase
             'client' => 'rest',
             'client_service' => null,
             'cache_service' => null,
+            'connection_resolver' => null,
             'headers' => [],
             'middlewares' => [],
+            'request_middlewares' => [],
         ], $overrides);
     }
 }

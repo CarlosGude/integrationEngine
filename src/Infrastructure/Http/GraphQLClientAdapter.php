@@ -11,7 +11,9 @@ use IntegrationEngine\Core\Contract\Action\GraphQLBodyInterface;
 use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
+use IntegrationEngine\Core\Contract\Client\Request;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
+use IntegrationEngine\Core\Contract\Client\RequestMiddlewareInterface;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface as HttpResponseInterface;
@@ -19,6 +21,7 @@ use Symfony\Contracts\HttpClient\ResponseInterface as HttpResponseInterface;
 final readonly class GraphQLClientAdapter implements ClientAdapterInterface, BatchClientInterface, DynamicBaseUrlClientInterface
 {
     use ResolvesAuthHeaders;
+    use RunsRequestMiddlewares;
 
     public const CLIENT_TYPE = 'graphql';
 
@@ -27,11 +30,13 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
         private string $endpointUrl,
         /** @var array<string, string> */
         private array $defaultHeaders = [],
+        /** @var list<RequestMiddlewareInterface> */
+        private array $requestMiddlewares = [],
     ) {}
 
     public function withBaseUrl(string $baseUrl): static
     {
-        return new self($this->httpClient, $baseUrl, $this->defaultHeaders);
+        return new self($this->httpClient, $baseUrl, $this->defaultHeaders, $this->requestMiddlewares);
     }
 
     public static function getClientType(): string
@@ -50,7 +55,7 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
     }
 
     /**
-     * @return array<mixed>
+     * @return array{body: array<mixed>, headers: array<string, list<string>>}
      *
      * @throws RequestResponseException on HTTP errors or GraphQL errors in the response
      */
@@ -60,16 +65,14 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
         ?RequestHeadersInterface $headers = null,
     ): array {
         $options = $this->buildOptions($action, $headers);
+        $request = new Request('POST', $this->endpointUrl, $options['headers'], $options['json']);
+        $actionName = $action::getName();
 
-        try {
-            $response = $this->httpClient->request('POST', $this->endpointUrl, $options);
-
-            return $this->parseResponse($response, $action::getName());
-        } catch (RequestResponseException $e) {
-            throw $e;
-        } catch (\Throwable $e) {
-            throw $this->networkError($e);
-        }
+        return $this->dispatchThroughRequestMiddlewares(
+            $request,
+            $this->requestMiddlewares,
+            fn (Request $r): array => $this->execute($r, $actionName),
+        );
     }
 
     /**
@@ -78,12 +81,19 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
      * concurrency (Symfony HttpClient responses are lazy regardless of
      * REST vs GraphQL — both are plain HTTP requests under the hood).
      *
+     * Falls back to sequential per-item send() whenever request_middlewares
+     * are configured — see SymfonyHttpClientAdapter::sendMany() for why.
+     *
      * @param array<array-key, PreparedRequest> $requests
      *
-     * @return array<array-key, array<mixed>|\Throwable>
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
      */
     public function sendMany(array $requests): array
     {
+        if ([] !== $this->requestMiddlewares) {
+            return $this->sendManySequentially($requests);
+        }
+
         /** @var array<array-key, HttpResponseInterface> $dispatched */
         $dispatched = [];
         $results = [];
@@ -128,7 +138,48 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array{body: array<mixed>, headers: array<string, list<string>>}
+     *
+     * @throws RequestResponseException on HTTP errors, GraphQL errors, or network errors
+     */
+    private function execute(Request $request, string $actionName): array
+    {
+        try {
+            $response = $this->httpClient->request($request->method, $request->url, [
+                'headers' => $request->headers,
+                'json' => $request->body,
+            ]);
+
+            return $this->parseResponse($response, $actionName);
+        } catch (RequestResponseException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            throw $this->networkError($e);
+        }
+    }
+
+    /**
+     * @param array<array-key, PreparedRequest> $requests
+     *
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
+     */
+    private function sendManySequentially(array $requests): array
+    {
+        $results = [];
+
+        foreach ($requests as $key => $request) {
+            try {
+                $results[$key] = $this->send($request->action, $request->context, $request->headers);
+            } catch (\Throwable $e) {
+                $results[$key] = $e;
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * @return array{headers: array<string, string>, json: array<string, mixed>}
      *
      * @throws RequestResponseException when the action's body isn't a GraphQLBodyInterface
      */
@@ -163,7 +214,7 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
     }
 
     /**
-     * @return array<mixed>
+     * @return array{body: array<mixed>, headers: array<string, list<string>>}
      *
      * @throws RequestResponseException on HTTP errors or GraphQL errors in the response
      */
@@ -206,7 +257,7 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
 
         $result = $data['data'] ?? [];
 
-        return \is_array($result) ? $result : [];
+        return ['body' => \is_array($result) ? $result : [], 'headers' => $response->getHeaders(throw: false)];
     }
 
     private function networkError(\Throwable $e): RequestResponseException

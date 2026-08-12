@@ -36,7 +36,46 @@ final class ConfigurationTest extends TestCase
         self::assertNull($integration['config_path']);
         self::assertNull($integration['client_service']);
         self::assertNull($integration['cache_service']);
+        self::assertNull($integration['connection_resolver']);
         self::assertSame([], $integration['headers']);
+        self::assertSame([], $integration['middlewares']);
+        self::assertSame([], $integration['request_middlewares']);
+    }
+
+    #[Test]
+    public function connectionResolverServiceIdIsPreserved(): void
+    {
+        $config = $this->process([
+            'integrations' => [
+                'my_api' => [
+                    'base_url' => 'https://api.example.com',
+                    'connection_resolver' => 'app.my_api_connection_resolver',
+                ],
+            ],
+        ]);
+
+        self::assertSame(
+            'app.my_api_connection_resolver',
+            $config['integrations']['my_api']['connection_resolver'],
+        );
+    }
+
+    #[Test]
+    public function requestMiddlewaresListIsPreserved(): void
+    {
+        $config = $this->process([
+            'integrations' => [
+                'my_api' => [
+                    'base_url' => 'https://api.example.com',
+                    'request_middlewares' => ['app.oauth_signer', 'app.other'],
+                ],
+            ],
+        ]);
+
+        self::assertSame(
+            ['app.oauth_signer', 'app.other'],
+            $config['integrations']['my_api']['request_middlewares'],
+        );
     }
 
     #[Test]

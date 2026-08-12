@@ -110,7 +110,7 @@ final class EngStaticOnlyClient implements ClientInterface
         return $this->callCount;
     }
 
-    /** @return array<mixed> */
+    /** @return array{body: array<mixed>, headers: array<string, list<string>>} */
     public function send(
         AbstractAction $action,
         ?ActionContextInterface $context = null,
@@ -119,6 +119,6 @@ final class EngStaticOnlyClient implements ClientInterface
         $this->lastAction = $action;
         ++$this->callCount;
 
-        return $this->responses[$action::getName()] ?? [];
+        return ['body' => $this->responses[$action::getName()] ?? [], 'headers' => []];
     }
 }

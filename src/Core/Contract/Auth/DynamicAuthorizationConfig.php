@@ -26,13 +26,16 @@ final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
     }
 
     /**
-     * $baseUrl namespaces the cache entry per per-call base URL — the same
-     * integration serving several tenants via a different baseUrl per call
-     * must never share one tenant's token with another's.
+     * $discriminator namespaces the cache entry per connection — the same
+     * integration serving several tenants must never share one tenant's
+     * token with another's. Callers pass whatever stably identifies the
+     * connection: a connectionId when one is available (several
+     * connections can share one base_url, e.g. one multi-tenant endpoint
+     * distinguished only by credentials), the per-call baseUrl otherwise.
      */
-    public function cacheKey(string $integrationName, ?string $baseUrl = null): string
+    public function cacheKey(string $integrationName, ?string $discriminator = null): string
     {
-        return \sprintf('integration_engine.token.%s.%s.%s', $integrationName, $this->action, sha1($baseUrl ?? ''));
+        return \sprintf('integration_engine.token.%s.%s.%s', $integrationName, $this->action, sha1($discriminator ?? ''));
     }
 
     public function toStaticConfig(string $token): StaticAuthorizationConfig

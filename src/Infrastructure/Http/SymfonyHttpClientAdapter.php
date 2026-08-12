@@ -10,7 +10,9 @@ use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
+use IntegrationEngine\Core\Contract\Client\Request;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
+use IntegrationEngine\Core\Contract\Client\RequestMiddlewareInterface;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface as HttpResponseInterface;
@@ -18,6 +20,7 @@ use Symfony\Contracts\HttpClient\ResponseInterface as HttpResponseInterface;
 final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface, BatchClientInterface, DynamicBaseUrlClientInterface
 {
     use ResolvesAuthHeaders;
+    use RunsRequestMiddlewares;
 
     public const CLIENT_TYPE = 'rest';
 
@@ -26,11 +29,13 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
         private string $baseUrl,
         /** @var array<string, string> */
         private array $defaultHeaders = [],
+        /** @var list<RequestMiddlewareInterface> */
+        private array $requestMiddlewares = [],
     ) {}
 
     public function withBaseUrl(string $baseUrl): static
     {
-        return new self($this->httpClient, $baseUrl, $this->defaultHeaders);
+        return new self($this->httpClient, $baseUrl, $this->defaultHeaders, $this->requestMiddlewares);
     }
 
     public static function getClientType(): string
@@ -49,7 +54,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
     }
 
     /**
-     * @return array<mixed>
+     * @return array{body: array<mixed>, headers: array<string, list<string>>}
      *
      * @throws RequestResponseException on HTTP 4xx/5xx or network errors
      */
@@ -62,19 +67,13 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
         $method = $action->getMethod();
         $options = $this->buildOptions($action, $headers);
 
-        try {
-            $response = $this->httpClient->request(
-                $method,
-                $this->baseUrl.$path,
-                $options,
-            );
+        $request = new Request($method, $this->baseUrl.$path, $options['headers'], $options['json'] ?? null);
 
-            return $this->consume($response, $method, $path);
-        } catch (RequestResponseException $e) {
-            throw $e;
-        } catch (\Throwable $e) {
-            throw $this->networkError($method, $path, $e);
-        }
+        return $this->dispatchThroughRequestMiddlewares(
+            $request,
+            $this->requestMiddlewares,
+            fn (Request $r): array => $this->execute($r, $path),
+        );
     }
 
     /**
@@ -82,12 +81,22 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
      * HttpClient responses are lazy, so the requests run concurrently and
      * total wall time approaches the slowest request instead of the sum.
      *
+     * Falls back to sequential per-item send() whenever request_middlewares
+     * are configured: a middleware may need to observe/short-circuit each
+     * response individually (see RequestMiddlewareInterface), which the
+     * dispatch-all-then-consume-all concurrency below can't accommodate.
+     * This only affects integrations that opt into request middlewares.
+     *
      * @param array<array-key, PreparedRequest> $requests
      *
-     * @return array<array-key, array<mixed>|\Throwable>
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
      */
     public function sendMany(array $requests): array
     {
+        if ([] !== $this->requestMiddlewares) {
+            return $this->sendManySequentially($requests);
+        }
+
         /** @var array<array-key, DispatchedRequest> $dispatched */
         $dispatched = [];
         $results = [];
@@ -139,7 +148,50 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
         return $ordered;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array{body: array<mixed>, headers: array<string, list<string>>}
+     *
+     * @throws RequestResponseException on HTTP 4xx/5xx or network errors
+     */
+    private function execute(Request $request, string $path): array
+    {
+        try {
+            $options = ['headers' => $request->headers];
+            if (null !== $request->body) {
+                $options['json'] = $request->body;
+            }
+
+            $response = $this->httpClient->request($request->method, $request->url, $options);
+
+            return $this->consume($response, $request->method, $path);
+        } catch (RequestResponseException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            throw $this->networkError($request->method, $path, $e);
+        }
+    }
+
+    /**
+     * @param array<array-key, PreparedRequest> $requests
+     *
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
+     */
+    private function sendManySequentially(array $requests): array
+    {
+        $results = [];
+
+        foreach ($requests as $key => $request) {
+            try {
+                $results[$key] = $this->send($request->action, $request->context, $request->headers);
+            } catch (\Throwable $e) {
+                $results[$key] = $e;
+            }
+        }
+
+        return $results;
+    }
+
+    /** @return array{headers: array<string, string>, json?: array<string, mixed>} */
     private function buildOptions(AbstractAction $action, ?RequestHeadersInterface $headers): array
     {
         $options = [
@@ -160,7 +212,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
     }
 
     /**
-     * @return array<mixed>
+     * @return array{body: array<mixed>, headers: array<string, list<string>>}
      *
      * @throws RequestResponseException on HTTP 4xx/5xx
      */
@@ -182,12 +234,9 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
         }
 
         $content = $response->getContent(throw: false);
+        $body = (204 === $statusCode || '' === trim($content)) ? [] : $response->toArray();
 
-        if (204 === $statusCode || '' === trim($content)) {
-            return [];
-        }
-
-        return $response->toArray();
+        return ['body' => $body, 'headers' => $response->getHeaders(throw: false)];
     }
 
     private function networkError(string $method, string $path, \Throwable $e): RequestResponseException

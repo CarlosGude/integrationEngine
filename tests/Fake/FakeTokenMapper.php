@@ -15,7 +15,7 @@ final class FakeTokenMapper extends AbstractMapper
         return FakeTokenAction::class;
     }
 
-    protected static function transform(AbstractAction $action, array $response): ResponseInterface
+    protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
     {
         /** @var array<string, mixed> $response */
         return new FakeTokenResponse($response);

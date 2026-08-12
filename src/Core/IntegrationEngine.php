@@ -18,7 +18,10 @@ use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
 use IntegrationEngine\Core\Contract\Client\ClientInterface;
 use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
+use IntegrationEngine\Core\Contract\Connection\ConnectionCredentials;
+use IntegrationEngine\Core\Contract\Connection\ConnectionResolverInterface;
 use IntegrationEngine\Core\Contract\Response\ResponseInterface;
+use IntegrationEngine\Core\Exception\ConnectionResolutionException;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Exception\NotMappedActionException;
 use IntegrationEngine\Core\Port\CachePort;
@@ -37,22 +40,42 @@ final readonly class IntegrationEngine
         private string $integrationName,
         private ?LoggerInterface $logger = null,
         ?DynamicAuthHandler $authHandler = null,
+        private ?ConnectionResolverInterface $connectionResolver = null,
     ) {
         $this->authHandler = $authHandler ?? new DynamicAuthHandler($config, $client, $cache, $integrationName, $logger);
     }
 
     // ── Single request ─────────────────────────────────────────────────────────
 
+    /**
+     * $connection is opaque runtime info the integration's own
+     * ConnectionResolverInterface (configured via `connection_resolver` in
+     * the bundle) turns into a base_url/authorization override — e.g. a
+     * tenant id looked up against the application's own connection store.
+     * Leave it null for integrations that don't vary by runtime connection.
+     *
+     * Dynamic-auth token caching is namespaced by, in priority order: the
+     * resolved connectionId, then $connection itself when it's a scalar,
+     * then the resolved base URL. This matters when several connections
+     * share one base_url and the resolver doesn't set connectionId — $connection
+     * (e.g. a tenant id) is what keeps their tokens from colliding; without
+     * it (a non-scalar $connection and no connectionId/baseUrl) two such
+     * connections would share one cache entry.
+     */
     public function send(
         string $actionName,
         ?ActionContextInterface $context = null,
         ?ActionBodyInterface $body = null,
         ?RequestHeadersInterface $headers = null,
         ?string $baseUrl = null,
+        mixed $connection = null,
     ): ResponseInterface {
         $action = $this->config->getAction($actionName, $body);
+        $resolved = $this->resolveForDispatch($action, $connection, $baseUrl);
+        $action = $resolved['action'];
+        $client = $resolved['client'];
+
         $auth = $action->getAuthorization();
-        $client = $this->resolveClient($baseUrl);
 
         if ($auth instanceof DynamicAuthorizationConfig) {
             return $this->authHandler->handle(
@@ -60,15 +83,15 @@ final readonly class IntegrationEngine
                 auth: $auth,
                 context: $context,
                 headers: $headers,
-                buildResponse: fn (AbstractAction $a, array $r): ResponseInterface => $this->buildResponse($a, $r),
+                buildResponse: fn (AbstractAction $a, array $respBody, array $respHeaders): ResponseInterface => $this->buildResponse($a, $respBody, $respHeaders),
                 client: $client,
-                baseUrl: $baseUrl,
+                cacheDiscriminator: $resolved['cacheDiscriminator'],
             );
         }
 
         $rawResponse = $client->send($action, $context, $headers);
 
-        return $this->buildResponse($action, $rawResponse);
+        return $this->buildResponse($action, $rawResponse['body'], $rawResponse['headers']);
     }
 
     // ── Batch requests ─────────────────────────────────────────────────────────
@@ -89,22 +112,31 @@ final readonly class IntegrationEngine
         $prepared = [];
         $tokenRetry = new BatchTokenRetry($this->cache, $this->integrationName);
 
+        // Scoped to this call and threaded into resolveForDispatch() below,
+        // so items sharing one $connection (a common batch pattern — many
+        // items for the same tenant) resolve it once instead of once per item.
+        $connectionCache = [];
+
         foreach ($requests as $key => $request) {
             try {
                 $action = $this->config->getAction($request->actionName, $request->body);
+                $resolved = $this->resolveForDispatch($action, $request->connection, $request->baseUrl, $connectionCache);
+                $action = $resolved['action'];
+                $client = $resolved['client'];
+                $cacheDiscriminator = $resolved['cacheDiscriminator'];
+
                 $auth = $action->getAuthorization();
-                $client = $this->resolveClient($request->baseUrl);
 
                 if ($auth instanceof DynamicAuthorizationConfig) {
                     $action = $tokenRetry->prepareWithToken(
                         $key,
                         $auth,
-                        $request->baseUrl,
-                        fn (): AbstractAction => $this->authHandler->withStaticToken($action, $auth, client: $client, baseUrl: $request->baseUrl),
+                        $cacheDiscriminator,
+                        fn (): AbstractAction => $this->authHandler->withStaticToken($action, $auth, client: $client, cacheDiscriminator: $cacheDiscriminator),
                     );
                 }
 
-                $prepared[$key] = new PreparedRequest($action, $request->context, $request->headers, $request->baseUrl);
+                $prepared[$key] = new PreparedRequest($action, $request->context, $request->headers, $resolved['baseUrl'], $cacheDiscriminator);
             } catch (\Throwable $e) {
                 $failures[$key] = $e;
             }
@@ -133,7 +165,7 @@ final readonly class IntegrationEngine
             }
 
             try {
-                $results[$key] = BatchResult::success($this->buildResponse($prepared[$key]->action, $rawResult));
+                $results[$key] = BatchResult::success($this->buildResponse($prepared[$key]->action, $rawResult['body'], $rawResult['headers']));
             } catch (\Throwable $e) {
                 $results[$key] = BatchResult::failure($e);
             }
@@ -180,7 +212,7 @@ final readonly class IntegrationEngine
      *
      * @param array<array-key, PreparedRequest> $prepared
      *
-     * @return array<array-key, array<mixed>|\Throwable>
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
      */
     private function dispatchBatch(array $prepared): array
     {
@@ -205,7 +237,7 @@ final readonly class IntegrationEngine
     /**
      * @param array<array-key, PreparedRequest> $prepared
      *
-     * @return array<array-key, array<mixed>|\Throwable>
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
      */
     private function dispatchGroup(ClientInterface $client, array $prepared): array
     {
@@ -234,6 +266,93 @@ final readonly class IntegrationEngine
     }
 
     /**
+     * Resolves the connection (if any) and derives everything both send()
+     * and sendMany() need to dispatch a request for it: the action with the
+     * connection's authorization override applied, the client targeting
+     * its base URL, the base URL itself, and the dynamic-auth cache
+     * discriminator. Kept as one method so the two call sites can't drift
+     * out of sync with each other on this logic.
+     *
+     * $connectionCache memoizes resolveConnection() across calls sharing
+     * one scalar $connection — pass a variable from sendMany()'s loop so
+     * repeated connections across batch items resolve only once; send()
+     * doesn't pass one, since there's only ever one call to memoize.
+     *
+     * @param array<string, ?ConnectionCredentials> $connectionCache
+     *
+     * @return array{action: AbstractAction, client: ClientInterface, baseUrl: ?string, cacheDiscriminator: ?string}
+     */
+    private function resolveForDispatch(AbstractAction $action, mixed $connection, ?string $baseUrl, array &$connectionCache = []): array
+    {
+        $credentials = $this->resolveConnection($connection, $connectionCache);
+        $action = $this->applyConnectionAuthorization($action, $credentials);
+
+        $resolvedBaseUrl = $baseUrl ?? $credentials?->baseUrl;
+        $cacheDiscriminator = $credentials->connectionId
+            ?? (\is_scalar($connection) ? (string) $connection : null)
+            ?? $resolvedBaseUrl;
+
+        return [
+            'action' => $action,
+            'client' => $this->resolveClient($resolvedBaseUrl),
+            'baseUrl' => $resolvedBaseUrl,
+            'cacheDiscriminator' => $cacheDiscriminator,
+        ];
+    }
+
+    /**
+     * @param array<string, ?ConnectionCredentials> $connectionCache
+     *
+     * @throws ConnectionResolutionException when $connection is given but
+     *                                       no connection_resolver is configured for this integration
+     */
+    private function resolveConnection(mixed $connection, array &$connectionCache = []): ?ConnectionCredentials
+    {
+        if (null === $connection) {
+            return null;
+        }
+
+        $cacheKey = \is_scalar($connection) ? (string) $connection : null;
+
+        if (null !== $cacheKey && \array_key_exists($cacheKey, $connectionCache)) {
+            return $connectionCache[$cacheKey];
+        }
+
+        if (null === $this->connectionResolver) {
+            throw ConnectionResolutionException::noResolverConfigured($this->integrationName);
+        }
+
+        $credentials = $this->connectionResolver->resolve($connection);
+
+        if (null !== $cacheKey) {
+            $connectionCache[$cacheKey] = $credentials;
+        }
+
+        return $credentials;
+    }
+
+    /**
+     * Rebuilds the action with the resolved connection's AuthorizationConfig
+     * when one was resolved — the action instance is otherwise returned
+     * unchanged, so integrations that never use runtime connections pay no
+     * cost and keep their YAML-configured authorization untouched.
+     */
+    private function applyConnectionAuthorization(AbstractAction $action, ?ConnectionCredentials $credentials): AbstractAction
+    {
+        if (null === $credentials?->authorization) {
+            return $action;
+        }
+
+        return $action::create(
+            method: $action->getMethod(),
+            path: $action->getRawPath(),
+            body: $action->getBody(),
+            authorization: $credentials->authorization,
+            cacheTtl: $action->getCacheTtl(),
+        );
+    }
+
+    /**
      * Executes the retry batch produced by BatchTokenRetry::plan(): re-prepares
      * each item with a freshly resolved token and dispatches them together.
      *
@@ -241,11 +360,11 @@ final readonly class IntegrationEngine
      * reflects the fresh-token action actually used — buildResponse() must
      * not see the stale, cache-deleted pre-retry action.
      *
-     * @param array<array-key, array<mixed>|\Throwable>    $raw
-     * @param array<array-key, DynamicAuthorizationConfig> $toRetry
-     * @param array<array-key, PreparedRequest>            $prepared
+     * @param array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable> $raw
+     * @param array<array-key, DynamicAuthorizationConfig>                                                 $toRetry
+     * @param array<array-key, PreparedRequest>                                                            $prepared
      *
-     * @return array<array-key, array<mixed>|\Throwable>
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
      */
     private function retryBatch(array $raw, array $toRetry, array &$prepared): array
     {
@@ -264,10 +383,11 @@ final readonly class IntegrationEngine
                 $original = $prepared[$key];
                 $client = $this->resolveClient($original->baseUrl);
                 $retryPrepared[$key] = new PreparedRequest(
-                    $this->authHandler->withStaticToken($original->action, $auth, client: $client, baseUrl: $original->baseUrl),
+                    $this->authHandler->withStaticToken($original->action, $auth, client: $client, cacheDiscriminator: $original->cacheDiscriminator),
                     $original->context,
                     $original->headers,
                     $original->baseUrl,
+                    $original->cacheDiscriminator,
                 );
             } catch (\Throwable $e) {
                 $raw[$key] = $e;
@@ -288,21 +408,23 @@ final readonly class IntegrationEngine
     // ── Response building ──────────────────────────────────────────────────────
 
     /**
-     * @param array<mixed> $rawResponse
+     * @param array<mixed>                $body
+     * @param array<string, list<string>> $headers
      */
-    private function buildResponse(AbstractAction $action, array $rawResponse): ResponseInterface
+    private function buildResponse(AbstractAction $action, array $body, array $headers): ResponseInterface
     {
         if (!$action::hasResponse()) {
             return new EmptyResponse();
         }
 
-        return $this->applyMapper($action, $rawResponse);
+        return $this->applyMapper($action, $body, $headers);
     }
 
     /**
-     * @param array<mixed> $rawResponse
+     * @param array<mixed>                $body
+     * @param array<string, list<string>> $headers
      */
-    private function applyMapper(AbstractAction $action, array $rawResponse): ResponseInterface
+    private function applyMapper(AbstractAction $action, array $body, array $headers): ResponseInterface
     {
         $mapperClass = $action::mapper();
 
@@ -322,6 +444,6 @@ final readonly class IntegrationEngine
             );
         }
 
-        return $mapperClass::map($action, $rawResponse);
+        return $mapperClass::map($action, $body, $headers);
     }
 }

@@ -62,7 +62,7 @@ final class GraphQLClientAdapterBodyTest extends TestCase
 
         $result = $adapter->send(GQLBodyAction::create('POST', '/graphql', GQLBodyTestBody::create([])));
 
-        self::assertSame(['user' => ['id' => '1', 'name' => 'Carlos']], $result);
+        self::assertSame(['user' => ['id' => '1', 'name' => 'Carlos']], $result['body']);
     }
 
     #[Test]
@@ -73,7 +73,7 @@ final class GraphQLClientAdapterBodyTest extends TestCase
 
         $result = $adapter->send(GQLBodyAction::create('POST', '/graphql', GQLBodyTestBody::create([])));
 
-        self::assertSame([], $result);
+        self::assertSame([], $result['body']);
     }
 
     #[Test]
@@ -84,7 +84,21 @@ final class GraphQLClientAdapterBodyTest extends TestCase
 
         $result = $adapter->send(GQLBodyAction::create('POST', '/graphql', GQLBodyTestBody::create([])));
 
-        self::assertSame(['user' => ['id' => '1']], $result);
+        self::assertSame(['user' => ['id' => '1']], $result['body']);
+    }
+
+    #[Test]
+    public function responseHeadersArePropagatedAlongsideData(): void
+    {
+        $spy = new GQLBodySpyClient(
+            responseBody: ['data' => ['user' => ['id' => '1']]],
+            responseHeaders: ['X-Request-Id' => ['gql-1'], 'Set-Cookie' => ['a=1', 'b=2']],
+        );
+        $adapter = new GraphQLClientAdapter(httpClient: $spy, endpointUrl: 'https://api.example.com/graphql');
+
+        $result = $adapter->send(GQLBodyAction::create('POST', '/graphql', GQLBodyTestBody::create([])));
+
+        self::assertSame(['X-Request-Id' => ['gql-1'], 'Set-Cookie' => ['a=1', 'b=2']], $result['headers']);
     }
 
     // ── Adapter capabilities ──────────────────────────────────────────────────
@@ -118,8 +132,14 @@ final class GQLBodySpyClient implements HttpClientInterface
     /** @var array<string, mixed> */
     private array $lastOptions = [];
 
-    /** @param array<string, mixed> $responseBody */
-    public function __construct(private readonly array $responseBody = []) {}
+    /**
+     * @param array<string, mixed>        $responseBody
+     * @param array<string, list<string>> $responseHeaders
+     */
+    public function __construct(
+        private readonly array $responseBody = [],
+        private readonly array $responseHeaders = [],
+    ) {}
 
     public function lastMethod(): string
     {
@@ -145,20 +165,27 @@ final class GQLBodySpyClient implements HttpClientInterface
         $this->lastOptions = $options;
 
         $body = $this->responseBody;
+        $headers = $this->responseHeaders;
 
-        return new class($body) implements HttpResponseInterface {
-            /** @param array<string, mixed> $body */
-            public function __construct(private readonly array $body) {}
+        return new class($body, $headers) implements HttpResponseInterface {
+            /**
+             * @param array<string, mixed>        $body
+             * @param array<string, list<string>> $headers
+             */
+            public function __construct(
+                private readonly array $body,
+                private readonly array $headers,
+            ) {}
 
             public function getStatusCode(): int
             {
                 return 200;
             }
 
-            /** @return array<string, array<int, string>> */
+            /** @return array<string, list<string>> */
             public function getHeaders(bool $throw = true): array
             {
-                return [];
+                return $this->headers;
             }
 
             public function getContent(bool $throw = true): string

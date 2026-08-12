@@ -38,7 +38,7 @@ final class MiddlewareClientTest extends TestCase
 
         $result = $client->send(FakePathAction::create('GET', '/items'));
 
-        self::assertSame(['result' => 1], $result);
+        self::assertSame(['body' => ['result' => 1], 'headers' => []], $result);
         self::assertSame(['A:before', 'B:before', 'B:after', 'A:after'], $log);
     }
 
@@ -49,7 +49,7 @@ final class MiddlewareClientTest extends TestCase
         $inner->setResponse(FakePathAction::getName(), ['x' => 1]);
         $client = new MiddlewareClient($inner, []);
 
-        self::assertSame(['x' => 1], $client->send(FakePathAction::create('GET', '/items')));
+        self::assertSame(['body' => ['x' => 1], 'headers' => []], $client->send(FakePathAction::create('GET', '/items')));
     }
 
     // ── sendMany() uses inner batch when available ────────────────────────────
@@ -70,7 +70,7 @@ final class MiddlewareClientTest extends TestCase
             'a' => new PreparedRequest(FakePathAction::create('GET', '/items'), null, null),
         ]);
 
-        self::assertSame(['result' => 1], $results['a']);
+        self::assertSame(['body' => ['result' => 1], 'headers' => []], $results['a']);
         self::assertSame(['A:before-batch', 'B:before-batch', 'B:after-batch', 'A:after-batch'], $log);
         self::assertSame(1, $inner->batchCount());
     }
@@ -86,7 +86,7 @@ final class MiddlewareClientTest extends TestCase
             'a' => new PreparedRequest(FakePathAction::create('GET', '/items'), null, null),
         ]);
 
-        self::assertSame(['ok' => true], $results['a']);
+        self::assertSame(['body' => ['ok' => true], 'headers' => []], $results['a']);
         self::assertSame(1, $inner->batchCount());
     }
 
@@ -102,8 +102,8 @@ final class MiddlewareClientTest extends TestCase
             'b' => new PreparedRequest(FakePathAction::create('GET', '/items'), null, null),
         ]);
 
-        self::assertSame(['ok' => true], $results['a']);
-        self::assertSame(['ok' => true], $results['b']);
+        self::assertSame(['body' => ['ok' => true], 'headers' => []], $results['a']);
+        self::assertSame(['body' => ['ok' => true], 'headers' => []], $results['b']);
         self::assertSame(2, $inner->callCount(FakePathAction::getName()));
     }
 

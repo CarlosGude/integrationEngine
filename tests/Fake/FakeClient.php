@@ -34,10 +34,14 @@ final class FakeClient implements ClientInterface, DynamicBaseUrlClientInterface
         return $this->baseUrl;
     }
 
-    /** @param array<mixed> $response */
-    public function setResponse(string $name, array $response): void
+    /**
+     * @param array<mixed>                $response
+     * @param array<string, list<string>> $headers
+     */
+    public function setResponse(string $name, array $response, array $headers = []): void
     {
         $this->state->responses[$name] = $response;
+        $this->state->responseHeaders[$name] = $headers;
     }
 
     /**
@@ -70,7 +74,7 @@ final class FakeClient implements ClientInterface, DynamicBaseUrlClientInterface
         return $this->state->lastBaseUrl;
     }
 
-    /** @return array<mixed> */
+    /** @return array{body: array<mixed>, headers: array<string, list<string>>} */
     public function send(
         AbstractAction $action,
         ?ActionContextInterface $context = null,
@@ -85,7 +89,10 @@ final class FakeClient implements ClientInterface, DynamicBaseUrlClientInterface
             throw array_shift($this->state->pendingExceptions[$action::getName()]);
         }
 
-        return $this->state->responses[$action::getName()] ?? [];
+        return [
+            'body' => $this->state->responses[$action::getName()] ?? [],
+            'headers' => $this->state->responseHeaders[$action::getName()] ?? [],
+        ];
     }
 }
 
@@ -97,6 +104,9 @@ final class FakeClientState
 {
     /** @var array<string, array<mixed>> */
     public array $responses = [];
+
+    /** @var array<string, array<string, list<string>>> */
+    public array $responseHeaders = [];
 
     /** @var array<string, int> */
     public array $callCount = [];

@@ -42,7 +42,7 @@ final class FakeBatchClient implements BatchClientInterface, ClientInterface
         return $this->batches;
     }
 
-    /** @return array<mixed> */
+    /** @return array{body: array<mixed>, headers: array<string, list<string>>} */
     public function send(
         AbstractAction $action,
         ?ActionContextInterface $context = null,

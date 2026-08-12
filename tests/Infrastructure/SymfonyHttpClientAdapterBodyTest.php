@@ -109,7 +109,7 @@ final class SymfonyHttpClientAdapterBodyTest extends TestCase
 
         $result = $adapter->send(BodyTestAction::create('GET', '/orders'));
 
-        self::assertSame(['ok' => true], $result);
+        self::assertSame(['body' => ['ok' => true], 'headers' => []], $result);
     }
 
     // ── \Throwable network error ──────────────────────────────────────────────
@@ -155,7 +155,7 @@ final class SymfonyHttpClientAdapterBodyTest extends TestCase
 
         $result = $adapter->send(BodyTestAction::create('DELETE', '/orders/1'));
 
-        self::assertSame([], $result);
+        self::assertSame(['body' => [], 'headers' => []], $result);
     }
 
     #[Test]
@@ -166,7 +166,7 @@ final class SymfonyHttpClientAdapterBodyTest extends TestCase
 
         $result = $adapter->send(BodyTestAction::create('DELETE', '/orders/1'));
 
-        self::assertSame([], $result);
+        self::assertSame(['body' => [], 'headers' => []], $result);
     }
 
     #[Test]
@@ -177,7 +177,7 @@ final class SymfonyHttpClientAdapterBodyTest extends TestCase
 
         $result = $adapter->send(BodyTestAction::create('GET', '/orders'));
 
-        self::assertSame([], $result);
+        self::assertSame(['body' => [], 'headers' => []], $result);
     }
 
     #[Test]
@@ -188,7 +188,7 @@ final class SymfonyHttpClientAdapterBodyTest extends TestCase
 
         $result = $adapter->send(BodyTestAction::create('GET', '/orders'));
 
-        self::assertSame([], $result);
+        self::assertSame(['body' => [], 'headers' => []], $result);
     }
 
     #[Test]
@@ -199,7 +199,7 @@ final class SymfonyHttpClientAdapterBodyTest extends TestCase
 
         $result = $adapter->send(BodyTestAction::create('GET', '/orders'));
 
-        self::assertSame(['data' => 'ok'], $result);
+        self::assertSame(['body' => ['data' => 'ok'], 'headers' => []], $result);
     }
 }
 

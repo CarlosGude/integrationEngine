@@ -8,6 +8,7 @@ use IntegrationEngine\Bundle\Exception\IntegrationConfigurationException;
 use IntegrationEngine\Core\Auth\DynamicAuthHandler;
 use IntegrationEngine\Core\Contract\Client\AbstractClientMiddleware;
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
+use IntegrationEngine\Core\Contract\Client\RequestMiddlewareInterface;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Registry\IntegrationRegistry;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
@@ -16,6 +17,8 @@ use IntegrationEngine\Infrastructure\Client\MiddlewareClient;
 use IntegrationEngine\Infrastructure\Debug\IntegrationEngineDataCollector;
 use IntegrationEngine\Infrastructure\Debug\TracingMiddleware;
 use IntegrationEngine\Infrastructure\Http\ClientAdapterResolver;
+use IntegrationEngine\Infrastructure\Http\GraphQLClientAdapter;
+use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -31,17 +34,18 @@ final class IntegrationCompilerPass implements CompilerPassInterface
             return;
         }
 
-        /** @var array<string, array{config_path: null|string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, headers: array<string, string>, middlewares: list<string>}> $integrations */
+        /** @var array<string, array{config_path: null|string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, connection_resolver: null|string, headers: array<string, string>, middlewares: list<string>, request_middlewares: list<string>}> $integrations */
         $integrations = $container->getParameter('integration_engine.integrations');
 
         $registeredMiddlewares = $this->resolveTaggedMiddlewares($container);
+        $registeredRequestMiddlewares = $this->resolveTaggedRequestMiddlewares($container);
 
         $adapterMap = $this->buildAdapterMap($container);
 
         $registry = $container->findDefinition(IntegrationRegistry::class);
 
         foreach ($integrations as $name => $config) {
-            $this->wireIntegration($container, $registry, $name, $config, $adapterMap, $registeredMiddlewares);
+            $this->wireIntegration($container, $registry, $name, $config, $adapterMap, $registeredMiddlewares, $registeredRequestMiddlewares);
         }
     }
 
@@ -110,6 +114,70 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         return $declared;
     }
 
+    // ── Tagged request middleware discovery ────────────────────────────────────
+
+    /**
+     * Same as resolveTaggedMiddlewares(), but for request_middlewares:
+     * services tagged "integration_engine.request_middleware" must implement
+     * RequestMiddlewareInterface (not extend AbstractClientMiddleware —
+     * these are a different, request-level extension point, see the
+     * interface's docblock).
+     *
+     * @return array<string, true>
+     */
+    private function resolveTaggedRequestMiddlewares(ContainerBuilder $container): array
+    {
+        $tagged = $container->findTaggedServiceIds('integration_engine.request_middleware');
+        $registered = [];
+
+        foreach ($tagged as $serviceId => $tags) {
+            $definition = $container->getDefinition($serviceId);
+            $class = $definition->getClass() ?? $serviceId;
+
+            if (!class_exists($class)) {
+                throw new \InvalidArgumentException(\sprintf(
+                    'Service "%s" is tagged as "integration_engine.request_middleware" but its class "%s" does not exist.',
+                    $serviceId,
+                    $class,
+                ));
+            }
+
+            if (!is_a($class, RequestMiddlewareInterface::class, true)) {
+                throw new \InvalidArgumentException(\sprintf(
+                    'Service "%s" (%s) is tagged as "integration_engine.request_middleware" but does not implement %s.',
+                    $serviceId,
+                    $class,
+                    RequestMiddlewareInterface::class,
+                ));
+            }
+
+            $registered[$serviceId] = true;
+        }
+
+        return $registered;
+    }
+
+    /**
+     * @param list<string>        $declared
+     * @param array<string, true> $registered
+     *
+     * @return list<string>
+     */
+    private function resolveIntegrationRequestMiddlewares(array $declared, array $registered, string $integrationName): array
+    {
+        foreach ($declared as $serviceId) {
+            if (!isset($registered[$serviceId])) {
+                throw new \InvalidArgumentException(\sprintf(
+                    'Integration "%s" declares request middleware "%s" but no service with that ID is tagged as "integration_engine.request_middleware".',
+                    $integrationName,
+                    $serviceId,
+                ));
+            }
+        }
+
+        return $declared;
+    }
+
     // ── Adapter discovery ──────────────────────────────────────────────────────
 
     /**
@@ -153,9 +221,10 @@ final class IntegrationCompilerPass implements CompilerPassInterface
     // ── Integration wiring ─────────────────────────────────────────────────────
 
     /**
-     * @param array{config_path: null|string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, headers: array<string, string>, middlewares: list<string>} $config
-     * @param array<string, class-string<ClientAdapterInterface>>                                                                                                                                        $adapterMap
-     * @param array<string, true>                                                                                                                                                                        $registeredMiddlewares
+     * @param array{config_path: null|string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, connection_resolver: null|string, headers: array<string, string>, middlewares: list<string>, request_middlewares: list<string>} $config
+     * @param array<string, class-string<ClientAdapterInterface>>                                                                                                                                                                                                             $adapterMap
+     * @param array<string, true>                                                                                                                                                                                                                                             $registeredMiddlewares
+     * @param array<string, true>                                                                                                                                                                                                                                             $registeredRequestMiddlewares
      */
     private function wireIntegration(
         ContainerBuilder $container,
@@ -164,6 +233,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         array $config,
         array $adapterMap,
         array $registeredMiddlewares,
+        array $registeredRequestMiddlewares,
     ): void {
         if (null === $config['config_path']) {
             throw IntegrationConfigurationException::missingConfigPath($name);
@@ -181,7 +251,8 @@ final class IntegrationCompilerPass implements CompilerPassInterface
 
         $loggerRef = new Reference('logger', ContainerInterface::IGNORE_ON_INVALID_REFERENCE);
 
-        $httpClientRef = $this->resolveHttpClientRef($container, $name, $config, $adapterMap);
+        $integrationRequestMiddlewares = $this->resolveIntegrationRequestMiddlewares($config['request_middlewares'], $registeredRequestMiddlewares, $name);
+        $httpClientRef = $this->resolveHttpClientRef($container, $name, $config, $adapterMap, $integrationRequestMiddlewares);
         $integrationMiddlewares = $this->resolveIntegrationMiddlewares($config['middlewares'], $registeredMiddlewares, $name);
         $clientRef = $this->buildMiddlewareClient($container, $name, $httpClientRef, $cacheRef, $integrationMiddlewares);
 
@@ -191,10 +262,12 @@ final class IntegrationCompilerPass implements CompilerPassInterface
             [new Reference($configId), $clientRef, $cacheRef, $name, $loggerRef],
         ));
 
+        $connectionResolverRef = $config['connection_resolver'] ? new Reference($config['connection_resolver']) : null;
+
         $integrationId = "integration_engine.integration.{$name}";
         $container->setDefinition($integrationId, new Definition(
             IntegrationEngine::class,
-            [new Reference($configId), $clientRef, $cacheRef, $name, $loggerRef, new Reference($authHandlerId)],
+            [new Reference($configId), $clientRef, $cacheRef, $name, $loggerRef, new Reference($authHandlerId), $connectionResolverRef],
         ));
 
         $registry->addMethodCall('register', [$name, new Reference($integrationId)]);
@@ -203,14 +276,25 @@ final class IntegrationCompilerPass implements CompilerPassInterface
     /**
      * Returns a Reference to the raw HTTP adapter for this integration.
      *
+     * $requestMiddlewares is only passed through as a 4th constructor
+     * argument for the two built-in adapter classes, whose shared
+     * constructor shape (httpClient, baseUrl, defaultHeaders, requestMiddlewares)
+     * this method already assumes. A custom adapter registered via
+     * integration_engine.client_adapter with a different constructor isn't
+     * touched — request_middlewares silently has no effect for it, since
+     * such an adapter owns its own request construction and would need to
+     * support RequestMiddlewareInterface itself.
+     *
      * @param array{config_path: null|string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, headers: array<string, string>} $config
      * @param array<string, class-string<ClientAdapterInterface>>                                                                                                             $adapterMap
+     * @param list<string>                                                                                                                                                    $requestMiddlewares
      */
     private function resolveHttpClientRef(
         ContainerBuilder $container,
         string $name,
         array $config,
         array $adapterMap,
+        array $requestMiddlewares,
     ): Reference {
         if ($config['client_service']) {
             return new Reference($config['client_service']);
@@ -227,14 +311,17 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         $adapterClass = $adapterMap[$config['client']];
         $httpClientId = "integration_engine.http_client.{$name}";
 
-        $container->setDefinition($httpClientId, new Definition(
-            $adapterClass,
-            [
-                new Reference('http_client'),
-                $config['base_url'],
-                $config['headers'],
-            ],
-        ));
+        $args = [
+            new Reference('http_client'),
+            $config['base_url'],
+            $config['headers'],
+        ];
+
+        if ([] !== $requestMiddlewares && \in_array($adapterClass, [SymfonyHttpClientAdapter::class, GraphQLClientAdapter::class], true)) {
+            $args[] = array_map(static fn (string $id): Reference => new Reference($id), $requestMiddlewares);
+        }
+
+        $container->setDefinition($httpClientId, new Definition($adapterClass, $args));
 
         return new Reference($httpClientId);
     }

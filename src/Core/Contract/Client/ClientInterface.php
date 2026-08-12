@@ -10,10 +10,11 @@ use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 interface ClientInterface
 {
     /**
-     * Executes the HTTP request and returns the raw response payload.
-     * The engine will pass this array to the action's mapper.
+     * Executes the HTTP request and returns the raw response payload plus
+     * the response's HTTP headers. The engine passes body and headers to
+     * the action's mapper as separate arguments.
      *
-     * @return array<mixed>
+     * @return array{body: array<mixed>, headers: array<string, list<string>>}
      */
     public function send(
         AbstractAction $action,

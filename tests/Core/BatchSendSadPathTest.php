@@ -332,13 +332,13 @@ final class FirstKeyOnlyBatchClient implements BatchClientInterface, ClientInter
         ?ActionContextInterface $context = null,
         ?RequestHeadersInterface $headers = null,
     ): array {
-        return [];
+        return ['body' => [], 'headers' => []];
     }
 
     public function sendMany(array $requests): array
     {
         $firstKey = array_key_first($requests);
 
-        return null !== $firstKey ? [$firstKey => []] : [];
+        return null !== $firstKey ? [$firstKey => ['body' => [], 'headers' => []]] : [];
     }
 }

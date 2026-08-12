@@ -9,9 +9,9 @@ use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 
 /**
- * One request inside a batch — the same four values accepted by
+ * One request inside a batch — the same values accepted by
  * IntegrationEngine::send(), packaged as an immutable value object
- * so a batch can mix different actions, contexts and bodies.
+ * so a batch can mix different actions, contexts, bodies and connections.
  */
 final readonly class EngineRequest
 {
@@ -21,5 +21,6 @@ final readonly class EngineRequest
         public ?ActionBodyInterface $body = null,
         public ?RequestHeadersInterface $headers = null,
         public ?string $baseUrl = null,
+        public mixed $connection = null,
     ) {}
 }
