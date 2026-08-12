@@ -174,9 +174,9 @@ final class MyApiIntegration implements IntegrationName
     {
         $requests = [];
         foreach ($ids as $id) {
-            $requests[$id] = EngineRequest::create(
+            $requests[$id] = new EngineRequest(
                 GetEmployeeAction::getName(),
-                DefaultActionContext::create(['id' => $id]),
+                context: DefaultActionContext::create(['id' => $id]),
             );
         }
 
@@ -230,7 +230,26 @@ the full API, failure-handling patterns, and concurrency details.
 
 ## Path parameters and query strings
 
-Path segment parameters (`{id}`) are resolved automatically from context:
+Path segment parameters (`{id}`) resolve from two sources, in priority order: the
+action's **body** first, then **context** for whatever the body doesn't supply.
+
+If the id is already a field you're sending, declare a `body:` on the action — no
+context needed, and the engine strips the consumed key so it isn't duplicated in the
+JSON payload:
+
+```yaml
+UpdateEmployee:
+    path: /employees/{id}
+    body: App\...\UpdateEmployeeBody
+```
+
+```php
+$engine->send('UpdateEmployee', body: UpdateEmployeeBody::create(['id' => 42, 'name' => 'Ada']));
+// → PUT /employees/42, body { "name": "Ada" }
+```
+
+Otherwise — a `GET` with no body, or a value that isn't naturally part of the
+payload — pass it via context:
 
 ```yaml
 GetEmployee:
@@ -329,12 +348,16 @@ freshly fetched token. No manual token invalidation needed.
 > **Cache scope.** The default cache backend is `cache.app`, which is process-local under
 > PHP-FPM. Each worker fetches its own token on first warm-up. For APIs with strict
 > rate limits on the token endpoint, configure `cache_service` with a shared Redis pool.
+> For multi-connection integrations (see *Runtime connection resolution* below), tokens
+> are cached per connection — two connections never share one.
 
 ---
 
 ## HTTP adapters
 
-Two adapters are included:
+Every client returns `array{body: array, headers: array<string, string[]>}` — the
+decoded body plus the response's HTTP headers, propagated to the mapper. Two adapters
+are included:
 
 | Type | Key | Use case |
 |---|---|---|
@@ -378,7 +401,10 @@ final class SoapClientAdapter implements ClientAdapterInterface
     public static function getClientType(): string { return 'soap'; }
     public static function requiresPath(): bool    { return false; }
     public static function requiresMethod(): bool  { return false; }
-    public function send(AbstractAction $action, ...): array { ... }
+    public function send(AbstractAction $action, ...): array
+    {
+        return ['body' => $decoded, 'headers' => $responseHeaders];
+    }
 }
 ```
 
@@ -455,6 +481,84 @@ It's optional and fully backward-compatible: omit it and the engine keeps using 
 (`SymfonyHttpClientAdapter`, `GraphQLClientAdapter`) support it; a custom client ignores
 it silently unless it implements `DynamicBaseUrlClientInterface`. The bundle does not
 resolve or persist that URL — that's the calling code's responsibility.
+
+### Runtime connection resolution
+
+`baseUrl` above only swaps the target URL. When a connection also needs different
+credentials — one integration serving several tenants, each with its own API key —
+configure a resolver instead of building a separate engine per connection:
+
+```yaml
+integration_engine:
+    integrations:
+        my_api:
+            base_url: 'https://api.example.com'   # fallback
+            connection_resolver: App\Infrastructure\Integrations\MyApi\MyApiConnectionResolver
+```
+
+```php
+use IntegrationEngine\Core\Contract\Connection\ConnectionCredentials;
+use IntegrationEngine\Core\Contract\Connection\ConnectionResolverInterface;
+
+final class MyApiConnectionResolver implements ConnectionResolverInterface
+{
+    public function resolve(mixed $connection): ConnectionCredentials
+    {
+        $tenant = $this->tenants->getById($connection);
+
+        return new ConnectionCredentials(
+            baseUrl: $tenant->baseUrl,
+            authorization: new StaticAuthorizationConfig('bearer', ['token' => $tenant->apiKey]),
+            connectionId: (string) $connection, // required if several connections share one base_url
+        );
+    }
+}
+
+$engine->send('get_orders', connection: $tenantId);
+```
+
+`$connection` is opaque to the engine — your resolver decides what it means. Every
+field on `ConnectionCredentials` is optional; set only what actually varies per
+connection. Dynamic-auth tokens are cached per connection too, so two tenants never
+share one. See [DOCUMENTATION.md](DOCUMENTATION.md) → *Runtime connection resolution*
+for the token-cache discriminator details.
+
+### Request middleware — full-request signing
+
+For providers whose auth depends on the **complete** request (method, URL, headers,
+body) rather than a static credential — OAuth 1.0a, AWS SigV4 — implement
+`RequestMiddlewareInterface`. It runs on the fully-built request immediately before
+the HTTP call, so the signature has everything it needs:
+
+```php
+use IntegrationEngine\Core\Contract\Client\Request;
+use IntegrationEngine\Core\Contract\Client\RequestMiddlewareInterface;
+
+final class OAuth1SigningMiddleware implements RequestMiddlewareInterface
+{
+    public function handle(Request $request, callable $next): array
+    {
+        $signature = $this->sign($request); // your signing logic — not the engine's concern
+        return $next($request->withHeader('Authorization', $signature));
+    }
+}
+```
+
+```yaml
+# services.yaml
+App\Infrastructure\Integrations\MyApi\OAuth1SigningMiddleware:
+    tags: [integration_engine.request_middleware]
+
+# integration_engine.yaml
+my_api:
+    request_middlewares:
+        - App\Infrastructure\Integrations\MyApi\OAuth1SigningMiddleware
+```
+
+Only the built-in REST/GraphQL adapters support this — a custom `client_service`
+builds its own requests and is responsible for signing them itself. Configuring any
+`request_middlewares` makes that integration's `sendMany()` dispatch sequentially
+instead of concurrently, since each item's chain may need to observe its own response.
 
 ### Symfony Profiler integration
 

@@ -88,9 +88,12 @@ abstract class AbstractAction
 }
 ```
 
-**Path parameters** are NOT constructor properties of the Action. They are
-resolved at call time via `ActionContextInterface`. The Action itself has no
-constructor parameters beyond what the engine injects internally.
+**Path parameters** are NOT constructor properties of the Action. `{param}`
+segments in the YAML `path:` are resolved from two sources, in priority
+order: first the action's `ActionBodyInterface` (if a body key matches the
+placeholder name — see §3.4), then `ActionContextInterface` for whatever the
+body didn't supply. The Action itself has no constructor parameters beyond
+what the engine injects internally.
 
 ```php
 // ✔ Correct — stateless action, no constructor
@@ -112,7 +115,11 @@ final class GetEntityAction extends AbstractAction
 ### 3.3 `ActionContextInterface`
 
 Carries dynamic path parameters at call time. The engine passes it to
-`getPath()` to resolve `{param}` placeholders.
+`getPath()` to resolve `{param}` placeholders — but only for placeholders
+`ActionBodyInterface` didn't already resolve (see §3.4). Use context for
+path params that aren't naturally part of the request body (e.g. a `GET`
+with no body at all), and body-sourced resolution when the id is already
+a field you're sending, so you don't pass it twice.
 
 ```php
 // Use DefaultActionContext for simple key-value params (built-in):
@@ -148,6 +155,28 @@ final class CreateEntityBody implements ActionBodyInterface
 }
 ```
 
+It's also the primary source for path placeholders (see §3.2): if the YAML
+`path:` contains `{id}` and the body has an `id` key, the engine fills the
+placeholder from the body and removes that key before sending the payload —
+no `ActionContextInterface` needed for that param, and it won't be
+duplicated in the JSON body.
+
+```yaml
+GetEntity:
+    action: App\Infrastructure\Integrations\ExternalApi\GetEntity\Request\GetEntityAction
+    method: GET
+    path: /{dtoVar}/{id}
+    body: App\Infrastructure\Integrations\ExternalApi\GetEntity\Request\GetEntityBody
+```
+
+```php
+$response = $this->engine->send(
+    actionName: GetEntityAction::getName(),
+    body: GetEntityBody::create(['id' => $id]),
+);
+// path resolves to /{dtoVar}/{id-value}; {id} is NOT also sent in the JSON body
+```
+
 ### 3.5 `AbstractMapper`
 
 Transforms the raw API response array into a `ResponseInterface` object.
@@ -158,8 +187,11 @@ abstract class AbstractMapper
     // FQCN of the Action this mapper handles. Verified by the engine at runtime.
     abstract public static function getAction(): string;
 
-    // Receives the executed action and the decoded JSON array.
-    abstract protected static function transform(AbstractAction $action, array $response): ResponseInterface;
+    // $response: decoded JSON body. $headers: HTTP response headers as
+    // array<string, string[]> (e.g. ['X-RateLimit-Remaining' => ['42']]) —
+    // only needed when the API surfaces data outside the body (pagination
+    // cursors, rate-limit counters, correlation IDs). Most mappers ignore it.
+    abstract protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface;
 }
 ```
 
@@ -263,6 +295,8 @@ integration_engine:
                 X-Api-Version: '2'
             cache_service: ~               # optional — defaults to Psr6CacheAdapter wrapping cache.app
             client_service: ~              # optional — custom ClientInterface service ID
+            connection_resolver: ~         # optional — see §13, only for multi-connection integrations
+            request_middlewares: []        # optional — see §14, only for full-request signing (OAuth 1.0a etc.)
 ```
 
 > **Warning**: The default `Psr6CacheAdapter` wraps `cache.app`. Under PHP-FPM
@@ -283,7 +317,7 @@ GetEntities:
 GetEntity:
     action: App\Infrastructure\Integrations\ExternalApi\GetEntity\Request\GetEntityAction
     method: GET
-    path: /{dtoVar}/{id}    # {id} resolved from ActionContextInterface at call time
+    path: /{dtoVar}/{id}    # {id} resolved from the body if declared, else from ActionContextInterface
 
 CreateEntity:
     action: App\Infrastructure\Integrations\ExternalApi\CreateEntity\Request\CreateEntityAction
@@ -373,7 +407,7 @@ final readonly class GetEntityResponse implements ResponseInterface
 }
 
 // Mapper
-protected static function transform(AbstractAction $action, array $response): ResponseInterface
+protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
 {
     return GetEntityResponse::create(
         {dtoVar}: {Dto}::create($response),
@@ -405,7 +439,7 @@ final readonly class GetEntitiesResponse implements ResponseInterface
 }
 
 // Mapper — wrapper key ('results', 'products', etc.) comes from the OpenAPI spec
-protected static function transform(AbstractAction $action, array $response): ResponseInterface
+protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
 {
     $items = array_map(
         static fn(array $item): {Dto} => {Dto}::create($item),
@@ -419,7 +453,7 @@ protected static function transform(AbstractAction $action, array $response): Re
 ### 6.3 Empty response
 
 ```php
-protected static function transform(AbstractAction $action, array $response): ResponseInterface
+protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
 {
     return new EmptyResponse(); // IntegrationEngine\Core\Response\EmptyResponse
 }
@@ -487,7 +521,7 @@ final class FetchTokenMapper extends AbstractMapper
 {
     public static function getAction(): string { return FetchTokenAction::class; }
 
-    protected static function transform(AbstractAction $action, array $response): ResponseInterface
+    protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
     {
         return new FetchTokenResponse(accessToken: (string) $response['access_token']);
     }
@@ -750,7 +784,7 @@ final class {Op}Mapper extends AbstractMapper
 {
     public static function getAction(): string { return {Op}Action::class; }
 
-    protected static function transform(AbstractAction $action, array $response): ResponseInterface
+    protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
     {
         return {Op}Response::create(
             {dtoVar}: {Dto}::create($response),
@@ -771,7 +805,7 @@ final class {Op}Mapper extends AbstractMapper
 {
     public static function getAction(): string { return {Op}Action::class; }
 
-    protected static function transform(AbstractAction $action, array $response): ResponseInterface
+    protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
     {
         $items = array_map(
             static fn(array $item): {Dto} => {Dto}::create($item),
@@ -787,9 +821,24 @@ final class {Op}Mapper extends AbstractMapper
 ## 12. Agent FAQ
 
 **How do I pass path parameters like `/{dtoVar}/{id}`?**
-Via `DefaultActionContext::create(['id' => $value])` passed as the `context`
-argument to `engine->send()`. The Action itself has no constructor parameters.
-The engine resolves `{id}` from the context at call time.
+Two ways, and prefer the first when the id is already a field you're
+sending: declare a `body:` on the action and pass
+`{Op}Body::create(['id' => $value])` — the engine fills `{id}` from the
+body and strips that key so it isn't duplicated in the JSON payload.
+Otherwise pass `DefaultActionContext::create(['id' => $value])` as the
+`context` argument to `engine->send()`. Body is resolved first; context
+only fills whatever the body didn't supply. The Action itself never has
+constructor parameters either way.
+
+**Two connections calling the same base_url but authenticating differently — do I need two integrations?**
+No — one integration, `connection_resolver:` configured, and a `$connection`
+argument on `send()`/`sendMany()` (see §13). Building a second `Integration`
+facade per connection is the workaround this replaces.
+
+**The provider needs to sign the whole request (OAuth 1.0a, AWS SigV4), not just add a static header — where does that go?**
+`RequestMiddlewareInterface` (see §14), not `AuthorizationConfig`. It runs
+on the fully-built request (method, resolved URL, headers, body), which a
+static or dynamic `authorization:` block can't see.
 
 **How do I know which wrapper key to use in the mapper?**
 Look at the 200 response schema in the OpenAPI spec: the name of the
@@ -820,3 +869,145 @@ For standard integrations using `SymfonyHttpClientAdapter`, no `services.yaml`
 entry is needed — `base_url` and `headers` are configured directly in
 `integration_engine.yaml`. Only add a `services.yaml` entry if you implement
 a custom `ClientInterface`.
+---
+
+## 13. Runtime connection resolution (multi-connection integrations)
+
+Skip this section unless the same integration must serve more than one
+connection (tenant, store, account) at runtime with different `base_url`
+and/or credentials. Most integrations don't need it.
+
+### `ConnectionResolverInterface`
+
+```php
+namespace IntegrationEngine\Core\Contract\Connection;
+
+interface ConnectionResolverInterface
+{
+    public function resolve(mixed $connection): ConnectionCredentials;
+}
+```
+
+`$connection` is opaque to the engine — whatever your application uses to
+identify a connection (a tenant id, a store slug, an object). Implement
+the resolver in your own app; it knows how to look that up.
+
+```php
+final class MyApiConnectionResolver implements ConnectionResolverInterface
+{
+    public function __construct(private readonly ConnectionRepository $connections) {}
+
+    public function resolve(mixed $connection): ConnectionCredentials
+    {
+        \assert(\is_string($connection));
+        $stored = $this->connections->getById($connection);
+
+        return new ConnectionCredentials(
+            baseUrl: $stored->baseUrl,
+            authorization: new StaticAuthorizationConfig('bearer', ['token' => $stored->apiKey]),
+            connectionId: $connection, // see "token cache" note below
+        );
+    }
+}
+```
+
+`ConnectionCredentials { ?baseUrl, ?authorization, ?connectionId }` — every
+field optional; set only what actually varies per connection. Leave
+`baseUrl` null and the integration's configured `base_url` is used; leave
+`authorization` null and the action's YAML-configured authorization is used.
+
+### Wiring
+
+```yaml
+integration_engine:
+    integrations:
+        my_api:
+            base_url: 'https://api.example.com'   # fallback when a connection doesn't override it
+            config_path: '...'
+            connection_resolver: App\Infrastructure\Integrations\MyApi\MyApiConnectionResolver
+```
+
+```php
+$response = $this->engine->send(
+    actionName: GetOrdersAction::getName(),
+    connection: $tenantId,   // whatever your app uses to identify the connection
+);
+```
+
+Omitting `connection` entirely (the default) never touches the resolver —
+existing single-connection integrations are unaffected. Passing `connection`
+without a `connection_resolver` configured throws `ConnectionResolutionException`.
+
+### Token cache and `connectionId`
+
+If the action uses dynamic authorization AND several connections could
+resolve to the **same `base_url`** (one shared multi-tenant endpoint,
+distinguished only by credentials), you MUST set `connectionId` on
+`ConnectionCredentials` to a stable, non-secret value (a connection/tenant
+id — never the API key/secret itself). Without it, two such connections
+would collide on the same cached dynamic-auth token. If every connection
+has its own distinct `base_url`, `connectionId` is optional — the engine
+already discriminates by `base_url` in that case.
+
+---
+
+## 14. Request middleware (full-request signing)
+
+Skip this section unless the provider needs to sign the **complete**
+outgoing request (method, URL, headers, body) — e.g. OAuth 1.0a, AWS
+SigV4. A static or dynamic `authorization:` block in YAML can't do this,
+because the signature depends on the final request, not just a token.
+
+```php
+namespace IntegrationEngine\Core\Contract\Client;
+
+interface RequestMiddlewareInterface
+{
+    public function handle(Request $request, callable $next): array;
+}
+```
+
+`Request { method, url, headers, ?body }` is the fully-resolved outgoing
+request. `$next` is `callable(Request): array{body, headers}` — call it to
+continue to the HTTP transport, optionally after modifying `$request`; skip
+calling it to reject the request (throw) or short-circuit with a canned
+result.
+
+```php
+final class MyApiOAuth1Middleware implements RequestMiddlewareInterface
+{
+    public function __construct(private readonly OAuth1Credentials $credentials) {}
+
+    public function handle(Request $request, callable $next): array
+    {
+        $signature = $this->sign($request, $this->credentials); // your signing logic — not the engine's concern
+
+        return $next($request->withHeader('Authorization', $signature));
+    }
+}
+```
+
+### Wiring
+
+```yaml
+# services.yaml
+App\Infrastructure\Integrations\MyApi\MyApiOAuth1Middleware:
+    tags:
+        - { name: integration_engine.request_middleware }
+```
+
+```yaml
+# integration_engine.yaml
+integration_engine:
+    integrations:
+        my_api:
+            request_middlewares:
+                - App\Infrastructure\Integrations\MyApi\MyApiOAuth1Middleware
+```
+
+Only the built-in `rest`/`graphql` clients support this — a custom
+`client_service` builds its own requests and would need to call your
+signing logic itself. Multiple middlewares run outermost-first, same
+convention as `middlewares:`. Configuring any request middleware makes
+that integration's `sendMany()` dispatch sequentially instead of
+concurrently (each item's chain may need to observe its own response).

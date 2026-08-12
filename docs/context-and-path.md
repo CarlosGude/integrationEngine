@@ -1,14 +1,46 @@
 # Context and Path Resolution
 
 Context carries the runtime values that fill in the path — IDs, filters, pagination.
-The engine resolves `{placeholder}` tokens in the YAML path using the context.
+The engine resolves `{placeholder}` tokens in the YAML path from two sources, in
+priority order: the action's **body** first, then **context** for whatever the
+body didn't supply. This section covers both, starting with body since it's the
+simpler default whenever the value is already part of the payload.
 
 ---
 
-## The minimum
+## Path segments from the body
 
-For required path segments, declare a `{placeholder}` in the YAML and pass
-`DefaultActionContext`:
+If the placeholder's value is already a field you're sending — the common case
+for `POST`/`PUT`/`PATCH`, and plenty of `GET` actions too — declare a `body:` on
+the action instead of a context. The engine fills the placeholder from the body
+and removes that key so it isn't also sent as a payload field:
+
+```yaml
+UpdateEmployee:
+    path: /employees/{id}
+    body: App\Infrastructure\Integrations\MyApi\UpdateEmployee\Request\UpdateEmployeeBody
+```
+
+```php
+$engine->send(
+    actionName: UpdateEmployeeAction::getName(),
+    body: UpdateEmployeeBody::create(['id' => 42, 'name' => 'New Name']),
+);
+// → PUT /employees/42, with { "name": "New Name" } as the JSON body — "id" is
+//   consumed by the path, not duplicated in the payload
+```
+
+A placeholder the body doesn't have a key for is left untouched and falls
+through to context resolution below — nothing to configure, it just works. No
+`ConfigPort` or context class needed either way.
+
+---
+
+## The minimum (context)
+
+For path segments that aren't part of the body at all — a `GET` with no body,
+or a value you don't otherwise need to send — declare a `{placeholder}` in the
+YAML and pass `DefaultActionContext`:
 
 ```yaml
 GetEmployee:
@@ -117,8 +149,13 @@ If you find yourself validating or casting values before calling
 
 | Scenario | Approach |
 |---|---|
-| Path segment — always required | YAML `{placeholder}` + `DefaultActionContext` |
+| Path segment already sent as a body field | `body:` on the action — no context needed |
+| Path segment — always required, not in the body | YAML `{placeholder}` + `DefaultActionContext` |
 | Query params — all required | YAML `{placeholder}` in query string |
 | Query params — any optional | Custom context with `PathResolvableContextInterface` |
 | Validation or domain objects at construction | Custom context with `ActionContextInterface` |
 | No dynamic values | No context (or `DefaultActionContext::create([])`) |
+
+A placeholder can be resolved by body and context together across different
+calls, but not by design for the *same* key — if both happen to supply the
+same placeholder, body wins and context's value for that key is never read.

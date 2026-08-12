@@ -35,19 +35,46 @@ final class GetCharacterAction extends AbstractAction
 
 ---
 
-## 2. Path resolution — three approaches and when to use each
+## 2. Path resolution — four approaches and when to use each
 
-The engine resolves the path in `AbstractAction::getPath()`. There are three ways to
-influence it, and choosing the wrong one is the most common integration mistake.
+The path is resolved in two stages: `YamlConfigAdapter::getAction()` resolves whatever
+it can from the action's **body** first, then `AbstractAction::getPath()` resolves
+whatever's left from **context** at send time. Choosing the wrong approach — or not
+knowing the body-sourced one exists and reaching for a custom context instead — is the
+most common integration mistake.
 
-### 2a. YAML path with `{placeholder}` — required params
+### 2a. Body-sourced placeholder — value is already a field you're sending
 
-`YamlConfigAdapter` passes the raw path string from the YAML entry to `Action::create()`.
-The `defaultResolvePath` method applies a regex (`/\{(\w+)\}/`) to the **full string**,
-including any query string portion. Every placeholder it finds must be present in the
-context, or it throws `PathResolutionException::missingParameter`.
+`YamlConfigAdapter::getAction()` scans the YAML path for `{name}` placeholders and, for
+each one whose name matches a key in the action's `ActionBodyInterface::toArray()`,
+substitutes it and removes that key from the body — so it isn't also sent as a payload
+field. This runs *before* the action is even constructed; a placeholder the body doesn't
+supply is left untouched in the path for context to resolve later. No `ConfigPort` or
+context class needed:
 
-Use this when all parameters are guaranteed to be present at call time:
+```yaml
+UpdateCharacter:
+    path: /character/{id}
+    body: App\...\UpdateCharacterBody
+```
+
+```php
+$engine->send(UpdateCharacterAction::getName(), body: UpdateCharacterBody::create(['id' => 42, 'name' => 'Rick']));
+// → PUT /character/42, body { "name": "Rick" } — "id" is not duplicated
+```
+
+Prefer this whenever the id is naturally a body field (most `POST`/`PUT`/`PATCH`
+actions, and plenty of `GET` ones). It's strictly simpler than a context: no extra
+class, no extra argument to `send()`.
+
+### 2b. YAML path with `{placeholder}` via context — required params not in the body
+
+`AbstractAction::getPath()`'s `defaultResolvePath` method applies a regex
+(`/\{(\w+)\}/`) to the **full string**, including any query string portion, for
+whatever the body-sourced stage above left unresolved. Every placeholder it finds must
+be present in the context, or it throws `PathResolutionException::missingParameter`.
+
+Use this when the value isn't part of the body — e.g. a `GET` with no body at all:
 
 ```yaml
 GetCharacter:
@@ -57,7 +84,7 @@ FilterByStatus:
     path: /character?status={status}  # query param — only when always required
 ```
 
-### 2b. Custom context with `resolvePath()` — optional or computed params
+### 2c. Custom context with `resolvePath()` — optional or computed params
 
 `PathResolvableContextInterface` (extends `ActionContextInterface`) declares
 `resolvePath(string $path): ?string`. When a context implementing it returns a non-null
@@ -100,7 +127,7 @@ final class FilterCharactersAction extends AbstractAction
 }
 ```
 
-### 2c. `DefaultActionContext` — nothing to decide
+### 2d. `DefaultActionContext` — nothing to decide
 
 `DefaultActionContext` does not implement `PathResolvableContextInterface`, so the
 default `{placeholder}` resolver always applies. Use it for actions where all params are
@@ -110,7 +137,8 @@ required path segments or where no dynamic params exist at all.
 
 | Params | All required? | Approach |
 |---|---|---|
-| Path segment (`/{id}`) | Yes, by definition | YAML placeholder + `DefaultActionContext` |
+| Path segment already sent as a body field | — | Body-sourced (declare `body:` on the action) |
+| Path segment (`/{id}`), not in the body | Yes, by definition | YAML placeholder + `DefaultActionContext` |
 | Query string | All required | YAML placeholder in query string + `DefaultActionContext` |
 | Query string | Any optional | Custom context with `resolvePath()` |
 | No params | — | No context needed |
@@ -161,7 +189,7 @@ final class GetAllCharactersMapper extends AbstractMapper
 {
     public static function getAction(): string { return GetAllCharactersAction::class; }
 
-    protected static function transform(AbstractAction $action, array $response): ResponseInterface
+    protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
     {
         return CharacterCollectionTransformer::transform($response);
     }
@@ -171,7 +199,7 @@ final class FilterCharactersMapper extends AbstractMapper
 {
     public static function getAction(): string { return FilterCharactersAction::class; }
 
-    protected static function transform(AbstractAction $action, array $response): ResponseInterface
+    protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
     {
         return CharacterCollectionTransformer::transform($response);
     }
@@ -186,7 +214,9 @@ This keeps the engine's invariant intact while avoiding duplicated transform log
 
 When an action uses `DynamicAuthorizationConfig`, the engine calls the auth action once,
 extracts the token from the response via `tokenField`, and caches it under the key
-`integration_engine.token.{integrationName}.{authActionName}`.
+`integration_engine.token.{integrationName}.{authActionName}.{sha1(discriminator)}`.
+`discriminator` is empty for integrations that never use runtime connection
+resolution (§10) — functionally the same key as before, just with a fixed suffix.
 
 **Stale token handling.** A token can be revoked or expire server-side before its TTL.
 When a request fails with HTTP 401 and the token came from the cache, the engine deletes
@@ -229,6 +259,17 @@ framework:
 
 **The in-memory adapter** (`CachePort` implemented as a plain array) is only appropriate
 for integration tests or local development. Never use it in production with dynamic auth.
+
+**Why the discriminator exists.** Once §10 lets one integration serve several runtime
+connections, a token cache keyed only by `{integrationName}.{authActionName}` would let
+two connections collide on the same entry — connection B's request could silently
+authenticate with connection A's token. The discriminator closes that gap. It is
+deliberately *not* `hash($context)`: the doc that drove this design explicitly rejected
+hashing an arbitrary, possibly-complex context as "automatically correct" — instead the
+engine prefers a resolver-supplied `connectionId` (a stable, non-secret identifier the
+resolver chooses on purpose), falling back to the raw `$connection` value when it's
+already a scalar, and only then to `baseUrl`. Never a secret: the discriminator becomes
+part of a cache key string, which isn't treated as sensitive.
 
 ---
 
@@ -324,8 +365,11 @@ typed properties on your DTO class for everything else — never ask consumers t
 The engine depends on two ports, not one:
 
 - `ConfigPort::getAction()` — resolves an action class and instantiates it with method,
-  path, body, and authorization from configuration.
-- `ClientInterface::send()` — executes the HTTP request and returns a raw array.
+  path, body, and authorization from configuration, resolving body-sourced path
+  placeholders (§2a) along the way.
+- `ClientInterface::send()` — executes the HTTP request and returns `array{body,
+  headers}`: the decoded body plus the response's HTTP headers, so a mapper can read
+  pagination cursors, rate-limit counters, or correlation IDs without a bespoke client.
 
 Keeping them separate means you can replace either independently. The most common case
 is replacing `ClientInterface` — to add retry logic, circuit breaking, or custom logging
@@ -413,3 +457,88 @@ cannot isolate per-request latencies. The recorded duration is accurate for sequ
 batches and represents wall-clock time per item for concurrent ones. This is accepted
 deliberately: the profiler panel is useful for identifying slow integrations, not for
 sub-millisecond per-request profiling.
+## 10. Runtime connection resolution — why not a new `Integration` per connection
+
+Before this capability, an integration serving several connections (multi-tenant: one
+store/account/tenant per customer) had exactly one option: build a separate
+`IntegrationEngine` instance per connection, each with its own `base_url` and
+`AuthorizationConfig` baked in at construction. That works, but it means the
+application — not the bundle — ends up owning connection lifecycle, config
+plumbing, and (if done carelessly) N long-lived engine instances holding
+credentials in memory.
+
+**The alternative: resolve the connection at call time, not at construction time.**
+`ConnectionResolverInterface::resolve(mixed $connection): ConnectionCredentials` is
+invoked inside `send()`/`sendMany()`, not the constructor. `$connection` is opaque to
+the engine on purpose — it doesn't know what a "tenant" or "store" is, and it shouldn't;
+that knowledge belongs to the resolver the application provides. `ConnectionCredentials
+{ ?baseUrl, ?authorization, ?connectionId }` is intentionally minimal: a resolver sets
+only the fields that actually vary, and anything left `null` falls back to the
+integration's static configuration — a connection that only overrides `authorization`
+still uses the configured `base_url`, for instance.
+
+**Why credentials aren't cached on the engine instance.** `IntegrationEngine` is
+`final readonly` with no per-connection mutable state; `resolveConnection()` is a pure
+function of its arguments. Two calls with different `$connection` values on the *same*
+engine instance can never leak into each other, because there is no shared field for
+them to leak through. The one exception is `sendMany()`'s local `$connectionCache`
+array, deliberately scoped to a single batch call and discarded afterward — it exists
+purely to avoid calling the resolver once per item when many items share one
+connection (a natural batch pattern), never to persist resolved credentials beyond
+the call that resolved them.
+
+**Why this doesn't need to know about tenants.** The doc that drove this feature was
+explicit: the engine must not gain knowledge of "WooCommerce," "tenant," "shop," or
+"user" — those are the calling application's vocabulary, not the engine's. `mixed
+$connection` and `ConnectionCredentials`' generic field names are the deliberate
+consequence of that constraint.
+
+## 11. Request middleware — the boundary between static credentials and request signing
+
+`AuthorizationConfig` (static or dynamic) covers every provider whose auth can be
+computed *before* the request is built — a token, a header value, something that
+doesn't depend on the request's final shape. Some providers don't fit that model: OAuth
+1.0a and AWS SigV4 both sign the complete request (method, URL, query string, body,
+timestamp, nonce), which by definition doesn't exist yet at the point
+`AuthorizationConfig` is resolved.
+
+**Why not extend `AuthorizationConfig` to cover this.** A `SignatureAuthorizationConfig`
+generic enough to cover arbitrary signing schemes would either bake one scheme's
+assumptions into the core (OAuth 1.0a knowledge the engine doesn't need) or become an
+open-ended plugin system in disguise — exactly the kind of anticipatory genericity this
+project avoids. The existing `AuthorizationConfig` boundary — "credentials known before
+the request is built" — stays intact; request signing is a deliberately separate
+concern with its own extension point.
+
+**Why a middleware chain, not an event.** `RequestMiddlewareInterface::handle(Request
+$request, callable $next): array` follows the same onion pattern
+`AbstractClientMiddleware` already uses (§9) — a chain each layer can inspect, modify,
+short-circuit, or let through, with the response propagating back out. An event system
+would need the same modify-and-continue semantics reinvented on top of it for no
+benefit; the codebase already has one working pattern for "wrap a call," so this reuses
+it rather than adding a second.
+
+**Why it lives inside the HTTP adapter, not `AbstractClientMiddleware`'s pipeline.**
+`AbstractClientMiddleware` runs *before* the action's path is resolved and its body
+serialized — it sees the action, not a request. Signing needs the fully-resolved
+`Request { method, url, headers, body }`, which only exists once
+`SymfonyHttpClientAdapter`/`GraphQLClientAdapter` have built it, immediately before the
+transport call. That's a different point in the pipeline with a different input type,
+so it's a different extension point rather than a special case bolted onto the
+existing one.
+
+**The concurrency trade-off is deliberate.** A request middleware may need to observe
+or short-circuit each item's own response, which the `sendMany()` dispatch-all-then-
+consume-all strategy (§8) can't accommodate without restructuring it into two split
+phases. Rather than build that complexity for a feature most integrations never touch,
+`sendMany()` degrades to sequential `send()` calls whenever `request_middlewares` are
+configured for that integration — correctness over performance, scoped to only the
+integrations that opt in.
+
+**Why only the built-in adapters support it.** `resolveHttpClientRef()` in the compiler
+pass already assumes the two built-in adapter classes share one constructor shape
+(`httpClient, baseUrl, defaultHeaders`); adding `requestMiddlewares` as a fourth
+constructor argument is consistent with that existing, adapter-class-specific coupling
+rather than introducing a new one. A custom `client_service` builds its own requests
+end to end, so it's already responsible for any request-level logic — including
+signing — without the engine needing an opinion on how.

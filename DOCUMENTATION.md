@@ -29,16 +29,20 @@ php bin/console make:integration MyApi GetEmployee
 
 ## The engine pipeline
 
-When you call `$engine->send(actionName, context, body, headers)`:
+When you call `$engine->send(actionName, context, body, headers, baseUrl, connection)`:
 
-1. **Config resolution** — reads the YAML, finds the action entry, instantiates the
-   action class with method, path, body, and authorization.
-2. **Authorization** — if dynamic auth, fetches and caches the token, then rebuilds the
-   action with static auth.
-3. **HTTP execution** — resolves the path from context, builds headers, serializes the
-   body, executes the request.
-4. **Mapping** — validates `$mapper::getAction() === $action::class`, calls
-   `transform()`, returns a typed `ResponseInterface`.
+1. **Config resolution** — reads the YAML, finds the action entry, resolves any
+   `{placeholder}` the body supplies, instantiates the action class with method, path,
+   body, and authorization.
+2. **Connection resolution** — if `connection` was passed, resolves it to
+   `ConnectionCredentials` and applies any `base_url`/authorization override.
+3. **Authorization** — if dynamic auth, fetches and caches the token (namespaced per
+   connection), then rebuilds the action with static auth.
+4. **HTTP execution** — resolves any remaining path placeholders from context, builds
+   headers, serializes the body, runs request middlewares (if configured), executes
+   the request.
+5. **Mapping** — validates `$mapper::getAction() === $action::class`, calls
+   `transform()` with the response body and headers, returns a typed `ResponseInterface`.
 
 ---
 
@@ -69,15 +73,21 @@ stateless invariant.
 
 ## Context and path parameters
 
-`DefaultActionContext` resolves `{placeholder}` tokens in the path. For optional query
-params, implement `PathResolvableContextInterface`.
+`{placeholder}` tokens in the path resolve from two sources, in priority order: the
+action's **body** first (declare `body:` on the action — no extra class needed), then
+**context** for whatever the body doesn't supply. For optional query params, implement
+`PathResolvableContextInterface`.
 
 ```php
+// From the body — no context needed:
+$engine->send('UpdateEmployee', body: UpdateEmployeeBody::create(['id' => 42, 'name' => 'Ada']));
+
+// From context — for values that aren't part of the body:
 DefaultActionContext::create(['id' => 42]) // → /employees/42
 ```
 
-→ [Context and path resolution](docs/context-and-path.md) — required vs. optional
-params, custom context with validation, decision table.
+→ [Context and path resolution](docs/context-and-path.md) — body-sourced placeholders,
+required vs. optional params, custom context with validation, decision table.
 
 ---
 
@@ -90,7 +100,7 @@ final class GetEmployeeMapper extends AbstractMapper
 {
     public static function getAction(): string { return GetEmployeeAction::class; }
 
-    protected static function transform(AbstractAction $action, array $response): ResponseInterface
+    protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
     {
         return GetEmployeeResponse::create($response);
     }
@@ -136,7 +146,8 @@ GetOrders:
 ```
 
 → [Authorization](docs/authorization.md) — all static types (bearer, basic, api\_key),
-dynamic auth config, token action setup, caching, 401 retry, Redis backend.
+dynamic auth config, token action setup, caching (including per-connection isolation
+for multi-connection integrations), 401 retry, Redis backend.
 
 ---
 
@@ -147,8 +158,8 @@ Use `sendMany()` when you need N results before you can proceed. Returns a
 
 ```php
 $results = $engine->sendMany([
-    'alice' => EngineRequest::create(GetEmployeeAction::getName(), DefaultActionContext::create(['id' => 1])),
-    'bob'   => EngineRequest::create(GetEmployeeAction::getName(), DefaultActionContext::create(['id' => 2])),
+    'alice' => new EngineRequest(GetEmployeeAction::getName(), context: DefaultActionContext::create(['id' => 1])),
+    'bob'   => new EngineRequest(GetEmployeeAction::getName(), context: DefaultActionContext::create(['id' => 2])),
 ]);
 
 $results['alice']->isSuccess();  // bool
@@ -169,7 +180,8 @@ batches, mixed-action batches.
 
 The default `rest` client handles standard REST APIs with no configuration. Set
 `client: graphql` for GraphQL. For full control — retry logic, circuit breaking, custom
-protocols — use `client_service:`.
+protocols — use `client_service:`. Every client returns `array{body, headers}` — the
+decoded body plus the response's HTTP headers, propagated to the mapper.
 
 ```yaml
 my_api:
@@ -178,6 +190,45 @@ my_api:
 
 → [HTTP Clients](docs/clients.md) — GraphQL body interface, `client:` vs
 `client_service:`, custom protocol adapters, `BatchClientInterface` for concurrency.
+
+---
+
+## Runtime connection resolution
+
+For an integration that serves several connections at runtime (multi-tenant: one
+store/account per customer) with different `base_url` and/or credentials, configure a
+`connection_resolver` instead of building a separate `IntegrationEngine` per connection:
+
+```yaml
+my_api:
+    connection_resolver: App\Infrastructure\Integrations\MyApi\MyApiConnectionResolver
+```
+
+```php
+$engine->send('get_orders', connection: $tenantId);
+```
+
+→ [HTTP Clients — runtime connection resolution](docs/clients.md#runtime-connection-resolution--connectionresolverinterface) —
+`ConnectionResolverInterface`, `ConnectionCredentials`, the dynamic-auth token cache
+discriminator for connections sharing one `base_url`.
+
+---
+
+## Request middleware — full-request signing
+
+For providers that sign the complete request (OAuth 1.0a, AWS SigV4) rather than a
+static credential, implement `RequestMiddlewareInterface` — it runs on the
+fully-resolved request immediately before the HTTP call:
+
+```yaml
+my_api:
+    request_middlewares:
+        - App\Infrastructure\Integrations\MyApi\OAuth1SigningMiddleware
+```
+
+→ [HTTP Clients — request middleware](docs/clients.md#request-middleware--full-request-signing) —
+the `Request` value object, chain semantics, why `sendMany()` degrades to sequential
+dispatch when configured.
 
 ---
 

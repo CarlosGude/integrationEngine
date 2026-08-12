@@ -103,11 +103,16 @@ final readonly class FetchTokenResponse implements ResponseInterface
 
 ## How caching works
 
-The engine caches the token under the key:
+The engine caches the token under a key namespaced by integration, token
+action, and a connection discriminator:
 
 ```
-integration_engine.token.{integrationName}.{authActionName}
+integration_engine.token.{integrationName}.{authActionName}.{sha1(discriminator)}
 ```
+
+For integrations that never use runtime connection resolution (see below),
+`discriminator` is empty — the key behaves exactly as before, just with a
+fixed `sha1('')` suffix.
 
 On subsequent calls within the TTL, the cached token is used directly — the auth action
 is not called again.
@@ -121,6 +126,46 @@ server-side before its TTL), the engine:
 
 A freshly fetched token rejected with 401 is **not** retried. Non-401 errors never evict
 the cache.
+
+---
+
+## Contextual caching — multi-connection integrations
+
+If the integration uses [runtime connection resolution](clients.md#runtime-connection-resolution--connectionresolverinterface)
+(`connection_resolver:` + a `connection` argument on `send()`/`sendMany()`),
+dynamic-auth tokens are cached per connection, not just per integration —
+two connections never share a cached token.
+
+The discriminator used to tell connections apart, in priority order:
+
+1. `connectionId` from the resolved `ConnectionCredentials`, if set
+2. the `$connection` value itself, if it's a scalar (string/int/etc.)
+3. the resolved `baseUrl`
+
+Case 3 is enough when every connection has its own `base_url`. Case 1 is
+**required** when several connections could share one `base_url` (one
+multi-tenant endpoint distinguished only by credentials) — without it,
+those connections would collide on the same cached token:
+
+```php
+final class MyApiConnectionResolver implements ConnectionResolverInterface
+{
+    public function resolve(mixed $connection): ConnectionCredentials
+    {
+        $tenant = $this->tenants->getById($connection);
+
+        return new ConnectionCredentials(
+            baseUrl: 'https://shared.example.com',      // same for every tenant
+            authorization: /* per-tenant static or dynamic auth */,
+            connectionId: (string) $connection,          // required here — keeps tokens apart
+        );
+    }
+}
+```
+
+Never put a secret (API key, consumer secret, access token) into the
+discriminator — it becomes part of the cache key string, and the key isn't
+treated as sensitive.
 
 ---
 

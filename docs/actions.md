@@ -37,7 +37,7 @@ That's it. The engine resolves the rest.
 
 | Method | Returns | Purpose |
 |---|---|---|
-| `getName()` | `string` | Key used in YAML and when calling `send()` / `EngineRequest::create()` |
+| `getName()` | `string` | Key used in YAML and when calling `send()` / building an `EngineRequest` |
 | `hasResponse()` | `bool` | `false` for write actions (DELETE, fire-and-forget POST) — engine returns `EmptyResponse` |
 | `mapper()` | `?string` | Fully qualified mapper class. `null` only when `hasResponse()` is `false` |
 

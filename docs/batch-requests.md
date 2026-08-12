@@ -8,17 +8,18 @@ entities from different endpoints at once.
 
 ## Building the batch
 
-Each item in a batch is an `EngineRequest` — the same four arguments as a single
-`send()` call, wrapped as an immutable value object:
+Each item in a batch is an `EngineRequest` — the same arguments as a single
+`send()` call (`actionName`, `context`, `body`, `headers`, `baseUrl`,
+`connection`), wrapped as an immutable value object:
 
 ```php
 use IntegrationEngine\Core\Batch\EngineRequest;
 use IntegrationEngine\Core\Contract\DefaultActionContext;
 
 $requests = [
-    'lon' => EngineRequest::create(GetAccommodationAction::getName(), DefaultActionContext::create(['id' => 101])),
-    'par' => EngineRequest::create(GetAccommodationAction::getName(), DefaultActionContext::create(['id' => 202])),
-    'mad' => EngineRequest::create(GetAccommodationAction::getName(), DefaultActionContext::create(['id' => 303])),
+    'lon' => new EngineRequest(GetAccommodationAction::getName(), context: DefaultActionContext::create(['id' => 101])),
+    'par' => new EngineRequest(GetAccommodationAction::getName(), context: DefaultActionContext::create(['id' => 202])),
+    'mad' => new EngineRequest(GetAccommodationAction::getName(), context: DefaultActionContext::create(['id' => 303])),
 ];
 
 $results = $engine->sendMany($requests); // BatchResultCollection
@@ -170,7 +171,7 @@ final class ConcurrentGraphQLClient implements ClientInterface, BatchClientInter
         $results = [];
         foreach ($handles as $key => $handle) {
             try {
-                $results[$key] = $handle->toArray();
+                $results[$key] = ['body' => $handle->toArray(), 'headers' => $handle->getHeaders(false)];
             } catch (\Throwable $e) {
                 $results[$key] = $e;
             }
@@ -249,10 +250,30 @@ The batch key is arbitrary — actions do not need to be the same:
 
 ```php
 $results = $engine->sendMany([
-    'employee'   => EngineRequest::create(GetEmployeeAction::getName(), DefaultActionContext::create(['id' => 7])),
-    'department' => EngineRequest::create(GetDepartmentAction::getName(), DefaultActionContext::create(['id' => 3])),
+    'employee'   => new EngineRequest(GetEmployeeAction::getName(), context: DefaultActionContext::create(['id' => 7])),
+    'department' => new EngineRequest(GetDepartmentAction::getName(), context: DefaultActionContext::create(['id' => 3])),
 ]);
 ```
 
 Each item is mapped by its own action's mapper. The mapper invariant (`getAction() ===
 $action::class`) is enforced per item, exactly as in single `send()` calls.
+
+---
+
+## Per-item connection
+
+`EngineRequest`'s `connection` argument works exactly like `send()`'s (see
+[Clients — runtime connection resolution](clients.md#runtime-connection-resolution--connectionresolverinterface)):
+mix items for different connections in one batch by setting `connection` per
+item.
+
+```php
+$results = $engine->sendMany([
+    'acme'  => new EngineRequest(GetOrdersAction::getName(), connection: 'acme'),
+    'globex' => new EngineRequest(GetOrdersAction::getName(), connection: 'globex'),
+]);
+```
+
+Items sharing the same `connection` value resolve it once per `sendMany()`
+call, not once per item — the resolver isn't invoked redundantly for a
+batch of many items belonging to one connection.

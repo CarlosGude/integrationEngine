@@ -1,6 +1,8 @@
 # HTTP Clients
 
-The client executes the HTTP request and returns the raw response array. Two built-in
+The client executes the HTTP request and returns `array{body: array, headers:
+array<string, string[]>}` — the decoded body plus the response's HTTP headers,
+which the engine hands to your mapper as separate arguments. Two built-in
 adapters are included; you can add your own.
 
 ---
@@ -94,7 +96,9 @@ final class SoapClientAdapter implements ClientAdapterInterface
 
     public function send(AbstractAction $action, ...): array
     {
-        // build SOAP envelope, execute, return decoded response as array
+        // build SOAP envelope, execute, decode the response, and return
+        // both the body and the response headers:
+        return ['body' => $decoded, 'headers' => $responseHeaders];
     }
 }
 ```
@@ -126,9 +130,14 @@ final class RetryingHttpClient implements ClientInterface
     public function send(AbstractAction $action, ?ActionContextInterface $context = null, ...): array
     {
         // retry on 429, circuit break on 503, custom headers, etc.
+        return ['body' => $decoded, 'headers' => $responseHeaders];
     }
 }
 ```
+
+`request_middlewares:` (see below) is not available here — a `client_service`
+builds its own requests, so it's responsible for any request-level logic
+(including full-request signing) itself.
 
 ```yaml
 my_api:
@@ -168,7 +177,7 @@ final class ConcurrentGraphQLClient implements ClientInterface, BatchClientInter
         $results = [];
         foreach ($handles as $key => $handle) {
             try {
-                $results[$key] = $handle->toArray();
+                $results[$key] = ['body' => $handle->toArray(), 'headers' => $handle->getHeaders(false)];
             } catch (\Throwable $e) {
                 $results[$key] = $e;
             }
@@ -221,3 +230,103 @@ concurrently rather than falling back to sequential sends for the whole batch.
 
 The bundle does not resolve or persist that URL — deciding *which* URL to pass (resolving
 the active tenant/store) is the calling application's responsibility.
+
+---
+
+## Runtime connection resolution — `ConnectionResolverInterface`
+
+`baseUrl` above only swaps the target URL. When a connection also needs
+different credentials — one integration serving several tenants, each with
+its own API key — configure a resolver instead:
+
+```yaml
+integration_engine:
+    integrations:
+        my_api:
+            base_url: 'https://api.example.com'   # fallback
+            connection_resolver: App\Infrastructure\Integrations\MyApi\MyApiConnectionResolver
+```
+
+```php
+use IntegrationEngine\Core\Contract\Connection\ConnectionCredentials;
+use IntegrationEngine\Core\Contract\Connection\ConnectionResolverInterface;
+
+final class MyApiConnectionResolver implements ConnectionResolverInterface
+{
+    public function resolve(mixed $connection): ConnectionCredentials
+    {
+        $tenant = $this->tenants->getById($connection);
+
+        return new ConnectionCredentials(
+            baseUrl: $tenant->baseUrl,
+            authorization: new StaticAuthorizationConfig('bearer', ['token' => $tenant->apiKey]),
+            connectionId: (string) $connection,
+        );
+    }
+}
+```
+
+```php
+$engine->send('get_orders', connection: $tenantId);
+```
+
+`ConnectionCredentials { ?baseUrl, ?authorization, ?connectionId }` — every
+field optional; only set what actually varies per connection. `$connection`
+is opaque to the engine; your resolver decides what it means. Omitting
+`connection` never touches the resolver, so existing single-connection
+integrations are unaffected; passing it without a `connection_resolver`
+configured throws `ConnectionResolutionException`.
+
+**Dynamic-auth token cache:** if the action uses dynamic authorization and
+several connections could share one `base_url`, set `connectionId` to a
+stable, non-secret identifier (never the API key/secret) — otherwise those
+connections would collide on the same cached token. If every connection has
+its own `base_url`, the engine already discriminates by that and
+`connectionId` is optional.
+
+---
+
+## Request middleware — full-request signing
+
+For signature schemes that need the complete outgoing request (method,
+resolved URL, headers, body) rather than a static credential — OAuth 1.0a,
+AWS SigV4 — implement `RequestMiddlewareInterface`:
+
+```php
+use IntegrationEngine\Core\Contract\Client\Request;
+use IntegrationEngine\Core\Contract\Client\RequestMiddlewareInterface;
+
+final class OAuth1SigningMiddleware implements RequestMiddlewareInterface
+{
+    public function handle(Request $request, callable $next): array
+    {
+        $signature = $this->sign($request); // your signing logic
+
+        return $next($request->withHeader('Authorization', $signature));
+    }
+}
+```
+
+```yaml
+# services.yaml
+App\Infrastructure\Integrations\MyApi\OAuth1SigningMiddleware:
+    tags: [integration_engine.request_middleware]
+```
+
+```yaml
+# integration_engine.yaml
+my_api:
+    request_middlewares:
+        - App\Infrastructure\Integrations\MyApi\OAuth1SigningMiddleware
+```
+
+`Request { method, url, headers, ?body }` is the fully-resolved request —
+everything a signature could need is already present. `$next` continues the
+chain (optionally with a modified `$request`); not calling it rejects the
+request (throw) or short-circuits with a canned result. Multiple
+middlewares run outermost-first, same convention as `middlewares:`.
+
+Only the built-in REST/GraphQL adapters support this — see the note in
+"Custom service — full control" above. Configuring any `request_middlewares`
+for an integration makes its `sendMany()` dispatch sequentially instead of
+concurrently, since each item's chain may need to observe its own response.

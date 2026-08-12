@@ -18,7 +18,7 @@ final class GetEmployeeMapper extends AbstractMapper
 {
     public static function getAction(): string { return GetEmployeeAction::class; }
 
-    protected static function transform(AbstractAction $action, array $response): ResponseInterface
+    protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
     {
         return GetEmployeeResponse::create($response);
     }
@@ -72,6 +72,28 @@ that have more than three or four fields. Nested DTOs do **not** implement
 
 ---
 
+## Response headers
+
+`transform()`'s third argument, `$headers`, is the response's HTTP headers as
+`array<string, string[]>` — the same shape Symfony's HttpClient exposes, one
+list per header name since a header can repeat. Most mappers ignore it; it
+exists for the data some APIs put outside the body: pagination cursors,
+rate-limit counters, request/correlation IDs.
+
+```php
+protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
+{
+    $remaining = $headers['X-RateLimit-Remaining'][0] ?? null;
+
+    return GetEmployeesResponse::create($response, remaining: $remaining !== null ? (int) $remaining : null);
+}
+```
+
+Calling `AbstractMapper::map()` directly (outside the engine flow — e.g. in a
+unit test for the mapper itself) can omit `$headers`; it defaults to `[]`.
+
+---
+
 ## One mapper per action
 
 The engine enforces `$mapper::getAction() === $action::class` before calling
@@ -90,7 +112,7 @@ final class EmployeeCollectionTransformer
 final class GetEmployeesMapper extends AbstractMapper
 {
     public static function getAction(): string { return GetEmployeesAction::class; }
-    protected static function transform(AbstractAction $action, array $response): ResponseInterface
+    protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
     {
         return EmployeeCollectionTransformer::transform($response);
     }
@@ -99,7 +121,7 @@ final class GetEmployeesMapper extends AbstractMapper
 final class FilterEmployeesMapper extends AbstractMapper
 {
     public static function getAction(): string { return FilterEmployeesAction::class; }
-    protected static function transform(AbstractAction $action, array $response): ResponseInterface
+    protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
     {
         return EmployeeCollectionTransformer::transform($response);
     }

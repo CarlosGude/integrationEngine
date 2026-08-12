@@ -13,15 +13,16 @@ classDiagram
         -ClientInterface client
         -CachePort cache
         -string integrationName
-        +send(actionName, context?, body?, headers?) ResponseInterface
+        -ConnectionResolverInterface connectionResolver
+        +send(actionName, context?, body?, headers?, baseUrl?, connection?) ResponseInterface
         +sendMany(requests) BatchResultCollection
         +sendManyOrFail(requests) array
-        -sendWithDynamicAuth(action, auth, context, headers) ResponseInterface
+        -resolveForDispatch(action, connection, baseUrl, connectionCache) array
+        -resolveConnection(connection, connectionCache) ConnectionCredentials
+        -applyConnectionAuthorization(action, credentials) AbstractAction
         -dispatchBatch(prepared) array
-        -retryBatch(requests, raw, toRetry) array
-        -withStaticToken(action, auth) AbstractAction
-        -resolveToken(authConfig) string
-        -applyMapper(action, rawResponse) ResponseInterface
+        -retryBatch(raw, toRetry, prepared) array
+        -applyMapper(action, body, headers) ResponseInterface
     }
 
     class IntegrationRegistry {
@@ -53,8 +54,8 @@ classDiagram
     class AbstractMapper {
         <<abstract>>
         +getAction()$ string*
-        +map(action, response)$ ResponseInterface
-        #transform(action, response)$ ResponseInterface*
+        +map(action, response, headers?) ResponseInterface
+        #transform(action, response, headers)$ ResponseInterface*
     }
 
     class ResponseInterface {
@@ -126,7 +127,7 @@ classDiagram
 
     class ClientInterface {
         <<interface>>
-        +send(action, context?, headers?) array
+        +send(action, context?, headers?) array~body, headers~
     }
 
     class BatchClientInterface {
@@ -141,6 +142,32 @@ classDiagram
         +requiresMethod()$ bool
     }
 
+    class ConnectionResolverInterface {
+        <<interface>>
+        +resolve(connection) ConnectionCredentials
+    }
+
+    class ConnectionCredentials {
+        +string baseUrl
+        +AuthorizationConfig authorization
+        +string connectionId
+    }
+
+    class ConnectionResolutionException
+
+    class RequestMiddlewareInterface {
+        <<interface>>
+        +handle(request, next) array~body, headers~
+    }
+
+    class Request {
+        +string method
+        +string url
+        +array headers
+        +array body
+        +withHeader(name, value) self
+    }
+
     IntegrationRegistry o-- IntegrationEngine : registers by name
     IntegrationEngine --> ConfigPort : getAction()
     IntegrationEngine --> ClientInterface : send()
@@ -150,6 +177,11 @@ classDiagram
     IntegrationEngine ..> DynamicAuthorizationConfig : detects
     IntegrationEngine ..> StaticAuthorizationConfig : rebuilds action with
     IntegrationEngine ..> BatchClientInterface : detects for sendMany()
+    IntegrationEngine --> ConnectionResolverInterface : resolve(connection)
+    IntegrationEngine ..> ConnectionResolutionException : throws when unconfigured
+    ConnectionResolverInterface ..> ConnectionCredentials : returns
+    ClientAdapterInterface ..> RequestMiddlewareInterface : runs before transport
+    RequestMiddlewareInterface ..> Request : inspects/modifies
 
     AbstractAction --> AuthorizationConfig : authorization
     AbstractAction --> ActionBodyInterface : body
@@ -181,13 +213,16 @@ classDiagram
         +ActionContextInterface context
         +ActionBodyInterface body
         +RequestHeadersInterface headers
-        +create(actionName, context?, body?, headers?)$ self
+        +string baseUrl
+        +mixed connection
     }
 
     class PreparedRequest {
         +AbstractAction action
         +ActionContextInterface context
         +RequestHeadersInterface headers
+        +string baseUrl
+        +string cacheDiscriminator
     }
 
     class BatchResult {
@@ -223,7 +258,7 @@ classDiagram
     class BatchTokenRetry {
         -CachePort cache
         -string integrationName
-        +observe(key, auth) void
+        +prepareWithToken(key, auth, cacheDiscriminator, factory) AbstractAction
         +plan(raw) array
     }
 
@@ -268,13 +303,16 @@ classDiagram
         -HttpClientInterface httpClient
         -string baseUrl
         -array defaultHeaders
+        -array~RequestMiddlewareInterface~ requestMiddlewares
         +getClientType()$ "rest"
         +requiresPath()$ true
         +requiresMethod()$ true
-        +send(action, context?, headers?) array
+        +send(action, context?, headers?) array~body, headers~
         +sendMany(requests) array
         -buildOptions(action, headers) array
-        -consume(response, method, path) array
+        -execute(request, path) array~body, headers~
+        -consume(response, method, path) array~body, headers~
+        -sendManySequentially(requests) array
         -networkError(method, path, e) RequestResponseException
     }
 
@@ -282,6 +320,7 @@ classDiagram
         -HttpClientInterface httpClient
         -string endpointUrl
         -array defaultHeaders
+        -array~RequestMiddlewareInterface~ requestMiddlewares
         +getClientType()$ "graphql"
         +requiresPath()$ false
         +requiresMethod()$ false
@@ -291,6 +330,11 @@ classDiagram
         <<trait>>
         #defaultAuthHeaders() array
         -resolveHeaders(action) array
+    }
+
+    class RunsRequestMiddlewares {
+        <<trait>>
+        -dispatchThroughRequestMiddlewares(request, middlewares, terminal) array
     }
 
     class ClientAdapterResolver {
@@ -325,6 +369,8 @@ classDiagram
     BatchClientInterface --|> ClientInterface
     SymfonyHttpClientAdapter --* ResolvesAuthHeaders : uses
     GraphQLClientAdapter --* ResolvesAuthHeaders : uses
+    SymfonyHttpClientAdapter --* RunsRequestMiddlewares : uses
+    GraphQLClientAdapter --* RunsRequestMiddlewares : uses
     SymfonyHttpClientAdapter ..> RequestResponseException : throws
     GraphQLClientAdapter ..> RequestResponseException : throws
     ClientAdapterResolver o-- ClientAdapterInterface : type → class map
@@ -372,6 +418,8 @@ classDiagram
     IntegrationCompilerPass --> IntegrationEngine : one per integration
     IntegrationCompilerPass --> IntegrationRegistry : register(name, engine)
     IntegrationCompilerPass ..> IntegrationConfigurationException : throws
+    IntegrationCompilerPass ..> ConnectionResolverInterface : wires connection_resolver:
+    IntegrationCompilerPass ..> RequestMiddlewareInterface : wires request_middlewares: (built-in adapters only)
     MakeIntegrationCommand --> IntegrationFileGenerator : generates files
     MakeIntegrationCommand --> ClientAdapterResolver : resolve client type
     IntegrationFileGenerator --> TemplateRenderer : renders stubs
@@ -405,17 +453,21 @@ classDiagram
 flowchart LR
     A[Application service] --> B["IntegrationRegistry::get(NAME)"]
     B --> C[IntegrationEngine]
-    C --> D["ConfigPort::getAction()"]
-    D --> E{Dynamic auth?}
-    E -- yes --> F["CachePort: token hit?"]
+    C --> D["ConfigPort::getAction()<br/>resolves body-sourced path placeholders"]
+    D --> D2{"connection given?"}
+    D2 -- yes --> D3["ConnectionResolverInterface::resolve()<br/>→ ConnectionCredentials"]
+    D3 --> E{Dynamic auth?}
+    D2 -- no --> E
+    E -- yes --> F["CachePort: token hit?<br/>(keyed per connection)"]
     F -- miss --> G[Token action via ClientInterface + Mapper]
     G --> H[Cache token + rebuild action as static auth]
     F -- hit --> H
     E -- no --> I["ClientInterface::send()"]
     H --> I
-    I --> J{"hasResponse()?"}
+    I --> I2["adapter resolves Request, runs request_middlewares, dispatches"]
+    I2 --> J{"hasResponse()?"}
     J -- no --> K[EmptyResponse]
-    J -- yes --> L["AbstractMapper::map()"]
+    J -- yes --> L["AbstractMapper::map(action, body, headers)"]
     L --> M[Typed ResponseInterface DTO]
 ```
 
