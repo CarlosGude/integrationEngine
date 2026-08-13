@@ -58,7 +58,7 @@ See it wired into a real Symfony app — REST, GraphQL, and dynamic OAuth2 — i
 composer require carlosgude/integration-engine
 ```
 
-Requires PHP 8.2+ and Symfony 7.0+. The bundle registers itself automatically via Symfony Flex.
+Requires PHP 8.2+ and Symfony 6.4+ (including 7.0+ and 8.0+). The bundle registers itself automatically via Symfony Flex.
 
 ---
 
