@@ -43,6 +43,10 @@ final class LoggingTest extends IntegrationEngineTestCase
         $this->engine->send(FakeProtectedAction::getName());
 
         self::assertTrue($this->logger->hasEntry('info', 'Fetching dynamic auth token'));
+        self::assertSame(
+            ['integration' => 'test_integration', 'token_action' => FakeTokenAction::getName()],
+            $this->logger->contextFor('info', 'Fetching dynamic auth token'),
+        );
     }
 
     #[Test]
@@ -60,6 +64,10 @@ final class LoggingTest extends IntegrationEngineTestCase
 
         self::assertTrue($this->logger->hasEntry('debug', 'cache hit'));
         self::assertFalse($this->logger->hasEntry('info', 'Fetching dynamic auth token'));
+        self::assertSame(
+            ['integration' => 'test_integration', 'token_action' => FakeTokenAction::getName()],
+            $this->logger->contextFor('debug', 'cache hit'),
+        );
     }
 
     // ── single 401 retry ─────────────────────────────────────────────────────
@@ -77,6 +85,14 @@ final class LoggingTest extends IntegrationEngineTestCase
         $this->engine->send(FakeProtectedAction::getName());
 
         self::assertTrue($this->logger->hasEntry('warning', 'Cached auth token rejected (401)'));
+        self::assertSame(
+            [
+                'integration' => 'test_integration',
+                'action' => FakeProtectedAction::getName(),
+                'token_action' => FakeTokenAction::getName(),
+            ],
+            $this->logger->contextFor('warning', 'Cached auth token rejected (401)'),
+        );
     }
 
     // ── batch 401 retry ───────────────────────────────────────────────────────
@@ -94,6 +110,10 @@ final class LoggingTest extends IntegrationEngineTestCase
         $this->engine->sendMany(['one' => new EngineRequest(FakeProtectedAction::getName())]);
 
         self::assertTrue($this->logger->hasEntry('warning', 'Retrying batch items'));
+        self::assertSame(
+            ['integration' => 'test_integration', 'count' => 1, 'keys' => ['one']],
+            $this->logger->contextFor('warning', 'Retrying batch items'),
+        );
     }
 
     private function registerProtectedPair(): void

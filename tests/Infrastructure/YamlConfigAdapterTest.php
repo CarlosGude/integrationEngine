@@ -403,6 +403,28 @@ final class YamlConfigAdapterTest extends TestCase
         self::assertSame(['other_field' => 'x'], $action->getBody()?->toArray());
     }
 
+    /**
+     * When only some placeholders resolve from the body, the ones that
+     * don't must survive in the returned path exactly as "{name}" — not as
+     * a bare "name" — so AbstractAction::getPath() still recognises them
+     * as placeholders to resolve from context at send time.
+     */
+    #[Test]
+    public function getActionLeavesAnUnresolvedPlaceholderBracedWhenAnotherOneInThePathResolves(): void
+    {
+        $adapter = $this->buildAdapter(<<<'YAML'
+            get_note:
+                action: '%s'
+                method: GET
+                path: /orders/{order_id}/notes/{note_id}
+                body: 'IntegrationEngine\Tests\Infrastructure\YamlConfigTestBody'
+            YAML);
+
+        $action = $adapter->getAction('get_note', YamlConfigTestBody::create(['order_id' => 42]));
+
+        self::assertSame('/orders/42/notes/{note_id}', $action->getRawPath());
+    }
+
     #[Test]
     public function getActionLeavesPathUntouchedWhenActionHasNoPlaceholders(): void
     {
@@ -461,6 +483,53 @@ final class YamlConfigAdapterTest extends TestCase
         $this->expectExceptionMessage('Path parameter "product_id" must be a scalar value.');
 
         $adapter->getAction('get_variations', YamlConfigTestBody::create(['product_id' => ['nested' => true]]));
+    }
+
+    /**
+     * preg_replace_callback() returns null (rather than throwing) on an
+     * internal PCRE failure — forced here via pcre.backtrack_limit — and
+     * that null must become a PathResolutionException, not silently flow
+     * on as if it were the resolved path.
+     */
+    #[Test]
+    public function getActionThrowsOnInternalPcreFailure(): void
+    {
+        $adapter = $this->buildAdapter(<<<'YAML'
+            get_variations:
+                action: '%s'
+                method: GET
+                path: /products/{product_id}/variations
+                body: 'IntegrationEngine\Tests\Infrastructure\YamlConfigTestBody'
+            YAML);
+
+        $originalLimit = ini_set('pcre.backtrack_limit', '0');
+
+        try {
+            $this->expectException(PathResolutionException::class);
+            $this->expectExceptionMessage('PCRE error resolving path "/products/{product_id}/variations".');
+
+            $adapter->getAction('get_variations', YamlConfigTestBody::create(['product_id' => 123]));
+        } finally {
+            ini_set('pcre.backtrack_limit', false !== $originalLimit ? $originalLimit : '1000000');
+        }
+    }
+
+    // ── cache_ttl ────────────────────────────────────────────────────────────
+
+    #[Test]
+    public function getActionCastsNumericStringCacheTtlToInt(): void
+    {
+        $adapter = $this->buildAdapter(<<<'YAML'
+            get_employee:
+                action: '%s'
+                method: GET
+                path: /employees
+                cache_ttl: '60'
+            YAML);
+
+        $action = $adapter->getAction('get_employee');
+
+        self::assertSame(60, $action->getCacheTtl());
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

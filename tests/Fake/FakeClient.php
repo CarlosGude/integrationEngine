@@ -74,6 +74,12 @@ final class FakeClient implements ClientInterface, DynamicBaseUrlClientInterface
         return $this->state->lastBaseUrl;
     }
 
+    /** The baseUrl the client instance had when it last sent the given action — unlike lastBaseUrl(), unaffected by later sends of other actions. */
+    public function baseUrlUsedFor(string $actionName): ?string
+    {
+        return $this->state->baseUrlByAction[$actionName] ?? null;
+    }
+
     /** @return array{body: array<mixed>, headers: array<string, list<string>>} */
     public function send(
         AbstractAction $action,
@@ -83,6 +89,7 @@ final class FakeClient implements ClientInterface, DynamicBaseUrlClientInterface
         $this->state->lastAction = $action;
         $this->state->lastContext = $context;
         $this->state->lastBaseUrl = $this->baseUrl;
+        $this->state->baseUrlByAction[$action::getName()] = $this->baseUrl;
         $this->state->callCount[$action::getName()] = ($this->state->callCount[$action::getName()] ?? 0) + 1;
 
         if (!empty($this->state->pendingExceptions[$action::getName()])) {
@@ -116,4 +123,7 @@ final class FakeClientState
     public ?AbstractAction $lastAction = null;
     public ?ActionContextInterface $lastContext = null;
     public ?string $lastBaseUrl = null;
+
+    /** @var array<string, ?string> */
+    public array $baseUrlByAction = [];
 }

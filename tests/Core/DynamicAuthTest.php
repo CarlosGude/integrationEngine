@@ -102,6 +102,30 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
         );
     }
 
+    /**
+     * A token action with no declared response/mapper must expose the
+     * whole raw body untouched — not just its first entry — so the token
+     * field can be found regardless of its position in the payload.
+     */
+    #[Test]
+    public function dynamicAuthFindsTokenFieldAnywhereInAMultiKeyRawBody(): void
+    {
+        $this->config->register(FakePathAction::getName(), FakePathAction::create('GET', '/token'));
+        $this->config->register(FakeProtectedAction::getName(), FakeProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
+            action: FakePathAction::getName(),
+            tokenField: 'access_token',
+            ttl: 60,
+        )));
+        $this->client->setResponse(FakePathAction::getName(), ['expires_in' => 3600, 'access_token' => 'raw_token']);
+        $this->client->setResponse(FakeProtectedAction::getName(), []);
+
+        $this->engine->send(FakeProtectedAction::getName());
+
+        $auth = $this->client->lastAction()?->getAuthorization();
+        self::assertInstanceOf(StaticAuthorizationConfig::class, $auth);
+        self::assertSame('raw_token', $auth->params['token']);
+    }
+
     #[Test]
     public function dynamicAuthCastsIntegerTokenToString(): void
     {
@@ -244,6 +268,30 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
         $auth = $this->client->lastAction()?->getAuthorization();
         self::assertInstanceOf(StaticAuthorizationConfig::class, $auth);
         self::assertSame('pre_cached_token', $auth->params['token']);
+    }
+
+    /**
+     * The $client parameter handle() receives (the resolved, per-call
+     * client for the request's baseUrl) must be used for both the token
+     * fetch and the protected call — never silently replaced by the
+     * handler's own default client.
+     */
+    #[Test]
+    public function tokenFetchAndProtectedCallUseTheResolvedClientForTheCurrentBaseUrl(): void
+    {
+        $this->config->register(FakeTokenAction::getName(), FakeTokenAction::create('GET', '/token'));
+        $this->config->register(FakeProtectedAction::getName(), FakeProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
+            action: FakeTokenAction::getName(),
+            tokenField: 'access_token',
+            ttl: 60,
+        )));
+        $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'tok']);
+        $this->client->setResponse(FakeProtectedAction::getName(), []);
+
+        $this->engine->send(FakeProtectedAction::getName(), baseUrl: 'https://tenant-a.example.com');
+
+        self::assertSame('https://tenant-a.example.com', $this->client->baseUrlUsedFor(FakeTokenAction::getName()));
+        self::assertSame('https://tenant-a.example.com', $this->client->baseUrlUsedFor(FakeProtectedAction::getName()));
     }
 
     /**

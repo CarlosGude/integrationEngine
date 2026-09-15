@@ -117,6 +117,6 @@ final readonly class ResolverTestCustomAdapter implements ClientAdapterInterface
         ?ActionContextInterface $context = null,
         ?RequestHeadersInterface $headers = null,
     ): array {
-        return [];
+        return ['body' => [], 'headers' => []];
     }
 }

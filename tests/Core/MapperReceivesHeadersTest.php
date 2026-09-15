@@ -74,6 +74,7 @@ final class HeaderAwareMapper extends AbstractMapper
 
     protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
     {
+        /** @var array<string, mixed> $response */
         return new HeaderAwareResponse($response, $headers);
     }
 }

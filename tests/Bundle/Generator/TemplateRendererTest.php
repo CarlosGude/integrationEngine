@@ -108,10 +108,13 @@ final class TemplateRendererTest extends TestCase
         $renderer = $this->renderer();
 
         foreach ([$renderer->integration(), $renderer->action(), $renderer->mapper(), $renderer->response()] as $code) {
-            self::assertNotFalse(
-                token_get_all($code, TOKEN_PARSE),
-                'Generated template must be syntactically valid PHP.'
-            );
+            try {
+                $tokens = token_get_all($code, TOKEN_PARSE);
+            } catch (\ParseError $e) {
+                self::fail('Generated template must be syntactically valid PHP: '.$e->getMessage());
+            }
+
+            self::assertNotEmpty($tokens);
         }
     }
 

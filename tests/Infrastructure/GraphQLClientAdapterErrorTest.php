@@ -54,6 +54,45 @@ final class GraphQLClientAdapterErrorTest extends TestCase
         }
     }
 
+    /**
+     * Regression: a non-empty "errors" array without a "0" key (a
+     * malformed but non-empty error list) must fall back to the generic
+     * message like any other errors[0]-without-message case — isset() and
+     * is_array() must both hold before reading $errors[0], not either one.
+     */
+    #[Test]
+    public function graphQLErrorsArrayWithoutIndexZeroThrowsGenericError(): void
+    {
+        $spy = new GQLErrorSpyClient(responseBody: [
+            'errors' => [1 => ['message' => 'unreachable without index 0']],
+        ]);
+        $adapter = new GraphQLClientAdapter(httpClient: $spy, endpointUrl: 'https://api.example.com/graphql');
+
+        try {
+            $adapter->send(GQLErrorAction::create('POST', '/graphql', GQLErrorTestBody::create([])));
+            self::fail('Expected RequestResponseException');
+        } catch (RequestResponseException $e) {
+            self::assertSame(200, $e->statusCode);
+            self::assertStringContainsString('GraphQL error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Regression: the successful path must read response headers without
+     * throwing on a non-2xx-shaped header set — getHeaders(throw: false)
+     * is required here, not throw: true.
+     */
+    #[Test]
+    public function successfulResponseReadsHeadersWithoutThrowing(): void
+    {
+        $spy = new GQLErrorSpyClient(responseBody: ['data' => ['user' => ['id' => 1]]], throwOnGetHeadersTrue: true);
+        $adapter = new GraphQLClientAdapter(httpClient: $spy, endpointUrl: 'https://api.example.com/graphql');
+
+        $result = $adapter->send(GQLErrorAction::create('POST', '/graphql', GQLErrorTestBody::create([])));
+
+        self::assertSame(['user' => ['id' => 1]], $result['body']);
+    }
+
     // ── HTTP error status codes ───────────────────────────────────────────────
 
     #[Test]
@@ -149,6 +188,7 @@ final class GQLErrorSpyClient implements HttpClientInterface
         private readonly int $statusCode = 200,
         private readonly ?\Throwable $throwOnRequest = null,
         private readonly bool $throwOnGetContentTrue = false,
+        private readonly bool $throwOnGetHeadersTrue = false,
     ) {}
 
     /** @param array<string, mixed> $options */
@@ -161,13 +201,15 @@ final class GQLErrorSpyClient implements HttpClientInterface
         $statusCode = $this->statusCode;
         $responseBody = $this->responseBody;
         $throwOnGetContentTrue = $this->throwOnGetContentTrue;
+        $throwOnGetHeadersTrue = $this->throwOnGetHeadersTrue;
 
-        return new class($statusCode, $responseBody, $throwOnGetContentTrue) implements HttpResponseInterface {
+        return new class($statusCode, $responseBody, $throwOnGetContentTrue, $throwOnGetHeadersTrue) implements HttpResponseInterface {
             /** @param array<string, mixed> $body */
             public function __construct(
                 private readonly int $statusCode,
                 private readonly array $body,
                 private readonly bool $throwOnGetContentTrue,
+                private readonly bool $throwOnGetHeadersTrue,
             ) {}
 
             public function getStatusCode(): int
@@ -178,6 +220,10 @@ final class GQLErrorSpyClient implements HttpClientInterface
             /** @return array<string, array<int, string>> */
             public function getHeaders(bool $throw = true): array
             {
+                if ($throw && $this->throwOnGetHeadersTrue) {
+                    throw new \LogicException('getHeaders called with throw: true');
+                }
+
                 return [];
             }
 

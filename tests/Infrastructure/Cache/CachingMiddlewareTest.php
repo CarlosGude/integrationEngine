@@ -45,14 +45,14 @@ final class CachingMiddlewareTest extends TestCase
         $next = static function () use (&$calls): array {
             ++$calls;
 
-            return ['data' => 42];
+            return ['body' => ['data' => 42], 'headers' => ['X-Trace' => ['abc']]];
         };
         $cache = new FakeCache();
         $mw = new CachingMiddleware($cache, 'my_api');
 
         $result = $mw->process(FakePathAction::create('GET', '/items', cacheTtl: 60), null, null, $next);
 
-        self::assertSame(['data' => 42], $result);
+        self::assertSame(['body' => ['data' => 42], 'headers' => ['X-Trace' => ['abc']]], $result);
         self::assertSame(1, $calls);
         self::assertCount(1, $cache->all());
     }
@@ -66,7 +66,7 @@ final class CachingMiddlewareTest extends TestCase
         $next = static function () use (&$calls): array {
             ++$calls;
 
-            return ['data' => 42];
+            return ['body' => ['data' => 42], 'headers' => ['X-Trace' => ['abc']]];
         };
         $cache = new FakeCache();
         $mw = new CachingMiddleware($cache, 'my_api');
@@ -75,7 +75,7 @@ final class CachingMiddlewareTest extends TestCase
         $mw->process($action, null, null, $next);
         $second = $mw->process($action, null, null, $next);
 
-        self::assertSame(['data' => 42], $second);
+        self::assertSame(['body' => ['data' => 42], 'headers' => ['X-Trace' => ['abc']]], $second);
         self::assertSame(1, $calls);
     }
 
@@ -94,6 +94,24 @@ final class CachingMiddlewareTest extends TestCase
 
         self::assertSame(1, $collector->getCachedCount());
         self::assertTrue($collector->getCalls()[0]->cached);
+        self::assertSame(0.0, $collector->getCalls()[0]->durationMs);
+    }
+
+    #[Test]
+    public function processManyRecordsHitsInCollectorWhenProvided(): void
+    {
+        $cache = new FakeCache();
+        $collector = new IntegrationEngineDataCollector();
+        $mw = new CachingMiddleware($cache, 'my_api', $collector);
+        $action = FakePathAction::create('GET', '/items', cacheTtl: 60);
+        $next = static fn (array $reqs): array => array_map(static fn (): array => ['body' => [], 'headers' => []], $reqs);
+
+        $mw->processMany(['a' => new PreparedRequest($action, null, null)], $next);
+        $mw->processMany(['a' => new PreparedRequest($action, null, null)], $next);
+
+        self::assertSame(1, $collector->getCachedCount());
+        self::assertTrue($collector->getCalls()[0]->cached);
+        self::assertSame(0.0, $collector->getCalls()[0]->durationMs);
     }
 
     // ── process(): different contexts → different keys ────────────────────────
@@ -254,11 +272,11 @@ final class CachingMiddlewareTest extends TestCase
     #[Test]
     public function processUsesSeparateCacheEntriesForDifferentBaseUrls(): void
     {
-        $calls = 0;
-        $next = static function () use (&$calls): array {
-            ++$calls;
+        $callCounter = new CallCounter();
+        $next = static function () use ($callCounter): array {
+            $callCounter->increment();
 
-            return ['data' => $calls];
+            return ['data' => $callCounter->count];
         };
         $cache = new FakeCache();
         $mw = new CachingMiddleware($cache, 'my_api');
@@ -272,14 +290,14 @@ final class CachingMiddlewareTest extends TestCase
 
         self::assertSame(['data' => 1], $resultA);
         self::assertSame(['data' => 2], $resultB);
-        self::assertSame(2, $calls);
+        self::assertSame(2, $callCounter->count);
         self::assertCount(2, $cache->all());
 
         // A repeat call for tenant A must hit tenant A's own entry, not
         // trigger another fetch and not return tenant B's cached value.
         $resultA2 = $mwA->process($action, null, null, $next);
         self::assertSame(['data' => 1], $resultA2);
-        self::assertSame(2, $calls);
+        self::assertSame(2, $callCounter->count);
     }
 
     #[Test]
@@ -303,5 +321,43 @@ final class CachingMiddlewareTest extends TestCase
 
         self::assertSame(2, $calls);
         self::assertEmpty($cache->all());
+    }
+
+    /**
+     * Regression: skipping a no-ttl item must move on to the next item in
+     * the batch, not stop scanning the rest of the requests entirely.
+     */
+    #[Test]
+    public function processManyStillEvaluatesItemsAfterANoTtlOne(): void
+    {
+        $cache = new FakeCache();
+        $mw = new CachingMiddleware($cache, 'my_api');
+        $noTtlAction = FakePathAction::create('GET', '/items');
+        $cachedAction = FakePathAction::create('GET', '/orders', cacheTtl: 60);
+
+        $results = $mw->processMany(
+            [
+                'no_ttl' => new PreparedRequest($noTtlAction, null, null),
+                'cached' => new PreparedRequest($cachedAction, null, null),
+            ],
+            static fn (array $reqs): array => array_map(
+                static fn (): array => ['body' => ['ok' => true], 'headers' => []],
+                $reqs,
+            ),
+        );
+
+        self::assertArrayHasKey('no_ttl', $results);
+        self::assertArrayHasKey('cached', $results);
+        self::assertCount(1, $cache->all());
+    }
+}
+
+final class CallCounter
+{
+    public int $count = 0;
+
+    public function increment(): void
+    {
+        ++$this->count;
     }
 }

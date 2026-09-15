@@ -70,6 +70,22 @@ final class SymfonyHttpClientAdapterResponseHeadersTest extends TestCase
         self::assertSame([], $result['headers']);
     }
 
+    /**
+     * Regression: the successful path must read response headers without
+     * throwing on a non-2xx-shaped header set — getHeaders(throw: false)
+     * is required here, not throw: true.
+     */
+    #[Test]
+    public function responseHeadersAreReadWithoutThrowing(): void
+    {
+        $spy = new ResponseHeadersSpyHttpClient(content: '{"id":1}', headers: [], throwOnGetHeadersTrue: true);
+        $adapter = new SymfonyHttpClientAdapter(httpClient: $spy, baseUrl: 'https://api.example.com');
+
+        $result = $adapter->send(ResponseHeadersTestAction::create('GET', '/orders'));
+
+        self::assertSame(['id' => 1], $result['body']);
+    }
+
     #[Test]
     public function sendManyAlsoPropagatesHeadersPerRequest(): void
     {
@@ -80,7 +96,9 @@ final class SymfonyHttpClientAdapterResponseHeadersTest extends TestCase
             'a' => new PreparedRequest(ResponseHeadersTestAction::create('GET', '/orders'), null, null),
         ]);
 
-        self::assertSame(['X-Trace-Id' => ['batch-1']], $results['a']['headers']);
+        $resultA = $results['a'];
+        self::assertIsArray($resultA);
+        self::assertSame(['X-Trace-Id' => ['batch-1']], $resultA['headers']);
     }
 }
 
@@ -110,6 +128,7 @@ final class ResponseHeadersSpyHttpClient implements HttpClientInterface
     public function __construct(
         private readonly string $content,
         private readonly array $headers,
+        private readonly bool $throwOnGetHeadersTrue = false,
     ) {}
 
     /** @param array<string, mixed> $options */
@@ -117,12 +136,14 @@ final class ResponseHeadersSpyHttpClient implements HttpClientInterface
     {
         $content = $this->content;
         $headers = $this->headers;
+        $throwOnGetHeadersTrue = $this->throwOnGetHeadersTrue;
 
-        return new class($content, $headers) implements HttpResponseInterface {
+        return new class($content, $headers, $throwOnGetHeadersTrue) implements HttpResponseInterface {
             /** @param array<string, list<string>> $headers */
             public function __construct(
                 private readonly string $content,
                 private readonly array $headers,
+                private readonly bool $throwOnGetHeadersTrue,
             ) {}
 
             public function getStatusCode(): int
@@ -133,6 +154,10 @@ final class ResponseHeadersSpyHttpClient implements HttpClientInterface
             /** @return array<string, list<string>> */
             public function getHeaders(bool $throw = true): array
             {
+                if ($throw && $this->throwOnGetHeadersTrue) {
+                    throw new \LogicException('getHeaders called with throw: true');
+                }
+
                 return $this->headers;
             }
 

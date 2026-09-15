@@ -138,6 +138,14 @@ final class AuthorizationConfigTest extends TestCase
     }
 
     #[Test]
+    public function dynamicFromArrayAcceptsZeroAsTheLowestValidTtl(): void
+    {
+        $config = DynamicAuthorizationConfig::fromArray(['type' => 'dynamic', 'action' => 'fetch_token', 'token_field' => 'access_token', 'ttl' => 0]);
+
+        self::assertSame(0, $config->ttl);
+    }
+
+    #[Test]
     public function dynamicFromArrayCastsTtlToInt(): void
     {
         $config = DynamicAuthorizationConfig::fromArray(['type' => 'dynamic', 'action' => 'fetch_token', 'token_field' => 'access_token', 'ttl' => '300']);
@@ -201,5 +209,21 @@ final class AuthorizationConfigTest extends TestCase
         ]);
 
         self::assertNull($config->prefix);
+    }
+
+    // ── DynamicAuthorizationConfig::resolvedPrefix — public API ──────────────
+
+    /**
+     * toStaticConfig() calls resolvedPrefix() internally, but it is also
+     * meant to be called directly by anything building its own
+     * StaticAuthorizationConfig from a resolved token (e.g. a custom
+     * DynamicAuthHandler-like flow) — it must stay public.
+     */
+    #[Test]
+    public function resolvedPrefixIsPubliclyCallable(): void
+    {
+        $config = new DynamicAuthorizationConfig(action: 'fetch_token', tokenField: 'access_token', ttl: 300);
+
+        self::assertSame('Bearer', $config->resolvedPrefix());
     }
 }

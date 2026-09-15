@@ -169,6 +169,7 @@ final class IntegrationCompilerPassTest extends TestCase
         (new IntegrationCompilerPass())->process($container);
 
         $middlewares = $container->getDefinition('integration_engine.client.my_api')->getArgument(1);
+        self::assertIsArray($middlewares);
         self::assertCount(3, $middlewares);
 
         $cachingDef = $container->getDefinition($this->referencedServiceId($middlewares[0]));
@@ -191,6 +192,7 @@ final class IntegrationCompilerPassTest extends TestCase
         (new IntegrationCompilerPass())->process($container);
 
         $middlewares = $container->getDefinition('integration_engine.client.my_api')->getArgument(1);
+        self::assertIsArray($middlewares);
         self::assertSame('app.outer', $this->referencedServiceId($middlewares[1]));
         self::assertSame('app.middle', $this->referencedServiceId($middlewares[2]));
         self::assertSame('app.inner', $this->referencedServiceId($middlewares[3]));
@@ -208,6 +210,7 @@ final class IntegrationCompilerPassTest extends TestCase
         (new IntegrationCompilerPass())->process($container);
 
         $middlewares = $container->getDefinition('integration_engine.client.my_api')->getArgument(1);
+        self::assertIsArray($middlewares);
         self::assertCount(2, $middlewares);
         self::assertSame('app.rate_limit', $this->referencedServiceId($middlewares[1]));
     }
@@ -233,6 +236,7 @@ final class IntegrationCompilerPassTest extends TestCase
         (new IntegrationCompilerPass())->process($container);
 
         $middlewares = $container->getDefinition('integration_engine.client.my_api')->getArgument(1);
+        self::assertIsArray($middlewares);
         self::assertCount(1, $middlewares);
     }
 
@@ -274,6 +278,7 @@ final class IntegrationCompilerPassTest extends TestCase
 
         $httpClientDef = $container->getDefinition('integration_engine.http_client.my_api');
         $requestMiddlewares = $httpClientDef->getArgument(3);
+        self::assertIsArray($requestMiddlewares);
         self::assertCount(1, $requestMiddlewares);
         self::assertSame('app.oauth_signer', $this->referencedServiceId($requestMiddlewares[0]));
     }
@@ -290,6 +295,7 @@ final class IntegrationCompilerPassTest extends TestCase
         (new IntegrationCompilerPass())->process($container);
 
         $requestMiddlewares = $container->getDefinition('integration_engine.http_client.my_api')->getArgument(3);
+        self::assertIsArray($requestMiddlewares);
         self::assertSame('app.outer', $this->referencedServiceId($requestMiddlewares[0]));
         self::assertSame('app.inner', $this->referencedServiceId($requestMiddlewares[1]));
     }
@@ -469,7 +475,11 @@ final class IntegrationCompilerPassTest extends TestCase
         return $container;
     }
 
-    /** @param array<string, mixed> $overrides @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $overrides
+     *
+     * @return array<string, mixed>
+     */
     private function integrationConfig(array $overrides = []): array
     {
         return array_merge([
