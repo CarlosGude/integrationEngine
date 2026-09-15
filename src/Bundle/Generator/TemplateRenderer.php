@@ -29,7 +29,7 @@ final readonly class TemplateRenderer
 
             final class {$this->ctx->name}Integration implements IntegrationName
             {
-                public const string NAME = '{$name}';
+                public const NAME = '{$name}';
             }
             PHP;
     }

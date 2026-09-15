@@ -11,7 +11,7 @@ namespace IntegrationEngine\Core\Registry;
  *
  *   final class AcmeErpIntegration implements IntegrationName
  *   {
- *       public const string NAME = 'acme_erp';
+ *       public const NAME = 'acme_erp';
  *   }
  *
  *   // Usage:
