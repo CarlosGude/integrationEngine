@@ -2,7 +2,7 @@
 
 > **Pestaña principal.** Orden de trabajo día a día. El detalle de cada tarea está en:
 > - **[BUNDLE.md](BUNDLE.md)** → tareas `B*` (repo `integrationEngine`, incluida la landing)
-> - **[DEMO.md](DEMO.md)** → tareas `D*` (repo nuevo `integrationEngine-demo`)
+> - **DEMO.md** → tareas `D*` (repo nuevo `integrationEngine-demo`) — no escrito todavía; se redacta antes de que arranque la Fase 2 (Día 11)
 >
 > Este plan manda sobre el orden. BUNDLE.md y DEMO.md mandan sobre el *cómo*.
 
@@ -154,7 +154,7 @@ deptrac:   vendor/bin/deptrac analyse --no-progress
 - **Alcance mínimo:** test de enlaces relativos en `.md`; una sola guía de agentes en `agent/`; referencias `.agent/` corregidas; `landing/README.md` sin `snippets.js`.
 - **Dónde:** `tests/Documentation/DocumentationLinksTest.php` (nuevo), `agent/integration-engine-agent-guide.md`, `integration-engine-agent-guide.md` (borrar), `docs/AI-AGENT-USAGE.md`, `landing/README.md`.
 - **Verificación:**
-  - [ ] Test rojo previo detecta `.agent/integration-engine-agent-guide.md`.
+  - [ ] Test rojo previo detecta el enlace roto a `.agent/` en `docs/AI-AGENT-USAGE.md`.
   - [ ] `test ! -f integration-engine-agent-guide.md`.
   - [ ] **Cumple su necesidad si:** ningún enlace relativo de la documentación apunta a un archivo inexistente.
 
