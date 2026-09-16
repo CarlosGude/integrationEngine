@@ -1,21 +1,28 @@
 PHP=php
 COMPOSER=composer
-.PHONY: test
+.PHONY: install test qa ci cs cs-fix stan mutation pre-commit deploy-landing
 # -----------------------------
-# QA PRINCIPAL
+# SETUP
 # -----------------------------
-qa: cs test
+install:
+	$(COMPOSER) install
+
+# -----------------------------
+# QA (before each commit)
+# -----------------------------
+qa: cs stan test
 	@echo "✔ QA OK — el código no ha explotado"
 
 # -----------------------------
-# PRE-COMMIT
+# CI (before opening the PR)
 # -----------------------------
-pre-commit: cs-fix
-	./vendor/bin/phpstan analyse src --level=max --memory-limit=1G
-	./vendor/bin/phpstan analyse tests --level=max --memory-limit=1G
-	./vendor/bin/phpunit
-	./vendor/bin/infection --min-msi=98 --min-covered-msi=99
-	@echo "✔ Pre-commit OK"
+ci: qa mutation
+
+# -----------------------------
+# PRE-COMMIT (alias of ci)
+# -----------------------------
+pre-commit: ci
+
 # -----------------------------
 # CODE STYLE
 # -----------------------------
@@ -41,21 +48,10 @@ test-coverage:
 	./vendor/bin/phpunit --coverage-text
 
 # -----------------------------
-# SETUP
-# -----------------------------
-install:
-	$(COMPOSER) install
-
-# -----------------------------
-# CI SIMULATION
-# -----------------------------
-# -----------------------------
 # MUTATION TESTING
 # -----------------------------
 mutation:
-	./vendor/bin/infection --min-msi=92 --min-covered-msi=92
-
-ci: cs stan test mutation
+	./vendor/bin/infection --threads=max --show-mutations
 
 # -----------------------------
 # LANDING

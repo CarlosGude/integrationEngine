@@ -29,7 +29,7 @@ final class MiddlewareClientTest extends TestCase
     {
         $inner = new FakeClient();
         $inner->setResponse(FakePathAction::getName(), ['result' => 1]);
-        $log = [];
+        $log = new CallLog();
 
         $client = new MiddlewareClient($inner, [
             new SpyMiddleware('A', $log),
@@ -39,7 +39,7 @@ final class MiddlewareClientTest extends TestCase
         $result = $client->send(FakePathAction::create('GET', '/items'));
 
         self::assertSame(['body' => ['result' => 1], 'headers' => []], $result);
-        self::assertSame(['A:before', 'B:before', 'B:after', 'A:after'], $log);
+        self::assertSame(['A:before', 'B:before', 'B:after', 'A:after'], $log->all());
     }
 
     #[Test]
@@ -59,7 +59,7 @@ final class MiddlewareClientTest extends TestCase
     {
         $inner = new FakeBatchClient();
         $inner->inner()->setResponse(FakePathAction::getName(), ['result' => 1]);
-        $log = [];
+        $log = new CallLog();
 
         $client = new MiddlewareClient($inner, [
             new SpyMiddleware('A', $log),
@@ -71,7 +71,7 @@ final class MiddlewareClientTest extends TestCase
         ]);
 
         self::assertSame(['body' => ['result' => 1], 'headers' => []], $results['a']);
-        self::assertSame(['A:before-batch', 'B:before-batch', 'B:after-batch', 'A:after-batch'], $log);
+        self::assertSame(['A:before-batch', 'B:before-batch', 'B:after-batch', 'A:after-batch'], $log->all());
         self::assertSame(1, $inner->batchCount());
     }
 
@@ -126,11 +126,11 @@ final class MiddlewareClientTest extends TestCase
     #[Test]
     public function implementsAllRequiredInterfaces(): void
     {
-        $client = new MiddlewareClient(new FakeClient(), []);
+        $implemented = class_implements(MiddlewareClient::class);
 
-        self::assertInstanceOf(ClientInterface::class, $client);
-        self::assertInstanceOf(BatchClientInterface::class, $client);
-        self::assertInstanceOf(DynamicBaseUrlClientInterface::class, $client);
+        self::assertContains(ClientInterface::class, $implemented);
+        self::assertContains(BatchClientInterface::class, $implemented);
+        self::assertContains(DynamicBaseUrlClientInterface::class, $implemented);
     }
 
     // ── withBaseUrl ───────────────────────────────────────────────────────────
@@ -166,8 +166,8 @@ final class MiddlewareClientTest extends TestCase
     #[Test]
     public function withBaseUrlRebuildsBaseUrlAwareMiddlewaresAndReusesOthers(): void
     {
-        $awareLog = [];
-        $plainLog = [];
+        $awareLog = new CallLog();
+        $plainLog = new CallLog();
         $client = new MiddlewareClient(new FakeClient(), [
             new BaseUrlAwareIdentitySpyMiddleware($awareLog),
             new IdentitySpyMiddleware($plainLog),
@@ -177,23 +177,43 @@ final class MiddlewareClientTest extends TestCase
         $resolved = $client->withBaseUrl('https://tenant.example.com');
         $resolved->send(FakePathAction::create('GET', '/items'));
 
-        self::assertCount(2, $awareLog);
-        self::assertNull($awareLog[0]['baseUrl']);
-        self::assertSame('https://tenant.example.com', $awareLog[1]['baseUrl']);
-        self::assertNotSame($awareLog[0]['id'], $awareLog[1]['id'], 'BaseUrlAware middleware should have been rebuilt.');
+        /** @var list<array{id: int, baseUrl: ?string}> $awareEntries */
+        $awareEntries = $awareLog->all();
+        self::assertCount(2, $awareEntries);
+        self::assertNull($awareEntries[0]['baseUrl']);
+        self::assertSame('https://tenant.example.com', $awareEntries[1]['baseUrl']);
+        self::assertNotSame($awareEntries[0]['id'], $awareEntries[1]['id'], 'BaseUrlAware middleware should have been rebuilt.');
 
-        self::assertCount(2, $plainLog);
-        self::assertSame($plainLog[0], $plainLog[1], 'Non-BaseUrlAware middleware should be the same reused instance.');
+        $plainEntries = $plainLog->all();
+        self::assertCount(2, $plainEntries);
+        self::assertSame($plainEntries[0], $plainEntries[1], 'Non-BaseUrlAware middleware should be the same reused instance.');
     }
 }
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
+/** Shared, appendable call log — passed as a plain object so several middleware instances can record into the same log. */
+final class CallLog
+{
+    /** @var list<mixed> */
+    private array $entries = [];
+
+    public function record(mixed $entry): void
+    {
+        $this->entries[] = $entry;
+    }
+
+    /** @return list<mixed> */
+    public function all(): array
+    {
+        return $this->entries;
+    }
+}
+
 /** Records before/after call order to verify middleware chaining. */
 final class SpyMiddleware extends AbstractClientMiddleware
 {
-    /** @param list<string> $log */
-    public function __construct(private readonly string $name, private array &$log) {}
+    public function __construct(private readonly string $name, private readonly CallLog $log) {}
 
     public function process(
         AbstractAction $action,
@@ -201,9 +221,9 @@ final class SpyMiddleware extends AbstractClientMiddleware
         ?RequestHeadersInterface $headers,
         callable $next,
     ): array {
-        $this->log[] = "{$this->name}:before";
+        $this->log->record("{$this->name}:before");
         $result = $next($action, $context, $headers);
-        $this->log[] = "{$this->name}:after";
+        $this->log->record("{$this->name}:after");
 
         return $result;
     }
@@ -216,9 +236,9 @@ final class SpyMiddleware extends AbstractClientMiddleware
      */
     public function processMany(array $requests, callable $next): array
     {
-        $this->log[] = "{$this->name}:before-batch";
+        $this->log->record("{$this->name}:before-batch");
         $result = $next($requests);
-        $this->log[] = "{$this->name}:after-batch";
+        $this->log->record("{$this->name}:after-batch");
 
         return $result;
     }
@@ -231,15 +251,14 @@ final class StaticOnlyClient implements ClientInterface
         ?ActionContextInterface $context = null,
         ?RequestHeadersInterface $headers = null,
     ): array {
-        return [];
+        return ['body' => [], 'headers' => []];
     }
 }
 
 /** Records its own object id on each call, to prove instance reuse vs rebuild. */
 final class IdentitySpyMiddleware extends AbstractClientMiddleware
 {
-    /** @param list<int> $log */
-    public function __construct(private array &$log) {}
+    public function __construct(private readonly CallLog $log) {}
 
     public function process(
         AbstractAction $action,
@@ -247,7 +266,7 @@ final class IdentitySpyMiddleware extends AbstractClientMiddleware
         ?RequestHeadersInterface $headers,
         callable $next,
     ): array {
-        $this->log[] = spl_object_id($this);
+        $this->log->record(spl_object_id($this));
 
         return $next($action, $context, $headers);
     }
@@ -256,8 +275,7 @@ final class IdentitySpyMiddleware extends AbstractClientMiddleware
 /** Same as IdentitySpyMiddleware, but rebuildable via withBaseUrl(). */
 final class BaseUrlAwareIdentitySpyMiddleware extends AbstractClientMiddleware implements BaseUrlAwareMiddlewareInterface
 {
-    /** @param list<array{id: int, baseUrl: ?string}> $log */
-    public function __construct(private array &$log, private readonly ?string $baseUrl = null) {}
+    public function __construct(private readonly CallLog $log, private readonly ?string $baseUrl = null) {}
 
     public function withBaseUrl(string $baseUrl): static
     {
@@ -270,7 +288,7 @@ final class BaseUrlAwareIdentitySpyMiddleware extends AbstractClientMiddleware i
         ?RequestHeadersInterface $headers,
         callable $next,
     ): array {
-        $this->log[] = ['id' => spl_object_id($this), 'baseUrl' => $this->baseUrl];
+        $this->log->record(['id' => spl_object_id($this), 'baseUrl' => $this->baseUrl]);
 
         return $next($action, $context, $headers);
     }

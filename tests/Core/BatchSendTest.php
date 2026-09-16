@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Core;
 
-use IntegrationEngine\Core\Batch\BatchResultCollection;
 use IntegrationEngine\Core\Batch\EngineRequest;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Response\EmptyResponse;
@@ -61,7 +60,6 @@ final class BatchSendTest extends IntegrationEngineTestCase
     {
         $empty = $this->engine->sendMany([]);
 
-        self::assertInstanceOf(BatchResultCollection::class, $empty);
         self::assertCount(0, $empty);
         self::assertNull($this->client->lastAction());
     }
@@ -79,7 +77,6 @@ final class BatchSendTest extends IntegrationEngineTestCase
 
         $empty = $engine->sendMany([]);
 
-        self::assertInstanceOf(BatchResultCollection::class, $empty);
         self::assertCount(0, $empty);
         self::assertSame(0, $batchClient->batchCount());
     }

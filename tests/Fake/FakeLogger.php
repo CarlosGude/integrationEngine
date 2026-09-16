@@ -35,6 +35,18 @@ final class FakeLogger implements LoggerInterface
         return false;
     }
 
+    /** @return array<string, mixed> */
+    public function contextFor(string $level, string $messageContains): array
+    {
+        foreach ($this->logs as $entry) {
+            if ($entry['level'] === $level && str_contains($entry['message'], $messageContains)) {
+                return $entry['context'];
+            }
+        }
+
+        throw new \RuntimeException(\sprintf('No log entry found at level "%s" containing "%s".', $level, $messageContains));
+    }
+
     /** @return list<array{level: string, message: string, context: array<string, mixed>}> */
     public function all(): array
     {

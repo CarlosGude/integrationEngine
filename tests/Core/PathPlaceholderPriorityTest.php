@@ -61,7 +61,7 @@ final class PathPlaceholderPriorityTest extends TestCase
         // getRawPath()), context is only resolved lazily by getPath() at
         // send time — the raw path still carries the placeholder here.
         self::assertSame('/products/{product_id}/variations', $client->lastAction()?->getRawPath());
-        self::assertSame('/products/456/variations', $client->lastAction()?->getPath($client->lastContext()));
+        self::assertSame('/products/456/variations', $client->lastAction()->getPath($client->lastContext()));
     }
 
     #[Test]

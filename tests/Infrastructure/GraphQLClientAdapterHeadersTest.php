@@ -21,6 +21,19 @@ use Symfony\Contracts\HttpClient\ResponseStreamInterface;
  */
 final class GraphQLClientAdapterHeadersTest extends TestCase
 {
+    // ── default headers ──────────────────────────────────────────────────────
+
+    #[Test]
+    public function requestAlwaysCarriesAJsonContentTypeHeader(): void
+    {
+        $spy = new GQLHeadersSpyClient();
+        $adapter = new GraphQLClientAdapter(httpClient: $spy, endpointUrl: 'https://api.example.com/graphql');
+
+        $adapter->send(GQLHeadersAction::create(method: 'POST', path: '/graphql', body: GQLHeadersBody::create([])));
+
+        self::assertSame('application/json', $spy->lastHeaders()['Content-Type']);
+    }
+
     // ── bearer ────────────────────────────────────────────────────────────────
 
     #[Test]

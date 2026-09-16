@@ -64,6 +64,7 @@ final class IntegrationCompilerPassDebugTest extends TestCase
         (new IntegrationCompilerPass())->process($container);
 
         $middlewares = $container->getDefinition('integration_engine.client.my_api')->getArgument(1);
+        self::assertIsArray($middlewares);
         // [CachingMiddleware, app.rate_limit, app.retry, TracingMiddleware]
         self::assertCount(4, $middlewares);
 
@@ -90,6 +91,7 @@ final class IntegrationCompilerPassDebugTest extends TestCase
 
             $clientDef = $container->getDefinition('integration_engine.client.my_api');
             $middlewares = $clientDef->getArgument(1);
+            self::assertIsArray($middlewares);
             self::assertCount(2, $middlewares, "Expected 2 middlewares for {$clientType}");
 
             $tracingDef = $container->getDefinition($this->referencedServiceId($middlewares[1]));
@@ -122,6 +124,7 @@ final class IntegrationCompilerPassDebugTest extends TestCase
 
         $clientDef = $container->getDefinition('integration_engine.client.my_api');
         $middlewares = $clientDef->getArgument(1);
+        self::assertIsArray($middlewares);
         self::assertCount(1, $middlewares);
 
         $cachingDef = $container->getDefinition($this->referencedServiceId($middlewares[0]));
@@ -166,7 +169,9 @@ final class IntegrationCompilerPassDebugTest extends TestCase
         (new IntegrationCompilerPass())->process($container);
 
         $clientDef = $container->getDefinition('integration_engine.client.my_api');
-        self::assertCount(1, $clientDef->getArgument(1));
+        $middlewares = $clientDef->getArgument(1);
+        self::assertIsArray($middlewares);
+        self::assertCount(1, $middlewares);
         self::assertFalse($container->hasDefinition(IntegrationEngineDataCollector::class));
     }
 
@@ -178,7 +183,9 @@ final class IntegrationCompilerPassDebugTest extends TestCase
         (new IntegrationCompilerPass())->process($container);
 
         $clientDef = $container->getDefinition('integration_engine.client.my_api');
-        self::assertCount(1, $clientDef->getArgument(1));
+        $middlewares = $clientDef->getArgument(1);
+        self::assertIsArray($middlewares);
+        self::assertCount(1, $middlewares);
     }
 
     private function referencedServiceId(mixed $argument): string
@@ -224,7 +231,11 @@ final class IntegrationCompilerPassDebugTest extends TestCase
         return $container;
     }
 
-    /** @param array<string, mixed> $overrides @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $overrides
+     *
+     * @return array<string, mixed>
+     */
     private function integrationConfig(array $overrides = []): array
     {
         return array_merge([

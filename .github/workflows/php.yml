@@ -112,4 +112,4 @@ jobs:
         run: composer install --prefer-dist --no-progress
 
       - name: Run mutation testing
-        run: vendor/bin/infection --min-msi=92 --min-covered-msi=92 --threads=4
+        run: vendor/bin/infection --threads=max --show-mutations

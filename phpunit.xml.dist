@@ -11,11 +11,11 @@
     </include>
     <exclude>
       <!-- Interfaces — no instantiable, nothing to cover -->
-      <file>src/Core/Contract/ActionBodyInterface.php</file>
-      <file>src/Core/Contract/ActionContextInterface.php</file>
-      <file>src/Core/Contract/ClientInterface.php</file>
-      <file>src/Core/Contract/RequestHeadersInterface.php</file>
-      <file>src/Core/Contract/ResponseInterface.php</file>
+      <file>src/Core/Contract/Action/ActionBodyInterface.php</file>
+      <file>src/Core/Contract/Action/ActionContextInterface.php</file>
+      <file>src/Core/Contract/Client/ClientInterface.php</file>
+      <file>src/Core/Contract/Client/RequestHeadersInterface.php</file>
+      <file>src/Core/Contract/Response/ResponseInterface.php</file>
       <file>src/Core/Port/CachePort.php</file>
       <file>src/Core/Port/ConfigPort.php</file>
       <file>src/Core/Registry/IntegrationName.php</file>

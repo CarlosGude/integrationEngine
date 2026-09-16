@@ -197,6 +197,63 @@ final class ConnectionResolutionTest extends IntegrationEngineTestCase
         self::assertSame('token_b', $auth->params['token']);
     }
 
+    /**
+     * Priority regression: a resolved connectionId must win over the raw
+     * $connection value as the cache discriminator, even when they differ —
+     * connectionId is the resolver's authoritative identity for the
+     * connection, $connection is only a fallback for when the resolver
+     * doesn't set one.
+     */
+    #[Test]
+    public function connectionIdTakesPriorityOverTheRawConnectionValueAsCacheDiscriminator(): void
+    {
+        $this->config->register(FakeTokenAction::getName(), FakeTokenAction::create('GET', '/token'));
+        $this->config->register(FakeProtectedAction::getName(), FakeProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
+            action: FakeTokenAction::getName(),
+            tokenField: 'access_token',
+            ttl: 60,
+        )));
+        $this->resolver->register('raw_key', new ConnectionCredentials(connectionId: 'resolved_id'));
+        $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'tok']);
+        $this->client->setResponse(FakeProtectedAction::getName(), []);
+
+        $this->engine->send(FakeProtectedAction::getName(), connection: 'raw_key');
+
+        self::assertSame(
+            'tok',
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('resolved_id')),
+        );
+        self::assertNull(
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('raw_key')),
+        );
+    }
+
+    /**
+     * Regression: DynamicAuthorizationConfig::cacheKey() requires a
+     * ?string discriminator — an int $connection (a common tenant-id
+     * shape) must be cast to string before use, not passed through as-is.
+     */
+    #[Test]
+    public function intConnectionIsCastToStringForTheCacheDiscriminator(): void
+    {
+        $this->config->register(FakeTokenAction::getName(), FakeTokenAction::create('GET', '/token'));
+        $this->config->register(FakeProtectedAction::getName(), FakeProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
+            action: FakeTokenAction::getName(),
+            tokenField: 'access_token',
+            ttl: 60,
+        )));
+        $this->resolver->register(42, new ConnectionCredentials());
+        $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'tok']);
+        $this->client->setResponse(FakeProtectedAction::getName(), []);
+
+        $this->engine->send(FakeProtectedAction::getName(), connection: 42);
+
+        self::assertSame(
+            'tok',
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('42')),
+        );
+    }
+
     // ── Batch ────────────────────────────────────────────────────────────────
 
     #[Test]

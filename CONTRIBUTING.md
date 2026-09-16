@@ -22,18 +22,17 @@ vendor/bin/phpunit --testdox
 Or via the Makefile:
 
 ```bash
-make tests   # phpunit
-make stan    # phpstan level 8
-make cs      # php-cs-fixer (dry-run)
-make qa      # all three in sequence
+make test   # phpunit
+make stan   # phpstan level max
+make cs     # php-cs-fixer (dry-run)
+make qa     # cs + stan + test — run before each commit
+make ci     # qa + mutation — run before opening a PR
 ```
 
 ## Code quality
 
-```bash
-vendor/bin/phpstan analyse src tests --level=8
-vendor/bin/php-cs-fixer fix --diff
-```
+Quality gates (style, static analysis, tests, mutation), their commands, and
+current MSI: see [`docs/QUALITY.md`](docs/QUALITY.md).
 
 ## Further reading
 

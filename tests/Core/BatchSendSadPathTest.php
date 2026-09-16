@@ -12,6 +12,8 @@ use IntegrationEngine\Core\Contract\Auth\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
 use IntegrationEngine\Core\Contract\Client\ClientInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
+use IntegrationEngine\Core\Contract\Mapper\AbstractMapper;
+use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Exception\RequestResponseException;
@@ -269,6 +271,36 @@ final class BatchSendSadPathTest extends IntegrationEngineTestCase
         self::assertSame(1, $this->client->callCount(FakeProtectedAction::getName()));
     }
 
+    /**
+     * Regression: retryBatch() must replace $prepared[$key] with the
+     * retried PreparedRequest (rebuilt with the fresh token) before
+     * buildResponse() runs — otherwise the mapper would see the stale,
+     * cache-deleted pre-retry action.
+     */
+    #[Test]
+    public function sendManyBuildsFinalResponseFromTheRetriedActionNotTheStaleOne(): void
+    {
+        $this->config->register(FakeTokenAction::getName(), FakeTokenAction::create('GET', '/token'));
+        $this->config->register(AuthEchoAction::getName(), AuthEchoAction::create('GET', '/echo', null, new DynamicAuthorizationConfig(
+            action: FakeTokenAction::getName(),
+            tokenField: 'access_token',
+            ttl: 60,
+        )));
+        $this->cache->set(self::TOKEN_CACHE_KEY, 'stale_token', 60);
+        $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'fresh_token']);
+        $this->client->setResponse(AuthEchoAction::getName(), []);
+        $this->client->queueException(AuthEchoAction::getName(), new RequestResponseException(statusCode: 401, context: 'unauthorized'));
+
+        $results = $this->engine->sendMany([
+            'one' => new EngineRequest(AuthEchoAction::getName()),
+        ]);
+
+        self::assertTrue($results['one']->isSuccess());
+        $response = $results['one']->response();
+        self::assertInstanceOf(AuthEchoResponse::class, $response);
+        self::assertSame('fresh_token', $response->token());
+    }
+
     // ── Batch client missing keys ─────────────────────────────────────────────
 
     #[Test]
@@ -321,6 +353,57 @@ final class BatchMismatchAction extends AbstractAction
     public static function mapper(): string
     {
         return FakeTokenMapper::class;
+    }
+}
+
+/** Echoes back the bearer token its own authorization was built with, to observe which action instance the mapper actually received. */
+final class AuthEchoResponse implements ResponseInterface
+{
+    public function __construct(private readonly string $token) {}
+
+    public function token(): string
+    {
+        return $this->token;
+    }
+
+    public function toArray(): array
+    {
+        return ['token' => $this->token];
+    }
+}
+
+final class AuthEchoMapper extends AbstractMapper
+{
+    public static function getAction(): string
+    {
+        return AuthEchoAction::class;
+    }
+
+    protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
+    {
+        $auth = $action->getAuthorization();
+        $tokenValue = $auth instanceof StaticAuthorizationConfig ? ($auth->params['token'] ?? '') : '';
+        $token = \is_string($tokenValue) ? $tokenValue : '';
+
+        return new AuthEchoResponse($token);
+    }
+}
+
+final class AuthEchoAction extends AbstractAction
+{
+    public static function getName(): string
+    {
+        return 'auth_echo_action';
+    }
+
+    public static function hasResponse(): bool
+    {
+        return true;
+    }
+
+    public static function mapper(): string
+    {
+        return AuthEchoMapper::class;
     }
 }
 

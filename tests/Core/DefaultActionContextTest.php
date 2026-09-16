@@ -14,9 +14,7 @@ final class DefaultActionContextTest extends TestCase
     #[Test]
     public function implementsActionContextInterface(): void
     {
-        $context = DefaultActionContext::create([]);
-
-        self::assertInstanceOf(ActionContextInterface::class, $context);
+        self::assertContains(ActionContextInterface::class, class_implements(DefaultActionContext::class));
     }
 
     #[Test]

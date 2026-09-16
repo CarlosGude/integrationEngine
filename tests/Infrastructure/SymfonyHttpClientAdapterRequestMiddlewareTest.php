@@ -61,7 +61,9 @@ final class SymfonyHttpClientAdapterRequestMiddlewareTest extends TestCase
 
         $adapter->send(RequestMiddlewareTestAction::create('GET', '/orders'));
 
-        self::assertSame('OAuth signature="abc"', $spy->lastOptions()['headers']['Authorization']);
+        $headers = $spy->lastOptions()['headers'];
+        self::assertIsArray($headers);
+        self::assertSame('OAuth signature="abc"', $headers['Authorization']);
     }
 
     #[Test]
@@ -99,7 +101,7 @@ final class SymfonyHttpClientAdapterRequestMiddlewareTest extends TestCase
     #[Test]
     public function multipleMiddlewaresRunInDeterministicDeclarationOrder(): void
     {
-        $log = [];
+        $log = new RequestMiddlewareCallLog();
         $spy = new RequestMiddlewareSpyHttpClient();
         $adapter = new SymfonyHttpClientAdapter(
             httpClient: $spy,
@@ -112,7 +114,7 @@ final class SymfonyHttpClientAdapterRequestMiddlewareTest extends TestCase
 
         $adapter->send(RequestMiddlewareTestAction::create('GET', '/orders'));
 
-        self::assertSame(['A:before', 'B:before', 'B:after', 'A:after'], $log);
+        self::assertSame(['A:before', 'B:before', 'B:after', 'A:after'], $log->all());
     }
 
     #[Test]
@@ -186,7 +188,9 @@ final class SymfonyHttpClientAdapterRequestMiddlewareTest extends TestCase
         $resolved = $adapter->withBaseUrl('https://tenant.example.com');
         $resolved->send(RequestMiddlewareTestAction::create('GET', '/orders'));
 
-        self::assertSame('yes', $spy->lastOptions()['headers']['X-Signed']);
+        $headers = $spy->lastOptions()['headers'];
+        self::assertIsArray($headers);
+        self::assertSame('yes', $headers['X-Signed']);
     }
 
     #[Test]
@@ -204,8 +208,18 @@ final class SymfonyHttpClientAdapterRequestMiddlewareTest extends TestCase
             'b' => new PreparedRequest(RequestMiddlewareTestAction::create('GET', '/orders'), null, null),
         ]);
 
-        self::assertSame(['id' => 1], $results['a']['body']);
-        self::assertSame(['id' => 1], $results['b']['body']);
+        $headers = $spy->lastOptions()['headers'];
+        self::assertIsArray($headers);
+        self::assertSame('yes', $headers['X-Signed']);
+
+        $resultA = $results['a'];
+        self::assertIsArray($resultA);
+        self::assertSame(['id' => 1], $resultA['body']);
+
+        $resultB = $results['b'];
+        self::assertIsArray($resultB);
+        self::assertSame(['id' => 1], $resultB['body']);
+
         self::assertSame(2, $spy->callCount());
     }
 }
@@ -286,19 +300,36 @@ final class ReplaceUrlRequestMiddleware implements RequestMiddlewareInterface
 }
 
 /** @param list<string> &$log */
+/** Shared, appendable call log — passed as a plain object so several middleware instances can record into the same log. */
+final class RequestMiddlewareCallLog
+{
+    /** @var list<string> */
+    private array $entries = [];
+
+    public function record(string $entry): void
+    {
+        $this->entries[] = $entry;
+    }
+
+    /** @return list<string> */
+    public function all(): array
+    {
+        return $this->entries;
+    }
+}
+
 final class OrderLoggingRequestMiddleware implements RequestMiddlewareInterface
 {
-    /** @param list<string> $log */
     public function __construct(
         private readonly string $name,
-        private array &$log,
+        private readonly RequestMiddlewareCallLog $log,
     ) {}
 
     public function handle(Request $request, callable $next): array
     {
-        $this->log[] = "{$this->name}:before";
+        $this->log->record("{$this->name}:before");
         $result = $next($request);
-        $this->log[] = "{$this->name}:after";
+        $this->log->record("{$this->name}:after");
 
         return $result;
     }
@@ -311,7 +342,8 @@ final class ResponseObservingRequestMiddleware implements RequestMiddlewareInter
     {
         $result = $next($request);
         $result['body']['seen'] = true;
-        $result['body']['wrap_count'] = ($result['body']['wrap_count'] ?? 0) + 1;
+        $wrapCount = $result['body']['wrap_count'] ?? null;
+        $result['body']['wrap_count'] = (\is_int($wrapCount) ? $wrapCount : 0) + 1;
 
         return $result;
     }
