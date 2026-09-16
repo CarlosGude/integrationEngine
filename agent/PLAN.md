@@ -102,12 +102,12 @@ deptrac:   vendor/bin/deptrac analyse --no-progress
 
 | Fase | Días | Horas | Estado | Resultado visible | Versiones |
 |---|---|---|---|---|---|
-| **1 · Presentable** | 01-10 | ~20 h | 6/10 ✅ | Nada publicado resta credibilidad; estado y hoja de ruta públicos | bundle v4.1.1 |
+| **1 · Presentable** | 01-10 | ~20 h | 7/10 ✅ | Nada publicado resta credibilidad; estado y hoja de ruta públicos | bundle v4.1.1 |
 | **2 · Demo online** | 11-32 | ~44 h | — | `demo.integrationengine.dev` con tienda TMDB y 3 pasos de tour | demo v1.0 |
 | **3 · Integraciones robustas** | 33-45 | ~26 h | — | Paso "When suppliers fail" en el tour | bundle v4.2.0, v4.3.0 · demo v1.1 |
 | **4 · Bidireccional con Stripe** | 46-74 | ~58 h | — | Alquiler con pago real en test, webhooks, RabbitMQ, panel | bundle v4.4.0 · demo v2.0 |
 | **5 · Calidad de diseño visible** | 75-90 | ~32 h | — | Extensión PHPStan, SSRF, eventos del engine | bundle v4.5.0-v4.7.0 · demo v3.0 |
-| **Total** | **90 días** | **~180 h** | 6/90 ✅ | | |
+| **Total** | **90 días** | **~180 h** | 7/90 ✅ | | |
 
 ---
 
@@ -166,13 +166,13 @@ deptrac:   vendor/bin/deptrac analyse --no-progress
   - [x] Prueba negativa: `use Symfony\Component\HttpClient\HttpClient;` temporal en un archivo de `src/Core` → Deptrac falla (captura en PR).
   - [x] **Cumple su necesidad si:** la afirmación "hexagonal" del README está respaldada por un job de CI.
 
-#### Día 07 · B1.7 · CHANGELOG, UPGRADE y política de versiones
+#### Día 07 · B1.7 · CHANGELOG, UPGRADE y política de versiones ✅
 - **Alcance mínimo:** `CHANGELOG.md` desde v2.0.0 reconstruido de los tags; `UPGRADE-4.0.md`; política de versionado en `CONTRIBUTING.md`; release notes de v4.0.0 y v4.1.0 en GitHub.
 - **Dónde:** `CHANGELOG.md`, `UPGRADE-4.0.md`, `CONTRIBUTING.md`.
 - **Verificación:**
-  - [ ] Cada major (2.0, 3.0, 4.0) tiene sección "Breaking changes".
-  - [ ] `DocumentationLinksTest` verde con los nuevos archivos.
-  - [ ] **Cumple su necesidad si:** un revisor entiende por qué hubo cuatro majors y qué garantiza la 4.x.
+  - [x] Cada major (2.0, 3.0, 4.0) tiene sección "Breaking changes".
+  - [x] `DocumentationLinksTest` verde con los nuevos archivos.
+  - [x] **Cumple su necesidad si:** un revisor entiende por qué hubo cuatro majors y qué garantiza la 4.x.
 
 #### Día 08 · B1.8 · ADRs iniciales
 - **Alcance mínimo:** plantilla y 6 ADRs (lista en BUNDLE.md B1.8).
