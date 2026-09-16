@@ -172,6 +172,31 @@ final class MakeIntegrationCommandTest extends TestCase
         self::assertSame('<?php // manually edited', file_get_contents($actionFile));
     }
 
+    /**
+     * The CI job that validates the generator on PHP 8.2 (see
+     * .github/workflows/php.yml) runs this command with --no-interaction
+     * against a bare project with no bundle config yet — every question
+     * must fall back to its default instead of blocking on input.
+     */
+    #[Test]
+    public function noInteractionFirstRunFallsBackToDefaultsAndSucceeds(): void
+    {
+        $tester = $this->tester();
+
+        $exitCode = $tester->execute(
+            ['name' => 'Acme', 'action' => 'GetThing'],
+            ['interactive' => false],
+        );
+
+        self::assertSame(Command::SUCCESS, $exitCode);
+
+        $root = $this->projectDir.'/src/Infrastructure/Integrations/Acme';
+        self::assertFileExists($root.'/AcmeIntegration.php');
+        self::assertFileExists($root.'/GetThing/Request/GetThingAction.php');
+        self::assertFileExists($root.'/GetThing/Response/GetThingMapper.php');
+        self::assertFileExists($root.'/GetThing/Response/GetThingResponse.php');
+    }
+
     #[Test]
     public function unknownClientTypeInBundleConfigFails(): void
     {

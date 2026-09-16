@@ -60,38 +60,110 @@ jobs:
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse --memory-limit=1G
 
-  test:
-    name: Tests
+  tests:
+    name: Tests (PHP ${{ matrix.php }}, Symfony ${{ matrix.symfony }}, ${{ matrix.deps }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+        symfony: ['6.4.*', '7.4.*', '8.*']
+        deps: ['lowest', 'stable']
+        exclude:
+          # Symfony 8.x requires PHP >=8.4 (confirmed against
+          # symfony/console's composer.json on the 8.0 branch).
+          - { php: '8.2', symfony: '8.*' }
+          - { php: '8.3', symfony: '8.*' }
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # 2.37.1
         with:
-          php-version: '8.4'
+          php-version: ${{ matrix.php }}
           coverage: none
-
-      - name: Validate composer.json and composer.lock
-        run: composer validate --strict
 
       - name: Cache Composer packages
         uses: actions/cache@v3
         with:
           path: vendor
-          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-php-
+          key: ${{ runner.os }}-php${{ matrix.php }}-sf${{ matrix.symfony }}-${{ matrix.deps }}-${{ hashFiles('**/composer.json') }}
+          restore-keys: ${{ runner.os }}-php${{ matrix.php }}-sf${{ matrix.symfony }}-${{ matrix.deps }}-
 
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress
+      - name: Install symfony/flex globally
+        run: |
+          composer global config --no-plugins allow-plugins.symfony/flex true
+          composer global require --no-progress --no-scripts --no-plugins symfony/flex
+
+      - name: Install dependencies pinned to Symfony ${{ matrix.symfony }}
+        env:
+          SYMFONY_REQUIRE: ${{ matrix.symfony }}
+        run: composer update --prefer-dist --no-progress ${{ matrix.deps == 'lowest' && '--prefer-lowest --prefer-stable' || '' }}
+
+      - name: Show resolved Symfony version
+        run: composer show symfony/http-client | grep versions
 
       - name: Run test suite
         run: vendor/bin/phpunit
 
+  generator-php82:
+    name: Generator smoke test (PHP 8.2)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: bundle
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # 2.37.1
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Create a minimal Symfony 6.4 app
+        run: composer create-project symfony/skeleton:"6.4.*" app --no-interaction --prefer-dist
+
+      - name: Install the bundle from this checkout
+        working-directory: app
+        run: |
+          composer config repositories.integration-engine '{"type":"path","url":"../bundle","options":{"symlink":false}}'
+          composer require carlosgude/integration-engine:@dev --no-interaction --no-progress
+
+      # Known bug, not a CI quirk: this bundle does not auto-register with
+      # Symfony Flex on a real `composer require` either — Flex's bundle
+      # auto-detection heuristic looks for the bundle class at
+      # src/IntegrationEngineBundle.php (derived from the package's root
+      # PSR-4 namespace), but the real class lives one level deeper at
+      # src/Bundle/IntegrationEngineBundle.php, so Flex silently skips it
+      # (no recipe, no config/bundles.php entry — confirmed against a real
+      # Symfony 6.4 app). extra.symfony.bundles in this bundle's
+      # composer.json is not read anywhere in Flex's source. Tracked as
+      # debt in agent/PLAN.md (Día 03 note, and the Backlog table) — fix
+      # it there, not by deleting this step.
+      - name: Register the bundle manually (works around the Flex auto-registration bug above)
+        working-directory: app
+        run: |
+          cat > config/bundles.php <<'PHP'
+          <?php
+
+          return [
+              Symfony\Bundle\FrameworkBundle\FrameworkBundle::class => ['all' => true],
+              IntegrationEngine\Bundle\IntegrationEngineBundle::class => ['all' => true],
+          ];
+          PHP
+
+      - name: Generate an integration
+        working-directory: app
+        run: php bin/console make:integration Acme GetThing --no-interaction
+
+      - name: Lint every generated file
+        working-directory: app
+        run: find src/Infrastructure/Integrations/Acme -name '*.php' -print0 | xargs -0 -n1 php -l
+
   mutation:
     name: Mutation Testing
     runs-on: ubuntu-latest
-    needs: test
+    needs: tests
     steps:
       - uses: actions/checkout@v4
 
