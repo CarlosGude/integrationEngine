@@ -100,14 +100,14 @@ deptrac:   vendor/bin/deptrac analyse --no-progress
 
 ## 2 · Resumen de fases
 
-| Fase | Días | Horas | Resultado visible | Versiones |
-|---|---|---|---|---|
-| **1 · Presentable** | 01-10 | ~20 h | Nada publicado resta credibilidad; estado y hoja de ruta públicos | bundle v4.1.1 |
-| **2 · Demo online** | 11-32 | ~44 h | `demo.integrationengine.dev` con tienda TMDB y 3 pasos de tour | demo v1.0 |
-| **3 · Integraciones robustas** | 33-45 | ~26 h | Paso "When suppliers fail" en el tour | bundle v4.2.0, v4.3.0 · demo v1.1 |
-| **4 · Bidireccional con Stripe** | 46-74 | ~58 h | Alquiler con pago real en test, webhooks, RabbitMQ, panel | bundle v4.4.0 · demo v2.0 |
-| **5 · Calidad de diseño visible** | 75-90 | ~32 h | Extensión PHPStan, SSRF, eventos del engine | bundle v4.5.0-v4.7.0 · demo v3.0 |
-| **Total** | **90 días** | **~180 h** | | |
+| Fase | Días | Horas | Estado | Resultado visible | Versiones |
+|---|---|---|---|---|---|
+| **1 · Presentable** | 01-10 | ~20 h | 6/10 ✅ | Nada publicado resta credibilidad; estado y hoja de ruta públicos | bundle v4.1.1 |
+| **2 · Demo online** | 11-32 | ~44 h | — | `demo.integrationengine.dev` con tienda TMDB y 3 pasos de tour | demo v1.0 |
+| **3 · Integraciones robustas** | 33-45 | ~26 h | — | Paso "When suppliers fail" en el tour | bundle v4.2.0, v4.3.0 · demo v1.1 |
+| **4 · Bidireccional con Stripe** | 46-74 | ~58 h | — | Alquiler con pago real en test, webhooks, RabbitMQ, panel | bundle v4.4.0 · demo v2.0 |
+| **5 · Calidad de diseño visible** | 75-90 | ~32 h | — | Extensión PHPStan, SSRF, eventos del engine | bundle v4.5.0-v4.7.0 · demo v3.0 |
+| **Total** | **90 días** | **~180 h** | 6/90 ✅ | | |
 
 ---
 
@@ -115,56 +115,56 @@ deptrac:   vendor/bin/deptrac analyse --no-progress
 
 ### FASE 1 · Presentable (bundle y landing)
 
-#### Día 01 · B1.1 · Puertas de calidad unificadas
+#### Día 01 · B1.1 · Puertas de calidad unificadas ✅
 - **Alcance mínimo:** un único juego de umbrales (85/95) en `infection.json5`; rutas de `excludes` y `ignore` corregidas; `phpunit.xml.dist` sin exclusiones obsoletas; PHPStan analiza `src` y `tests`; `Makefile` y CI sin umbrales propios.
 - **Dónde:** `integrationEngine/` → `infection.json5`, `phpunit.xml.dist`, `phpstan.neon`, `Makefile`, `.github/workflows/php.yml`, `docs/QUALITY.md` (nuevo).
 - **Verificación:**
-  - [ ] `grep -rnE "min-msi|min-covered-msi" Makefile .github/` → sin resultados.
-  - [ ] Todas las rutas de `infection.json5` → `excludes` y de `phpunit.xml.dist` → `<exclude>` existen (`test -f`).
-  - [ ] `make ci` verde; MSI y MSI cubierto reales anotados en `docs/QUALITY.md`.
-  - [ ] **Cumple su necesidad si:** no existe en el repo ninguna otra cifra de MSI distinta de 85/95.
+  - [x] `grep -rnE "min-msi|min-covered-msi" Makefile .github/` → sin resultados.
+  - [x] Todas las rutas de `infection.json5` → `excludes` y de `phpunit.xml.dist` → `<exclude>` existen (`test -f`).
+  - [x] `make ci` verde; MSI y MSI cubierto reales anotados en `docs/QUALITY.md`.
+  - [x] **Cumple su necesidad si:** no existe en el repo ninguna otra cifra de MSI distinta de 85/95.
 
-#### Día 02 · B1.2 · Compatibilidad PHP 8.2 del generador
+#### Día 02 · B1.2 · Compatibilidad PHP 8.2 del generador ✅
 - **Alcance mínimo:** el código generado por `make:integration` y los ejemplos no usan constantes tipadas.
 - **Dónde:** `src/Bundle/Generator/TemplateRenderer.php`, `src/Core/Registry/IntegrationName.php`, `tests/Bundle/Generator/TemplateRendererTest.php`, `README.md`, `docs/`.
 - **Verificación:**
-  - [ ] Test rojo previo: `TemplateRendererTest::testGeneratedIntegrationDoesNotUseTypedClassConstants` falla antes del cambio.
-  - [ ] `grep -rn "const string" src/ README.md docs/ DOCUMENTATION*.md agent/` → sin resultados.
-  - [ ] **Cumple su necesidad si:** el archivo generado pasa `php -l` con PHP 8.2 (se verifica en CI el día 03).
+  - [x] Test rojo previo: `TemplateRendererTest::testGeneratedIntegrationDoesNotUseTypedClassConstants` falla antes del cambio.
+  - [x] `grep -rn "const string" src/ README.md docs/ DOCUMENTATION*.md agent/` → sin resultados.
+  - [x] **Cumple su necesidad si:** el archivo generado pasa `php -l` con PHP 8.2 (se verifica en CI el día 03).
 
-#### Día 03 · B1.3 · Matriz de CI y job del generador
+#### Día 03 · B1.3 · Matriz de CI y job del generador ✅
 - **Alcance mínimo:** matriz PHP 8.2/8.3/8.4 × `lowest`/`stable` × Symfony 6.4/7.4/8.x (con exclusiones válidas) y job que genera una integración en PHP 8.2 y la valida.
 - **Dónde:** `.github/workflows/php.yml`, `README.md` (badge).
 - **Verificación:**
-  - [ ] En el run de CI, cada celda de la matriz muestra la versión de Symfony instalada (`composer show symfony/http-client`).
-  - [ ] Job `generator-php82` verde, con `php -l` sobre cada archivo generado.
-  - [ ] Prueba negativa: en una rama temporal se reintroduce `const string` y el job falla (captura en el PR, la rama se borra).
-  - [ ] **Cumple su necesidad si:** lo que declara `composer.json` está probado en CI.
+  - [x] En el run de CI, cada celda de la matriz muestra la versión de Symfony instalada (`composer show symfony/http-client`).
+  - [x] Job `generator-php82` verde, con `php -l` sobre cada archivo generado.
+  - [x] Prueba negativa: en una rama temporal se reintroduce `const string` y el job falla (captura en el PR, la rama se borra).
+  - [x] **Cumple su necesidad si:** lo que declara `composer.json` está probado en CI.
 - **⚠️ Deuda descubierta durante la ejecución (no en el alcance de hoy):** el bundle **no se auto-registra con Symfony Flex**. Repro local con una app Symfony 6.4 real: `composer require carlosgude/integration-engine` deja `config/bundles.php` intacto y `php bin/console make:integration` falla con "no commands in the make namespace". Causa raíz rastreada en el código fuente de `symfony/flex` (`SymfonyBundle::getClassNames()`): la heurística de auto-detección de Flex busca la clase del bundle en `src/IntegrationEngineBundle.php` (namespace raíz PSR-4 `IntegrationEngine\` + sufijo `Bundle`), pero la clase real vive en `src/Bundle/IntegrationEngineBundle.php` (`IntegrationEngine\Bundle\IntegrationEngineBundle`), un nivel más abajo — no coincide y Flex la descarta en silencio. El campo `extra.symfony.bundles` que el `composer.json` del bundle ya declara **no lo lee Flex en ningún punto de su código fuente** (confirmado por grep en `vendor/symfony/flex/src/*.php`: el único uso de `extra['symfony']` es `root-dir`). Tampoco existe receta para `carlosgude/integration-engine` en `symfony/recipes-contrib` (confirmado contra el índice real). **Esto afecta a cualquier usuario real que siga el "Installation" del README** — el bundle se instala pero queda inerte, sin ningún error visible. Decisión del usuario (2026-09-16): usar un registro manual de `config/bundles.php` solo dentro del job `generator-php82` (comentado como workaround de un bug conocido, no como instalación recomendada) y anotar esto como deuda — ver fila correspondiente en `## 4 · Backlog`. Arreglarlo de verdad (opción 1: reestructurar para que la heurística de Flex acierte; opción 2: documentar el registro manual en el README) necesita su propio día, con las dos alternativas ya evaluadas.
 
-#### Día 04 · B1.4 · Test de documentación: imports
+#### Día 04 · B1.4 · Test de documentación: imports ✅
 - **Alcance mínimo:** test PHPUnit que extrae todos los `use IntegrationEngine\…` de los `.md` y comprueba que existen; corrección de los ~30 namespaces obsoletos.
 - **Dónde:** `tests/Documentation/DocumentationImportsTest.php` (nuevo), `README.md`, `DOCUMENTATION*.md`, `docs/*.md`, guías de agentes.
 - **Verificación:**
-  - [ ] Test rojo previo listando los imports rotos (salida pegada en el PR).
-  - [ ] Test verde tras corregir.
-  - [ ] **Cumple su necesidad si:** copiar cualquier `use` de la documentación resuelve una clase o interfaz real.
+  - [x] Test rojo previo listando los imports rotos (salida pegada en el PR).
+  - [x] Test verde tras corregir.
+  - [x] **Cumple su necesidad si:** copiar cualquier `use` de la documentación resuelve una clase o interfaz real.
 
-#### Día 05 · B1.5 · Test de enlaces y guía de agentes única
+#### Día 05 · B1.5 · Test de enlaces y guía de agentes única ✅
 - **Alcance mínimo:** test de enlaces relativos en `.md`; una sola guía de agentes en `agent/`; referencias `.agent/` corregidas; `landing/README.md` sin `snippets.js`.
 - **Dónde:** `tests/Documentation/DocumentationLinksTest.php` (nuevo), `agent/integration-engine-agent-guide.md`, `integration-engine-agent-guide.md` (borrar), `docs/AI-AGENT-USAGE.md`, `landing/README.md`.
 - **Verificación:**
-  - [ ] Test rojo previo detecta el enlace roto a `.agent/` en `docs/AI-AGENT-USAGE.md`.
-  - [ ] `test ! -f integration-engine-agent-guide.md`.
-  - [ ] **Cumple su necesidad si:** ningún enlace relativo de la documentación apunta a un archivo inexistente.
+  - [x] Test rojo previo detecta el enlace roto a `.agent/` en `docs/AI-AGENT-USAGE.md`.
+  - [x] `test ! -f integration-engine-agent-guide.md`.
+  - [x] **Cumple su necesidad si:** ningún enlace relativo de la documentación apunta a un archivo inexistente.
 
-#### Día 06 · B1.6 · Arquitectura hexagonal verificada con Deptrac
+#### Día 06 · B1.6 · Arquitectura hexagonal verificada con Deptrac ✅
 - **Alcance mínimo:** capas `Core`, `Infrastructure`, `Bundle`, `Tests` con reglas; job de CI; `make deptrac`.
 - **Dónde:** `deptrac.yaml` (nuevo), `composer.json` (dev), `Makefile`, `.github/workflows/php.yml`, `ARCHITECTURE.md`.
 - **Verificación:**
-  - [ ] `vendor/bin/deptrac analyse` → 0 violaciones.
-  - [ ] Prueba negativa: `use Symfony\Component\HttpClient\HttpClient;` temporal en un archivo de `src/Core` → Deptrac falla (captura en PR).
-  - [ ] **Cumple su necesidad si:** la afirmación "hexagonal" del README está respaldada por un job de CI.
+  - [x] `vendor/bin/deptrac analyse` → 0 violaciones.
+  - [x] Prueba negativa: `use Symfony\Component\HttpClient\HttpClient;` temporal en un archivo de `src/Core` → Deptrac falla (captura en PR).
+  - [x] **Cumple su necesidad si:** la afirmación "hexagonal" del README está respaldada por un job de CI.
 
 #### Día 07 · B1.7 · CHANGELOG, UPGRADE y política de versiones
 - **Alcance mínimo:** `CHANGELOG.md` desde v2.0.0 reconstruido de los tags; `UPGRADE-4.0.md`; política de versionado en `CONTRIBUTING.md`; release notes de v4.0.0 y v4.1.0 en GitHub.
