@@ -102,12 +102,12 @@ deptrac:   vendor/bin/deptrac analyse --no-progress
 
 | Fase | Días | Horas | Estado | Resultado visible | Versiones |
 |---|---|---|---|---|---|
-| **1 · Presentable** | 01-10 | ~20 h | 9/10 ✅ | Nada publicado resta credibilidad; estado y hoja de ruta públicos | bundle v4.1.1 |
-| **2 · Demo online** | 11-32 | ~44 h | — | `demo.integrationengine.dev` con tienda TMDB y 3 pasos de tour | demo v1.0 |
+| **1 · Presentable** | 01-10 | ~20 h | 10/10 ✅ | Nada publicado resta credibilidad; estado y hoja de ruta públicos | bundle v4.1.1 |
+| **2 · Demo online** | 11-32 | ~44 h | 4/22 🔄 | `demo.integrationengine.dev` con tienda TMDB y 3 pasos de tour | demo v1.0 |
 | **3 · Integraciones robustas** | 33-45 | ~26 h | — | Paso "When suppliers fail" en el tour | bundle v4.2.0, v4.3.0 · demo v1.1 |
 | **4 · Bidireccional con Stripe** | 46-74 | ~58 h | — | Alquiler con pago real en test, webhooks, RabbitMQ, panel | bundle v4.4.0 · demo v2.0 |
 | **5 · Calidad de diseño visible** | 75-90 | ~32 h | — | Extensión PHPStan, SSRF, eventos del engine | bundle v4.5.0-v4.7.0 · demo v3.0 |
-| **Total** | **90 días** | **~180 h** | 9/90 ✅ | | |
+| **Total** | **90 días** | **~180 h** | 14/90 ✅ | | |
 
 ---
 
