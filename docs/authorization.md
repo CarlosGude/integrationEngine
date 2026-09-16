@@ -86,7 +86,7 @@ The token action is a regular action — it needs its own `Action`, `Mapper`, an
 `Response`. The response `toArray()` must expose the field named in `token_field`:
 
 ```php
-use IntegrationEngine\Core\Contract\ResponseInterface;
+use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 
 final readonly class FetchTokenResponse implements ResponseInterface
 {

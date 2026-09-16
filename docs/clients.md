@@ -38,7 +38,7 @@ my_graphql_api:
 ```
 
 ```php
-use IntegrationEngine\Core\Contract\GraphQLBodyInterface;
+use IntegrationEngine\Core\Contract\Action\GraphQLBodyInterface;
 
 final class GetUserBody implements GraphQLBodyInterface
 {
@@ -85,8 +85,8 @@ discovers it automatically. If `getClientType()` matches an existing adapter, yo
 precedence:
 
 ```php
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\ClientAdapterInterface;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 
 final class SoapClientAdapter implements ClientAdapterInterface
 {
@@ -123,7 +123,7 @@ my_soap_api:
 Use `client_service:` for retry logic, circuit breaking, custom logging, or test doubles:
 
 ```php
-use IntegrationEngine\Core\Contract\ClientInterface;
+use IntegrationEngine\Core\Contract\Client\ClientInterface;
 
 final class RetryingHttpClient implements ClientInterface
 {
@@ -153,8 +153,8 @@ To get real concurrency in `sendMany()`, the client must implement `BatchClientI
 does not. A custom adapter or service can implement it regardless of protocol:
 
 ```php
-use IntegrationEngine\Core\Contract\BatchClientInterface;
-use IntegrationEngine\Core\Contract\ClientInterface;
+use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
+use IntegrationEngine\Core\Contract\Client\ClientInterface;
 
 final class ConcurrentGraphQLClient implements ClientInterface, BatchClientInterface
 {
