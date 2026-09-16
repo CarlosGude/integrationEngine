@@ -10,9 +10,9 @@ where external API field names appear in your codebase.
 Extend `AbstractMapper`, declare which action it belongs to, and implement `transform()`:
 
 ```php
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\AbstractMapper;
-use IntegrationEngine\Core\Contract\ResponseInterface;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Mapper\AbstractMapper;
+use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 
 final class GetEmployeeMapper extends AbstractMapper
 {
@@ -28,7 +28,7 @@ final class GetEmployeeMapper extends AbstractMapper
 The response DTO must implement `ResponseInterface`:
 
 ```php
-use IntegrationEngine\Core\Contract\ResponseInterface;
+use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 
 final readonly class GetEmployeeResponse implements ResponseInterface
 {

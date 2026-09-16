@@ -14,7 +14,7 @@ Each item in a batch is an `EngineRequest` — the same arguments as a single
 
 ```php
 use IntegrationEngine\Core\Batch\EngineRequest;
-use IntegrationEngine\Core\Contract\DefaultActionContext;
+use IntegrationEngine\Core\Contract\Action\DefaultActionContext;
 
 $requests = [
     'lon' => new EngineRequest(GetAccommodationAction::getName(), context: DefaultActionContext::create(['id' => 101])),
@@ -142,8 +142,8 @@ Use `client_service:` and implement `BatchClientInterface` yourself. Symfony's
 `HttpClientInterface` supports async dispatch natively — dispatch all, then consume:
 
 ```php
-use IntegrationEngine\Core\Contract\BatchClientInterface;
-use IntegrationEngine\Core\Contract\ClientInterface;
+use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
+use IntegrationEngine\Core\Contract\Client\ClientInterface;
 use IntegrationEngine\Core\Batch\PreparedRequest;
 
 final class ConcurrentGraphQLClient implements ClientInterface, BatchClientInterface
@@ -201,7 +201,7 @@ per item inside `sendMany()`.
 ```php
 use IntegrationEngine\Core\Batch\AbstractBatchMapper;
 use IntegrationEngine\Core\Batch\BatchResultCollection;
-use IntegrationEngine\Core\Contract\ResponseInterface;
+use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 
 final class AccommodationListBatchMapper extends AbstractBatchMapper
 {

@@ -683,7 +683,7 @@ final class {Name}Integration implements IntegrationName
 ```php
 <?php declare(strict_types=1);
 namespace App\Infrastructure\Integrations\{Name}\{Op}\Request;
-use IntegrationEngine\Core\Contract\AbstractAction;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use App\Infrastructure\Integrations\{Name}\{Op}\Response\{Op}Mapper;
 
 final class {Op}Action extends AbstractAction
@@ -727,7 +727,7 @@ final readonly class {Dto}
 ```php
 <?php declare(strict_types=1);
 namespace App\Infrastructure\Integrations\{Name}\{Op}\Response;
-use IntegrationEngine\Core\Contract\ResponseInterface;
+use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 use App\Infrastructure\Integrations\{Name}\Dto\{Dto};
 
 final readonly class {Op}Response implements ResponseInterface
@@ -749,7 +749,7 @@ final readonly class {Op}Response implements ResponseInterface
 ```php
 <?php declare(strict_types=1);
 namespace App\Infrastructure\Integrations\{Name}\{Op}\Response;
-use IntegrationEngine\Core\Contract\ResponseInterface;
+use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 use App\Infrastructure\Integrations\{Name}\Dto\{Dto};
 
 final readonly class {Op}Response implements ResponseInterface

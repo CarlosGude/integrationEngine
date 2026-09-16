@@ -266,7 +266,7 @@ For **optional** query string filters, implement `PathResolvableContextInterface
 custom context — path logic lives in the context, the action stays declarative:
 
 ```php
-use IntegrationEngine\Core\Contract\PathResolvableContextInterface;
+use IntegrationEngine\Core\Contract\Action\PathResolvableContextInterface;
 
 final readonly class FilterEmployeesContext implements PathResolvableContextInterface
 {
@@ -379,7 +379,7 @@ integration_engine:
 For GraphQL actions, the body must implement `GraphQLBodyInterface`:
 
 ```php
-use IntegrationEngine\Core\Contract\GraphQLBodyInterface;
+use IntegrationEngine\Core\Contract\Action\GraphQLBodyInterface;
 
 final class GetUserBody implements GraphQLBodyInterface
 {
@@ -395,8 +395,8 @@ final class GetUserBody implements GraphQLBodyInterface
 Implement `ClientAdapterInterface` and tag the service — the bundle discovers it automatically:
 
 ```php
-use IntegrationEngine\Core\Contract\AbstractAction;
-use IntegrationEngine\Core\Contract\ClientAdapterInterface;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 
 final class SoapClientAdapter implements ClientAdapterInterface
 {

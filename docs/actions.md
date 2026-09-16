@@ -10,7 +10,7 @@ the response. No logic, no state — purely declarative.
 Extend `AbstractAction` and implement three static methods:
 
 ```php
-use IntegrationEngine\Core\Contract\AbstractAction;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
 
 final class GetEmployeeAction extends AbstractAction
 {

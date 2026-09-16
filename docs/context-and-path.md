@@ -48,7 +48,7 @@ GetEmployee:
 ```
 
 ```php
-use IntegrationEngine\Core\Contract\DefaultActionContext;
+use IntegrationEngine\Core\Contract\Action\DefaultActionContext;
 
 $engine->send(
     actionName: GetEmployeeAction::getName(),
@@ -89,7 +89,7 @@ receives the raw YAML path and returns the final URL — or `null` to fall back 
 default `{placeholder}` resolver:
 
 ```php
-use IntegrationEngine\Core\Contract\PathResolvableContextInterface;
+use IntegrationEngine\Core\Contract\Action\PathResolvableContextInterface;
 
 final readonly class FilterEmployeesContext implements PathResolvableContextInterface
 {
@@ -121,7 +121,7 @@ A custom context also makes sense when you want to enforce invariants at constru
 time, or accept domain objects instead of raw arrays:
 
 ```php
-use IntegrationEngine\Core\Contract\ActionContextInterface;
+use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 
 final readonly class GetEmployeeContext implements ActionContextInterface
 {
