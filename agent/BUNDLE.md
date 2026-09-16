@@ -177,7 +177,7 @@ make ci
 
 **TDD:**
 1. **Rojo:** `DocumentationLinksTest`
-   - Extrae enlaces Markdown `[texto](destino)` y referencias en backticks con forma de ruta relativa que acaben en `.md`.
+   - Extrae enlaces Markdown (texto entre corchetes seguido de un destino entre paréntesis) y referencias en backticks con forma de ruta relativa que acaben en `.md`.
    - Ignora `http(s)://`, `mailto:` y anclas puras `#…`.
    - Para rutas relativas: resuelve contra el directorio del archivo y comprueba `file_exists` (quitando `#ancla`).
    - Debe fallar con `docs/AI-AGENT-USAGE.md → .agent/integration-engine-agent-guide.md`.

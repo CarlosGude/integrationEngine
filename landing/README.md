@@ -11,7 +11,6 @@ landing/
 │   ├── html.js        ← HTML builder
 │   ├── css.js         ← estilos inline
 │   ├── client.js      ← JavaScript del navegador
-│   ├── snippets.js    ← ejemplos de código PHP compartidos
 │   └── i18n/
 │       ├── es.js      ← traducciones en español
 │       └── en.js      ← traducciones en inglés
@@ -57,7 +56,7 @@ Edita `src/i18n/es.js` o `src/i18n/en.js`. Cada archivo exporta un objeto con to
 
 ### Ejemplos de código
 
-Los snippets PHP del call site están en `src/snippets.js`. Son compartidos por ambos idiomas.
+Los snippets PHP están incrustados directamente en `src/html.js` (ya resaltados en HTML). Son compartidos por ambos idiomas.
 
 ### CSS
 
