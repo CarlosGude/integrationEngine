@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [4.1.1] - 2026-09-16
+
+### Added
+
+- Public `ROADMAP.md` with Now/Next/Later sections, no promised dates. Transparency via working software, not calendars.
+- Status block in `README.md` linking to roadmap.
+- Landing page status section showing project phase and trajectory.
+
 ### Fixed
 
 - `make:integration` generated `public const string NAME`, PHP 8.3 syntax,

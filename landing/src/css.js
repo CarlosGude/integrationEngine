@@ -270,5 +270,13 @@ footer a:hover { text-decoration: underline; }
 .ext-card { background: rgba(255,255,255,.04); border: 1px solid rgba(74,143,212,.18); border-radius: 10px; padding: 1.25rem 1.35rem; }
 .ext-iface { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: .78rem; font-weight: 600; color: #7dd3fc; background: rgba(47,111,189,.18); padding: .2rem .65rem; border-radius: 4px; margin-bottom: .6rem; }
 .ext-card p { font-size: .83rem; color: var(--muted); line-height: 1.65; }
+/* ── STATUS SECTION ── */
+.status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin: 2rem 0 1.75rem; }
+@media (max-width: 700px) { .status-grid { grid-template-columns: 1fr; } }
+.status-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+.status-card p { font-size: .84rem; color: #4a5568; line-height: 1.65; }
+.status-card strong { color: var(--blue); font-weight: 700; }
+.status-footer { text-align: center; margin-top: 1.5rem; }
+.status-footer a { display: inline-block; }
 `;
 

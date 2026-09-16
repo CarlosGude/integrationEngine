@@ -153,6 +153,15 @@ export default {
     p5CmBatchGood:  '//  3 stations &rarr; ~250ms   (the slowest, not the sum)\n// 10 stations &rarr; ~250ms   (does not scale)',
     p5Insight:      '<strong>Why it matters:</strong> individual failures never abort the batch &mdash; each key resolves independently. <code>sendMany()</code> returns a <code>BatchResultCollection</code> where you inspect each outcome; <code>sendManyOrFail()</code> throws on the first failure after the full batch has run. The default REST client already implements <code>BatchClientInterface</code> via lazy Symfony HttpClient responses &mdash; zero additional configuration.',
 
+    // Status section
+    statusEyebrow:      'Status',
+    statusH2:           'Phase 1: Presentable',
+    statusP:            'Public roadmap, unified quality gates, live demo coming next. No promises with dates &mdash; just transparent, working software and the next milestone in the pipeline.',
+    statusNow:          '<strong>Now:</strong> Bundle foundations solid. v4.1.1 released. Landing and docs live.',
+    statusNext:         '<strong>Next:</strong> Full demo online (TMDB + Stripe). Tour showing the pattern in action across 6 phases.',
+    statusLater:        '<strong>Later:</strong> Open-source plugins, legacy migration patterns, certified training.',
+    statusRoadmapLink:  'Full roadmap →',
+
     // Thanks section
     thanksEyebrow: 'Before you go',
     thanksH2:      'Thanks for reading.',

@@ -2,7 +2,11 @@
 
 [![CI](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml/badge.svg)](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml)
 
-**Website:** [integrationengine.dev](https://integrationengine.dev)
+**Website:** [integrationengine.dev](https://integrationengine.dev)  
+**Status:** Phase 1 (Presentable) · v4.1.1 Live  
+**Roadmap:** [See public roadmap](./ROADMAP.md) — Now/Next/Later, no dates, transparent progress.
+
+---
 
 External integrations tend to rot in Symfony projects.
 

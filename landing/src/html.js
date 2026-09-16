@@ -317,6 +317,31 @@ MyApi/
   </div>
 </div>
 
+<!-- PROJECT STATUS -->
+<section class="s-light">
+  <div class="container">
+    <div class="eyebrow">${t.statusEyebrow}</div>
+    <h2 class="s-heading">${t.statusH2}</h2>
+    <p class="s-sub">${t.statusP}</p>
+    <div class="status-grid">
+      <div class="status-card">
+        <p>${t.statusNow}</p>
+      </div>
+      <div class="status-card">
+        <p>${t.statusNext}</p>
+      </div>
+      <div class="status-card">
+        <p>${t.statusLater}</p>
+      </div>
+    </div>
+    <div class="status-footer">
+      <a href="https://github.com/CarlosGude/integrationEngine/blob/main/ROADMAP.md" target="_blank" rel="noopener" class="btn-outline">
+        ${t.statusRoadmapLink}
+      </a>
+    </div>
+  </div>
+</section>
+
 <!-- THE PATTERN -->
 <section id="pattern" class="s-white">
   <div class="container">
