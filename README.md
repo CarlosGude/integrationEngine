@@ -1,5 +1,7 @@
 # IntegrationEngine
 
+[![CI](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml/badge.svg)](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml)
+
 **Website:** [integrationengine.dev](https://integrationengine.dev)
 
 External integrations tend to rot in Symfony projects.

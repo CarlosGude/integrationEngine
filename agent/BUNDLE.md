@@ -121,6 +121,7 @@ make ci
    - Añadir un repositorio `path` al checkout actual **solo dentro del job** e instalar el bundle.
    - Ejecutar `php bin/console make:integration Acme GetThing --no-interaction` (añadir flags o respuestas por `stdin` según las preguntas actuales del comando; si el comando no admite modo no interactivo, **crear primero un test y el soporte de `--no-interaction` con valores por defecto**, y anotarlo en el PR).
    - `find src/Infrastructure/Integrations/Acme -name '*.php' -print0 | xargs -0 -n1 php -l`.
+   - **Bug real descubierto al ejecutar esto (ver `PLAN.md` Día 03 y `## 4 · Backlog`): el bundle no se auto-registra con Symfony Flex** (la heurística de `SymfonyBundle::getClassNames()` de Flex espera la clase en `src/IntegrationEngineBundle.php`, no en `src/Bundle/IntegrationEngineBundle.php`; `extra.symfony.bundles` no lo lee Flex; no hay receta en `symfony/recipes-contrib`). Workaround decidido para este job: escribir `config/bundles.php` a mano dentro del paso de CI (comentado como workaround de un bug conocido). El arreglo real (renombrar/mover la clase del bundle, o documentar el registro manual en el README) queda pendiente como su propia tarea.
 3. Badge del workflow en `README.md`.
 
 **Criterios de aceptación:**
