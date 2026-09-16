@@ -18,7 +18,28 @@ final class TemplateRendererTest extends TestCase
 
         self::assertStringContainsString('namespace App\Infrastructure\Integrations\MyApi;', $code);
         self::assertStringContainsString('final class MyApiIntegration implements IntegrationName', $code);
-        self::assertStringContainsString("public const string NAME = 'my_api';", $code);
+        self::assertStringContainsString("public const NAME = 'my_api';", $code);
+    }
+
+    /**
+     * composer.json declares php >=8.2, but typed class constants
+     * (`public const string NAME`) are PHP 8.3 syntax — generated code must
+     * run on every PHP version the bundle claims to support.
+     */
+    #[Test]
+    public function generatedIntegrationDoesNotUseTypedClassConstants(): void
+    {
+        $code = $this->renderer()->integration();
+
+        self::assertDoesNotMatchRegularExpression('/const\s+(string|int|bool|float|array)\s+[A-Z_]+/', $code);
+    }
+
+    #[Test]
+    public function generatedIntegrationDeclaresNameConstant(): void
+    {
+        $code = $this->renderer()->integration();
+
+        self::assertStringContainsString("public const NAME = 'my_api';", $code);
     }
 
     #[Test]

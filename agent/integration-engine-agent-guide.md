@@ -64,7 +64,7 @@ namespace IntegrationEngine\Core\Registry;
 
 interface IntegrationName
 {
-    public const string NAME = 'snake_case_name'; // must match integration_engine.yaml key
+    public const NAME = 'snake_case_name'; // must match integration_engine.yaml key
 }
 ```
 
@@ -561,7 +561,7 @@ service — never call it directly from a controller.**
 // Integration facade — lives in Infrastructure
 final class ExternalApiIntegration
 {
-    public const string NAME = '{snake_name}';
+    public const NAME = '{snake_name}';
 
     private IntegrationEngine $engine;
 
@@ -691,7 +691,7 @@ use IntegrationEngine\Core\IntegrationEngine;
 
 final class {Name}Integration implements IntegrationName
 {
-    public const string NAME = '{snake_name}';
+    public const NAME = '{snake_name}';
 
     private IntegrationEngine $engine;
 

@@ -149,7 +149,7 @@ use IntegrationEngine\Core\Registry\IntegrationRegistry;
 // 1. Facade (infrastructure layer) — returns typed Response DTOs, nothing else
 final class MyApiIntegration implements IntegrationName
 {
-    public const string NAME = 'my_api';
+    public const NAME = 'my_api';
 
     private IntegrationEngine $engine;
 
