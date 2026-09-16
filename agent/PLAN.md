@@ -102,12 +102,12 @@ deptrac:   vendor/bin/deptrac analyse --no-progress
 
 | Fase | Días | Horas | Estado | Resultado visible | Versiones |
 |---|---|---|---|---|---|
-| **1 · Presentable** | 01-10 | ~20 h | 7/10 ✅ | Nada publicado resta credibilidad; estado y hoja de ruta públicos | bundle v4.1.1 |
+| **1 · Presentable** | 01-10 | ~20 h | 8/10 ✅ | Nada publicado resta credibilidad; estado y hoja de ruta públicos | bundle v4.1.1 |
 | **2 · Demo online** | 11-32 | ~44 h | — | `demo.integrationengine.dev` con tienda TMDB y 3 pasos de tour | demo v1.0 |
 | **3 · Integraciones robustas** | 33-45 | ~26 h | — | Paso "When suppliers fail" en el tour | bundle v4.2.0, v4.3.0 · demo v1.1 |
 | **4 · Bidireccional con Stripe** | 46-74 | ~58 h | — | Alquiler con pago real en test, webhooks, RabbitMQ, panel | bundle v4.4.0 · demo v2.0 |
 | **5 · Calidad de diseño visible** | 75-90 | ~32 h | — | Extensión PHPStan, SSRF, eventos del engine | bundle v4.5.0-v4.7.0 · demo v3.0 |
-| **Total** | **90 días** | **~180 h** | 7/90 ✅ | | |
+| **Total** | **90 días** | **~180 h** | 8/90 ✅ | | |
 
 ---
 
@@ -174,13 +174,13 @@ deptrac:   vendor/bin/deptrac analyse --no-progress
   - [x] `DocumentationLinksTest` verde con los nuevos archivos.
   - [x] **Cumple su necesidad si:** un revisor entiende por qué hubo cuatro majors y qué garantiza la 4.x.
 
-#### Día 08 · B1.8 · ADRs iniciales
+#### Día 08 · B1.8 · ADRs iniciales ✅
 - **Alcance mínimo:** plantilla y 6 ADRs (lista en BUNDLE.md B1.8).
 - **Dónde:** `docs/adr/0000-template.md` … `docs/adr/0006-*.md`, enlace desde `ARCHITECTURE.md` y `README.md`.
 - **Verificación:**
-  - [ ] Cada ADR tiene: Estado, Contexto, Decisión, Alternativas descartadas, Consecuencias.
-  - [ ] ADR 0006 (profiler sin secretos) enlaza a un test existente o nuevo que lo garantiza, y ese test está en verde.
-  - [ ] **Cumple su necesidad si:** las decisiones clave se pueden leer sin leer código.
+  - [x] Cada ADR tiene: Estado, Contexto, Decisión, Alternativas descartadas, Consecuencias.
+  - [x] ADR 0006 (profiler sin secretos) enlaza a un test existente o nuevo que lo garantiza, y ese test está en verde.
+  - [x] **Cumple su necesidad si:** las decisiones clave se pueden leer sin leer código.
 
 #### Día 09 · B1.9 · Landing: correcciones de credibilidad
 - **Alcance mínimo:** email corregido y funcionando, snippet `EngineRequest` correcto, versiones, sección Stripe y benchmark retirados, claims, CTA en singular, meta description, test de paridad i18n.

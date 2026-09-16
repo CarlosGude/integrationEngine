@@ -585,6 +585,8 @@ It's purely additive: in `prod` the `TracingMiddleware` is not wired, so there i
   options, and links to per-topic references.
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — design decisions: why actions are stateless,
   the mapper invariant, cache behaviour under PHP-FPM, and the DTO/domain boundary.
+- [`docs/adr/`](./docs/adr/) — Architecture Decision Records (ADRs): detailed justifications for
+  key design choices, with context, alternatives considered, and consequences.
 - [`TESTING.md`](./TESTING.md) — test philosophy, suite structure, and what each test protects.
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — setup, code quality tools, and how to run the test suite.
 - [`docs/`](./docs/) — per-topic references: actions, authorization, batch requests, clients,

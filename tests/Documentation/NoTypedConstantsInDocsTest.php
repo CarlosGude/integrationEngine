@@ -41,12 +41,15 @@ final class NoTypedConstantsInDocsTest extends TestCase
             self::ROOT.'/README.md',
             self::ROOT.'/DOCUMENTATION.md',
             self::ROOT.'/DOCUMENTATION_ES.md',
+            self::ROOT.'/UPGRADE-4.0.md',
             ...self::markdownFilesUnder(self::ROOT.'/docs'),
             ...self::markdownFilesUnder(self::ROOT.'/agent'),
         ];
 
         foreach (array_unique($files) as $file) {
-            yield basename($file) => [$file];
+            $relativePath = str_replace(self::ROOT.'/', '', $file);
+
+            yield $relativePath => [$file];
         }
     }
 
