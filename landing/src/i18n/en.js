@@ -8,7 +8,7 @@ export default {
 
     // Hero
     heroH1:  'Stop writing integration code twice.',
-    heroP:   'Every integration your team ships follows the same predictable standard. New developers understand any existing API in minutes &mdash; not days. Automatic OAuth2, parallel requests and typed DTOs built in. One Symfony bundle &mdash; distilled from three years of production integrations.',
+    heroP:   'Every integration your team ships follows the same predictable standard. New developers understand any existing API in minutes &mdash; not days. Automatic OAuth2, parallel requests and typed DTOs built in. One Symfony bundle &mdash; distilled from production integrations at scale.',
     heroBenefits: [
         '&#10003;&nbsp;OAuth2, Bearer &amp; API Key',
         '&#10003;&nbsp;Parallel requests',
@@ -156,14 +156,14 @@ export default {
     // Thanks section
     thanksEyebrow: 'Before you go',
     thanksH2:      'Thanks for reading.',
-    thanksP:       'I&rsquo;ve been using this pattern in production for three years &mdash; integrating Booking.com, Iberia, Lleego, Hostalia and more. Booking.com availability alone requires 4 parallel queries for a small city, 17 for Paris, per customer. An earlier version of this engine handled that without breaking a sweat. This bundle is what those three years taught me: made explicit, tested, and open.',
+    thanksP:       'I&rsquo;ve tested this pattern with production integrations &mdash; Booking.com, Iberia, Lleego, Hostalia and more. Booking.com availability alone requires 4 parallel queries for a small city, 17 for Paris, per customer. An earlier version of this engine handled that without breaking a sweat. This bundle is what production experience taught me: made explicit, tested, and open.',
 
     // CTA
     ctaEyebrow:   'Get in touch',
     ctaH2:        'Start building your next integration today.',
     ctaSub:       'Drop us a line, open a GitHub Discussion, or install it and give it a try.',
     ctaEmailLabel:'Send us an email',
-    ctaEmail:     'hi@integration.dev',
-    ctaEmailHref: 'mailto:hi@integration.dev',
+    ctaEmail:     'hi@integrationengine.dev',
+    ctaEmailHref: 'mailto:hi@integrationengine.dev',
     ctaDiscuss:   'Join Discussions',
 };

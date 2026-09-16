@@ -94,7 +94,7 @@ export function getHTML(lang = 'en') {
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-badge">Symfony Bundle &middot; PHP 8.2+ &middot; Symfony 7+</div>
+  <div class="hero-badge">Symfony Bundle &middot; PHP 8.2+ &middot; Symfony 6.4+</div>
   <h1>${t.heroH1}</h1>
   <p>${t.heroP}</p>
   <div class="hero-benefits">${benefitPills}</div>
@@ -114,7 +114,7 @@ export function getHTML(lang = 'en') {
     <img src="https://img.shields.io/packagist/v/carlosgude/integration-engine?style=flat-square&labelColor=0d1b2e&color=2f6fbd&label=version" alt="Latest version" height="18" loading="lazy">
   </span>
   <span class="trust-sep">&middot;</span>
-  <span class="trust-item trust-compat">PHP 8.2+ &middot; Symfony 7+</span>
+  <span class="trust-item trust-compat">PHP 8.2+ &middot; Symfony 6.4+</span>
 </div>
 
 <!-- THE PROBLEM -->

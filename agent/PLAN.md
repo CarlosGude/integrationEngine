@@ -102,12 +102,12 @@ deptrac:   vendor/bin/deptrac analyse --no-progress
 
 | Fase | Días | Horas | Estado | Resultado visible | Versiones |
 |---|---|---|---|---|---|
-| **1 · Presentable** | 01-10 | ~20 h | 8/10 ✅ | Nada publicado resta credibilidad; estado y hoja de ruta públicos | bundle v4.1.1 |
+| **1 · Presentable** | 01-10 | ~20 h | 9/10 ✅ | Nada publicado resta credibilidad; estado y hoja de ruta públicos | bundle v4.1.1 |
 | **2 · Demo online** | 11-32 | ~44 h | — | `demo.integrationengine.dev` con tienda TMDB y 3 pasos de tour | demo v1.0 |
 | **3 · Integraciones robustas** | 33-45 | ~26 h | — | Paso "When suppliers fail" en el tour | bundle v4.2.0, v4.3.0 · demo v1.1 |
 | **4 · Bidireccional con Stripe** | 46-74 | ~58 h | — | Alquiler con pago real en test, webhooks, RabbitMQ, panel | bundle v4.4.0 · demo v2.0 |
 | **5 · Calidad de diseño visible** | 75-90 | ~32 h | — | Extensión PHPStan, SSRF, eventos del engine | bundle v4.5.0-v4.7.0 · demo v3.0 |
-| **Total** | **90 días** | **~180 h** | 8/90 ✅ | | |
+| **Total** | **90 días** | **~180 h** | 9/90 ✅ | | |
 
 ---
 
@@ -182,14 +182,14 @@ deptrac:   vendor/bin/deptrac analyse --no-progress
   - [x] ADR 0006 (profiler sin secretos) enlaza a un test existente o nuevo que lo garantiza, y ese test está en verde.
   - [x] **Cumple su necesidad si:** las decisiones clave se pueden leer sin leer código.
 
-#### Día 09 · B1.9 · Landing: correcciones de credibilidad
+#### Día 09 · B1.9 · Landing: correcciones de credibilidad ✅
 - **Alcance mínimo:** email corregido y funcionando, snippet `EngineRequest` correcto, versiones, sección Stripe y benchmark retirados, claims, CTA en singular, meta description, test de paridad i18n.
 - **Dónde:** `landing/src/html.js`, `landing/src/i18n/en.js`, `landing/src/i18n/es.js`, `landing/test/i18n-parity.test.js` (nuevo), `landing/package.json` (nuevo, solo script de test), Cloudflare Email Routing.
 - **Verificación:**
-  - [ ] `cd landing && node --test` verde (prueba negativa: borrar una clave en `es.js` → falla).
-  - [ ] `grep -rn "integration.dev\|EngineRequest::create\|Symfony 7+\|tres años\|three years\|Stripe" landing/src` → sin resultados.
-  - [ ] Email de prueba a `hi@integrationengine.dev` y `hola@integrationengine.dev` recibido.
-  - [ ] **Cumple su necesidad si:** nada de la landing es falso ni está roto.
+  - [x] `cd landing && node --test` verde (prueba negativa: borrar una clave en `es.js` → falla).
+  - [x] `grep -rn "integration.dev\|EngineRequest::create\|Symfony 7+\|tres años\|three years\|Stripe" landing/src` → sin resultados.
+  - [x] Email de prueba a `hi@integrationengine.dev` y `hola@integrationengine.dev` recibido.
+  - [x] **Cumple su necesidad si:** nada de la landing es falso ni está roto.
 
 #### Día 10 · B1.10 · Estado público y release v4.1.1
 - **Alcance mínimo:** bloque de estado en README, `ROADMAP.md` (Now/Next/Later, Recently shipped, Out of scope), sección Now/Next/Later en la landing, release **v4.1.1**, despliegue de la landing.

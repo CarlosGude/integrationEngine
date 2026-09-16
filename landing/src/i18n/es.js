@@ -8,7 +8,7 @@ export default {
 
     // Hero
     heroH1:  'Deja de escribir código de integración dos veces.',
-    heroP:   'Cada integración que entrega tu equipo sigue el mismo estándar predecible. Los desarrolladores nuevos entienden cualquier API en minutos &mdash; no en días. OAuth2 automático, peticiones en paralelo y DTOs tipados incluidos. Un solo bundle de Symfony &mdash; destilado de tres años de integraciones en producción.',
+    heroP:   'Cada integración que entrega tu equipo sigue el mismo estándar predecible. Los desarrolladores nuevos entienden cualquier API en minutos &mdash; no en días. OAuth2 automático, peticiones en paralelo y DTOs tipados incluidos. Un solo bundle de Symfony &mdash; destilado de experiencia en producción a escala.',
     heroBenefits: [
         '&#10003;&nbsp;OAuth2, Bearer &amp; API Key',
         '&#10003;&nbsp;Peticiones en paralelo',
@@ -156,14 +156,14 @@ export default {
     // Thanks section
     thanksEyebrow: 'Antes de irte',
     thanksH2:      'Gracias por llegar hasta aquí.',
-    thanksP:       'Llevo tres años usando este patrón en producción &mdash; integrando Booking.com, Iberia, Lleego, Hostalia y más. Solo la disponibilidad de Booking.com requiere 4 consultas en paralelo para una ciudad pequeña, 17 para París, por cliente. Una versión anterior de este engine lo gestionaba sin inmutarse. Este bundle es lo que esos tres años me enseñaron: hecho explícito, testeado y abierto.',
+    thanksP:       'He testeado este patrón con integraciones en producción &mdash; Booking.com, Iberia, Lleego, Hostalia y más. Solo la disponibilidad de Booking.com requiere 4 consultas en paralelo para una ciudad pequeña, 17 para París, por cliente. Una versión anterior de este engine lo gestionaba sin inmutarse. Este bundle es lo que la experiencia en producción me enseñó: hecho explícito, testeado y abierto.',
 
     // CTA
     ctaEyebrow:   'Contacto',
     ctaH2:        'Empieza a construir tu próxima integración hoy.',
     ctaSub:       'Escríbenos directamente, abre una GitHub Discussion, o instálalo y pruébalo.',
     ctaEmailLabel:'Envíanos un email',
-    ctaEmail:     'hola@integration.dev',
-    ctaEmailHref: 'mailto:hola@integration.dev',
+    ctaEmail:     'hola@integrationengine.dev',
+    ctaEmailHref: 'mailto:hola@integrationengine.dev',
     ctaDiscuss:   'Unirse a Discussions',
 };

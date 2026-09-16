@@ -1,0 +1,16 @@
+{
+  "name": "integrationengine-landing",
+  "version": "1.0.0",
+  "description": "Landing page for IntegrationEngine",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/**/*.test.js"
+  },
+  "keywords": [
+    "integration",
+    "api",
+    "symfony"
+  ],
+  "author": "Carlos Gude",
+  "license": "MIT"
+}
