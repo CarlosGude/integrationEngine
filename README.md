@@ -3,8 +3,16 @@
 [![CI](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml/badge.svg)](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml)
 
 **Website:** [integrationengine.dev](https://integrationengine.dev)  
-**Status:** Phase 1 (Presentable) · v4.1.1 Live  
+**Status:** v4.1.1 Live · [Full Demo](https://github.com/CarlosGude/integrationEngine-demo) Complete  
 **Roadmap:** [See public roadmap](./ROADMAP.md) — Now/Next/Later, no dates, transparent progress.
+
+**📊 Demo Status:** Days 17-25 Complete ✅
+- ✅ 3 protocols working (REST, CSV, GraphQL)
+- ✅ 40+ tests passing
+- ✅ Parallel requests (5-13x speedup)
+- ✅ Middleware extensibility
+- ✅ Bilingual tour with live code
+- 🔗 [See integrationEngine-demo](https://github.com/CarlosGude/integrationEngine-demo)
 
 ---
 

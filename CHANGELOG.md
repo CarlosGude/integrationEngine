@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Demo Progress (integrationEngine-demo)
+- ✅ Days 17-25 Complete: Full multi-protocol demonstration
+  - 3 protocols: REST (TMDB), CSV (Supplier), GraphQL (Countries)
+  - 40+ tests passing
+  - Parallel batch requests (5-13x speedup for 20 items)
+  - Middleware extensibility (rate limiting example)
+  - Bilingual tour (EN/ES) with 9 live code snippets
+  - Architecture: Domain/Application/Infrastructure separation validated
+- 🔗 [Live demo repository](https://github.com/CarlosGude/integrationEngine-demo)
+
+### Demo Features Validated
+- ✅ Action/Mapper/Response pattern works uniformly across REST, CSV, GraphQL
+- ✅ `send()` and `sendMany()` handle parallelism correctly
+- ✅ Middleware pipeline extensible without code changes
+- ✅ Batch failure handling (null entries, not abort)
+- ✅ Parity testing (legacy code produces identical domain results)
+- ✅ Live code snippet extraction from marked sections
+
 ## [4.1.1] - 2026-09-16
 
 ### Added
