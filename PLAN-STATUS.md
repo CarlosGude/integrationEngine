@@ -38,7 +38,7 @@
 4. Add Nginx debugging logs for FastCGI response
 5. Disable chunked transfer encoding
 
-**See:** [Full debugging checklist in memory](../.claude/projects/-Users-cgude-PhpstormProjects-integrationEngine/memory/day-17-http-transmission-debug.md)
+**See:** Session memory files for Day 17 debugging details
 
 ### ⏭️ Pending (Days 18-32)
 
@@ -64,10 +64,8 @@ All bundle improvements (connection resolver, headers to mapper, request middlew
 
 ## Key Files Updated This Session
 
-- `integrationEngine-demo/README.md` — Status, architecture, debugging plan
-- `integrationEngine-demo/.env.local` — TMDB credentials (git-ignored)
-- `integrationEngine-demo/memory/day-17-http-transmission-debug.md` — Detailed debug checklist
-- `integrationEngine-demo/memory/MEMORY.md` — Index updated
+- Demo project (separate repo) — status and debugging notes
+- Environment configuration — TMDB credentials (git-ignored)
 
 ---
 

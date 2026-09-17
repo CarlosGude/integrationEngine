@@ -7,6 +7,8 @@ namespace IntegrationEngine\Infrastructure\Adapter;
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionBodyInterface;
 use IntegrationEngine\Core\Contract\Auth\AuthorizationConfig;
+use IntegrationEngine\Core\Contract\Webhook\SignatureConfig;
+use IntegrationEngine\Core\Contract\Webhook\WebhookDefinition;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\Exception\PathResolutionException;
 use IntegrationEngine\Core\Port\ConfigPort;
@@ -16,6 +18,9 @@ final class YamlConfigAdapter implements ConfigPort
 {
     /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>, cache_ttl?: int}> */
     private array $config;
+
+    /** @var array<string, array<string, mixed>> */
+    private array $webhooks;
 
     public function __construct(string $configPath)
     {
@@ -31,7 +36,19 @@ final class YamlConfigAdapter implements ConfigPort
             );
         }
 
-        foreach ($parsed as $actionName => $actionConfig) {
+        // Separate webhooks from actions
+        $webhooks = $parsed['webhooks'] ?? [];
+        $actions = [];
+
+        foreach ($parsed as $key => $item) {
+            if ('webhooks' === $key) {
+                continue;
+            }
+            $actions[$key] = $item;
+        }
+
+        // Validate actions
+        foreach ($actions as $actionName => $actionConfig) {
             if (!\is_array($actionConfig) || !isset($actionConfig['action']) || !\is_string($actionConfig['action'])) {
                 throw new \InvalidArgumentException(
                     \sprintf('Action "%s" must define a string "action" class in the integration YAML.', $actionName)
@@ -39,8 +56,16 @@ final class YamlConfigAdapter implements ConfigPort
             }
         }
 
-        /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>, cache_ttl?: int}> $parsed */
-        $this->config = $parsed;
+        /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>, cache_ttl?: int}> $actions */
+        $this->config = $actions;
+
+        // Validate webhooks
+        if (!\is_array($webhooks)) {
+            throw new \InvalidArgumentException('Webhooks section in config must be an array.');
+        }
+
+        /** @var array<string, array{mapper: string, signature: array<string, mixed>}> $webhooks */
+        $this->webhooks = $webhooks;
     }
 
     public function getAction(string $name, ?ActionBodyInterface $bodyData = null): AbstractAction
@@ -68,6 +93,42 @@ final class YamlConfigAdapter implements ConfigPort
             body: $body,
             authorization: $authorization,
             cacheTtl: isset($actionConfig['cache_ttl']) ? (int) $actionConfig['cache_ttl'] : null,
+        );
+    }
+
+    public function getWebhookDefinition(string $eventType): WebhookDefinition
+    {
+        if (!isset($this->webhooks[$eventType])) {
+            throw new \InvalidArgumentException(\sprintf('Webhook event type "%s" not defined in config.', $eventType));
+        }
+
+        $webhookConfig = $this->webhooks[$eventType];
+
+        if (!isset($webhookConfig['mapper']) || !\is_string($webhookConfig['mapper'])) {
+            throw new \InvalidArgumentException(\sprintf(
+                'Webhook event type "%s" must define a string "mapper" class.',
+                $eventType,
+            ));
+        }
+
+        if (!isset($webhookConfig['signature']) || !\is_array($webhookConfig['signature'])) {
+            throw new \InvalidArgumentException(\sprintf(
+                'Webhook event type "%s" must define a "signature" config (array).',
+                $eventType,
+            ));
+        }
+
+        /** @var array<string, mixed> $signatureConfig */
+        $signatureConfig = $webhookConfig['signature'];
+        $signature = SignatureConfig::fromArray($signatureConfig);
+
+        /** @var class-string $mapperClass */
+        $mapperClass = $webhookConfig['mapper'];
+
+        return new WebhookDefinition(
+            eventType: $eventType,
+            mapperClass: $mapperClass,
+            signature: $signature,
         );
     }
 
