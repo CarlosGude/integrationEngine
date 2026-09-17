@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [5.0.0] - 2026-09-17
+
+### Added
+
+**Inbound Webhooks Framework** — Full support for incoming webhooks from external providers (Stripe, PayPal, etc.)
+
+- **`SignatureVerifierInterface`** and two built-in implementations:
+  - `HmacSha256SignatureVerifier`: Simple HMAC-SHA256 with configurable header + prefix
+  - `TimestampedHmacSignatureVerifier`: Stripe's model (t=timestamp, v1=hash, v0=old_hash)
+- **`WebhookEventInterface`**: Marker for typed webhook event DTOs (must be serializable for Messenger)
+- **`AbstractWebhookMapper`**: Base class for webhook payload mappers (mirrors `AbstractMapper` pattern)
+- **`IntegrationWebhookRequestParser`**: Extends Symfony's `AbstractRequestParser`
+  - Signature verification (HMAC or timestamped)
+  - Payload validation (POST + JSON)
+  - Mapping to `RemoteEvent` for async processing via Messenger
+  - Rejects with HTTP 406 on verification failure
+- **`make:webhook` command** for interactive webhook scaffolding:
+  ```bash
+  php bin/console make:webhook stripe charge.succeeded
+  # → Generates: ChargeSucceededEvent + ChargeSucceededRequestParser + Mapper
+  ```
+- **YAML webhook configuration** in integration config:
+  ```yaml
+  webhooks:
+    charge.succeeded:
+      mapper: App\Webhooks\ChargeSucceededMapper
+      signature:
+        type: timestamped_hmac
+        header: Stripe-Signature
+  ```
+- **Architecture Decision Records**:
+  - ADR-0009: Inbound Webhooks Design and Parser Contract
+  - ADR-0010: Webhook Idempotency Strategy
+
+### Design
+
+- Webhook signature verification is **mandatory** (security boundary)
+- Parser layer is **stateless and fast** (HTTP 202 immediate)
+- Idempotency handled in **consumer layer** (at-least-once + idempotent handlers)
+- **Compatible with Symfony 6.4+ LTS** and 7.x, 8.x
+- Supports **multiple providers** with different signature schemes (extensible via custom verifiers)
+
+### Consequences
+
+- ✅ Webhooks have same structure as outbound integrations (YAML + mapper)
+- ✅ Async processing via Messenger bus
+- ✅ Type safety: RemoteEvent mapped to WebhookEventInterface (DTO)
+- ⚠️ Requires `symfony/webhook` and `symfony/remote-event` (small, stable components)
+- ⚠️ Developers implement `AbstractRequestParser::doParse()` for each webhook type (minimal boilerplate)
+
 ### Demo Progress (integrationEngine-demo)
 - ✅ Days 17-25 Complete: Full multi-protocol demonstration
   - 3 protocols: REST (TMDB), CSV (Supplier), GraphQL (Countries)
