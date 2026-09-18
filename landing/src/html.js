@@ -558,6 +558,26 @@ MyApi/
         </div>
       </div>
 
+      <!-- Bonus: Timing breakdown -->
+      <div style="grid-column: 1 / -1;">
+        <div class="example-code-panel">
+          <div class="file-label">Bonus: Track HTTP vs. mapping separately</div>
+          <div class="code-block"><span class="cm">// Listen to ResponseMapped to see the breakdown</span>
+<span class="attr">#[AsEventListener(event: ResponseMapped::class)]</span>
+<span class="kw">public function</span> <span class="fn">onResponseMapped</span>(<span class="cls">ResponseMapped</span> <span class="var">$event</span>): <span class="kw">void</span>
+{
+    <span class="cm">// See where time was actually spent</span>
+    <span class="var">$httpTime</span> = <span class="var">$event</span>-&gt;<span class="fn">httpDurationMs</span>();
+    <span class="var">$mappingTime</span> = <span class="var">$event</span>-&gt;<span class="fn">mappingDurationMs</span>();
+    <span class="var">$overhead</span> = <span class="var">$event</span>-&gt;<span class="fn">totalDurationMs</span>() - <span class="var">$httpTime</span> - <span class="var">$mappingTime</span>;
+
+    <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">gauge</span>(<span class="str\"'shopify.http_ms'</span>, <span class="var">$httpTime</span>);
+    <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">gauge</span>(<span class="str\"'shopify.mapping_ms'</span>, <span class="var">$mappingTime</span>);
+    <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">gauge</span>(<span class="str\"'shopify.overhead_ms'</span>, <span class="var">$overhead</span>);
+}</div>
+        </div>
+      </div>
+
     </div>
     <div class="example-cta">
       <a href="https://github.com/CarlosGude/integrationEngine/blob/main/OBSERVABILITY.md" target="_blank" rel="noopener" class="btn-primary">${t.obsBtn}</a>

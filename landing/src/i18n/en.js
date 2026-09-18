@@ -189,13 +189,13 @@ export default {
     // Observability section (v5.2.0)
     obsEyebrow: 'Observability',
     obsH2:      'Production monitoring built in.',
-    obsSub:     '<strong>v5.2.0:</strong> Lifecycle events (ActionStarted, ActionCompleted, ActionFailed) fire at every stage. One command to wire logging, Prometheus metrics, Sentry error tracking, or custom audit trails. Zero overhead in production (0.06ms per call, unmeasurable).',
+    obsSub:     '<strong>v5.2.0:</strong> Lifecycle events (ActionStarted, HttpResponseReceived, ResponseMapped, ActionCompleted, ActionFailed) fire at every stage. Track HTTP latency vs. DTO transformation separately. One command to wire logging, Prometheus metrics, Sentry error tracking, or custom audit trails. Zero overhead in production (0.06ms per call, unmeasurable).',
     obsFeatures: [
+        'Detailed timing: HTTP call duration + DTO mapping duration',
         'Lifecycle events with metadata (action, integration, duration, status)',
         'LifecycleEventDispatcher for direct subscription',
         'SymfonyEventDispatcher adapter (#[AsEventListener])',
         'ObservabilitySetup helper (logging + Prometheus + Sentry)',
-        'Custom handlers for domain events',
     ],
     obsBtn:     'View observability guide →',
 
