@@ -5,8 +5,5 @@
   "copy-from-recipe": {
     "config/packages/integration_engine.yaml": "%CONFIG_DIR%/packages/",
     "src/Integration/.gitkeep": "%SRC_DIR%/Integration/"
-  },
-  "env": {
-    "INTEGRATION_ENGINE_CACHE": "cache.app"
   }
 }

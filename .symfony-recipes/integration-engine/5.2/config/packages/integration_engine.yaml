@@ -1,15 +1,17 @@
 integration_engine:
     integrations: {}
-    # cache_service: cache.app  # optional, default shown
-    # client_service: ~         # optional, for fully custom HTTP client
-    # connection_resolver: ~    # optional, for multi-tenant integrations
+    # One entry per external API, e.g.:
+    # my_api:
+    #     base_url: 'https://api.example.com'
+    #     config_path: '%kernel.project_dir%/src/Integration/MyApi/MyApi.yaml'
+    #     cache_service: ~          # optional, default: cache.app
+    #     client_service: ~         # optional, fully custom HTTP client
+    #     connection_resolver: ~    # optional, multi-tenant integrations
 
 services:
-  # Event dispatcher (required for observability)
-  IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher:
-    class: IntegrationEngine\Infrastructure\Lifecycle\SymfonyEventDispatcherAdapter
-    arguments:
-      - '@event_dispatcher'
-
-  # Optional: observability setup helper
-  # Generate with: php bin/console make:observability <integration_name>
+    # Lifecycle events (ActionStarted, ActionCompleted, ...) through Symfony's
+    # EventDispatcher, so #[AsEventListener] listeners receive them.
+    IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher:
+        class: IntegrationEngine\Infrastructure\Lifecycle\SymfonyEventDispatcherAdapter
+        arguments:
+            - '@event_dispatcher'
