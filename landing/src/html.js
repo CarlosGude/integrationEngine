@@ -303,9 +303,11 @@ MyApi/
     <p class="s-sub">${t.webhookSub}</p>
     <div class="example-panels">
 
+      <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.5rem; font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;"><span style="flex: 1; height: 1px; background: #ddd;"></span><strong>Without IntegrationEngine</strong><span style="flex: 1; height: 1px; background: #ddd;"></span></div>
+
       <!-- WEBHOOK ENTRY POINT: CONTROLLER -->
       <div class="example-code-panel">
-        <div class="file-label">1. Entry Point: POST /webhooks/shopify</div>
+        <div class="file-label">Step 1: Entry Point (manual verification &amp; storage)</div>
         <div class="code-block"><span class="cm">// WITHOUT ENGINE: Manual verification &amp; storage</span>
 <span class="kw">public function</span> <span class="fn">webhook</span>(<span class="cls">Request</span> <span class="var">$req</span>): <span class="cls">Response</span>
 {
@@ -335,7 +337,7 @@ MyApi/
 
       <!-- WEBHOOK PROCESSING: WITHOUT FRAMEWORK -->
       <div class="example-code-panel">
-        <div class="file-label">2. Process raw webhook → update</div>
+        <div class="file-label">Step 2: Worker job (process from DB, manual parsing &amp; update)</div>
         <div class="code-block"><span class="cm">// Worker job or command: Get raw data from DB</span>
 <span class="var">$webhook</span> = <span class="var">$this</span>-&gt;<span class="var">db</span>-&gt;<span class="fn">query</span>(<span class="str\">'SELECT * FROM webhooks WHERE processed=0'</span>);
 
@@ -355,9 +357,11 @@ MyApi/
 }</div>
       </div>
 
+      <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.5rem; margin-top: 2rem; font-size: 12px; color: #2f6fbd; text-transform: uppercase; letter-spacing: 0.5px;"><span style="flex: 1; height: 1px; background: #4a8fd4;"></span><strong>With IntegrationEngine</strong><span style="flex: 1; height: 1px; background: #4a8fd4;"></span></div>
+
       <!-- WITH ENGINE: 1. Configuration -->
       <div class="example-code-panel">
-        <div class="file-label">1. Configuration (YAML)</div>
+        <div class="file-label">Step 1: Configuration (YAML only)</div>
         <div class="code-block"><span class="key">webhooks</span>:
   <span class="key">products/update</span>:
     <span class="val">mapper_class</span>: App\\Shopify\\<span class="hl">ProductUpdatedMapper</span>
@@ -368,7 +372,7 @@ MyApi/
 
       <!-- WITH ENGINE: 2. Controller -->
       <div class="example-code-panel">
-        <div class="file-label">2. Controller: Entry Point (framework handles the rest)</div>
+        <div class="file-label">Step 2: Controller (framework handles signature, dedup, storage)</div>
         <div class="code-block"><span class="kw">final class</span> <span class="cls">ShopifyWebhookController</span>
 {
     <span class="kw">public function</span> <span class="fn">__construct</span>(
@@ -385,7 +389,7 @@ MyApi/
 
       <!-- WITH ENGINE: 3. Mapper -->
       <div class="example-code-panel">
-        <div class="file-label">3. Mapper: Parse + Update (automatic deduplication, transactional)</div>
+        <div class="file-label">Step 3: Mapper (parse payload, call business logic)</div>
         <div class="code-block"><span class="kw">final class</span> <span class="cls">ProductUpdatedMapper</span> <span class="kw">extends</span> <span class="cls">AbstractWebhookMapper</span>
 {
     <span class="kw">public function</span> <span class="fn">__construct</span>(<span class="kw">private</span> <span class="cls">InventoryService</span> <span class="var">$inventory</span>) {}
