@@ -25,7 +25,9 @@ use IntegrationEngine\Core\Dispatch\ResponseBuilder;
 use IntegrationEngine\Core\Lifecycle\ActionCompleted;
 use IntegrationEngine\Core\Lifecycle\ActionFailed;
 use IntegrationEngine\Core\Lifecycle\ActionStarted;
+use IntegrationEngine\Core\Lifecycle\HttpResponseReceived;
 use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
+use IntegrationEngine\Core\Lifecycle\ResponseMapped;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
 use Psr\Log\LoggerInterface;
@@ -104,8 +106,32 @@ final readonly class IntegrationEngine
                     cacheDiscriminator: $cacheDiscriminator,
                 );
             } else {
+                $httpStart = microtime(true);
                 $rawResponse = $client->send($action, $context, $headers);
+                $httpDuration = (microtime(true) - $httpStart) * 1000;
+
+                $this->eventDispatcher?->dispatch(new HttpResponseReceived(
+                    action: $action,
+                    integrationName: $this->integrationName,
+                    timestamp: $startTime,
+                    statusCode: (int) ($rawResponse['statusCode'] ?? 0),
+                    durationMs: $httpDuration,
+                ));
+
+                $mappingStart = microtime(true);
                 $response = $this->responseBuilder->build($action, $rawResponse['body'], $rawResponse['headers']);
+                $mappingDuration = (microtime(true) - $mappingStart) * 1000;
+
+                $totalDuration = (microtime(true) - $startTime) * 1000;
+                $this->eventDispatcher?->dispatch(new ResponseMapped(
+                    action: $action,
+                    integrationName: $this->integrationName,
+                    timestamp: $startTime,
+                    response: $response,
+                    httpDurationMs: $httpDuration,
+                    mappingDurationMs: $mappingDuration,
+                    totalDurationMs: $totalDuration,
+                ));
             }
 
             $duration = (microtime(true) - $startTime) * 1000;
