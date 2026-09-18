@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Core;
 
-use IntegrationEngine\Core\Auth\DynamicAuthHandler;
 use IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\Auth\StaticAuthorizationConfig;
+use IntegrationEngine\Core\Dispatch\AuthenticationHandler;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Tests\Fake\FakeContext;
 use IntegrationEngine\Tests\Fake\FakePathAction;
@@ -79,7 +79,7 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
         $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'injected_token']);
         $this->client->setResponse(FakeProtectedAction::getName(), []);
 
-        $injectedAuthHandler = new DynamicAuthHandler($this->config, $this->client, $this->cache, 'injected_integration');
+        $injectedAuthHandler = new AuthenticationHandler($this->config, $this->client, $this->cache, 'injected_integration');
 
         $engine = new IntegrationEngine(
             config: $this->config,

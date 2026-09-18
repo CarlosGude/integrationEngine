@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core;
 
-use IntegrationEngine\Core\Auth\DynamicAuthHandler;
 use IntegrationEngine\Core\Batch\BatchResult;
 use IntegrationEngine\Core\Batch\BatchResultCollection;
 use IntegrationEngine\Core\Batch\BatchTokenRetry;
@@ -19,6 +18,7 @@ use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\Connection\ConnectionResolverInterface;
 use IntegrationEngine\Core\Contract\Response\ResponseInterface;
+use IntegrationEngine\Core\Dispatch\AuthenticationHandler;
 use IntegrationEngine\Core\Dispatch\BatchDispatcher;
 use IntegrationEngine\Core\Dispatch\ConnectionResolver;
 use IntegrationEngine\Core\Dispatch\ResponseBuilder;
@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
 
 final readonly class IntegrationEngine
 {
-    private DynamicAuthHandler $authHandler;
+    private AuthenticationHandler $authHandler;
     private ConnectionResolver $dispatchConnectionResolver;
     private ResponseBuilder $responseBuilder;
     private BatchDispatcher $batchDispatcher;
@@ -43,11 +43,11 @@ final readonly class IntegrationEngine
         private CachePort $cache,
         private string $integrationName,
         private ?LoggerInterface $logger = null,
-        ?DynamicAuthHandler $authHandler = null,
+        ?AuthenticationHandler $authHandler = null,
         ?ConnectionResolverInterface $connectionResolver = null,
         private ?LifecycleEventDispatcher $eventDispatcher = null,
     ) {
-        $this->authHandler = $authHandler ?? new DynamicAuthHandler($config, $client, $cache, $integrationName, $logger);
+        $this->authHandler = $authHandler ?? new AuthenticationHandler($config, $client, $cache, $integrationName, $logger);
         $this->dispatchConnectionResolver = new ConnectionResolver($integrationName, $connectionResolver);
         $this->responseBuilder = new ResponseBuilder();
         $this->batchDispatcher = new BatchDispatcher($client, $integrationName, $logger);
