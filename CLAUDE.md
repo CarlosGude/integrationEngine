@@ -45,7 +45,11 @@ make stan PATHS='src/Core/IntegrationEngine.php'
 | `ResponseInterface` | DTO marker; must implement `toArray()`. Represents the external API shape, not domain objects |
 | `ActionContextInterface` | Carries dynamic values at call time (path params, filter values). Default: `DefaultActionContext` |
 | `ActionBodyInterface` | Request payload converted to JSON (REST) or GraphQL query. Also the source for body-sourced path placeholders (see Path Resolution) |
-| `IntegrationEngine` | Orchestrator: Config → Connection → Client → Mapper → Response. Also handles dynamic auth token caching |
+| `IntegrationEngine` | Orchestrator: Config → Connection → Client → Mapper → Response. Pure orchestration; delegates dispatch logic to internal helpers |
+| `AuthenticationHandler` | Internal: resolves dynamic tokens and caches them. Returns action with static auth token injected, or throws if token fetch fails |
+| `ConnectionResolver` | Internal: resolves opaque connection info to credentials, applies authorization overrides |
+| `ResponseBuilder` | Internal: builds typed responses, applies mappers, validates mapper/action pairing |
+| `BatchDispatcher` | Internal: groups batch requests by base URL, dispatches through appropriate client (batch or sequential), retries 401s with fresh tokens |
 | `IntegrationRegistry` | Service locator; returns the `IntegrationEngine` instance for a named integration |
 | `EngineRequest` | One request inside a batch: the same five `send()` arguments (incl. `connection`) as an immutable value object |
 | `BatchResult` | Outcome of one batch item: `isSuccess()`, `response()` (rethrows on failure), `error()` |
@@ -66,6 +70,8 @@ make stan PATHS='src/Core/IntegrationEngine.php'
 - **`MiddlewareClient`** — always wraps the HTTP adapter. Layer order (outermost → innermost): `CachingMiddleware` → user middlewares in declaration order → `TracingMiddleware` (debug only) → HTTP adapter. Always implements `BatchClientInterface` and `DynamicBaseUrlClientInterface`
 - **`RequestMiddlewareInterface`** — optional capability wired *inside* `SymfonyHttpClientAdapter`/`GraphQLClientAdapter` (not `client_service`), tagged `integration_engine.request_middleware`, declared under `request_middlewares:`. Runs on the resolved `Request` right before transport. When configured, `sendMany()` degrades to sequential `send()` calls (loses `BatchClientInterface` concurrency) so each item's middleware chain can observe/short-circuit its own response
 - **`CachePort`** — caches dynamic auth tokens with `get`/`set`/`delete` (`Psr6CacheAdapter` wrapping Symfony's PSR-6 cache)
+- **`MiddlewareResolver`** — DI extension helper: validates and resolves tagged middlewares and request middlewares from the DI container into integration-specific ordered lists
+- **`AdapterMapBuilder`** — DI extension helper: builds a type → class-string map from tagged client adapters, with validation that classes exist and implement `ClientAdapterInterface`
 
 ### Data Flow
 
@@ -94,6 +100,8 @@ Application services translate infrastructure DTOs to domain objects — DTOs mu
 ### Batch / Parallel Requests
 
 `sendMany(array<key, EngineRequest>): BatchResultCollection` executes a batch (mixed actions allowed), preserving the caller's keys. Individual failures never abort the batch — each key resolves to a success or failure `BatchResult`. `sendManyOrFail()` unwraps to `array<key, ResponseInterface>` instead, throwing the first failure in request order (the whole batch still executes). Requests run concurrently when the client implements `BatchClientInterface`; otherwise sequentially.
+
+**Sequential fallback**: When request middlewares are configured (`request_middlewares:` in integration config), concurrency is disabled — each request executes sequentially through its own middleware chain. This is by design: request middlewares may need to observe or short-circuit individual responses (e.g., OAuth 1.0a signing). Clients expose this via `sendManySequentially()` (private method, used internally when middleware chains are active).
 
 Dynamic auth in batches: the token is resolved once per token action (not per item). Items that entered the batch with a pre-batch cached token get the single 401 retry with one shared fresh token; a token fetched during the batch counts as fresh for every item, so their 401s are final.
 
