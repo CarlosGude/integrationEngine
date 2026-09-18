@@ -429,6 +429,60 @@ MyApi/
   </div>
 </section>
 
+<!-- OBSERVABILITY -->
+<section class="s-light">
+  <div class="container">
+    <div class="eyebrow">${t.obsEyebrow}</div>
+    <h2 class="s-heading">${t.obsH2}</h2>
+    <p class="s-sub">${t.obsSub}</p>
+    <div class="example-panels">
+
+      <!-- Step 1: Command -->
+      <div class="example-code-panel">
+        <div class="file-label">Step 1: Generate (one command)</div>
+        <div class="code-block"><span class="cm">$ php bin/console make:observability shopify</span>
+
+<span class="cm"># Generates:</span>
+<span class="str">src/Integration/Shopify/ShopifyObservabilitySetup.php</span></div>
+      </div>
+
+      <!-- Step 2: Configure -->
+      <div class="example-code-panel">
+        <div class="file-label">Step 2: Configure (async logging, zero overhead)</div>
+        <div class="code-block"><span class="cm"># config/packages/monolog.yaml</span>
+<span class="key">monolog</span>:
+  <span class="key">handlers</span>:
+    <span class="key">main</span>:
+      <span class="val">type</span>: buffer
+      <span class="val">handler</span>: stream
+      <span class="val">buffer_size</span>: 100  <span class="cm"># Batch logs</span>
+      <span class="val">level</span>: info       <span class="cm"># Production</span></div>
+      </div>
+
+      <!-- Step 3: Done -->
+      <div style="grid-column: 1 / -1;">
+        <div class="example-code-panel">
+          <div class="file-label">Step 3: Done (no code changes, automatic)</div>
+          <div class="code-block"><span class="cm">// Your integration service (unchanged)</span>
+<span class="kw">class</span> <span class="cls">ShopifyService</span> {
+    <span class="kw">public function</span> <span class="fn">syncProduct</span>() {
+        <span class="var">$this</span>-&gt;<span class="var">engine</span>-&gt;<span class="fn">send</span>(<span class="str">'GetProduct'</span>, ...);
+        <span class="cm">// ✓ Logs: action, duration, response type</span>
+        <span class="cm">// ✓ Metrics: Prometheus histogram</span>
+        <span class="cm">// ✓ Alerts: Slack if slow (&gt;3s)</span>
+        <span class="cm">// ✓ Errors: Sentry with full context</span>
+    }
+}</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="example-cta">
+      <a href="https://github.com/CarlosGude/integrationEngine/blob/main/OBSERVABILITY.md" target="_blank" rel="noopener" class="btn-primary">${t.obsBtn}</a>
+    </div>
+  </div>
+</section>
+
 <!-- EXTENSION POINTS -->
 <section class="s-dark ext-section">
   <div class="container">

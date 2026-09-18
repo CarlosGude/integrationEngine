@@ -168,6 +168,12 @@ export default {
     webhookSub:     'El mismo webhook llega a tu controller (POST /webhooks/shopify). Sin el engine: 50 líneas (verificación, cheques de duplicados, parsing, almacenamiento, jobs de worker, estado manual). Con IntegrationEngine: 1 config YAML + 1 mapper con nombres explícitos + haz el update adentro. Sin lógica de firmas, sin arrays crudos, sin jobs de worker, sin manejo manual de fallos—el framework automatiza todo.',
     webhookBtn:     'Ver guía de webhooks',
 
+    // Observability section
+    obsEyebrow: 'Observabilidad',
+    obsH2:      'Sabe qué está pasando en producción.',
+    obsSub:     'Logging automático, métricas y alertas sin boilerplate. Un comando genera el setup, la configuración hace el resto. Overhead de logging: +0.06ms por llamada (imperceptible). Solo métricas: +0.01ms por llamada. Logging async por defecto—sin penalidad de performance. Ve timing, errores y requests lentas en todas tus integraciones.',
+    obsBtn:     'Ver guía de observabilidad',
+
     // Thanks section
     thanksEyebrow: 'Antes de irte',
     thanksH2:      'Gracias por llegar hasta aquí.',
