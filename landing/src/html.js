@@ -355,29 +355,38 @@ MyApi/
 }</div>
       </div>
 
-      <!-- WITH ENGINE: MAPPER DOES IT ALL -->
+      <!-- WITH ENGINE: 1. Configuration -->
       <div class="example-code-panel">
-        <div class="file-label">With IntegrationEngine: Mapper handles the update directly</div>
-        <div class="code-block"><span class="cm">// 1. Configuration (YAML) — that's it</span>
-<span class="key">webhooks</span>:
+        <div class="file-label">1. Configuration (YAML)</div>
+        <div class="code-block"><span class="key">webhooks</span>:
   <span class="key">products/update</span>:
     <span class="val">mapper_class</span>: App\\Shopify\\<span class="hl">ProductUpdatedMapper</span>
     <span class="val">signature</span>:
       <span class="val">type</span>: hmac_sha256
-      <span class="val">header</span>: X-Shopify-Hmac-SHA256
+      <span class="val">header</span>: X-Shopify-Hmac-SHA256</div>
+      </div>
 
-<span class="cm">// 2. Entry point: POST /webhooks/shopify (automatic)</span>
-<span class="cm">// Incoming request → Framework automatically:</span>
-<span class="cm">//   • Extract signature from X-Shopify-Hmac-SHA256 header</span>
-<span class="cm">//   • Verify HMAC-SHA256 (throw 401 if invalid)</span>
-<span class="cm">//   • Check fingerprint cache (skip if duplicate)</span>
-<span class="cm">//   • Decode JSON payload</span>
-<span class="cm">//   • Call ProductUpdatedMapper->map($payload)</span>
-<span class="cm">//   • Track state: received → processing</span>
-<span class="cm">//   • Return HTTP 202 Accepted to Shopify</span>
+      <!-- WITH ENGINE: 2. Controller -->
+      <div class="example-code-panel">
+        <div class="file-label">2. Controller: Entry Point (framework handles the rest)</div>
+        <div class="code-block"><span class="kw">final class</span> <span class="cls">ShopifyWebhookController</span>
+{
+    <span class="kw">public function</span> <span class="fn">__construct</span>(
+        <span class="kw">private</span> <span class="cls">MultiPlatformWebhookController</span> <span class="var">$engine</span>
+    ) {}
 
-<span class="cm">// 3. Mapper: parses + updates (no separate listener needed)</span>
-<span class="kw">final class</span> <span class="cls">ProductUpdatedMapper</span> <span class="kw">extends</span> <span class="cls">AbstractWebhookMapper</span>
+    <span class="attribute">#[Route(</span><span class="str">'/webhooks/shopify'</span>, methods: [<span class="str">'POST'</span>]<span class="attribute">)]</span>
+    <span class="kw">public function</span> <span class="fn">ingest</span>(<span class="cls">Request</span> <span class="var">$request</span>): <span class="cls">Response</span>
+    {
+        <span class="kw">return</span> <span class="var">$this</span>-&gt;<span class="var">engine</span>-&gt;<span class="fn">ingest</span>(<span class="var">$request</span>, <span class="str">'shopify'</span>);
+    }
+}</div>
+      </div>
+
+      <!-- WITH ENGINE: 3. Mapper -->
+      <div class="example-code-panel">
+        <div class="file-label">3. Mapper: Parse + Update (automatic deduplication, transactional)</div>
+        <div class="code-block"><span class="kw">final class</span> <span class="cls">ProductUpdatedMapper</span> <span class="kw">extends</span> <span class="cls">AbstractWebhookMapper</span>
 {
     <span class="kw">public function</span> <span class="fn">__construct</span>(<span class="kw">private</span> <span class="cls">InventoryService</span> <span class="var">$inventory</span>) {}
 
@@ -387,14 +396,12 @@ MyApi/
         <span class="var">$productTitle</span> = <span class="var">$payload</span>[<span class="str\">'title'</span>];
         <span class="var">$productPrice</span> = (float) <span class="var">$payload</span>[<span class="str\">'price'</span>];
 
-        <span class="cm">// Do the update right here (transactional)</span>
         <span class="var">$this</span>-&gt;<span class="var">inventory</span>-&gt;<span class="fn">syncProduct</span>(
             <span class="var">$productId</span>,
             <span class="var">$productTitle</span>,
             <span class="var">$productPrice</span>
         );
 
-        <span class="cm">// Return event (framework handles storage, state tracking)</span>
         <span class="kw">return new</span> <span class="cls">ProductUpdated</span>(
             <span class="var">$productId</span>,
             <span class="var">$productTitle</span>,
