@@ -13,15 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 **Lifecycle Events & Observability** — Production-grade monitoring and debugging capabilities
 
-- **`ActionStarted` event**: Fired before each HTTP call with action metadata
-- **`ActionCompleted` event**: Fired after successful mapping with duration and response
-- **`ActionFailed` event**: Fired on errors (HTTP or mapping) with exception details
-- **`LifecycleEventDispatcher`**: Low-level event subscription API
-- **`SymfonyEventDispatcherAdapter`**: Bridges bundle events to Symfony EventDispatcher (`#[AsEventListener]`)
-- **`ObservabilitySetup` helper**: One-liner setup for logging, metrics, alerting (recommended)
+- **Core events**:
+  - **`ActionStarted`**: Fired before HTTP call with action metadata
+  - **`HttpResponseReceived`**: Fired after raw HTTP response (new in 5.2.0) — track API latency separately
+  - **`ResponseMapped`**: Fired after DTO mapping (new in 5.2.0) — break down HTTP vs. transformation time
+  - **`ActionCompleted`**: Fired after successful mapping with duration and response
+  - **`ActionFailed`**: Fired on errors (HTTP or mapping) with exception details
+- **Infrastructure**:
+  - **`LifecycleEventDispatcher`**: Low-level event subscription API
+  - **`SymfonyEventDispatcherAdapter`**: Bridges bundle events to Symfony EventDispatcher (`#[AsEventListener]`)
+  - **`ObservabilitySetup` helper**: One-liner setup for logging, metrics, alerting (recommended)
 - **Built-in observability examples**:
   - **Logging**: Custom logger with action metadata (integration name, duration, status)
   - **Prometheus metrics**: HTTP request counter, duration histogram, error rate gauge
+  - **Detailed timing**: Separate gauges for HTTP latency, DTO mapping time, overhead
   - **Sentry integration**: Capture errors with context (action, integration, response status)
   - **Audit trails**: Immutable event log for compliance and debugging
 

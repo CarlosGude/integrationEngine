@@ -440,6 +440,62 @@ ObservabilitySetup::register($dispatcher, $logger, [
 
 ---
 
+## Detailed Timing: HTTP vs. Mapping
+
+When you need to identify performance bottlenecks precisely, subscribe to intermediate timing events.
+
+### The Events
+
+**ActionStarted** → (HTTP call) → **HttpResponseReceived** → (DTO mapping) → **ResponseMapped** → (final checks) → **ActionCompleted**
+
+- **ActionStarted:** before anything (baseline t=0)
+- **HttpResponseReceived:** after raw HTTP response arrives
+  - `statusCode()` — HTTP status
+  - `durationMs()` — time spent in network + API processing
+- **ResponseMapped:** after DTO mapping is complete
+  - `httpDurationMs()` — same as HttpResponseReceived duration
+  - `mappingDurationMs()` — time spent transforming response to DTO
+  - `totalDurationMs()` — time since ActionStarted
+
+### Example: Tracking Bottlenecks
+
+```php
+#[AsEventListener(event: ResponseMapped::class)]
+public function onResponseMapped(ResponseMapped $event): void
+{
+    $httpTime = $event->httpDurationMs();       // External API latency
+    $mappingTime = $event->mappingDurationMs();  // Transformation cost
+    $overhead = $event->totalDurationMs() - $httpTime - $mappingTime;
+    
+    // Track each separately
+    $this->prometheus->gauge('shopify.http_ms', $httpTime);
+    $this->prometheus->gauge('shopify.mapping_ms', $mappingTime);
+    $this->prometheus->gauge('shopify.overhead_ms', $overhead);
+    
+    // Or alert on specific bottlenecks
+    if ($mappingTime > 100) {
+        $this->logger->warning('Slow DTO mapping', [
+            'action' => $event->action()->getName(),
+            'mapping_ms' => $mappingTime,
+        ]);
+    }
+}
+```
+
+### Use Cases
+
+| Metric | Slow When | Action |
+|--------|-----------|--------|
+| `http_ms` high | External API is slow | Check API provider, optimize query |
+| `mapping_ms` high | Transformation is expensive | Cache parsed results, profile mapper |
+| `overhead_ms` high | Auth/config/middleware is expensive | Optimize middleware chain, cache auth tokens |
+
+### Note
+
+Intermediate timing events are only fired for **direct HTTP calls** (non-dynamic-auth requests where we control the full flow). When using dynamic authentication, the token fetch overhead is included in `ActionCompleted::durationMs()` but not broken down.
+
+---
+
 ## Next Steps
 
 1. **Generate** observability setup: `php bin/console make:observability shopify`
