@@ -459,58 +459,101 @@ MyApi/
     </div>
     <div class="example-panels">
 
-      <!-- Step 1: Command -->
+      <!-- Step 1: Generate -->
       <div class="example-code-panel">
-        <div class="file-label">Step 1: Generate (one command)</div>
+        <div class="file-label">Step 1: One command generates everything</div>
         <div class="code-block"><span class="cm">$ php bin/console make:observability shopify</span>
-
-<span class="cm"># Generates:</span>
-<span class="str">src/Integration/Shopify/ShopifyObservabilitySetup.php</span></div>
+<span class="cm"></span>
+<span class="cm">Generates:</span>
+<span class="str">src/Integration/Shopify/ShopifyObservabilitySetup.php</span>
+<span class="cm">Updated: config/services.yaml</span></div>
       </div>
 
-      <!-- Step 2: Configure -->
-      <div class="example-code-panel">
-        <div class="file-label">Step 2: Configure (async logging, zero overhead)</div>
-        <div class="code-block"><span class="cm"># config/packages/monolog.yaml</span>
-<span class="key">monolog</span>:
-  <span class="key">handlers</span>:
-    <span class="key">main</span>:
-      <span class="val">type</span>: buffer
-      <span class="val">handler</span>: stream
-      <span class="val">buffer_size</span>: 100  <span class="cm"># Batch logs</span>
-      <span class="val">level</span>: info       <span class="cm"># Production</span></div>
-      </div>
-
-      <!-- Step 3: Real Example -->
+      <!-- Step 2: The generated class -->
       <div style="grid-column: 1 / -1;">
         <div class="example-code-panel">
-          <div class="file-label">Step 3: Listen to lifecycle events (no code changes needed)</div>
-          <div class="code-block"><span class="cm">// 3 lifecycle events. Listeners auto-discovered by Symfony.</span>
-<span class="cm"></span>
-<span class="cm">// 1. Request starts</span>
-<span class="attr">#[AsEventListener(event: ActionStarted::class)]</span>
-<span class="kw">public function</span> <span class="fn">onActionStarted</span>(<span class="cls">ActionStarted</span> <span class="var">$event</span>): <span class="kw">void</span>
+          <div class="file-label">Step 2: Generated class with 3 observability layers</div>
+          <div class="code-block"><span class="kw">class</span> <span class="cls">ShopifyObservabilitySetup</span>
 {
-    <span class="var">$this</span>-&gt;<span class="var">logger</span>-&gt;<span class="fn">info</span>(<span class="str\"'Calling '</span> . <span class="var">$event</span>-&gt;<span class="fn">action</span>()-&gt;<span class="fn">getName</span>());
-}
+    <span class="kw">public function</span> <span class="fn">__construct</span>(
+        <span class="kw">private</span> <span class="cls">LoggerInterface</span> <span class="var">$logger</span>,
+        <span class="cm">// private PrometheusRegistry $prometheus,</span>
+        <span class="cm">// private SlackNotifier $slack,</span>
+    ) {}
 
-<span class="cm">// 2. Request succeeds</span>
-<span class="attr">#[AsEventListener(event: ActionCompleted::class)]</span>
-<span class="kw">public function</span> <span class="fn">onActionCompleted</span>(<span class="cls">ActionCompleted</span> <span class="var">$event</span>): <span class="kw">void</span>
-{
-    <span class="var">$duration</span> = <span class="var">$event</span>-&gt;<span class="fn">durationMs</span>();
-    <span class="kw">if</span> (<span class="var">$duration</span> &gt; 3000) {
-        <span class="var">$this</span>-&gt;<span class="var">slack</span>-&gt;<span class="fn">alert</span>(<span class="str\"'⚠ Slow: '</span> . <span class="var">$event</span>-&gt;<span class="fn">action</span>()-&gt;<span class="fn">getName</span>());
+    <span class="kw">public function</span> <span class="fn">register</span>(<span class="cls">LifecycleEventDispatcher</span> <span class="var">$dispatcher</span>): <span class="kw">void</span>
+    {
+        <span class="cm">// Layer 1: Auto-logging (ActionStarted, ActionCompleted, ActionFailed)</span>
+        <span class="cls">ObservabilitySetup</span>::<span class="fn">register</span>(<span class="var">$dispatcher</span>, <span class="var">$this</span>-&gt;<span class="var">logger</span>, [
+            <span class="str\">'logging'</span> =&gt; <span class="kw">true</span>,
+            <span class="str\">'slow_request_threshold_ms'</span> =&gt; 3000,
+            <span class="str\">'integration_filter'</span> =&gt; <span class="str\"'shopify'</span>,
+        ]);
+
+        <span class="cm">// Layer 2: Metrics (ActionCompleted + ActionFailed)</span>
+        <span class="cls">ObservabilitySetup</span>::<span class="fn">register</span>(<span class="var">$dispatcher</span>, <span class="var">$this</span>-&gt;<span class="var">logger</span>, [
+            <span class="str\"'metrics_callback'</span> =&gt; <span class="fn">fn</span>(<span class="var">$e</span>) =&gt; <span class="var">$this</span>-&gt;<span class="fn">recordMetrics</span>(<span class="var">$e</span>),
+            <span class="str\"'integration_filter'</span> =&gt; <span class="str\"'shopify'</span>,
+        ]);
+
+        <span class="cm">// Layer 3: Errors (ActionFailed)</span>
+        <span class="cls">ObservabilitySetup</span>::<span class="fn">register</span>(<span class="var">$dispatcher</span>, <span class="var">$this</span>-&gt;<span class="var">logger</span>, [
+            <span class="str\"'error_callback'</span> =&gt; <span class="fn">fn</span>(<span class="var">$e</span>) =&gt; <span class="var">$this</span>-&gt;<span class="fn">recordError</span>(<span class="var">$e</span>),
+            <span class="str\"'integration_filter'</span> =&gt; <span class="str\"'shopify'</span>,
+        ]);
     }
-    <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">record</span>(<span class="var">$event</span>-&gt;<span class="fn">action</span>()-&gt;<span class="fn">getName</span>(), <span class="var">$duration</span>);
-}
 
-<span class="cm">// 3. Request fails</span>
-<span class="attr">#[AsEventListener(event: ActionFailed::class)]</span>
-<span class="kw">public function</span> <span class="fn">onActionFailed</span>(<span class="cls">ActionFailed</span> <span class="var">$event</span>): <span class="kw">void</span>
+    <span class="kw">private function</span> <span class="fn">recordMetrics</span>(<span class="var">$event</span>): <span class="kw">void</span>
+    {
+        <span class="cm">// Uncomment and fill:</span>
+        <span class="cm">// $this->prometheus->histogram(</span>
+        <span class="cm">//     'shopify_api_duration_ms',</span>
+        <span class="cm">//     $event->durationMs(),</span>
+        <span class="cm">//     ['action' => $event->action()->getName()]</span>
+        <span class="cm">// );</span>
+    }
+
+    <span class="kw">private function</span> <span class="fn">recordError</span>(<span class="cls">ActionFailed</span> <span class="var">$event</span>): <span class="kw">void</span>
+    {
+        <span class="cm">// Uncomment and fill:</span>
+        <span class="cm">// \Sentry\captureException($event->error(), [</span>
+        <span class="cm">//     'tags' => ['integration' => 'shopify'],</span>
+        <span class="cm">//     'extra' => ['duration_ms' => $event->durationMs()],</span>
+        <span class="cm">// ]);</span>
+    }
+}</div>
+        </div>
+      </div>
+
+      <!-- Step 3: Wiring -->
+      <div class="example-code-panel">
+        <div class="file-label">Step 3: Auto-wired in services.yaml</div>
+        <div class="code-block"><span class="key">app.shopify.observability</span>:
+    <span class="key">class</span>: <span class="val">App\Integration\Shopify\ShopifyObservabilitySetup</span>
+    <span class="key">calls</span>:
+      - [<span class="fn">register</span>, [<span class="str\"'@IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher'</span>, <span class="str\"'@logger'</span>]]</div>
+      </div>
+
+      <!-- Step 4: Optional scaling -->
+      <div style="grid-column: 1 / -1;">
+        <div class="example-code-panel">
+          <div class="file-label">Step 4 (optional): Extract to handlers for clarity</div>
+          <div class="code-block"><span class="cm">// As your observability grows, split into handlers</span>
+<span class="kw">class</span> <span class="cls">ShopifyObservabilitySetup</span>
 {
-    <span class="var">$this</span>-&gt;<span class="var">sentry</span>-&gt;<span class="fn">captureException</span>(<span class="var">$event</span>-&gt;<span class="fn">error</span>());
-    <span class="var">$this</span>-&gt;<span class="var">logger</span>-&gt;<span class="fn">error</span>(<span class="str\"'Failed: '</span> . <span class="var">$event</span>-&gt;<span class="fn">error</span>()-&gt;<span class="fn">getMessage</span>());
+    <span class="kw">public function</span> <span class="fn">__construct</span>(
+        <span class="kw">private</span> <span class="cls">LoggerInterface</span> <span class="var">$logger</span>,
+        <span class="kw">private</span> <span class="cls">MetricsHandler</span> <span class="var">$metrics</span>,
+        <span class="kw">private</span> <span class="cls">ErrorHandler</span> <span class="var">$errors</span>,
+    ) {}
+
+    <span class="kw">public function</span> <span class="fn">register</span>(<span class="cls">LifecycleEventDispatcher</span> <span class="var">$dispatcher</span>): <span class="kw">void</span>
+    {
+        <span class="cls">ObservabilitySetup</span>::<span class="fn">register</span>(<span class="var">$dispatcher</span>, <span class="var">$this</span>-&gt;<span class="var">logger</span>, [
+            <span class="str\"'metrics_callback'</span> =&gt; <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">record</span>(...),
+            <span class="str\"'error_callback'</span> =&gt; <span class="var">$this</span>-&gt;<span class="var">errors</span>-&gt;<span class="fn">handle</span>(...),
+        ]);
+    }
 }</div>
         </div>
       </div>
