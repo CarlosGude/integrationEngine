@@ -36,12 +36,26 @@ final readonly class WebhookContext
         return str_replace(' ', '', ucwords(str_replace(['.', '_', '-'], ' ', $this->event))).'RequestParser';
     }
 
+    public function mapperClassName(): string
+    {
+        return $this->eventClassName().'Mapper';
+    }
+
+    /**
+     * Namespace of the generated classes. Mirrors generationPath() so the
+     * files are PSR-4 autoloadable.
+     */
+    public function namespace(): string
+    {
+        return $this->baseNamespace.'\\'.ucfirst($this->integration);
+    }
+
     /**
      * Get the fully qualified event class name.
      */
     public function eventClassFqn(): string
     {
-        return $this->baseNamespace.'\\'.$this->eventClassName();
+        return $this->namespace().'\\'.$this->eventClassName();
     }
 
     /**
@@ -49,7 +63,7 @@ final readonly class WebhookContext
      */
     public function parserClassFqn(): string
     {
-        return $this->baseNamespace.'\\'.$this->parserClassName();
+        return $this->namespace().'\\'.$this->parserClassName();
     }
 
     /**

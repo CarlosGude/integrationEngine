@@ -22,6 +22,13 @@ services:
             - '../../../Infrastructure/Client/MiddlewareClient.php'
             - '../../../Infrastructure/Cache/CachingMiddleware.php'
             - '../../../Infrastructure/Debug/TracingMiddleware.php'
+            # Need app-provided wiring (a webhook secret, WebhookMapperResolverPort
+            # and WebhookDlqPort implementations). Autoconfigure tags them as a
+            # controller / message handler, which keeps them in the container and
+            # breaks compilation in any app that doesn't provide that wiring.
+            # Apps register them explicitly when they use them.
+            - '../../../Infrastructure/Webhook/Controller/'
+            - '../../../Infrastructure/Webhook/Handler/'
 
     # Built-in adapters — explicitly registered.
     # To add a custom adapter, tag your service with integration_engine.client_adapter

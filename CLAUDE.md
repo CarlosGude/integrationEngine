@@ -189,10 +189,7 @@ Tap into integration lifecycle for observability. See **[LIFECYCLE.md](./LIFECYC
 
 For **receiving** webhooks from external platforms (Shopify, WooCommerce, etc.), see **[WEBHOOK.md](./WEBHOOK.md)**. It covers:
 
-- Multi-platform webhook routing and signature verification
-- Event discovery & payload mapping
-- Idempotency & replay protection
-- Dead-letter queue for failed webhooks
-- State machine & audit trails
-- Async processing via Symfony Messenger
-- Step-by-step guide for adding new platforms
+- How the bundle plugs into Symfony's Webhook component: `IntegrationWebhookRequestParser` → `#[AsRemoteEventConsumer]` → `WebhookEventDispatcher` → typed event listeners
+- Signature verifiers (HMAC, Stripe timestamped HMAC, Shopify, WooCommerce) and payload mapping
+- Contracts shipped without a built-in adapter: idempotency, dead-letter queue, audit trail, Messenger handler
+- Step-by-step guide and end-to-end test example

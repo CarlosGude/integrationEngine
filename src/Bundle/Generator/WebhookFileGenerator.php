@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace IntegrationEngine\Bundle\Generator;
 
 /**
- * Generates webhook event DTO and request parser files.
+ * Generates webhook event DTO, mapper and request parser files.
  *
  * @author Carlos Gude
  */
@@ -22,13 +22,14 @@ final class WebhookFileGenerator
 
         return [
             $generationPath.'/'.$ctx->eventClassName().'.php' => $this->generateEventFile($ctx),
+            $generationPath.'/'.$ctx->mapperClassName().'.php' => $this->generateMapperFile($ctx),
             $generationPath.'/'.$ctx->parserClassName().'.php' => $this->generateParserFile($ctx),
         ];
     }
 
     private function generateEventFile(WebhookContext $ctx): string
     {
-        $namespace = $ctx->baseNamespace;
+        $namespace = $ctx->namespace();
         $className = $ctx->eventClassName();
 
         return <<<PHP
@@ -57,10 +58,9 @@ PHP;
 
     private function generateParserFile(WebhookContext $ctx): string
     {
-        $namespace = $ctx->baseNamespace;
+        $namespace = $ctx->namespace();
         $className = $ctx->parserClassName();
-        $eventClassName = $ctx->eventClassName();
-        $eventClassFqn = $ctx->eventClassFqn();
+        $mapperClassName = $ctx->mapperClassName();
         $integration = $ctx->integration;
         $event = $ctx->event;
         $headerName = $ctx->headerName;
@@ -86,7 +86,7 @@ use IntegrationEngine\\Infrastructure\\Webhook\\IntegrationWebhookRequestParser;
  * Extends IntegrationWebhookRequestParser to handle incoming webhook requests
  * from {$integration}, verify their signatures, and map to typed event DTOs.
  */
-final readonly class {$className} extends IntegrationWebhookRequestParser
+final class {$className} extends IntegrationWebhookRequestParser
 {
     public function __construct(
         private SignatureVerifierInterface \$verifier,
@@ -100,7 +100,7 @@ final readonly class {$className} extends IntegrationWebhookRequestParser
 
     public function getMapper(): AbstractWebhookMapper
     {
-        return new {$eventClassName}Mapper();
+        return new {$mapperClassName}();
     }
 
     protected function getSignatureVerifier(): SignatureVerifierInterface
@@ -113,24 +113,39 @@ final readonly class {$className} extends IntegrationWebhookRequestParser
         return \$this->secret;
     }
 }
+PHP;
+    }
+
+    private function generateMapperFile(WebhookContext $ctx): string
+    {
+        $namespace = $ctx->namespace();
+        $className = $ctx->mapperClassName();
+        $eventClassName = $ctx->eventClassName();
+
+        return <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace {$namespace};
+
+use IntegrationEngine\\Core\\Contract\\Webhook\\AbstractWebhookMapper;
 
 /**
- * Mapper for {$eventClassName}.
- *
- * Maps raw webhook payload to the typed event DTO.
+ * Maps the raw {$ctx->integration}.{$ctx->event} payload to {$eventClassName}.
  */
-final class {$eventClassName}Mapper extends AbstractWebhookMapper
+final class {$className} extends AbstractWebhookMapper
 {
     public function getDefinition(): string
     {
-        return '{$event}';
+        return '{$ctx->event}';
     }
 
     public function map(array \$payload, array \$headers): {$eventClassName}
     {
         return new {$eventClassName}(
             id: (string) (\$payload['id'] ?? ''),
-            type: (string) (\$payload['type'] ?? '{$event}'),
+            type: (string) (\$payload['type'] ?? '{$ctx->event}'),
         );
     }
 }
