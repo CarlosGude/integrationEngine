@@ -257,3 +257,19 @@ Controller → ApplicationService → IntegrationFacade → Engine
 If the external API changes a field name or type, only the DTO, its mapper, and the
 application service's translation code need to change. Domain objects and domain logic
 are unaffected.
+
+---
+
+## Inbound Webhooks (v5.1.0+)
+
+IntegrationEngine also supports **receiving** webhooks from external platforms
+(Shopify, WooCommerce, etc.). The webhook framework provides:
+
+- **Multi-platform routing** — single endpoint handles multiple platforms
+- **Signature verification** — HMAC-based validation, extensible per platform
+- **Event mapping** — transform webhook payloads into typed DTOs
+- **Idempotency** — automatic duplicate detection (24h fingerprint window)
+- **Reliability** — dead-letter queue for failed webhooks, state machine for lifecycle tracking
+- **Async processing** — Symfony Messenger integration for non-blocking handling
+
+→ **[Inbound Webhooks Guide](./WEBHOOK.md)** — complete documentation for receiving and processing webhooks from external APIs.

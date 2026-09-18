@@ -559,3 +559,11 @@ The decisions above are also documented in the [`docs/adr/`](docs/adr/) director
 - [ADR 0008](docs/adr/0008-no-messenger-bridge-in-the-bundle.md) — No Messenger bridge in the bundle
 
 See [`docs/adr/README.md`](docs/adr/README.md) for a full index and guidance on reading ADRs.
+
+---
+
+## Inbound Webhooks
+
+This document covers **outbound** integrations — calling external APIs via HTTP. For
+**inbound** webhook processing (receiving events from external platforms like Shopify,
+WooCommerce, etc.), see **[WEBHOOK.md](./WEBHOOK.md)** and its architecture section.
