@@ -9,6 +9,7 @@ use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Action\GraphQLBodyInterface;
 use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
+use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
 use IntegrationEngine\Core\Contract\Client\Request;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
@@ -17,7 +18,7 @@ use IntegrationEngine\Core\Exception\RequestResponseException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface as HttpResponseInterface;
 
-final readonly class GraphQLClientAdapter implements BatchClientInterface, DynamicBaseUrlClientInterface
+final readonly class GraphQLClientAdapter implements ClientAdapterInterface, BatchClientInterface, DynamicBaseUrlClientInterface
 {
     use ResolvesAuthHeaders;
     use RunsRequestMiddlewares;

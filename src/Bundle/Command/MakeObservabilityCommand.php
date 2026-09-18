@@ -196,6 +196,7 @@ PHP;
         $content = file_get_contents($path);
         if (false === $content) {
             $io->error("Could not read {$path}");
+
             return;
         }
 
