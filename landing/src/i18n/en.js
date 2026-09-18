@@ -170,8 +170,8 @@ export default {
 
     // Observability section
     obsEyebrow: 'Observability',
-    obsH2:      'Know what\'s happening in production.',
-    obsSub:     'Automatic logging, metrics, and alerts without boilerplate. One command generates the setup, then configuration handles the rest. Logging overhead: +0.06ms per call (unmeasurable). Metrics only: +0.01ms per call. Async logging by default—no performance penalty. See timing, errors, and slow requests across your integrations.',
+    obsH2:      'Log every API call automatically.',
+    obsSub:     'One command to set up logging, metrics, and alerts. Logs every request with status, response time, and errors. Optional: wire Prometheus metrics or Slack alerts for slow requests (>3s). Async logging by default — no performance overhead (0.06ms per call, unmeasurable).',
     obsBtn:     'View observability guide',
 
     // Thanks section
