@@ -303,81 +303,87 @@ MyApi/
     <p class="s-sub">${t.webhookSub}</p>
     <div class="example-panels">
 
-      <!-- YAML -->
-      <div class="struct-panel">
-        <div class="struct-header">SHOPIFY.YAML</div>
-        <pre><span class="key">webhooks</span>:
-  <span class="key">products/update</span>:
-    <span class="val">event_type</span>: products/update
-    <span class="val">mapper_class</span>: App\\...\\<span class="hl">ProductUpdatedMapper</span>
-    <span class="val">signature</span>:
-      <span class="val">type</span>: <span class="hl">hmac_sha256</span>
-      <span class="val">header</span>: X-Shopify-Hmac-SHA256
-
-  <span class="key">orders/create</span>:
-    <span class="val">event_type</span>: orders/create
-    <span class="val">mapper_class</span>: App\\...\\<span class="hl">OrderCreatedMapper</span>
-    <span class="val">signature</span>:
-      <span class="val">type</span>: hmac_sha256
-      <span class="val">header</span>: X-Shopify-Hmac-SHA256</pre>
-      </div>
-
-      <!-- MAPPER -->
+      <!-- WEBHOOK ENTRY POINT: CONTROLLER -->
       <div class="example-code-panel">
-        <div class="file-label">ProductUpdatedMapper.php</div>
-        <div class="code-block"><span class="kw">final class</span> <span class="cls">ProductUpdatedMapper</span> <span class="kw">extends</span> <span class="cls">AbstractWebhookMapper</span>
+        <div class="file-label">1. Entry Point: POST /webhooks/shopify</div>
+        <div class="code-block"><span class="cm">// WITHOUT ENGINE: Manual verification &amp; storage</span>
+<span class="kw">public function</span> <span class="fn">webhook</span>(<span class="cls">Request</span> <span class="var">$req</span>): <span class="cls">Response</span>
 {
-    <span class="kw">public function</span> <span class="fn">getDefinition</span>(): <span class="cls">string</span>
-    {
-        <span class="kw">return</span> <span class="str">'products/update'</span>;
+    <span class="var">$body</span> = <span class="var">$req</span>-&gt;<span class="fn">getContent</span>();
+    <span class="var">$sig</span> = <span class="var">$req</span>-&gt;headers-&gt;<span class="fn">get</span>(<span class="str">'X-Shopify-Hmac-SHA256'</span>);
+
+    <span class="cm">// Verify signature (easy to get wrong)</span>
+    <span class="kw">if</span> (!hash_equals(
+        base64_encode(hash_hmac(<span class="str">'sha256'</span>, $body, $secret, <span class="kw">true</span>)),
+        <span class="var">$sig</span>
+    )) { <span class="kw">throw new</span> <span class="cls">BadRequestHttpException</span>; }
+
+    <span class="cm">// Check duplicates manually (if you remember)</span>
+    <span class="var">$fingerprint</span> = md5($body);
+    <span class="kw">if</span> (<span class="var">$this</span>-&gt;<span class="var">cache</span>-&gt;<span class="fn">has</span>(<span class="var">$fingerprint</span>)) {
+        <span class="kw">return new</span> <span class="cls">Response</span>(<span class="str\">''</span>, 200); <span class="cm">// silent duplicate</span>
     }
 
-    <span class="kw">public function</span> <span class="fn">map</span>(<span class="cls">array</span> <span class="var">$payload</span>): <span class="cls">WebhookEventInterface</span>
-    {
-        <span class="kw">return new</span> <span class="cls">ProductUpdated</span>(
-            <span class="key">id</span>: <span class="var">$payload</span>[<span class="str">'id'</span>],
-            <span class="key">title</span>: <span class="var">$payload</span>[<span class="str">'title'</span>],
-            <span class="key">price</span>: (float) <span class="var">$payload</span>[<span class="str">'price'</span>],
-        );
-    }
+    <span class="cm">// Parse &amp; store manually</span>
+    <span class="var">$payload</span> = json_decode($body, <span class="kw">true</span>);
+    <span class="var">$this</span>-&gt;<span class="var">db</span>-&gt;<span class="fn">insert</span>(<span class="str\">'webhooks'</span>, <span class="var">$payload</span>);
+    <span class="var">$this</span>-&gt;<span class="var">cache</span>-&gt;<span class="fn">set</span>(<span class="var">$fingerprint</span>, <span class="kw">true</span>, 86400);
+
+    <span class="kw">return new</span> <span class="cls">Response</span>(<span class="str\">''</span>, 202);
 }</div>
       </div>
 
-      <!-- WITHOUT PATTERN -->
+      <!-- WEBHOOK PROCESSING: WITHOUT FRAMEWORK -->
       <div class="example-code-panel">
-        <div class="file-label">Without the pattern: raw webhook</div>
-        <div class="code-block"><span class="cm">// Verify signature manually (easy to get wrong)</span>
-<span class="kw">if</span> (!hash_equals(
-    base64_encode(hash_hmac(<span class="str">'sha256'</span>, $body, $secret, <span class="kw">true</span>)),
-    $request-&gt;headers-&gt;<span class="fn">get</span>(<span class="str">'X-Shopify-Hmac-SHA256'</span>)
-)) { <span class="kw">throw new</span> <span class="cls">InvalidSignatureException</span>; }
+        <div class="file-label">2. Process raw webhook → update</div>
+        <div class="code-block"><span class="cm">// Worker job or command: Get raw data from DB</span>
+<span class="var">$webhook</span> = <span class="var">$this</span>-&gt;<span class="var">db</span>-&gt;<span class="fn">query</span>(<span class="str\">'SELECT * FROM webhooks WHERE processed=0'</span>);
 
-<span class="cm">// Check for duplicates manually (if you remember)</span>
-<span class="cm">// Parse the raw array (arrays leak everywhere)</span>
-<span class="var">$payload</span> = json_decode($body, <span class="kw">true</span>);
-<span class="var">$id</span> = <span class="var">$payload</span>[<span class="str\">'id'</span>];
-<span class="var">$title</span> = <span class="var">$payload</span>[<span class="str\">'title'</span>];
-<span class="var">$price</span> = <span class="var">$payload</span>[<span class="str\">'price'</span>]; <span class="cm">// What if API renames this?</span>
+<span class="kw">foreach</span> (<span class="var">$webhook</span> <span class="kw">as</span> <span class="var">$row</span>) {
+    <span class="cm">// Parse again (already parsed above, but here we go)</span>
+    <span class="var">$payload</span> = json_decode(<span class="var">$row</span>[<span class="str\">'body'</span>], <span class="kw">true</span>);
 
-<span class="kw">echo</span> <span class="var">$title</span>; <span class="cm">// Now it's in your domain code</span></div>
+    <span class="cm">// Raw array accessed directly (bad)</span>
+    <span class="var">$id</span> = <span class="var">$payload</span>[<span class="str\">'id'</span>];
+    <span class="var">$title</span> = <span class="var">$payload</span>[<span class="str\">'title'</span>];
+    <span class="var">$price</span> = (float) <span class="var">$payload</span>[<span class="str\">'price'</span>];
+
+    <span class="cm">// Do the actual update</span>
+    <span class="var">$this</span>-&gt;<span class="var">inventory</span>-&gt;<span class="fn">syncProduct</span>(<span class="var">$id</span>, <span class="var">title</span>, <span class="var">$price</span>);
+
+    <span class="var">$this</span>-&gt;<span class="var">db</span>-&gt;<span class="fn">update</span>(<span class="str\">'webhooks'</span>, [<span class="str\">'processed'</span> =&gt; 1]);
+}</div>
       </div>
 
-      <!-- WITH PATTERN -->
+      <!-- WITH ENGINE: CONFIGURATION ONLY -->
       <div class="example-code-panel">
-        <div class="file-label">With IntegrationEngine: automatic, typed, reliable</div>
-        <div class="code-block"><span class="cm">// Framework handles everything:</span>
-<span class="cm">// ✓ HMAC signature verification</span>
-<span class="cm">// ✓ Duplicate detection (24h fingerprint)</span>
-<span class="cm">// ✓ Typed DTO (only raw field access is in Mapper)</span>
-<span class="cm">// ✓ Failed webhooks → dead-letter queue (replayable)</span>
-<span class="cm">// ✓ State machine (received → processing → success)</span>
+        <div class="file-label">With IntegrationEngine: Same flow, different code</div>
+        <div class="code-block"><span class="cm">// 1. Configuration (YAML) — done once</span>
+<span class="key">webhooks</span>:
+  <span class="key">products/update</span>:
+    <span class="val">mapper_class</span>: App\\...\\<span class="hl">ProductUpdatedMapper</span>
+    <span class="val">signature</span>:
+      <span class="val">type</span>: hmac_sha256
+      <span class="val">header</span>: X-Shopify-Hmac-SHA256
 
-<span class="kw">class</span> <span class="cls">ProductUpdatedListener</span>
+<span class="cm">// 2. Entry point (Controller) — 1 line</span>
+POST /webhooks/shopify → <span class="hl">IntegrationEngine handles everything</span>
+
+<span class="cm">// 3. Your mapper — raw → typed</span>
+<span class="kw">final class</span> <span class="cls">ProductUpdatedMapper</span> <span class="kw">extends</span> <span class="cls">AbstractWebhookMapper</span>
 {
-    <span class="kw">public function</span> <span class="fn">onProductUpdated</span>(<span class="cls">ProductUpdated</span> <span class="var">$event</span>): <span class="cls">void</span>
+    <span class="kw">public function</span> <span class="fn">map</span>(<span class="cls">array</span> <span class="var">$p</span>): <span class="cls">ProductUpdated</span>
     {
-        <span class="var">$this</span>-&gt;<span class="var">inventory</span>-&gt;<span class="fn">syncProduct</span>(<span class="var">$event</span>-&gt;<span class="var">id</span>, <span class="var">$event</span>-&gt;<span class="var">price</span>);
+        <span class="kw">return new</span> <span class="cls">ProductUpdated</span>(
+            <span class="var">$p</span>[<span class="str\">'id'</span>], <span class="var">$p</span>[<span class="str\">'title'</span>], (float) <span class="var">$p</span>[<span class="str\">'price'</span>]
+        );
     }
+}
+
+<span class="cm">// 4. Your listener — just business logic</span>
+<span class="kw">public function</span> <span class="fn">onProductUpdated</span>(<span class="cls">ProductUpdated</span> <span class="var">$e</span>): <span class="cls">void</span>
+{
+    <span class="var">$this</span>-&gt;<span class="var">inventory</span>-&gt;<span class="fn">syncProduct</span>(<span class="var">$e</span>-&gt;<span class="var">id</span>, <span class="var">$e</span>-&gt;<span class="var">price</span>);
 }</div>
       </div>
 

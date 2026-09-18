@@ -164,8 +164,8 @@ export default {
 
     // Webhook example section
     webhookEyebrow: 'Ejemplo Inbound',
-    webhookH2:      'Recibe y procesa webhooks sin boilerplate.',
-    webhookSub:     'Tu listener recibe un DTO tipado. El framework maneja verificación de firmas, detección de duplicados, almacenamiento de webhooks fallidos, tracking de estado y replay. Sin arrays crudos, sin lógica HMAC manual, sin plumbing de webhooks en tu dominio.',
+    webhookH2:      'Recibe webhooks sin reinventar la rueda.',
+    webhookSub:     'El mismo webhook llega a tu controller (POST /webhooks/shopify). Sin el engine: 50 líneas de verificación, cheques de duplicados, parsing, almacenamiento, jobs de worker. Con IntegrationEngine: 1 línea de config + 1 mapper + tu listener. Sin lógica de firmas, sin arrays crudos, sin manejo de webhooks fallidos—el framework lo hace.',
     webhookBtn:     'Ver guía de webhooks',
 
     // Thanks section
