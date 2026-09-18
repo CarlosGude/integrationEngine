@@ -361,8 +361,9 @@ MyApi/
 
     <div style="border-top: 2px solid #2f6fbd; padding-top: 2rem;">
       <div style="font-size: 12px; color: #2f6fbd; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 1.5rem;"><strong>With IntegrationEngine</strong></div>
-      <div class="example-panels">
-        <!-- WITH ENGINE: 1. Configuration -->
+
+      <!-- Configuration: Full width -->
+      <div style="margin-bottom: 1.5rem;">
         <div class="example-code-panel">
           <div class="file-label">Step 1: Configuration (YAML only)</div>
           <div class="code-block"><span class="key">webhooks</span>:
@@ -372,7 +373,10 @@ MyApi/
       <span class="val">type</span>: hmac_sha256
       <span class="val">header</span>: X-Shopify-Hmac-SHA256</div>
         </div>
+      </div>
 
+      <!-- Controller + Mapper: 50/50 layout -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
         <!-- WITH ENGINE: 2. Controller -->
         <div class="example-code-panel">
           <div class="file-label">Step 2: Controller (framework handles signature, dedup, storage)</div>
