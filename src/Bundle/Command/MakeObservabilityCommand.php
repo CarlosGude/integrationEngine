@@ -30,7 +30,8 @@ final class MakeObservabilityCommand extends Command
     {
         $this
             ->addArgument('integration', InputArgument::REQUIRED, 'Integration name (e.g., shopify, stripe)')
-            ->setHelp('Generates a boilerplate observability setup class with logging, metrics, and error handling stubs.');
+            ->setHelp('Generates a boilerplate observability setup class with logging, metrics, and error handling stubs.')
+        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -41,6 +42,7 @@ final class MakeObservabilityCommand extends Command
         // Validate integration name
         if (!preg_match('/^[a-z][a-z0-9_]*$/', $integration)) {
             $io->error("Integration name must be lowercase alphanumeric (e.g., 'shopify', 'stripe', 'my_api')");
+
             return Command::INVALID;
         }
 
@@ -53,6 +55,7 @@ final class MakeObservabilityCommand extends Command
         // Check if already exists
         if ($this->filesystem->exists($classFile)) {
             $io->warning("Class already exists: {$classFile}");
+
             return Command::FAILURE;
         }
 
@@ -87,9 +90,9 @@ declare(strict_types=1);
 
 namespace {$namespace}\\Integration\\{$className};
 
-use IntegrationEngine\Core\Lifecycle\ActionFailed;
-use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
-use Psr\Log\LoggerInterface;
+use IntegrationEngine\\Core\\Lifecycle\\ActionFailed;
+use IntegrationEngine\\Core\\Lifecycle\\LifecycleEventDispatcher;
+use Psr\\Log\\LoggerInterface;
 
 /**
  * Observability setup for {$className} integration.
@@ -115,7 +118,7 @@ class {$className}ObservabilitySetup
     public function register(LifecycleEventDispatcher \$dispatcher): void
     {
         // Automatic logging: logs all actions with timing
-        \IntegrationEngine\Infrastructure\Lifecycle\ObservabilitySetup::register(
+        \\IntegrationEngine\\Infrastructure\\Lifecycle\\ObservabilitySetup::register(
             \$dispatcher,
             \$this->logger,
             [
@@ -127,7 +130,7 @@ class {$className}ObservabilitySetup
         );
 
         // Custom metrics: record Prometheus histogram, counters, etc.
-        \IntegrationEngine\Infrastructure\Lifecycle\ObservabilitySetup::register(
+        \\IntegrationEngine\\Infrastructure\\Lifecycle\\ObservabilitySetup::register(
             \$dispatcher,
             \$this->logger,
             [
@@ -137,7 +140,7 @@ class {$className}ObservabilitySetup
         );
 
         // Custom error handling: send to Sentry, PagerDuty, etc.
-        \IntegrationEngine\Infrastructure\Lifecycle\ObservabilitySetup::register(
+        \\IntegrationEngine\\Infrastructure\\Lifecycle\\ObservabilitySetup::register(
             \$dispatcher,
             \$this->logger,
             [
@@ -186,6 +189,7 @@ PHP;
         if (!$this->filesystem->exists($path)) {
             $io->warning("services.yaml not found at {$path}. Add this manually:");
             $this->printServicesYamlEntry($className, $integration, $io);
+
             return;
         }
 
@@ -198,11 +202,11 @@ PHP;
       - [register, ['@IntegrationEngine\\Core\\Lifecycle\\LifecycleEventDispatcher', '@logger']]
 YAML;
 
-        if (strpos($content, "{$integration}.observability") === false) {
-            file_put_contents($path, $content . "\n" . $entry . "\n");
+        if (false === strpos($content, "{$integration}.observability")) {
+            file_put_contents($path, $content."\n".$entry."\n");
             $io->success("Updated: {$path}");
         } else {
-            $io->note("Observability entry already in services.yaml");
+            $io->note('Observability entry already in services.yaml');
         }
     }
 
@@ -229,7 +233,7 @@ YAML);
 
         $composer = json_decode(file_get_contents($composerFile), true);
         foreach ($composer['autoload']['psr-4'] ?? [] as $namespace => $path) {
-            if ($path === 'src/') {
+            if ('src/' === $path) {
                 return rtrim($namespace, '\\');
             }
         }

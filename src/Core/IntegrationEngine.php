@@ -129,6 +129,7 @@ final readonly class IntegrationEngine
                 error: $e,
                 durationMs: $duration,
             ));
+
             throw $e;
         }
     }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace IntegrationEngine\Core\Lifecycle;
 
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
-use Throwable;
 
 /**
  * Fired when the HTTP call or mapping fails.
@@ -17,7 +16,7 @@ final readonly class ActionFailed implements IntegrationEngineEvent
         private AbstractAction $action,
         private string $integrationName,
         private float $timestamp,
-        private Throwable $error,
+        private \Throwable $error,
         private float $durationMs,
     ) {}
 
@@ -36,7 +35,7 @@ final readonly class ActionFailed implements IntegrationEngineEvent
         return $this->timestamp;
     }
 
-    public function error(): Throwable
+    public function error(): \Throwable
     {
         return $this->error;
     }

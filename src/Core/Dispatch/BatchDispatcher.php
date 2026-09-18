@@ -6,6 +6,7 @@ namespace IntegrationEngine\Core\Dispatch;
 
 use IntegrationEngine\Core\Batch\BatchTokenRetry;
 use IntegrationEngine\Core\Batch\PreparedRequest;
+use IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
 use IntegrationEngine\Core\Contract\Client\ClientInterface;
 use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
@@ -57,7 +58,7 @@ final class BatchDispatcher
      * reflects the fresh-token action actually used.
      *
      * @param array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable> $raw
-     * @param array<array-key, \IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig>           $toRetry
+     * @param array<array-key, DynamicAuthorizationConfig>                                                 $toRetry
      * @param array<array-key, PreparedRequest>                                                            $prepared
      *
      * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>

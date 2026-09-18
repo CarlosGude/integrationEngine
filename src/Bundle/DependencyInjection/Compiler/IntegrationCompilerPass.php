@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace IntegrationEngine\Bundle\DependencyInjection\Compiler;
 
 use IntegrationEngine\Bundle\Exception\IntegrationConfigurationException;
-use IntegrationEngine\Core\Auth\DynamicAuthHandler;
 use IntegrationEngine\Core\Dispatch\AuthenticationHandler;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Registry\IntegrationRegistry;

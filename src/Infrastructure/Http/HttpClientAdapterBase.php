@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Infrastructure\Http;
 
-use IntegrationEngine\Core\Batch\PreparedRequest;
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
-use IntegrationEngine\Core\Exception\RequestResponseException;
 use Symfony\Contracts\HttpClient\ResponseInterface as HttpResponseInterface;
 
 abstract readonly class HttpClientAdapterBase implements ClientAdapterInterface
 {
-    protected abstract function parseResponse(HttpResponseInterface $response, string $identifier): array;
+    abstract protected function parseResponse(HttpResponseInterface $response, string $identifier): array;
 
     protected function sendManySequentially(array $requests): array
     {

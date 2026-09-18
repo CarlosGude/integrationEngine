@@ -9,7 +9,6 @@ use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Action\GraphQLBodyInterface;
 use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
-use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
 use IntegrationEngine\Core\Contract\Client\Request;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
@@ -157,7 +156,6 @@ final readonly class GraphQLClientAdapter extends HttpClientAdapterBase implemen
             throw $this->networkError($e);
         }
     }
-
 
     /**
      * @return array{headers: array<string, string>, json: array<string, mixed>}

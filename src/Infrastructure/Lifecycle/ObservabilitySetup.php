@@ -28,13 +28,13 @@ final class ObservabilitySetup
      * Register observability observers based on configuration.
      *
      * @param array<string, mixed> $config Configuration array:
-     *   - logging: bool (default: true) — log all actions
-     *   - log_level: string (default: 'info') — PSR-3 level
-     *   - slow_request_threshold_ms: float (default: 5000) — alert if slower
-     *   - slow_request_logger: LoggerInterface (optional) — use different logger for alerts
-     *   - metrics_callback: callable (optional) — custom metric recorder
-     *   - error_callback: callable (optional) — custom error handler
-     *   - integration_filter: string (optional) — only observe this integration
+     *                                     - logging: bool (default: true) — log all actions
+     *                                     - log_level: string (default: 'info') — PSR-3 level
+     *                                     - slow_request_threshold_ms: float (default: 5000) — alert if slower
+     *                                     - slow_request_logger: LoggerInterface (optional) — use different logger for alerts
+     *                                     - metrics_callback: callable (optional) — custom metric recorder
+     *                                     - error_callback: callable (optional) — custom error handler
+     *                                     - integration_filter: string (optional) — only observe this integration
      */
     public static function register(
         LifecycleEventDispatcher $dispatcher,
@@ -57,11 +57,11 @@ final class ObservabilitySetup
             self::registerSlowRequestAlerts($dispatcher, $config['slow_request_logger'], $config);
         }
 
-        if (isset($config['metrics_callback']) && is_callable($config['metrics_callback'])) {
+        if (isset($config['metrics_callback']) && \is_callable($config['metrics_callback'])) {
             self::registerMetrics($dispatcher, $config['metrics_callback'], $config);
         }
 
-        if (isset($config['error_callback']) && is_callable($config['error_callback'])) {
+        if (isset($config['error_callback']) && \is_callable($config['error_callback'])) {
             self::registerErrorHandling($dispatcher, $config['error_callback'], $config);
         }
     }
@@ -77,7 +77,7 @@ final class ObservabilitySetup
         $logLevel = $config['log_level'];
         $filter = $config['integration_filter'];
 
-        $dispatcher->subscribe(ActionStarted::class, function (ActionStarted $e) use ($logger, $logLevel, $filter) {
+        $dispatcher->subscribe(ActionStarted::class, static function (ActionStarted $e) use ($logger, $logLevel, $filter): void {
             if ($filter && $e->integrationName() !== $filter) {
                 return;
             }
@@ -88,7 +88,7 @@ final class ObservabilitySetup
             ]);
         });
 
-        $dispatcher->subscribe(ActionCompleted::class, function (ActionCompleted $e) use ($logger, $logLevel, $filter) {
+        $dispatcher->subscribe(ActionCompleted::class, static function (ActionCompleted $e) use ($logger, $logLevel, $filter): void {
             if ($filter && $e->integrationName() !== $filter) {
                 return;
             }
@@ -100,7 +100,7 @@ final class ObservabilitySetup
             ]);
         });
 
-        $dispatcher->subscribe(ActionFailed::class, function (ActionFailed $e) use ($logger, $filter) {
+        $dispatcher->subscribe(ActionFailed::class, static function (ActionFailed $e) use ($logger, $filter): void {
             if ($filter && $e->integrationName() !== $filter) {
                 return;
             }
@@ -125,7 +125,7 @@ final class ObservabilitySetup
         $threshold = $config['slow_request_threshold_ms'];
         $filter = $config['integration_filter'];
 
-        $dispatcher->subscribe(ActionCompleted::class, function (ActionCompleted $e) use ($alertLogger, $threshold, $filter) {
+        $dispatcher->subscribe(ActionCompleted::class, static function (ActionCompleted $e) use ($alertLogger, $threshold, $filter): void {
             if ($filter && $e->integrationName() !== $filter) {
                 return;
             }
@@ -144,7 +144,7 @@ final class ObservabilitySetup
 
     /**
      * Register custom metrics callback.
-     * Callback signature: function(ActionCompleted|ActionFailed $event): void
+     * Callback signature: function(ActionCompleted|ActionFailed $event): void.
      */
     private static function registerMetrics(
         LifecycleEventDispatcher $dispatcher,
@@ -153,14 +153,14 @@ final class ObservabilitySetup
     ): void {
         $filter = $config['integration_filter'];
 
-        $dispatcher->subscribe(ActionCompleted::class, function (ActionCompleted $e) use ($metricsCallback, $filter) {
+        $dispatcher->subscribe(ActionCompleted::class, static function (ActionCompleted $e) use ($metricsCallback, $filter): void {
             if ($filter && $e->integrationName() !== $filter) {
                 return;
             }
             $metricsCallback($e);
         });
 
-        $dispatcher->subscribe(ActionFailed::class, function (ActionFailed $e) use ($metricsCallback, $filter) {
+        $dispatcher->subscribe(ActionFailed::class, static function (ActionFailed $e) use ($metricsCallback, $filter): void {
             if ($filter && $e->integrationName() !== $filter) {
                 return;
             }
@@ -170,7 +170,7 @@ final class ObservabilitySetup
 
     /**
      * Register custom error callback.
-     * Callback signature: function(ActionFailed $event): void
+     * Callback signature: function(ActionFailed $event): void.
      */
     private static function registerErrorHandling(
         LifecycleEventDispatcher $dispatcher,
@@ -179,7 +179,7 @@ final class ObservabilitySetup
     ): void {
         $filter = $config['integration_filter'];
 
-        $dispatcher->subscribe(ActionFailed::class, function (ActionFailed $e) use ($errorCallback, $filter) {
+        $dispatcher->subscribe(ActionFailed::class, static function (ActionFailed $e) use ($errorCallback, $filter): void {
             if ($filter && $e->integrationName() !== $filter) {
                 return;
             }

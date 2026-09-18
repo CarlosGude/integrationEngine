@@ -24,7 +24,6 @@ class LifecycleEventDispatcher
      * $callable receives the event as its only argument.
      *
      * @param class-string $eventClass
-     * @param callable $callable
      */
     public function subscribe(string $eventClass, callable $callable): void
     {

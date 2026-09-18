@@ -140,8 +140,8 @@ PHP;
     private function generateVerifierSetup(WebhookContext $ctx): string
     {
         return match ($ctx->verifierType) {
-            'hmac_sha256' => 'use IntegrationEngine\\Core\\Webhook\\HmacSha256SignatureVerifier;',
-            'timestamped_hmac' => 'use IntegrationEngine\\Core\\Webhook\\TimestampedHmacSignatureVerifier;',
+            'hmac_sha256' => 'use IntegrationEngine\Core\Webhook\HmacSha256SignatureVerifier;',
+            'timestamped_hmac' => 'use IntegrationEngine\Core\Webhook\TimestampedHmacSignatureVerifier;',
             default => '',
         };
     }
