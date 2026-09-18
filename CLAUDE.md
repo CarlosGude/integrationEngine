@@ -166,3 +166,15 @@ integration_engine:
             middlewares: []            # optional, ordered AbstractClientMiddleware service IDs
             request_middlewares: []    # optional, ordered RequestMiddlewareInterface service IDs (built-in adapters only)
 ```
+
+## Inbound Webhooks (v5.1.0+)
+
+For **receiving** webhooks from external platforms (Shopify, WooCommerce, etc.), see **[WEBHOOK.md](./WEBHOOK.md)**. It covers:
+
+- Multi-platform webhook routing and signature verification
+- Event discovery & payload mapping
+- Idempotency & replay protection
+- Dead-letter queue for failed webhooks
+- State machine & audit trails
+- Async processing via Symfony Messenger
+- Step-by-step guide for adding new platforms

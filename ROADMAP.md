@@ -6,6 +6,8 @@ Public roadmap: what's live, what's next, and what stays out of scope.
 
 ## Recently shipped
 
+- **v5.1.0** — Multi-platform inbound webhooks (Shopify, WooCommerce), signature verification, idempotency, dead-letter queue, state machine & audit trail, async Messenger integration.
+- **v5.0.0** — Webhook framework foundation, signature verification (HMAC, timestamped), `AbstractWebhookMapper`, `IntegrationWebhookRequestParser`, YAML webhook config.
 - **v4.1.0** — Unified quality gates (MSI 85/95%, PHPStan max, CI matrix).
 - **v4.0.0** — Middleware pipeline, request middleware (OAuth 1.0a signing), connection resolver, per-action timeout, path resolution from request body.
 - **v3.0.0** — Batch isolation, `BatchResultCollection`, `AbstractBatchMapper`, action-level mapper validation.
@@ -14,29 +16,24 @@ Public roadmap: what's live, what's next, and what stays out of scope.
 
 ## Now
 
-**Phase 1: Presentable** — Public state, roadmap, landing corrections, v4.1.1 release.
+**Phase 5: Quality of design visible** — PHPStan rule extensions, SSRF protection, lifecycle events, observability.
 
-Publicly visible status so recruiters and tech leads understand the project state without promises attached to dates.
+Making the design decisions visible as executable guarantees: no SSRF escapes, no untyped arrays leaking, observable lifecycle. Webhook audit trails provide foundation for compliance + debugging.
 
 ---
 
-## Next
+## Next (Post-Phase 5)
 
-**Phase 2: Demo online** — Live `demo.integrationengine.dev` showing a real TMDB + Stripe integration tour.
+**Phase 6: Platform ecosystem** — Pre-built integrations (WooCommerce, Magento, BigCommerce, Stripe, Shopify advanced features).
 
-Runway: 22 days. Tour walkthrough showing the problem/solution pattern, parallel execution, extension points, supplier failures, and bidirectional webhooks.
+Curated adapters for common platforms, built-in request/response middleware, turnkey solutions for e-commerce and payment gateways.
 
-**Phase 3: Integressions robustas** — Form-encoded bodies, GraphQL support, resiliency (timeout, retry, 401 recovery).
+**Phase 7: Admin experience** — CLI commands, dashboard, webhook replay/debugging UI.
 
-Runway: 13 days. Real-world integrations (Shopify, Stripe, legacy gateways) often need schema negotiation, partial failures, and smart retries.
-
-**Phase 4: Webhooks and async** — Inbound webhook definitions, signature verification, Messenger integration, idempotent consumers.
-
-Runway: 29 days. Completing the bidirectional story: outbound requests (Phases 1-3) plus inbound events (webhooks, RabbitMQ, deduplication).
-
-**Phase 5: Quality of design visible** — PHPStan rule extensions, SSRF protection, lifecycle events.
-
-Runway: 16 days. Making the design decisions visible as executable guarantees: no SSRF escapes, no untyped arrays leaking, observable lifecycle.
+- `webhook:list`, `webhook:dlq:list`, `webhook:dlq:retry` commands
+- Admin dashboard: webhook history, audit trail, state machine visualization
+- Replay UI for failed webhooks
+- Metrics/observability (Prometheus exports)
 
 ---
 
