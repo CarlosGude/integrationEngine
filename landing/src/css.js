@@ -264,6 +264,13 @@ footer a:hover { text-decoration: underline; }
 .biz-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.75rem 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
 .biz-stat { font-size: 1.65rem; font-weight: 800; color: var(--blue); letter-spacing: -.02em; margin-bottom: .55rem; }
 .biz-card p { font-size: .84rem; color: #64748b; line-height: 1.65; }
+/* ── SOCIAL PROOF ── */
+.proof-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-top: 2rem; }
+@media (max-width: 900px) { .proof-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .proof-grid { grid-template-columns: 1fr; } }
+.proof-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+.proof-stat { font-size: 1.35rem; font-weight: 800; color: var(--blue); letter-spacing: -.01em; margin-bottom: .4rem; }
+.proof-card p { font-size: .8rem; color: #64748b; line-height: 1.6; }
 /* ── EXTENSION POINTS ── */
 .ext-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; margin-top: 2rem; }
 @media (max-width: 700px) { .ext-grid { grid-template-columns: 1fr; } }

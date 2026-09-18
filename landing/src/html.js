@@ -148,6 +148,21 @@ export function getHTML(lang = 'en') {
   </div>
 </section>
 
+<!-- SOCIAL PROOF -->
+<section class="s-light proof-section">
+  <div class="container">
+    <div class="eyebrow">${t.proofEyebrow}</div>
+    <h2 class="s-heading">${t.proofH2}</h2>
+    <div class="proof-grid">
+      ${t.proofItems.map(i => `
+      <div class="proof-card">
+        <div class="proof-stat">${i.stat}</div>
+        <p>${i.desc}</p>
+      </div>`).join('')}
+    </div>
+  </div>
+</section>
+
 <!-- PARALLEL EXECUTION -->
 <section id="parallel" class="s-dark">
   <div class="container">
@@ -295,12 +310,16 @@ MyApi/
   </div>
 </section>
 
-<!-- WEBHOOK EXAMPLE -->
-<section class="s-light">
+<!-- WEBHOOK SHOWCASE -->
+<section id="webhooks" class="s-light">
   <div class="container">
     <div class="eyebrow">${t.webhookEyebrow}</div>
     <h2 class="s-heading">${t.webhookH2}</h2>
     <p class="s-sub">${t.webhookSub}</p>
+    <div class="webhook-platforms" style="text-align: center; font-weight: 600; color: #2f6fbd; margin: 1.5rem 0; font-size: 14px;">${t.webhookPlatforms}</div>
+    <div class="webhook-features" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+      ${t.webhookFeatures.map(f => `<div style="padding: 0.75rem; background: #f5f8fb; border-radius: 6px; font-size: 13px;">✓ ${f}</div>`).join('')}
+    </div>
 
     <div style="border-top: 1px solid #ddd; padding-top: 2rem; margin-bottom: 2rem;">
       <div style="font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 1.5rem;"><strong>Without IntegrationEngine</strong></div>
@@ -435,6 +454,9 @@ MyApi/
     <div class="eyebrow">${t.obsEyebrow}</div>
     <h2 class="s-heading">${t.obsH2}</h2>
     <p class="s-sub">${t.obsSub}</p>
+    <div class="obs-features" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+      ${t.obsFeatures.map(f => `<div style="padding: 0.75rem; background: #f5f8fb; border-radius: 6px; font-size: 13px;">✓ ${f}</div>`).join('')}
+    </div>
     <div class="example-panels">
 
       <!-- Step 1: Command -->
