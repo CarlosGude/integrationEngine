@@ -153,26 +153,51 @@ export default {
     p5CmBatchGood:  '//  3 stations &rarr; ~250ms   (the slowest, not the sum)\n// 10 stations &rarr; ~250ms   (does not scale)',
     p5Insight:      '<strong>Why it matters:</strong> individual failures never abort the batch &mdash; each key resolves independently. <code>sendMany()</code> returns a <code>BatchResultCollection</code> where you inspect each outcome; <code>sendManyOrFail()</code> throws on the first failure after the full batch has run. The default REST client already implements <code>BatchClientInterface</code> via lazy Symfony HttpClient responses &mdash; zero additional configuration.',
 
+    // Social Proof section
+    proofEyebrow: 'Built for Production',
+    proofH2:      'Proven at scale.',
+    proofItems: [
+        { stat: '607 tests',      desc: 'PHPStan level max. Zero breaking changes across v5.x.' },
+        { stat: '5+ protocols',   desc: 'REST, GraphQL, CSV, Webhooks, custom adapters.' },
+        { stat: '5–13x faster',   desc: 'Parallel execution by default. Booking.com availability: 17 parallel queries per customer, per city.' },
+        { stat: 'Production use', desc: 'Shopify integrations, POF marketplace, legacy migrations at scale.' },
+    ],
+
     // Status section
     statusEyebrow:      'Status',
-    statusH2:           'v5.1.0 Live — Inbound Webhooks Complete',
+    statusH2:           'v5.2.0 Live — Lifecycle Events + Observability',
     statusP:            'Outbound integrations (Stripe, Shopify, etc.) + inbound webhooks (receive events from external platforms). Multi-platform routing, signature verification, idempotency, and state machine built in. No promises with dates &mdash; just transparent, working software.',
-    statusNow:          '<strong>Now:</strong> v5.1.0 released. Multi-platform webhook framework (Shopify, WooCommerce). 596 tests passing. Production-ready.',
+    statusNow:          '<strong>Now:</strong> v5.2.0 released. Lifecycle events (ActionStarted, ActionCompleted, ActionFailed). Observability helpers for logging, Prometheus, Sentry. 607 tests passing. Production-ready.',
     statusNext:         '<strong>Next:</strong> Phase 5: Quality of design (PHPStan rule extensions, SSRF protection). Phase 6: Platform ecosystem (pre-built integrations).',
     statusLater:        '<strong>Later:</strong> Admin dashboard (webhook replay UI), open-source plugins, certified training.',
     statusRoadmapLink:  'See phases: discovery, reliability, generalization, release →',
 
-    // Webhook example section
-    webhookEyebrow: 'Inbound Example',
-    webhookH2:      'Receive webhooks. Your mapper does the update.',
-    webhookSub:     'Same webhook arrives at your controller (POST /webhooks/shopify). Without the engine: 50 lines (verification, duplicate checks, parsing, storage, worker jobs, manual state). With IntegrationEngine: 1 YAML config + 1 mapper with explicit variable names + do the update inside. No signature logic, no raw arrays, no worker jobs, no failed-webhook handling—the framework automates it all.',
-    webhookBtn:     'View webhook guide',
+    // Webhook showcase section (v5.1.0)
+    webhookEyebrow: 'Inbound Webhooks',
+    webhookH2:      'Receive from any platform.',
+    webhookSub:     '<strong>v5.1.0:</strong> Multi-platform webhook framework with automatic signature verification, duplicate detection (24h window), state machine, dead-letter queue, and Symfony Messenger async support. Built-in for Shopify and WooCommerce; extensible for custom providers.',
+    webhookPlatforms: 'Shopify &nbsp;•&nbsp; WooCommerce &nbsp;•&nbsp; Stripe &nbsp;•&nbsp; Custom',
+    webhookFeatures: [
+        'HMAC signature verification (platform-specific)',
+        'Idempotency: fingerprint-based duplicate detection',
+        'State machine: RECEIVED → VALIDATING → PROCESSING → SUCCESS',
+        'Dead-letter queue for failed webhooks (manual replay)',
+        'Optional async via Symfony Messenger',
+    ],
+    webhookBtn:     'View webhook guide →',
 
-    // Observability section
+    // Observability section (v5.2.0)
     obsEyebrow: 'Observability',
-    obsH2:      'Log every API call automatically.',
-    obsSub:     'One command to set up logging, metrics, and alerts. Logs every request with status, response time, and errors. Optional: wire Prometheus metrics or Slack alerts for slow requests (>3s). Async logging by default — no performance overhead (0.06ms per call, unmeasurable).',
-    obsBtn:     'View observability guide',
+    obsH2:      'Production monitoring built in.',
+    obsSub:     '<strong>v5.2.0:</strong> Lifecycle events (ActionStarted, ActionCompleted, ActionFailed) fire at every stage. One command to wire logging, Prometheus metrics, Sentry error tracking, or custom audit trails. Zero overhead in production (0.06ms per call, unmeasurable).',
+    obsFeatures: [
+        'Lifecycle events with metadata (action, integration, duration, status)',
+        'LifecycleEventDispatcher for direct subscription',
+        'SymfonyEventDispatcher adapter (#[AsEventListener])',
+        'ObservabilitySetup helper (logging + Prometheus + Sentry)',
+        'Custom handlers for domain events',
+    ],
+    obsBtn:     'View observability guide →',
 
     // Thanks section
     thanksEyebrow: 'Before you go',
