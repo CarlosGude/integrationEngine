@@ -36,20 +36,20 @@ final class ProcessWebhookHandler
     public function __invoke(ProcessWebhookMessage $message): void
     {
         try {
-            // Resolve the mapper for this event type
+
             $mapper = $this->mapperResolver->resolveMapper($message->eventType);
             if (null === $mapper) {
-                // Unknown event type, silently ignore
+
                 return;
             }
 
-            // Map the payload to a domain event
+
             $domainEvent = $mapper->map($message->payload, $message->headers);
 
-            // Dispatch the domain event
+
             $this->eventDispatcher->dispatch($domainEvent);
         } catch (\Throwable $error) {
-            // Store in DLQ for retry
+
             $failureId = $this->generateFailureId();
             $failure = WebhookFailure::fromThrowable(
                 $failureId,
@@ -60,8 +60,8 @@ final class ProcessWebhookHandler
 
             $this->dlq->store($failure);
 
-            // Log the failure for monitoring (don't re-throw to avoid message requeue)
-            // In production, log to monitoring system here
+
+
         }
     }
 

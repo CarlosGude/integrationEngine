@@ -34,7 +34,7 @@ final class WebhookEventDispatcher
      */
     public function dispatch(RemoteEvent $remoteEvent, AbstractWebhookMapper $mapper, array $headers): void
     {
-        // Validate that mapper handles this event type
+
         if ($mapper->getDefinition() !== $remoteEvent->getName()) {
             throw new \InvalidArgumentException(
                 \sprintf(
@@ -49,7 +49,7 @@ final class WebhookEventDispatcher
         $payload = $remoteEvent->getPayload();
         $event = $mapper->map($payload, $headers);
 
-        // Dispatch the typed domain event
+
         $this->dispatcher->dispatch($event);
     }
 }

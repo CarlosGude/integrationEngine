@@ -52,7 +52,7 @@ final class IntegrationEngineDataCollector implements DataCollectorInterface
 
     public function collect(Request $request, Response $response, ?\Throwable $exception = null): void
     {
-        // No-op: calls are recorded as they happen via recordCall(), not
+
         // gathered here — nothing left to collect at this point.
     }
 

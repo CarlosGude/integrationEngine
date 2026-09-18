@@ -43,7 +43,7 @@ final readonly class IntegrationContext
     public function hasBody(): bool
     {
         if (!$this->adapterRequiresMethod) {
-            // Adapters that don't use HTTP methods (GraphQL, SOAP) always have a body
+
             return true;
         }
 
@@ -53,7 +53,7 @@ final readonly class IntegrationContext
     public function hasResponse(): bool
     {
         if (!$this->adapterRequiresMethod) {
-            // Adapters that don't use HTTP methods always have a response
+
             return true;
         }
 
@@ -62,7 +62,7 @@ final readonly class IntegrationContext
 
     public function needsGraphQLBodyHint(): bool
     {
-        // Show GraphQLBodyInterface hint when adapter doesn't use path/method
+
         return !$this->adapterRequiresPath && !$this->adapterRequiresMethod;
     }
 

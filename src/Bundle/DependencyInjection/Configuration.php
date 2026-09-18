@@ -16,19 +16,16 @@ final class Configuration implements ConfigurationInterface
 
         $treeBuilder->getRootNode()
             ->children()
-                // ── integrations map ──────────────────────────────────────────
             ->arrayNode('integrations')
             ->defaultValue([])
             ->useAttributeAsKey('name')
             ->arrayPrototype()
             ->children()
-                        // ── action definitions ────────────────────────────────
             ->scalarNode('config_path')
             ->defaultNull()
             ->info('Absolute path to the YAML file defining the actions for this integration.')
             ->end()
 
-                        // ── HTTP transport ────────────────────────────────────
             ->scalarNode('base_url')
             ->defaultNull()
             ->info('Base URL for the built-in SymfonyHttpClientAdapter. Required unless client_service is set.')
@@ -46,33 +43,28 @@ final class Configuration implements ConfigurationInterface
             ->end()
             ->end()
 
-                        // ── cache ─────────────────────────────────────────────
             ->scalarNode('cache_service')
             ->defaultNull()
             ->info('Custom CachePort service ID. Defaults to InMemoryCacheAdapter.')
             ->end()
 
-                        // ── runtime connection resolution ─────────────────────
             ->scalarNode('connection_resolver')
             ->defaultNull()
             ->info('Service ID implementing ConnectionResolverInterface, for integrations whose base_url/authorization vary per call via the $connection argument to send()/sendMany(). Optional — integrations that never pass $connection do not need one.')
             ->end()
 
-                        // ── middlewares ───────────────────────────────────────
             ->arrayNode('middlewares')
             ->info('Ordered list of middleware service IDs (outermost first). Only services tagged with integration_engine.middleware are accepted.')
             ->scalarPrototype()->end()
             ->defaultValue([])
             ->end()
 
-                        // ── request middlewares ────────────────────────────────
             ->arrayNode('request_middlewares')
             ->info('Ordered list of RequestMiddlewareInterface service IDs (outermost first), run on the fully-built request just before the HTTP call — e.g. request signing (OAuth 1.0a). Only services tagged with integration_engine.request_middleware are accepted. Only applies to the built-in rest/graphql clients, not client_service.')
             ->scalarPrototype()->end()
             ->defaultValue([])
             ->end()
 
-                        // ── default headers ───────────────────────────────────
             ->arrayNode('headers')
             ->info('Default HTTP headers sent with every request for this integration. Auth headers are merged on top.')
             ->normalizeKeys(false)
@@ -82,7 +74,6 @@ final class Configuration implements ConfigurationInterface
             ->end()
             ->end()
 
-                    // ── cross-field validation ────────────────────────────────
             ->validate()
             ->ifTrue(static function (mixed $v): bool {
                 return \is_array($v) && null === $v['base_url'] && null === $v['client_service'];

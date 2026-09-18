@@ -103,7 +103,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
 
         foreach ($requests as $key => $request) {
             try {
-                // Kept distinct from transport errors: path resolution and
+
                 // option building (incl. auth header resolution) are
                 // configuration concerns and propagate their own exception
                 // type raw, exactly as in send() where they sit outside the

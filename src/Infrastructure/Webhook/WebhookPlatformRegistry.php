@@ -70,7 +70,7 @@ final class WebhookPlatformRegistry
 
                 return $this->getByPlatform($platform);
             } catch (\ValueError) {
-                // Invalid platform header, fall through to path detection
+
             }
         }
 

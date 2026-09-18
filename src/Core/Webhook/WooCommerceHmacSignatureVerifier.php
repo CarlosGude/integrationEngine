@@ -22,11 +22,9 @@ final readonly class WooCommerceHmacSignatureVerifier implements SignatureVerifi
 
     public function verify(string $body, string $signature, string $secret): bool
     {
-        // WooCommerce signature is base64-encoded, compute expected signature
         $expectedHash = hash_hmac('sha256', $body, $secret, true);
         $expectedSignature = base64_encode($expectedHash);
 
-        // Use timing-safe comparison to prevent timing attacks
         return hash_equals($expectedSignature, $signature);
     }
 

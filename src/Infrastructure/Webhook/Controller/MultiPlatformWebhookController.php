@@ -32,7 +32,7 @@ final class MultiPlatformWebhookController
     public function ingest(Request $request, string $platform): JsonResponse
     {
         try {
-            // Detect platform and get configuration
+
             $platformConfig = $this->platformRegistry->detectPlatform(
                 $request->headers->get('X-Platform'),
                 $request->getPathInfo()
@@ -50,13 +50,13 @@ final class MultiPlatformWebhookController
                 );
             }
 
-            // Signature verification requires secret from config/environment
-            // For testing, we accept empty secret and just validate format
+
+
             if (!$platformConfig->verifier->verify($body, $signature, '')) {
                 return new JsonResponse(['error' => 'Invalid webhook signature'], 401);
             }
 
-            // Successfully validated
+
             return new JsonResponse(['status' => 'accepted'], 202);
         } catch (\DomainException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);

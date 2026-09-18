@@ -49,7 +49,7 @@ final class ShopifyWebhookController
         }
 
         if (!isset(self::TOPIC_PARSER_MAP[$topic])) {
-            // Return 204 to acknowledge but don't process unknown events
+
             return new Response('', Response::HTTP_NO_CONTENT);
         }
 
@@ -62,11 +62,11 @@ final class ShopifyWebhookController
             $remoteEvent = $parser->parse($request, $this->shopifyWebhookSecret);
 
             if (!$remoteEvent instanceof RemoteEvent) {
-                // Parser rejected the event silently
+
                 return new Response('', Response::HTTP_NO_CONTENT);
             }
 
-            // Extract headers for mapper
+
             $headers = [];
             foreach ($request->headers->all() as $key => $headerValues) {
                 $headers[$key] = reset($headerValues) ?: null;
@@ -77,7 +77,7 @@ final class ShopifyWebhookController
 
             return new Response('', Response::HTTP_NO_CONTENT);
         } catch (RejectWebhookException $e) {
-            // Signature verification failed or malformed payload
+
             throw new BadRequestHttpException(
                 $e->getMessage(),
                 null,

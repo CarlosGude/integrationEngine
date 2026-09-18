@@ -30,7 +30,6 @@ final readonly class TimestampedHmacSignatureVerifier implements SignatureVerifi
 
     public function verify(string $body, string $signature, string $secret): bool
     {
-        // Parse signature: t=timestamp,v1=hash,v1=hash2,...
         $parts = explode(',', $signature);
 
         if (\count($parts) < 2) {
@@ -46,14 +45,12 @@ final readonly class TimestampedHmacSignatureVerifier implements SignatureVerifi
             } elseif (str_starts_with($part, 'v1=')) {
                 $versions['v1'][] = substr($part, 3);
             }
-            // Ignore v0 and other versions
         }
 
         if (null === $timestamp || !isset($versions['v1'])) {
             return false;
         }
 
-        // Validate timestamp format and check tolerance
         if (!is_numeric($timestamp)) {
             return false;
         }
@@ -66,10 +63,8 @@ final readonly class TimestampedHmacSignatureVerifier implements SignatureVerifi
             return false;
         }
 
-        // Compute expected hash
         $expectedHash = hash_hmac('sha256', "{$timestampInt}.{$body}", $secret);
 
-        // Check if any of the v1 hashes match (for key rotation)
         foreach ($versions['v1'] as $providedHash) {
             if (hash_equals($expectedHash, $providedHash)) {
                 return true;

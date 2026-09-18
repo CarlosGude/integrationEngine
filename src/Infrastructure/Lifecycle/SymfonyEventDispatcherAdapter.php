@@ -27,7 +27,7 @@ final class SymfonyEventDispatcherAdapter extends LifecycleEventDispatcher
 
     public function dispatch(IntegrationEngineEvent $event): void
     {
-        // Dispatch to both our own subscribers and Symfony
+
         parent::dispatch($event);
         $this->dispatcher->dispatch($event, $event::class);
     }

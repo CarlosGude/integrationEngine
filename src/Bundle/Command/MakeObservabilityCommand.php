@@ -39,35 +39,29 @@ final class MakeObservabilityCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $integration = strtolower($input->getArgument('integration'));
 
-        // Validate integration name
         if (!preg_match('/^[a-z][a-z0-9_]*$/', $integration)) {
             $io->error("Integration name must be lowercase alphanumeric (e.g., 'shopify', 'stripe', 'my_api')");
 
             return Command::INVALID;
         }
 
-        // Paths
         $namespace = $this->guessNamespace();
         $classDir = "{$this->projectDir}/src/Integration/{$this->formatClassName($integration)}";
         $classFile = "{$classDir}/{$this->formatClassName($integration)}ObservabilitySetup.php";
         $servicesFile = "{$this->projectDir}/config/services.yaml";
 
-        // Check if already exists
         if ($this->filesystem->exists($classFile)) {
             $io->warning("Class already exists: {$classFile}");
 
             return Command::FAILURE;
         }
 
-        // Generate class
         $className = $this->formatClassName($integration);
         $classContent = $this->generateClass($namespace, $className, $integration);
 
-        // Write class file
         $this->filesystem->dumpFile($classFile, $classContent);
         $io->success("Generated: {$classFile}");
 
-        // Update services.yaml
         $this->updateServicesYaml($servicesFile, $integration, $className, $io);
 
         $io->section('Next Steps');
@@ -107,7 +101,7 @@ class {$className}ObservabilitySetup
 {
     public function __construct(
         private LoggerInterface \$logger,
-        // Add your dependencies here:
+
         // private PrometheusRegistry \$prometheus,
         // private SlackNotifier \$slack,
     ) {}
@@ -117,7 +111,7 @@ class {$className}ObservabilitySetup
      */
     public function register(LifecycleEventDispatcher \$dispatcher): void
     {
-        // Automatic logging: logs all actions with timing
+
         \\IntegrationEngine\\Infrastructure\\Lifecycle\\ObservabilitySetup::register(
             \$dispatcher,
             \$this->logger,
@@ -129,7 +123,7 @@ class {$className}ObservabilitySetup
             ]
         );
 
-        // Custom metrics: record Prometheus histogram, counters, etc.
+
         \\IntegrationEngine\\Infrastructure\\Lifecycle\\ObservabilitySetup::register(
             \$dispatcher,
             \$this->logger,
@@ -139,7 +133,7 @@ class {$className}ObservabilitySetup
             ]
         );
 
-        // Custom error handling: send to Sentry, PagerDuty, etc.
+
         \\IntegrationEngine\\Infrastructure\\Lifecycle\\ObservabilitySetup::register(
             \$dispatcher,
             \$this->logger,
@@ -156,8 +150,8 @@ class {$className}ObservabilitySetup
      */
     private function recordMetrics(\$event): void
     {
-        // TODO: Implement metrics recording
-        // Example:
+
+
         // \$this->prometheus->histogram(
         //     '{$integration}_api_duration_ms',
         //     \$event->durationMs(),
@@ -170,8 +164,8 @@ class {$className}ObservabilitySetup
      */
     private function recordError(ActionFailed \$event): void
     {
-        // TODO: Implement error handling
-        // Example:
+
+
         // \\Sentry\\captureException(\$event->error(), [
         //     'tags' => [
         //         'integration' => '{$integration}',

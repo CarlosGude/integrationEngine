@@ -30,12 +30,12 @@ final class WebhookFingerprinter
         array $payload,
         \DateTimeImmutable $timestamp,
     ): string {
-        // Sort payload keys recursively to ensure consistent hashing regardless of array order
+
         $sortedPayload = $this->sortArrayRecursively($payload);
         $payloadJson = json_encode($sortedPayload, JSON_THROW_ON_ERROR);
         $hash = hash('sha256', $payloadJson);
 
-        // Include timestamp to support replay window detection
+
         $timestampStr = $timestamp->format('U');
 
         return "{$eventType}:{$timestampStr}:{$hash}";

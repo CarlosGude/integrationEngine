@@ -24,7 +24,6 @@ final readonly class HmacSha256SignatureVerifier implements SignatureVerifierInt
 
     public function verify(string $body, string $signature, string $secret): bool
     {
-        // Extract the hash part after the prefix
         if ('' === $this->signaturePrefix) {
             $expectedPrefix = 'sha256=';
         } else {
@@ -41,11 +40,8 @@ final readonly class HmacSha256SignatureVerifier implements SignatureVerifierInt
         }
 
         $hash = substr($signature, $prefixLen);
-
-        // Compute expected hash
         $expectedHash = hash_hmac('sha256', $body, $secret);
 
-        // Use timing-safe comparison to prevent timing attacks
         return hash_equals($expectedHash, $hash);
     }
 

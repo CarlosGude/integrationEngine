@@ -53,8 +53,6 @@ final readonly class IntegrationEngine
         $this->batchDispatcher = new BatchDispatcher($client, $integrationName, $logger);
     }
 
-    // ── Single request ─────────────────────────────────────────────────────────
-
     /**
      * $connection is opaque runtime info the integration's own
      * ConnectionResolverInterface (configured via `connection_resolver` in
@@ -133,8 +131,6 @@ final readonly class IntegrationEngine
             throw $e;
         }
     }
-
-    // ── Batch requests ─────────────────────────────────────────────────────────
 
     /**
      * Sends all requests as one batch and returns one BatchResult per input

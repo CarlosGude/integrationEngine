@@ -100,7 +100,7 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
 
         foreach ($requests as $key => $request) {
             try {
-                // Kept distinct from transport errors: body validation and
+
                 // option building (incl. auth header resolution) are
                 // configuration concerns and propagate their own exception
                 // type raw, exactly as in send().
@@ -216,8 +216,8 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
 
         $data = $response->toArray();
 
-        // GraphQL always returns 200, even on errors.
-        // Errors are signalled inside the response body under the "errors" key.
+
+
         $errors = $data['errors'] ?? null;
         if (!empty($errors) && \is_array($errors)) {
             $firstError = isset($errors[0]) && \is_array($errors[0]) ? $errors[0] : [];

@@ -65,7 +65,7 @@ final class TracingMiddleware extends AbstractClientMiddleware
         $results = $next($requests);
         $batchDurationMs = (microtime(true) - $start) * 1000;
 
-        // Requests in a batch run concurrently, so no per-item wall-clock
+
         // duration exists. Splitting the batch total evenly keeps aggregate
         // metrics (e.g. getTotalDurationMs()) truthful instead of counting
         // the same wall-clock time once per item.
