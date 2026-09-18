@@ -9,8 +9,10 @@
 **✨ v5.2.0 Features:**
 - ✅ **Lifecycle events** (ActionStarted, ActionCompleted, ActionFailed)
 - ✅ Built-in event dispatcher + Symfony EventDispatcher adapter
+- ✅ `ObservabilitySetup` helper for instant logging + metrics + alerting
 - ✅ Examples: custom logging, Prometheus metrics, Sentry integration, audit trails
-- 🔗 [Guide: LIFECYCLE.md](./LIFECYCLE.md)
+- 🔗 [Quick setup: OBSERVABILITY.md](./OBSERVABILITY.md) (recommended)
+- 🔗 [Deep dive: LIFECYCLE.md](./LIFECYCLE.md)
 
 **v5.1.0 Features:**
 - ✅ **Inbound webhook framework** (Shopify, WooCommerce, extensible)

@@ -2,6 +2,12 @@
 
 Tap into integration lifecycle events for logging, metrics, debugging, and observability.
 
+**Quick start:** See [OBSERVABILITY.md](./OBSERVABILITY.md) for ready-made helpers (recommended).
+
+---
+
+## Low-level: Direct Event Subscription
+
 ---
 
 ## Events
