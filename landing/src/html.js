@@ -301,14 +301,14 @@ MyApi/
     <div class="eyebrow">${t.webhookEyebrow}</div>
     <h2 class="s-heading">${t.webhookH2}</h2>
     <p class="s-sub">${t.webhookSub}</p>
-    <div class="example-panels">
 
-      <div style="margin-bottom: 2rem; padding: 1rem 0; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;"><strong>Without IntegrationEngine</strong></div>
-
-      <!-- WEBHOOK ENTRY POINT: CONTROLLER -->
-      <div class="example-code-panel">
-        <div class="file-label">Step 1: Entry Point (manual verification &amp; storage)</div>
-        <div class="code-block"><span class="cm">// WITHOUT ENGINE: Manual verification &amp; storage</span>
+    <div style="border-top: 1px solid #ddd; padding-top: 2rem; margin-bottom: 2rem;">
+      <div style="font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 1.5rem;"><strong>Without IntegrationEngine</strong></div>
+      <div class="example-panels">
+        <!-- WEBHOOK ENTRY POINT: CONTROLLER -->
+        <div class="example-code-panel">
+          <div class="file-label">Step 1: Entry Point (manual verification &amp; storage)</div>
+          <div class="code-block"><span class="cm">// WITHOUT ENGINE: Manual verification &amp; storage</span>
 <span class="kw">public function</span> <span class="fn">webhook</span>(<span class="cls">Request</span> <span class="var">$req</span>): <span class="cls">Response</span>
 {
     <span class="var">$body</span> = <span class="var">$req</span>-&gt;<span class="fn">getContent</span>();
@@ -333,12 +333,12 @@ MyApi/
 
     <span class="kw">return new</span> <span class="cls">Response</span>(<span class="str\">''</span>, 202);
 }</div>
-      </div>
+        </div>
 
-      <!-- WEBHOOK PROCESSING: WITHOUT FRAMEWORK -->
-      <div class="example-code-panel">
-        <div class="file-label">Step 2: Worker job (process from DB, manual parsing &amp; update)</div>
-        <div class="code-block"><span class="cm">// Worker job or command: Get raw data from DB</span>
+        <!-- WEBHOOK PROCESSING: WITHOUT FRAMEWORK -->
+        <div class="example-code-panel">
+          <div class="file-label">Step 2: Worker job (process from DB, manual parsing &amp; update)</div>
+          <div class="code-block"><span class="cm">// Worker job or command: Get raw data from DB</span>
 <span class="var">$webhook</span> = <span class="var">$this</span>-&gt;<span class="var">db</span>-&gt;<span class="fn">query</span>(<span class="str\">'SELECT * FROM webhooks WHERE processed=0'</span>);
 
 <span class="kw">foreach</span> (<span class="var">$webhook</span> <span class="kw">as</span> <span class="var">$row</span>) {
@@ -355,25 +355,28 @@ MyApi/
 
     <span class="var">$this</span>-&gt;<span class="var">db</span>-&gt;<span class="fn">update</span>(<span class="str\">'webhooks'</span>, [<span class="str\">'processed'</span> =&gt; 1]);
 }</div>
+        </div>
       </div>
+    </div>
 
-      <div style="margin-bottom: 2rem; margin-top: 2rem; padding: 1rem 0; border-top: 2px solid #2f6fbd; font-size: 12px; color: #2f6fbd; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;"><strong>With IntegrationEngine</strong></div>
-
-      <!-- WITH ENGINE: 1. Configuration -->
-      <div class="example-code-panel">
-        <div class="file-label">Step 1: Configuration (YAML only)</div>
-        <div class="code-block"><span class="key">webhooks</span>:
+    <div style="border-top: 2px solid #2f6fbd; padding-top: 2rem;">
+      <div style="font-size: 12px; color: #2f6fbd; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 1.5rem;"><strong>With IntegrationEngine</strong></div>
+      <div class="example-panels">
+        <!-- WITH ENGINE: 1. Configuration -->
+        <div class="example-code-panel">
+          <div class="file-label">Step 1: Configuration (YAML only)</div>
+          <div class="code-block"><span class="key">webhooks</span>:
   <span class="key">products/update</span>:
     <span class="val">mapper_class</span>: App\\Shopify\\<span class="hl">ProductUpdatedMapper</span>
     <span class="val">signature</span>:
       <span class="val">type</span>: hmac_sha256
       <span class="val">header</span>: X-Shopify-Hmac-SHA256</div>
-      </div>
+        </div>
 
-      <!-- WITH ENGINE: 2. Controller -->
-      <div class="example-code-panel">
-        <div class="file-label">Step 2: Controller (framework handles signature, dedup, storage)</div>
-        <div class="code-block"><span class="kw">final class</span> <span class="cls">ShopifyWebhookController</span>
+        <!-- WITH ENGINE: 2. Controller -->
+        <div class="example-code-panel">
+          <div class="file-label">Step 2: Controller (framework handles signature, dedup, storage)</div>
+          <div class="code-block"><span class="kw">final class</span> <span class="cls">ShopifyWebhookController</span>
 {
     <span class="kw">public function</span> <span class="fn">__construct</span>(
         <span class="kw">private</span> <span class="cls">MultiPlatformWebhookController</span> <span class="var">$engine</span>
@@ -385,12 +388,12 @@ MyApi/
         <span class="kw">return</span> <span class="var">$this</span>-&gt;<span class="var">engine</span>-&gt;<span class="fn">ingest</span>(<span class="var">$request</span>, <span class="str">'shopify'</span>);
     }
 }</div>
-      </div>
+        </div>
 
-      <!-- WITH ENGINE: 3. Mapper -->
-      <div class="example-code-panel">
-        <div class="file-label">Step 3: Mapper (parse payload, call business logic)</div>
-        <div class="code-block"><span class="kw">final class</span> <span class="cls">ProductUpdatedMapper</span> <span class="kw">extends</span> <span class="cls">AbstractWebhookMapper</span>
+        <!-- WITH ENGINE: 3. Mapper -->
+        <div class="example-code-panel">
+          <div class="file-label">Step 3: Mapper (parse payload, call business logic)</div>
+          <div class="code-block"><span class="kw">final class</span> <span class="cls">ProductUpdatedMapper</span> <span class="kw">extends</span> <span class="cls">AbstractWebhookMapper</span>
 {
     <span class="kw">public function</span> <span class="fn">__construct</span>(<span class="kw">private</span> <span class="cls">InventoryService</span> <span class="var">$inventory</span>) {}
 
@@ -413,8 +416,8 @@ MyApi/
         );
     }
 }</div>
+        </div>
       </div>
-
     </div>
     <div class="example-cta">
       <a href="https://github.com/CarlosGude/integrationEngine/blob/main/WEBHOOK.md" target="_blank" rel="noopener" class="btn-primary">${t.webhookBtn}</a>
