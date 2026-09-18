@@ -65,7 +65,6 @@ final class ShopifyOrderCreatedMapper extends AbstractWebhookMapper
             try {
                 $createdAt = new \DateTimeImmutable($payload['created_at']);
             } catch (\Exception) {
-
             }
         }
 

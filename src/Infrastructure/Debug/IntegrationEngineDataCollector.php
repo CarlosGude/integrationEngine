@@ -52,7 +52,6 @@ final class IntegrationEngineDataCollector implements DataCollectorInterface
 
     public function collect(Request $request, Response $response, ?\Throwable $exception = null): void
     {
-
         // gathered here — nothing left to collect at this point.
     }
 

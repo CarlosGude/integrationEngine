@@ -37,7 +37,8 @@ final class MakeObservabilityCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $integration = strtolower($input->getArgument('integration'));
+        $integrationArgument = $input->getArgument('integration');
+        $integration = strtolower(\is_string($integrationArgument) ? $integrationArgument : '');
 
         if (!preg_match('/^[a-z][a-z0-9_]*$/', $integration)) {
             $io->error("Integration name must be lowercase alphanumeric (e.g., 'shopify', 'stripe', 'my_api')");
@@ -241,7 +242,8 @@ YAML);
             return 'App';
         }
 
-        $psr4 = $composer['autoload']['psr-4'] ?? null;
+        $autoload = $composer['autoload'] ?? null;
+        $psr4 = \is_array($autoload) ? ($autoload['psr-4'] ?? null) : null;
         if (!\is_array($psr4)) {
             return 'App';
         }

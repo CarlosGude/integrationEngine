@@ -10,6 +10,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 final class MiddlewareResolver
 {
+    /** @return array<string, true> service IDs of valid tagged middlewares */
     public function resolveTaggedMiddlewares(ContainerBuilder $container): array
     {
         $tagged = $container->findTaggedServiceIds('integration_engine.middleware');
@@ -42,6 +43,12 @@ final class MiddlewareResolver
         return $registered;
     }
 
+    /**
+     * @param list<string>        $declared
+     * @param array<string, true> $registered
+     *
+     * @return list<string>
+     */
     public function resolveIntegrationMiddlewares(array $declared, array $registered, string $integrationName): array
     {
         foreach ($declared as $serviceId) {
@@ -57,6 +64,7 @@ final class MiddlewareResolver
         return $declared;
     }
 
+    /** @return array<string, true> service IDs of valid tagged request middlewares */
     public function resolveTaggedRequestMiddlewares(ContainerBuilder $container): array
     {
         $tagged = $container->findTaggedServiceIds('integration_engine.request_middleware');
@@ -89,6 +97,12 @@ final class MiddlewareResolver
         return $registered;
     }
 
+    /**
+     * @param list<string>        $declared
+     * @param array<string, true> $registered
+     *
+     * @return list<string>
+     */
     public function resolveIntegrationRequestMiddlewares(array $declared, array $registered, string $integrationName): array
     {
         foreach ($declared as $serviceId) {

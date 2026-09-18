@@ -36,7 +36,6 @@ final class YamlConfigAdapter implements ConfigPort
             );
         }
 
-
         $webhooks = $parsed['webhooks'] ?? [];
         $actions = [];
 
@@ -46,7 +45,6 @@ final class YamlConfigAdapter implements ConfigPort
             }
             $actions[$key] = $item;
         }
-
 
         foreach ($actions as $actionName => $actionConfig) {
             if (!\is_array($actionConfig) || !isset($actionConfig['action']) || !\is_string($actionConfig['action'])) {
@@ -58,7 +56,6 @@ final class YamlConfigAdapter implements ConfigPort
 
         /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>, cache_ttl?: int}> $actions */
         $this->config = $actions;
-
 
         if (!\is_array($webhooks)) {
             throw new \InvalidArgumentException('Webhooks section in config must be an array.');
@@ -152,7 +149,6 @@ final class YamlConfigAdapter implements ConfigPort
         }
 
         $data = $body->toArray();
-
 
         // never mutated) so a placeholder name repeated more than once in
         // the path resolves every occurrence instead of only the first —

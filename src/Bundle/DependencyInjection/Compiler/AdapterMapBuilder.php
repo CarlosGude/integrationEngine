@@ -10,6 +10,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 final class AdapterMapBuilder
 {
+    /** @return array<string, class-string<ClientAdapterInterface>> client type => adapter class */
     public function buildAdapterMap(ContainerBuilder $container): array
     {
         $resolverDefinition = $container->findDefinition(ClientAdapterResolver::class);
@@ -31,15 +32,6 @@ final class AdapterMapBuilder
             if (!is_a($class, ClientAdapterInterface::class, true)) {
                 throw new \InvalidArgumentException(\sprintf(
                     'Service "%s" (%s) is tagged as "integration_engine.client_adapter" but does not implement %s.',
-                    $serviceId,
-                    $class,
-                    ClientAdapterInterface::class,
-                ));
-            }
-
-            if (!method_exists($class, 'getClientType') || !is_callable([$class, 'getClientType'])) {
-                throw new \InvalidArgumentException(\sprintf(
-                    'Service "%s" (%s) does not implement the getClientType() static method required by %s.',
                     $serviceId,
                     $class,
                     ClientAdapterInterface::class,

@@ -59,14 +59,12 @@ final class MakeWebhookCommand extends Command
         $baseNamespace = rtrim($namespaceOpt, '\\');
         $basePath = rtrim($pathOpt, '/');
 
-
         $verifierTypeChoice = $io->choice(
             'Signature verification type',
             ['hmac_sha256', 'timestamped_hmac'],
             'hmac_sha256'
         );
         $verifierType = \is_string($verifierTypeChoice) ? $verifierTypeChoice : 'hmac_sha256';
-
 
         $headerNameInput = $io->ask(
             'Signature header name (e.g., X-Webhook-Signature)',

@@ -70,7 +70,6 @@ final class WebhookPlatformRegistry
 
                 return $this->getByPlatform($platform);
             } catch (\ValueError) {
-
             }
         }
 

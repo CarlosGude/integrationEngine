@@ -15,7 +15,6 @@ final class IntegrationEngineBundle extends Bundle
     {
         parent::build($container);
 
-
         // at the default priority 0), which bakes data_collector-tagged
         // services into the "profiler" service's add() calls at compile time.
 

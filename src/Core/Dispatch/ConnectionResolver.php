@@ -41,7 +41,7 @@ final class ConnectionResolver
         $action = $this->applyAuthorization($action, $credentials);
 
         $resolvedBaseUrl = $baseUrl ?? $credentials?->baseUrl;
-        $cacheDiscriminator = $credentials?->connectionId
+        $cacheDiscriminator = $credentials->connectionId
             ?? (\is_scalar($connection) ? (string) $connection : null)
             ?? $resolvedBaseUrl;
 

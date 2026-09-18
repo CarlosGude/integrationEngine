@@ -36,20 +36,15 @@ final class ProcessWebhookHandler
     public function __invoke(ProcessWebhookMessage $message): void
     {
         try {
-
             $mapper = $this->mapperResolver->resolveMapper($message->eventType);
             if (null === $mapper) {
-
                 return;
             }
 
-
             $domainEvent = $mapper->map($message->payload, $message->headers);
-
 
             $this->eventDispatcher->dispatch($domainEvent);
         } catch (\Throwable $error) {
-
             $failureId = $this->generateFailureId();
             $failure = WebhookFailure::fromThrowable(
                 $failureId,
@@ -59,9 +54,6 @@ final class ProcessWebhookHandler
             );
 
             $this->dlq->store($failure);
-
-
-
         }
     }
 

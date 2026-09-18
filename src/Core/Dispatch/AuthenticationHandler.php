@@ -29,6 +29,9 @@ final class AuthenticationHandler
         $this->dynamicAuthHandler = new DynamicAuthHandler($config, $client, $cache, $integrationName, $logger);
     }
 
+    /**
+     * @param \Closure(AbstractAction, array<mixed>, array<string, list<string>>): ResponseInterface $buildResponse
+     */
     public function handle(
         AbstractAction $action,
         DynamicAuthorizationConfig $auth,

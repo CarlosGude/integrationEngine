@@ -49,7 +49,6 @@ final class ShopifyWebhookController
         }
 
         if (!isset(self::TOPIC_PARSER_MAP[$topic])) {
-
             return new Response('', Response::HTTP_NO_CONTENT);
         }
 
@@ -62,10 +61,8 @@ final class ShopifyWebhookController
             $remoteEvent = $parser->parse($request, $this->shopifyWebhookSecret);
 
             if (!$remoteEvent instanceof RemoteEvent) {
-
                 return new Response('', Response::HTTP_NO_CONTENT);
             }
-
 
             $headers = [];
             foreach ($request->headers->all() as $key => $headerValues) {
@@ -77,7 +74,6 @@ final class ShopifyWebhookController
 
             return new Response('', Response::HTTP_NO_CONTENT);
         } catch (RejectWebhookException $e) {
-
             throw new BadRequestHttpException(
                 $e->getMessage(),
                 null,

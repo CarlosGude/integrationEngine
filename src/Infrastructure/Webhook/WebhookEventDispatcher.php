@@ -34,7 +34,6 @@ final class WebhookEventDispatcher
      */
     public function dispatch(RemoteEvent $remoteEvent, AbstractWebhookMapper $mapper, array $headers): void
     {
-
         if ($mapper->getDefinition() !== $remoteEvent->getName()) {
             throw new \InvalidArgumentException(
                 \sprintf(
@@ -48,7 +47,6 @@ final class WebhookEventDispatcher
         /** @var array<string, mixed> $payload */
         $payload = $remoteEvent->getPayload();
         $event = $mapper->map($payload, $headers);
-
 
         $this->dispatcher->dispatch($event);
     }

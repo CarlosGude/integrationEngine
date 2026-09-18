@@ -43,7 +43,6 @@ final readonly class IntegrationContext
     public function hasBody(): bool
     {
         if (!$this->adapterRequiresMethod) {
-
             return true;
         }
 
@@ -53,7 +52,6 @@ final readonly class IntegrationContext
     public function hasResponse(): bool
     {
         if (!$this->adapterRequiresMethod) {
-
             return true;
         }
 
@@ -62,7 +60,6 @@ final readonly class IntegrationContext
 
     public function needsGraphQLBodyHint(): bool
     {
-
         return !$this->adapterRequiresPath && !$this->adapterRequiresMethod;
     }
 

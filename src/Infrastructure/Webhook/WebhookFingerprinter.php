@@ -30,11 +30,9 @@ final class WebhookFingerprinter
         array $payload,
         \DateTimeImmutable $timestamp,
     ): string {
-
         $sortedPayload = $this->sortArrayRecursively($payload);
         $payloadJson = json_encode($sortedPayload, JSON_THROW_ON_ERROR);
         $hash = hash('sha256', $payloadJson);
-
 
         $timestampStr = $timestamp->format('U');
 

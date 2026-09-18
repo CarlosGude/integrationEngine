@@ -36,7 +36,6 @@ final class WooCommerceProductUpdatedMapper extends AbstractWebhookMapper
             try {
                 $updatedAt = new \DateTimeImmutable($payload['date_modified']);
             } catch (\Exception) {
-
             }
         }
 
