@@ -14,7 +14,7 @@ namespace IntegrationEngine\Core\Lifecycle;
  *       \Psr\Log\LogLevel::info("Action completed: {$event->action()->getName()}");
  *   });
  */
-final class LifecycleEventDispatcher
+class LifecycleEventDispatcher
 {
     /** @var array<class-string, list<callable>> */
     private array $subscribers = [];

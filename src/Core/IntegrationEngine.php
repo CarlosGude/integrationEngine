@@ -14,28 +14,28 @@ use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionBodyInterface;
 use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig;
-use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
 use IntegrationEngine\Core\Contract\Client\ClientInterface;
 use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
-use IntegrationEngine\Core\Contract\Connection\ConnectionCredentials;
 use IntegrationEngine\Core\Contract\Connection\ConnectionResolverInterface;
 use IntegrationEngine\Core\Contract\Response\ResponseInterface;
-use IntegrationEngine\Core\Exception\ConnectionResolutionException;
-use IntegrationEngine\Core\Exception\MapperActionMismatchException;
-use IntegrationEngine\Core\Exception\NotMappedActionException;
+use IntegrationEngine\Core\Dispatch\BatchDispatcher;
+use IntegrationEngine\Core\Dispatch\ConnectionResolver;
+use IntegrationEngine\Core\Dispatch\ResponseBuilder;
 use IntegrationEngine\Core\Lifecycle\ActionCompleted;
 use IntegrationEngine\Core\Lifecycle\ActionFailed;
 use IntegrationEngine\Core\Lifecycle\ActionStarted;
 use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
-use IntegrationEngine\Core\Response\EmptyResponse;
 use Psr\Log\LoggerInterface;
 
 final readonly class IntegrationEngine
 {
     private DynamicAuthHandler $authHandler;
+    private ConnectionResolver $dispatchConnectionResolver;
+    private ResponseBuilder $responseBuilder;
+    private BatchDispatcher $batchDispatcher;
 
     public function __construct(
         private ConfigPort $config,
@@ -44,10 +44,13 @@ final readonly class IntegrationEngine
         private string $integrationName,
         private ?LoggerInterface $logger = null,
         ?DynamicAuthHandler $authHandler = null,
-        private ?ConnectionResolverInterface $connectionResolver = null,
+        ?ConnectionResolverInterface $connectionResolver = null,
         private ?LifecycleEventDispatcher $eventDispatcher = null,
     ) {
         $this->authHandler = $authHandler ?? new DynamicAuthHandler($config, $client, $cache, $integrationName, $logger);
+        $this->dispatchConnectionResolver = new ConnectionResolver($integrationName, $connectionResolver);
+        $this->responseBuilder = new ResponseBuilder();
+        $this->batchDispatcher = new BatchDispatcher($client, $integrationName, $logger);
     }
 
     // ── Single request ─────────────────────────────────────────────────────────
@@ -77,9 +80,11 @@ final readonly class IntegrationEngine
     ): ResponseInterface {
         $startTime = microtime(true);
         $action = $this->config->getAction($actionName, $body);
-        $resolved = $this->resolveForDispatch($action, $connection, $baseUrl);
+        $resolved = $this->dispatchConnectionResolver->resolveForDispatch($action, $connection, $baseUrl);
         $action = $resolved['action'];
-        $client = $resolved['client'];
+        $resolvedBaseUrl = $resolved['baseUrl'];
+        $cacheDiscriminator = $resolved['cacheDiscriminator'];
+        $client = $this->resolveClient($resolvedBaseUrl);
 
         $this->eventDispatcher?->dispatch(new ActionStarted(
             action: $action,
@@ -96,13 +101,13 @@ final readonly class IntegrationEngine
                     auth: $auth,
                     context: $context,
                     headers: $headers,
-                    buildResponse: fn (AbstractAction $a, array $respBody, array $respHeaders): ResponseInterface => $this->buildResponse($a, $respBody, $respHeaders),
+                    buildResponse: fn (AbstractAction $a, array $respBody, array $respHeaders): ResponseInterface => $this->responseBuilder->build($a, $respBody, $respHeaders),
                     client: $client,
-                    cacheDiscriminator: $resolved['cacheDiscriminator'],
+                    cacheDiscriminator: $cacheDiscriminator,
                 );
             } else {
                 $rawResponse = $client->send($action, $context, $headers);
-                $response = $this->buildResponse($action, $rawResponse['body'], $rawResponse['headers']);
+                $response = $this->responseBuilder->build($action, $rawResponse['body'], $rawResponse['headers']);
             }
 
             $duration = (microtime(true) - $startTime) * 1000;
@@ -145,19 +150,16 @@ final readonly class IntegrationEngine
         $failures = [];
         $prepared = [];
         $tokenRetry = new BatchTokenRetry($this->cache, $this->integrationName);
-
-        // Scoped to this call and threaded into resolveForDispatch() below,
-        // so items sharing one $connection (a common batch pattern — many
-        // items for the same tenant) resolve it once instead of once per item.
         $connectionCache = [];
 
         foreach ($requests as $key => $request) {
             try {
                 $action = $this->config->getAction($request->actionName, $request->body);
-                $resolved = $this->resolveForDispatch($action, $request->connection, $request->baseUrl, $connectionCache);
+                $resolved = $this->dispatchConnectionResolver->resolveForDispatch($action, $request->connection, $request->baseUrl, $connectionCache);
                 $action = $resolved['action'];
-                $client = $resolved['client'];
+                $baseUrl = $resolved['baseUrl'];
                 $cacheDiscriminator = $resolved['cacheDiscriminator'];
+                $client = $this->resolveClient($baseUrl);
 
                 $auth = $action->getAuthorization();
 
@@ -170,14 +172,25 @@ final readonly class IntegrationEngine
                     );
                 }
 
-                $prepared[$key] = new PreparedRequest($action, $request->context, $request->headers, $resolved['baseUrl'], $cacheDiscriminator);
+                $prepared[$key] = new PreparedRequest($action, $request->context, $request->headers, $baseUrl, $cacheDiscriminator);
             } catch (\Throwable $e) {
                 $failures[$key] = $e;
             }
         }
 
-        $raw = $this->dispatchBatch($prepared);
-        $raw = $this->retryBatch($raw, $tokenRetry->plan($raw), $prepared);
+        $raw = $this->batchDispatcher->dispatch($prepared);
+        $raw = $this->batchDispatcher->retry(
+            $raw,
+            $tokenRetry->plan($raw),
+            fn ($key, $original, $auth) => new PreparedRequest(
+                $this->authHandler->withStaticToken($original->action, $auth, client: $this->resolveClient($original->baseUrl), cacheDiscriminator: $original->cacheDiscriminator),
+                $original->context,
+                $original->headers,
+                $original->baseUrl,
+                $original->cacheDiscriminator,
+            ),
+            $prepared,
+        );
 
         $results = [];
 
@@ -199,7 +212,7 @@ final readonly class IntegrationEngine
             }
 
             try {
-                $results[$key] = BatchResult::success($this->buildResponse($prepared[$key]->action, $rawResult['body'], $rawResult['headers']));
+                $results[$key] = BatchResult::success($this->responseBuilder->build($prepared[$key]->action, $rawResult['body'], $rawResult['headers']));
             } catch (\Throwable $e) {
                 $results[$key] = BatchResult::failure($e);
             }
@@ -236,248 +249,10 @@ final readonly class IntegrationEngine
         return $responses;
     }
 
-    // ── Batch internals ────────────────────────────────────────────────────────
-
-    /**
-     * Groups requests by their resolved base URL so that each group can be
-     * dispatched through a single client instance — preserving the
-     * concurrency BatchClientInterface offers within a group, while still
-     * supporting requests that target different base URLs in one batch.
-     *
-     * @param array<array-key, PreparedRequest> $prepared
-     *
-     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
-     */
-    private function dispatchBatch(array $prepared): array
-    {
-        if ([] === $prepared) {
-            return [];
-        }
-
-        $groups = [];
-        foreach ($prepared as $key => $request) {
-            $groups[$request->baseUrl ?? ''][$key] = $request;
-        }
-
-        $raw = [];
-        foreach ($groups as $baseUrl => $groupPrepared) {
-            $client = $this->resolveClient('' === $baseUrl ? null : $baseUrl);
-            $raw += $this->dispatchGroup($client, $groupPrepared);
-        }
-
-        return $raw;
-    }
-
-    /**
-     * @param array<array-key, PreparedRequest> $prepared
-     *
-     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
-     */
-    private function dispatchGroup(ClientInterface $client, array $prepared): array
-    {
-        if ($client instanceof BatchClientInterface) {
-            return $client->sendMany($prepared);
-        }
-
-        $raw = [];
-
-        foreach ($prepared as $key => $request) {
-            try {
-                $raw[$key] = $client->send($request->action, $request->context, $request->headers);
-            } catch (\Throwable $e) {
-                $raw[$key] = $e;
-            }
-        }
-
-        return $raw;
-    }
-
     private function resolveClient(?string $baseUrl): ClientInterface
     {
         return (null !== $baseUrl && $this->client instanceof DynamicBaseUrlClientInterface)
             ? $this->client->withBaseUrl($baseUrl)
             : $this->client;
-    }
-
-    /**
-     * Resolves the connection (if any) and derives everything both send()
-     * and sendMany() need to dispatch a request for it: the action with the
-     * connection's authorization override applied, the client targeting
-     * its base URL, the base URL itself, and the dynamic-auth cache
-     * discriminator. Kept as one method so the two call sites can't drift
-     * out of sync with each other on this logic.
-     *
-     * $connectionCache memoizes resolveConnection() across calls sharing
-     * one scalar $connection — pass a variable from sendMany()'s loop so
-     * repeated connections across batch items resolve only once; send()
-     * doesn't pass one, since there's only ever one call to memoize.
-     *
-     * @param array<string, ?ConnectionCredentials> $connectionCache
-     *
-     * @return array{action: AbstractAction, client: ClientInterface, baseUrl: ?string, cacheDiscriminator: ?string}
-     */
-    private function resolveForDispatch(AbstractAction $action, mixed $connection, ?string $baseUrl, array &$connectionCache = []): array
-    {
-        $credentials = $this->resolveConnection($connection, $connectionCache);
-        $action = $this->applyConnectionAuthorization($action, $credentials);
-
-        $resolvedBaseUrl = $baseUrl ?? $credentials?->baseUrl;
-        $cacheDiscriminator = $credentials->connectionId
-            ?? (\is_scalar($connection) ? (string) $connection : null)
-            ?? $resolvedBaseUrl;
-
-        return [
-            'action' => $action,
-            'client' => $this->resolveClient($resolvedBaseUrl),
-            'baseUrl' => $resolvedBaseUrl,
-            'cacheDiscriminator' => $cacheDiscriminator,
-        ];
-    }
-
-    /**
-     * @param array<string, ?ConnectionCredentials> $connectionCache
-     *
-     * @throws ConnectionResolutionException when $connection is given but
-     *                                       no connection_resolver is configured for this integration
-     */
-    private function resolveConnection(mixed $connection, array &$connectionCache = []): ?ConnectionCredentials
-    {
-        if (null === $connection) {
-            return null;
-        }
-
-        $cacheKey = \is_scalar($connection) ? (string) $connection : null;
-
-        if (null !== $cacheKey && \array_key_exists($cacheKey, $connectionCache)) {
-            return $connectionCache[$cacheKey];
-        }
-
-        if (null === $this->connectionResolver) {
-            throw ConnectionResolutionException::noResolverConfigured($this->integrationName);
-        }
-
-        $credentials = $this->connectionResolver->resolve($connection);
-
-        if (null !== $cacheKey) {
-            $connectionCache[$cacheKey] = $credentials;
-        }
-
-        return $credentials;
-    }
-
-    /**
-     * Rebuilds the action with the resolved connection's AuthorizationConfig
-     * when one was resolved — the action instance is otherwise returned
-     * unchanged, so integrations that never use runtime connections pay no
-     * cost and keep their YAML-configured authorization untouched.
-     */
-    private function applyConnectionAuthorization(AbstractAction $action, ?ConnectionCredentials $credentials): AbstractAction
-    {
-        if (null === $credentials?->authorization) {
-            return $action;
-        }
-
-        return $action::create(
-            method: $action->getMethod(),
-            path: $action->getRawPath(),
-            body: $action->getBody(),
-            authorization: $credentials->authorization,
-            cacheTtl: $action->getCacheTtl(),
-        );
-    }
-
-    /**
-     * Executes the retry batch produced by BatchTokenRetry::plan(): re-prepares
-     * each item with a freshly resolved token and dispatches them together.
-     *
-     * $prepared is updated in place for retried keys so the caller's copy
-     * reflects the fresh-token action actually used — buildResponse() must
-     * not see the stale, cache-deleted pre-retry action.
-     *
-     * @param array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable> $raw
-     * @param array<array-key, DynamicAuthorizationConfig>                                                 $toRetry
-     * @param array<array-key, PreparedRequest>                                                            $prepared
-     *
-     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
-     */
-    private function retryBatch(array $raw, array $toRetry, array &$prepared): array
-    {
-        if ([] !== $toRetry) {
-            $this->logger?->warning('Retrying batch items after 401 with a fresh token', [
-                'integration' => $this->integrationName,
-                'count' => \count($toRetry),
-                'keys' => array_keys($toRetry),
-            ]);
-        }
-
-        $retryPrepared = [];
-
-        foreach ($toRetry as $key => $auth) {
-            try {
-                $original = $prepared[$key];
-                $client = $this->resolveClient($original->baseUrl);
-                $retryPrepared[$key] = new PreparedRequest(
-                    $this->authHandler->withStaticToken($original->action, $auth, client: $client, cacheDiscriminator: $original->cacheDiscriminator),
-                    $original->context,
-                    $original->headers,
-                    $original->baseUrl,
-                    $original->cacheDiscriminator,
-                );
-            } catch (\Throwable $e) {
-                $raw[$key] = $e;
-            }
-        }
-
-        foreach ($this->dispatchBatch($retryPrepared) as $key => $result) {
-            $raw[$key] = $result;
-        }
-
-        foreach ($retryPrepared as $key => $request) {
-            $prepared[$key] = $request;
-        }
-
-        return $raw;
-    }
-
-    // ── Response building ──────────────────────────────────────────────────────
-
-    /**
-     * @param array<mixed>                $body
-     * @param array<string, list<string>> $headers
-     */
-    private function buildResponse(AbstractAction $action, array $body, array $headers): ResponseInterface
-    {
-        if (!$action::hasResponse()) {
-            return new EmptyResponse();
-        }
-
-        return $this->applyMapper($action, $body, $headers);
-    }
-
-    /**
-     * @param array<mixed>                $body
-     * @param array<string, list<string>> $headers
-     */
-    private function applyMapper(AbstractAction $action, array $body, array $headers): ResponseInterface
-    {
-        $mapperClass = $action::mapper();
-
-        if (null === $mapperClass) {
-            throw new NotMappedActionException($action::getName());
-        }
-
-        // Fail-fast before entering the mapper: catches misconfigured actions
-        // from custom ConfigPort or ClientInterface implementations.
-        // AbstractMapper::map() carries the same guard as a public contract
-        // for callers that use it outside the engine flow.
-        if ($mapperClass::getAction() !== $action::class) {
-            throw new MapperActionMismatchException(
-                mapperClass: $mapperClass,
-                expectedActionClass: $mapperClass::getAction(),
-                actualActionClass: $action::class
-            );
-        }
-
-        return $mapperClass::map($action, $body, $headers);
     }
 }
