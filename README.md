@@ -3,16 +3,18 @@
 [![CI](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml/badge.svg)](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml)
 
 **Website:** [integrationengine.dev](https://integrationengine.dev)  
-**Status:** v4.1.1 Live · [Full Demo](https://github.com/CarlosGude/integrationEngine-demo) Complete  
+**Status:** v5.1.0 Live — Inbound Webhooks Complete  
 **Roadmap:** [See public roadmap](./ROADMAP.md) — Now/Next/Later, no dates, transparent progress.
 
-**📊 Demo Status:** Days 17-25 Complete ✅
-- ✅ 3 protocols working (REST, CSV, GraphQL)
-- ✅ 40+ tests passing
-- ✅ Parallel requests (5-13x speedup)
-- ✅ Middleware extensibility
-- ✅ Bilingual tour with live code
-- 🔗 [See integrationEngine-demo](https://github.com/CarlosGude/integrationEngine-demo)
+**✨ v5.1.0 Features:**
+- ✅ **Inbound webhook framework** (Shopify, WooCommerce, extensible)
+- ✅ HMAC signature verification per platform
+- ✅ Idempotency & replay protection (24h fingerprint window)
+- ✅ Dead-letter queue for failed webhooks
+- ✅ State machine & immutable audit trail
+- ✅ Async processing via Symfony Messenger
+- ✅ Multi-platform routing by path or header
+- 🔗 [Guide: WEBHOOK.md](./WEBHOOK.md)
 
 ---
 
