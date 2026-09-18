@@ -6,9 +6,7 @@ namespace IntegrationEngine\Bundle\DependencyInjection\Compiler;
 
 use IntegrationEngine\Bundle\Exception\IntegrationConfigurationException;
 use IntegrationEngine\Core\Auth\DynamicAuthHandler;
-use IntegrationEngine\Core\Contract\Client\AbstractClientMiddleware;
-use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
-use IntegrationEngine\Core\Contract\Client\RequestMiddlewareInterface;
+use IntegrationEngine\Core\Dispatch\AuthenticationHandler;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Registry\IntegrationRegistry;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
@@ -16,7 +14,6 @@ use IntegrationEngine\Infrastructure\Cache\CachingMiddleware;
 use IntegrationEngine\Infrastructure\Client\MiddlewareClient;
 use IntegrationEngine\Infrastructure\Debug\IntegrationEngineDataCollector;
 use IntegrationEngine\Infrastructure\Debug\TracingMiddleware;
-use IntegrationEngine\Infrastructure\Http\ClientAdapterResolver;
 use IntegrationEngine\Infrastructure\Http\GraphQLClientAdapter;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
@@ -34,198 +31,22 @@ final class IntegrationCompilerPass implements CompilerPassInterface
             return;
         }
 
-        /** @var array<string, array{config_path: null|string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, connection_resolver: null|string, headers: array<string, string>, middlewares: list<string>, request_middlewares: list<string>}> $integrations */
         $integrations = $container->getParameter('integration_engine.integrations');
 
-        $registeredMiddlewares = $this->resolveTaggedMiddlewares($container);
-        $registeredRequestMiddlewares = $this->resolveTaggedRequestMiddlewares($container);
+        $middlewareResolver = new MiddlewareResolver();
+        $registeredMiddlewares = $middlewareResolver->resolveTaggedMiddlewares($container);
+        $registeredRequestMiddlewares = $middlewareResolver->resolveTaggedRequestMiddlewares($container);
 
-        $adapterMap = $this->buildAdapterMap($container);
+        $adapterBuilder = new AdapterMapBuilder();
+        $adapterMap = $adapterBuilder->buildAdapterMap($container);
 
         $registry = $container->findDefinition(IntegrationRegistry::class);
 
         foreach ($integrations as $name => $config) {
-            $this->wireIntegration($container, $registry, $name, $config, $adapterMap, $registeredMiddlewares, $registeredRequestMiddlewares);
+            $this->wireIntegration($container, $registry, $name, $config, $adapterMap, $registeredMiddlewares, $registeredRequestMiddlewares, $middlewareResolver);
         }
     }
 
-    // ── Tagged middleware discovery ────────────────────────────────────────────
-
-    /**
-     * Collects services tagged with "integration_engine.middleware", validates they
-     * extend AbstractClientMiddleware, and returns their IDs as a set.
-     * Order is determined per-integration by the "middlewares" config key.
-     *
-     * @return array<string, true>
-     */
-    private function resolveTaggedMiddlewares(ContainerBuilder $container): array
-    {
-        $tagged = $container->findTaggedServiceIds('integration_engine.middleware');
-        $registered = [];
-
-        foreach ($tagged as $serviceId => $tags) {
-            $definition = $container->getDefinition($serviceId);
-            $class = $definition->getClass() ?? $serviceId;
-
-            if (!class_exists($class)) {
-                throw new \InvalidArgumentException(\sprintf(
-                    'Service "%s" is tagged as "integration_engine.middleware" but its class "%s" does not exist.',
-                    $serviceId,
-                    $class,
-                ));
-            }
-
-            if (!is_a($class, AbstractClientMiddleware::class, true)) {
-                throw new \InvalidArgumentException(\sprintf(
-                    'Service "%s" (%s) is tagged as "integration_engine.middleware" but does not extend %s.',
-                    $serviceId,
-                    $class,
-                    AbstractClientMiddleware::class,
-                ));
-            }
-
-            $registered[$serviceId] = true;
-        }
-
-        return $registered;
-    }
-
-    /**
-     * Resolves the ordered middleware list for one integration, validating that
-     * every declared service ID is registered (tagged with integration_engine.middleware).
-     *
-     * @param list<string>        $declared
-     * @param array<string, true> $registered
-     *
-     * @return list<string>
-     */
-    private function resolveIntegrationMiddlewares(array $declared, array $registered, string $integrationName): array
-    {
-        foreach ($declared as $serviceId) {
-            if (!isset($registered[$serviceId])) {
-                throw new \InvalidArgumentException(\sprintf(
-                    'Integration "%s" declares middleware "%s" but no service with that ID is tagged as "integration_engine.middleware".',
-                    $integrationName,
-                    $serviceId,
-                ));
-            }
-        }
-
-        return $declared;
-    }
-
-    // ── Tagged request middleware discovery ────────────────────────────────────
-
-    /**
-     * Same as resolveTaggedMiddlewares(), but for request_middlewares:
-     * services tagged "integration_engine.request_middleware" must implement
-     * RequestMiddlewareInterface (not extend AbstractClientMiddleware —
-     * these are a different, request-level extension point, see the
-     * interface's docblock).
-     *
-     * @return array<string, true>
-     */
-    private function resolveTaggedRequestMiddlewares(ContainerBuilder $container): array
-    {
-        $tagged = $container->findTaggedServiceIds('integration_engine.request_middleware');
-        $registered = [];
-
-        foreach ($tagged as $serviceId => $tags) {
-            $definition = $container->getDefinition($serviceId);
-            $class = $definition->getClass() ?? $serviceId;
-
-            if (!class_exists($class)) {
-                throw new \InvalidArgumentException(\sprintf(
-                    'Service "%s" is tagged as "integration_engine.request_middleware" but its class "%s" does not exist.',
-                    $serviceId,
-                    $class,
-                ));
-            }
-
-            if (!is_a($class, RequestMiddlewareInterface::class, true)) {
-                throw new \InvalidArgumentException(\sprintf(
-                    'Service "%s" (%s) is tagged as "integration_engine.request_middleware" but does not implement %s.',
-                    $serviceId,
-                    $class,
-                    RequestMiddlewareInterface::class,
-                ));
-            }
-
-            $registered[$serviceId] = true;
-        }
-
-        return $registered;
-    }
-
-    /**
-     * @param list<string>        $declared
-     * @param array<string, true> $registered
-     *
-     * @return list<string>
-     */
-    private function resolveIntegrationRequestMiddlewares(array $declared, array $registered, string $integrationName): array
-    {
-        foreach ($declared as $serviceId) {
-            if (!isset($registered[$serviceId])) {
-                throw new \InvalidArgumentException(\sprintf(
-                    'Integration "%s" declares request middleware "%s" but no service with that ID is tagged as "integration_engine.request_middleware".',
-                    $integrationName,
-                    $serviceId,
-                ));
-            }
-        }
-
-        return $declared;
-    }
-
-    // ── Adapter discovery ──────────────────────────────────────────────────────
-
-    /**
-     * @return array<string, class-string<ClientAdapterInterface>>
-     */
-    private function buildAdapterMap(ContainerBuilder $container): array
-    {
-        $resolverDefinition = $container->findDefinition(ClientAdapterResolver::class);
-
-        /** @var array<string, class-string<ClientAdapterInterface>> $adapterMap */
-        $adapterMap = [];
-
-        foreach ($container->findTaggedServiceIds('integration_engine.client_adapter') as $serviceId => $tags) {
-            $definition = $container->getDefinition($serviceId);
-            $class = $definition->getClass() ?? $serviceId;
-
-            if (!class_exists($class)) {
-                throw new \InvalidArgumentException(\sprintf(
-                    'Service "%s" is tagged as "integration_engine.client_adapter" but its class "%s" does not exist.',
-                    $serviceId,
-                    $class,
-                ));
-            }
-
-            if (!is_a($class, ClientAdapterInterface::class, true)) {
-                throw new \InvalidArgumentException(\sprintf(
-                    'Service "%s" (%s) is tagged as "integration_engine.client_adapter" but does not implement %s.',
-                    $serviceId,
-                    $class,
-                    ClientAdapterInterface::class,
-                ));
-            }
-
-            $adapterMap[$class::getClientType()] = $class;
-            $resolverDefinition->addMethodCall('register', [$class::getClientType(), $class]);
-        }
-
-        return $adapterMap;
-    }
-
-    // ── Integration wiring ─────────────────────────────────────────────────────
-
-    /**
-     * @param array{config_path: null|string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, connection_resolver: null|string, headers: array<string, string>, middlewares: list<string>, request_middlewares: list<string>} $config
-     * @param array<string, class-string<ClientAdapterInterface>>                                                                                                                                                                                                             $adapterMap
-     * @param array<string, true>                                                                                                                                                                                                                                             $registeredMiddlewares
-     * @param array<string, true>                                                                                                                                                                                                                                             $registeredRequestMiddlewares
-     */
     private function wireIntegration(
         ContainerBuilder $container,
         Definition $registry,
@@ -234,6 +55,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         array $adapterMap,
         array $registeredMiddlewares,
         array $registeredRequestMiddlewares,
+        MiddlewareResolver $middlewareResolver,
     ): void {
         if (null === $config['config_path']) {
             throw IntegrationConfigurationException::missingConfigPath($name);
@@ -251,14 +73,14 @@ final class IntegrationCompilerPass implements CompilerPassInterface
 
         $loggerRef = new Reference('logger', ContainerInterface::IGNORE_ON_INVALID_REFERENCE);
 
-        $integrationRequestMiddlewares = $this->resolveIntegrationRequestMiddlewares($config['request_middlewares'], $registeredRequestMiddlewares, $name);
+        $integrationRequestMiddlewares = $middlewareResolver->resolveIntegrationRequestMiddlewares($config['request_middlewares'], $registeredRequestMiddlewares, $name);
         $httpClientRef = $this->resolveHttpClientRef($container, $name, $config, $adapterMap, $integrationRequestMiddlewares);
-        $integrationMiddlewares = $this->resolveIntegrationMiddlewares($config['middlewares'], $registeredMiddlewares, $name);
+        $integrationMiddlewares = $middlewareResolver->resolveIntegrationMiddlewares($config['middlewares'], $registeredMiddlewares, $name);
         $clientRef = $this->buildMiddlewareClient($container, $name, $httpClientRef, $cacheRef, $integrationMiddlewares);
 
         $authHandlerId = "integration_engine.auth_handler.{$name}";
         $container->setDefinition($authHandlerId, new Definition(
-            DynamicAuthHandler::class,
+            AuthenticationHandler::class,
             [new Reference($configId), $clientRef, $cacheRef, $name, $loggerRef],
         ));
 

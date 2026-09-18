@@ -18,7 +18,7 @@ use IntegrationEngine\Core\Exception\RequestResponseException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface as HttpResponseInterface;
 
-final readonly class GraphQLClientAdapter implements ClientAdapterInterface, BatchClientInterface, DynamicBaseUrlClientInterface
+final readonly class GraphQLClientAdapter extends HttpClientAdapterBase implements BatchClientInterface, DynamicBaseUrlClientInterface
 {
     use ResolvesAuthHeaders;
     use RunsRequestMiddlewares;
@@ -158,25 +158,6 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
         }
     }
 
-    /**
-     * @param array<array-key, PreparedRequest> $requests
-     *
-     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
-     */
-    private function sendManySequentially(array $requests): array
-    {
-        $results = [];
-
-        foreach ($requests as $key => $request) {
-            try {
-                $results[$key] = $this->send($request->action, $request->context, $request->headers);
-            } catch (\Throwable $e) {
-                $results[$key] = $e;
-            }
-        }
-
-        return $results;
-    }
 
     /**
      * @return array{headers: array<string, string>, json: array<string, mixed>}
