@@ -71,8 +71,21 @@ $employee = $dummyRestApiGateway->find(123); // domain object, via the ACL Gatew
 
 No HTTP clients. No request builders. No mappers. Just integrations.
 
-See it wired into a real Symfony app — REST, GraphQL, and dynamic OAuth2 — in the
-[demo repository](https://github.com/CarlosGude/integrationEngine-use-example).
+---
+
+## Live Demo
+
+**Want to see it in action?**
+
+→ **[View the live demo](https://integrationengine-demo.example.com)** (Symfony app with TMDB integration)  
+→ **[Demo source code](https://github.com/CarlosGude/integrationEngine-use-example)** (GitHub repository)
+
+The demo shows:
+- REST integration (TMDB Movie API)
+- Parallel batch requests
+- Typed Response DTOs
+- Mapper pattern in action
+- Real-world Symfony wiring
 
 ---
 
