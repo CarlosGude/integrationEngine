@@ -366,8 +366,15 @@ MyApi/
       <span class="val">type</span>: hmac_sha256
       <span class="val">header</span>: X-Shopify-Hmac-SHA256
 
-<span class="cm">// 2. Entry point (Controller) → POST /webhooks/shopify</span>
-<span class="cm">// Framework: verifies signature, checks duplicates, calls mapper</span>
+<span class="cm">// 2. Entry point: POST /webhooks/shopify (automatic)</span>
+<span class="cm">// Incoming request → Framework automatically:</span>
+<span class="cm">//   • Extract signature from X-Shopify-Hmac-SHA256 header</span>
+<span class="cm">//   • Verify HMAC-SHA256 (throw 401 if invalid)</span>
+<span class="cm">//   • Check fingerprint cache (skip if duplicate)</span>
+<span class="cm">//   • Decode JSON payload</span>
+<span class="cm">//   • Call ProductUpdatedMapper->map($payload)</span>
+<span class="cm">//   • Track state: received → processing</span>
+<span class="cm">//   • Return HTTP 202 Accepted to Shopify</span>
 
 <span class="cm">// 3. Mapper: parses + updates (no separate listener needed)</span>
 <span class="kw">final class</span> <span class="cls">ProductUpdatedMapper</span> <span class="kw">extends</span> <span class="cls">AbstractWebhookMapper</span>
