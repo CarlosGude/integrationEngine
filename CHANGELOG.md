@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [5.3.1] - 2026-09-18
+
 ### Fixed
 
 - The bundle no longer autodiscovers `ShopifyWebhookController`, `MultiPlatformWebhookController` and `ProcessWebhookHandler`. They can't be autowired (a secret string; `WebhookMapperResolverPort` / `WebhookDlqPort` with no implementation), and autoconfigure kept them in the container as controller / message handler, so container compilation failed in consuming apps (verified on Symfony 7.4). Register them explicitly if you use them.
