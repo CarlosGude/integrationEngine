@@ -66,7 +66,7 @@ GetEmployee:
     path:   /employees/{id}
 ```
 
-→ [Actions in depth](docs/actions.md) — all YAML options, `hasResponse: false`, the
+→ [Actions in depth](docs/getting-started/actions.md) — all YAML options, `hasResponse: false`, the
 stateless invariant.
 
 ---
@@ -86,7 +86,7 @@ $engine->send('UpdateEmployee', body: UpdateEmployeeBody::create(['id' => 42, 'n
 DefaultActionContext::create(['id' => 42]) // → /employees/42
 ```
 
-→ [Context and path resolution](docs/context-and-path.md) — body-sourced placeholders,
+→ [Context and path resolution](docs/getting-started/context-and-path.md) — body-sourced placeholders,
 required vs. optional params, custom context with validation, decision table.
 
 ---
@@ -116,7 +116,7 @@ final readonly class GetEmployeeResponse implements ResponseInterface
 }
 ```
 
-→ [Mappers and responses](docs/mappers-and-responses.md) — type mapping table, nested
+→ [Mappers and responses](docs/getting-started/mappers-and-responses.md) — type mapping table, nested
 DTOs, shared mapper logic, the `toArray()` contract.
 
 ---
@@ -145,7 +145,7 @@ GetOrders:
         ttl:         3600
 ```
 
-→ [Authorization](docs/authorization.md) — all static types (bearer, basic, api\_key),
+→ [Authorization](docs/getting-started/authorization.md) — all static types (bearer, basic, api\_key),
 dynamic auth config, token action setup, caching (including per-connection isolation
 for multi-connection integrations), 401 retry, Redis backend.
 
@@ -170,7 +170,7 @@ $results['alice']->error();      // \Throwable|null
 Real concurrency is independent of the protocol — it depends on whether the client
 implements `BatchClientInterface`. The default REST client does.
 
-→ [Batch / Parallel Requests](docs/batch-requests.md) — failure strategies,
+→ [Batch / Parallel Requests](docs/getting-started/batch-requests.md) — failure strategies,
 `sendManyOrFail()`, concurrency per client type, `AbstractBatchMapper` for homogeneous
 batches, mixed-action batches.
 
@@ -188,7 +188,7 @@ my_api:
     client_service: 'App\Infrastructure\Http\RetryingHttpClient'
 ```
 
-→ [HTTP Clients](docs/clients.md) — GraphQL body interface, `client:` vs
+→ [HTTP Clients](docs/advanced/architecture/clients.md) — GraphQL body interface, `client:` vs
 `client_service:`, custom protocol adapters, `BatchClientInterface` for concurrency.
 
 ---
