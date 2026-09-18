@@ -88,7 +88,7 @@ body {
 .hero-actions { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; position: relative; }
 .btn-primary { background: var(--blue); color: #fff; font-weight: 700; font-size: .9rem; padding: .6rem 1.5rem; border-radius: 7px; text-decoration: none; transition: opacity .2s, transform .1s; }
 .btn-primary:hover { opacity: .85; transform: translateY(-1px); }
-.btn-outline { background: transparent; color: var(--text); font-weight: 600; font-size: .9rem; padding: .6rem 1.5rem; border-radius: 7px; text-decoration: none; border: 1px solid var(--border); transition: border-color .2s; }
+.btn-outline { background: transparent; color: var(--navy); font-weight: 600; font-size: .9rem; padding: .6rem 1.5rem; border-radius: 7px; text-decoration: none; border: 1px solid var(--navy); transition: border-color .2s, color .2s; }
 .btn-outline:hover { border-color: var(--muted); }
 
 /* ── SHARED ── */
