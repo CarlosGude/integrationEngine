@@ -481,18 +481,27 @@ MyApi/
       <span class="val">level</span>: info       <span class="cm"># Production</span></div>
       </div>
 
-      <!-- Step 3: Done -->
+      <!-- Step 3: Real Example -->
       <div style="grid-column: 1 / -1;">
         <div class="example-code-panel">
-          <div class="file-label">Step 3: Done (no code changes, automatic)</div>
-          <div class="code-block"><span class="cm">// Your integration service (unchanged)</span>
-<span class="kw">class</span> <span class="cls">ShopifyService</span> {
-    <span class="kw">public function</span> <span class="fn">syncProduct</span>() {
-        <span class="var">$this</span>-&gt;<span class="var">engine</span>-&gt;<span class="fn">send</span>(<span class="str">'GetProduct'</span>, ...);
-        <span class="cm">// ✓ Logs: action, duration, response type</span>
-        <span class="cm">// ✓ Metrics: Prometheus histogram</span>
-        <span class="cm">// ✓ Alerts: Slack if slow (&gt;3s)</span>
-        <span class="cm">// ✓ Errors: Sentry with full context</span>
+          <div class="file-label">Step 3: Listen to lifecycle events (#[AsEventListener])</div>
+          <div class="code-block"><span class="cm">// Listen to ActionCompleted for metrics</span>
+<span class="attr">#[AsEventListener(event: ActionCompleted::class)]</span>
+<span class="kw">public function</span> <span class="fn">onActionCompleted</span>(<span class="cls">ActionCompleted</span> <span class="var">$event</span>): <span class="kw">void</span>
+{
+    <span class="cm">// $event->action() → GetProduct</span>
+    <span class="cm">// $event->response() → typed DTO</span>
+    <span class="cm">// $event->durationMs() → 342ms</span>
+    <span class="cm">// $event->integrationName() → 'shopify'</span>
+
+    <span class="var">$this</span>-&gt;<span class="var">prometheus</span>-&gt;<span class="fn">histogram</span>(
+        <span class="str\">'integration.duration'</span>,
+        <span class="var">$event</span>-&gt;<span class="fn">durationMs</span>(),
+        [<span class="str\">'action'</span> =&gt; <span class="var">$event</span>-&gt;<span class="fn">action</span>()-&gt;<span class="fn">getName</span>()]
+    );
+
+    <span class="kw">if</span> (<span class="var">$event</span>-&gt;<span class="fn">durationMs</span>() &gt; 3000) {
+        <span class="var">$this</span>-&gt;<span class="var">slack</span>-&gt;<span class="fn">alert</span>(<span class="str\">'Slow integration: '</span> . <span class="var">$event</span>-&gt;<span class="fn">action</span>()-&gt;<span class="fn">getName</span>());
     }
 }</div>
         </div>
