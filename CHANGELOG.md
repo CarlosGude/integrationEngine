@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- The bundle no longer autodiscovers `ShopifyWebhookController`, `MultiPlatformWebhookController` and `ProcessWebhookHandler`. They can't be autowired (a secret string; `WebhookMapperResolverPort` / `WebhookDlqPort` with no implementation), and autoconfigure kept them in the container as controller / message handler, so container compilation failed in consuming apps (verified on Symfony 7.4). Register them explicitly if you use them.
+- `make:webhook`: the generated parser is no longer `readonly` (fatal error: a readonly class can't extend Symfony's non-readonly `AbstractRequestParser`); the generated namespace now mirrors the generated path (PSR-4 autoloadable); the mapper is generated in its own file.
+
+### Documentation
+
+- WEBHOOK.md rewritten to match the code: Symfony Webhook component + `IntegrationWebhookRequestParser` + `WebhookEventDispatcher`. Removes the nonexistent `webhooks:` bundle config key, `/webhooks/{platform}` endpoint and `webhook:dlq:*` commands; idempotency, DLQ, audit and the Messenger handler are documented as ports without a built-in adapter.
+
+## [5.3.0] - 2026-09-18
+
+### Added
+
+- **`HttpResponseReceived`** lifecycle event: fired after the raw HTTP response, before mapping — tracks HTTP latency on its own.
+- **`ResponseMapped`** lifecycle event: fired after DTO mapping, before `ActionCompleted` — carries HTTP, mapping and total durations separately.
+- Both are dispatched for direct HTTP calls only, not on the dynamic-auth path. See OBSERVABILITY.md → *Detailed Timing* and ADR 0013.
+- **Symfony Flex recipe** (`.symfony-recipes/`), prepared for submission to symfony/recipes-contrib.
+
+### Known issues
+
+- In Symfony apps the bundle doesn't inject `LifecycleEventDispatcher` into the integrations (`IntegrationCompilerPass`), so lifecycle events — including those from 5.2.0 — are not dispatched and `#[AsEventListener]` listeners receive nothing. Events work when `IntegrationEngine` is built by hand with a dispatcher.
+- `HttpResponseReceived::$statusCode` is always `0`: clients return only `{body, headers}`.
+
 ## [5.2.0] - 2026-09-18
 
 ### Added
@@ -15,8 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - **Core events**:
   - **`ActionStarted`**: Fired before HTTP call with action metadata
-  - **`HttpResponseReceived`**: Fired after raw HTTP response (new in 5.2.0) — track API latency separately
-  - **`ResponseMapped`**: Fired after DTO mapping (new in 5.2.0) — break down HTTP vs. transformation time
   - **`ActionCompleted`**: Fired after successful mapping with duration and response
   - **`ActionFailed`**: Fired on errors (HTTP or mapping) with exception details
 - **Infrastructure**:
@@ -26,7 +47,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Built-in observability examples**:
   - **Logging**: Custom logger with action metadata (integration name, duration, status)
   - **Prometheus metrics**: HTTP request counter, duration histogram, error rate gauge
-  - **Detailed timing**: Separate gauges for HTTP latency, DTO mapping time, overhead
   - **Sentry integration**: Capture errors with context (action, integration, response status)
   - **Audit trails**: Immutable event log for compliance and debugging
 
