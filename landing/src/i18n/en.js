@@ -170,7 +170,7 @@ export default {
 
     // Observability section
     obsEyebrow: 'Observability',
-    obsH2:      'Know what's happening in production.',
+    obsH2:      'Know what\'s happening in production.',
     obsSub:     'Automatic logging, metrics, and alerts without boilerplate. One command generates the setup, then configuration handles the rest. Logging overhead: +0.06ms per call (unmeasurable). Metrics only: +0.01ms per call. Async logging by default—no performance penalty. See timing, errors, and slow requests across your integrations.',
     obsBtn:     'View observability guide',
 
