@@ -295,6 +295,76 @@ MyApi/
   </div>
 </section>
 
+<!-- WEBHOOK EXAMPLE -->
+<section class="s-light">
+  <div class="container">
+    <div class="eyebrow">${t.webhookEyebrow}</div>
+    <h2 class="s-heading">${t.webhookH2}</h2>
+    <p class="s-sub">${t.webhookSub}</p>
+    <div class="example-panels">
+
+      <!-- YAML -->
+      <div class="struct-panel">
+        <div class="struct-header">SHOPIFY.YAML</div>
+        <pre><span class="key">webhooks</span>:
+  <span class="key">products/update</span>:
+    <span class="val">event_type</span>: products/update
+    <span class="val">mapper_class</span>: App\\...\\<span class="hl">ProductUpdatedMapper</span>
+    <span class="val">signature</span>:
+      <span class="val">type</span>: <span class="hl">hmac_sha256</span>
+      <span class="val">header</span>: X-Shopify-Hmac-SHA256
+
+  <span class="key">orders/create</span>:
+    <span class="val">event_type</span>: orders/create
+    <span class="val">mapper_class</span>: App\\...\\<span class="hl">OrderCreatedMapper</span>
+    <span class="val">signature</span>:
+      <span class="val">type</span>: hmac_sha256
+      <span class="val">header</span>: X-Shopify-Hmac-SHA256</pre>
+      </div>
+
+      <!-- MAPPER -->
+      <div class="example-code-panel">
+        <div class="file-label">ProductUpdatedMapper.php</div>
+        <div class="code-block"><span class="kw">final class</span> <span class="cls">ProductUpdatedMapper</span> <span class="kw">extends</span> <span class="cls">AbstractWebhookMapper</span>
+{
+    <span class="kw">public function</span> <span class="fn">getDefinition</span>(): <span class="cls">string</span>
+    {
+        <span class="kw">return</span> <span class="str">'products/update'</span>;
+    }
+
+    <span class="kw">public function</span> <span class="fn">map</span>(<span class="cls">array</span> <span class="var">$payload</span>): <span class="cls">WebhookEventInterface</span>
+    {
+        <span class="kw">return new</span> <span class="cls">ProductUpdated</span>(
+            <span class="key">id</span>: <span class="var">$payload</span>[<span class="str">'id'</span>],
+            <span class="key">title</span>: <span class="var">$payload</span>[<span class="str">'title'</span>],
+            <span class="key">price</span>: (float) <span class="var">$payload</span>[<span class="str">'price'</span>],
+        );
+    }
+}</div>
+      </div>
+
+      <!-- USAGE (full width) -->
+      <div class="example-code-panel example-panel-full">
+        <div class="file-label">Receives inbound webhook on POST /webhooks/shopify &mdash; Signature verified, duplicates filtered, state tracked automatically</div>
+        <div class="code-block"><span class="cm">// Symfony event listener automatically receives typed DTO</span>
+<span class="cm">// No raw arrays, no signature verification logic in your code</span>
+
+<span class="kw">class</span> <span class="cls">ProductUpdatedListener</span>
+{
+    <span class="kw">public function</span> <span class="fn">onProductUpdated</span>(<span class="cls">ProductUpdated</span> <span class="var">$event</span>): <span class="cls">void</span>
+    {
+        <span class="var">$this</span>-&gt;<span class="var">inventory</span>-&gt;<span class="fn">syncProduct</span>(<span class="var">$event</span>-&gt;<span class="var">id</span>, <span class="var">$event</span>-&gt;<span class="var">price</span>);
+    }
+}</div>
+      </div>
+
+    </div>
+    <div class="example-cta">
+      <a href="https://github.com/CarlosGude/integrationEngine/blob/main/WEBHOOK.md" target="_blank" rel="noopener" class="btn-primary">${t.webhookBtn}</a>
+    </div>
+  </div>
+</section>
+
 <!-- EXTENSION POINTS -->
 <section class="s-dark ext-section">
   <div class="container">

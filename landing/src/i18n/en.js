@@ -160,7 +160,13 @@ export default {
     statusNow:          '<strong>Now:</strong> v5.1.0 released. Multi-platform webhook framework (Shopify, WooCommerce). 596 tests passing. Production-ready.',
     statusNext:         '<strong>Next:</strong> Phase 5: Quality of design (PHPStan rule extensions, SSRF protection). Phase 6: Platform ecosystem (pre-built integrations).',
     statusLater:        '<strong>Later:</strong> Admin dashboard (webhook replay UI), open-source plugins, certified training.',
-    statusRoadmapLink:  'Full roadmap →',
+    statusRoadmapLink:  'See phases: discovery, reliability, generalization, release →',
+
+    // Webhook example section
+    webhookEyebrow: 'Inbound Example',
+    webhookH2:      'Receive Shopify webhooks in under 20 lines.',
+    webhookSub:     'One signature verifier. One DTO per event type. One mapper. Automatic duplicate detection, state tracking, and dead-letter queue for failures &mdash; no webhook logic in your service layer.',
+    webhookBtn:     'View webhook guide',
 
     // Thanks section
     thanksEyebrow: 'Before you go',

@@ -160,7 +160,13 @@ export default {
     statusNow:          '<strong>Ahora:</strong> v5.1.0 publicada. Framework de webhooks multi-plataforma (Shopify, WooCommerce). 596 tests pasando. Listo para producción.',
     statusNext:         '<strong>Próximo:</strong> Fase 5: Calidad del diseño (extensiones PHPStan, protección SSRF). Fase 6: Ecosistema de plataformas (integraciones pre-construidas).',
     statusLater:        '<strong>Después:</strong> Dashboard admin (UI de replay de webhooks), plugins open-source, formación certificada.',
-    statusRoadmapLink:  'Hoja de ruta completa →',
+    statusRoadmapLink:  'Ver fases: descubrimiento, confiabilidad, generalización, release →',
+
+    // Webhook example section
+    webhookEyebrow: 'Ejemplo Inbound',
+    webhookH2:      'Recibe webhooks de Shopify en menos de 20 líneas.',
+    webhookSub:     'Un verificador de firmas. Un DTO por tipo de evento. Un mapper. Detección automática de duplicados, tracking de estado y dead-letter queue para fallos &mdash; sin lógica de webhooks en tu capa de servicios.',
+    webhookBtn:     'Ver guía de webhooks',
 
     // Thanks section
     thanksEyebrow: 'Antes de irte',
