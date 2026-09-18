@@ -37,8 +37,18 @@ final class AdapterMapBuilder
                 ));
             }
 
-            $adapterMap[$class::getClientType()] = $class;
-            $resolverDefinition->addMethodCall('register', [$class::getClientType(), $class]);
+            if (!method_exists($class, 'getClientType') || !is_callable([$class, 'getClientType'])) {
+                throw new \InvalidArgumentException(\sprintf(
+                    'Service "%s" (%s) does not implement the getClientType() static method required by %s.',
+                    $serviceId,
+                    $class,
+                    ClientAdapterInterface::class,
+                ));
+            }
+
+            $clientType = $class::getClientType();
+            $adapterMap[$clientType] = $class;
+            $resolverDefinition->addMethodCall('register', [$clientType, $class]);
         }
 
         return $adapterMap;

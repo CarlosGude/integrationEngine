@@ -7,6 +7,7 @@ namespace IntegrationEngine\Core\Lifecycle;
 /**
  * Minimal dispatcher for integration engine lifecycle events.
  * Applications can plug in Symfony EventDispatcher or any PSR-14 dispatcher.
+ * Extendable for adapter implementations (e.g. SymfonyEventDispatcherAdapter).
  *
  * Usage:
  *   $dispatcher = new LifecycleEventDispatcher();
