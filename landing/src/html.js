@@ -484,25 +484,25 @@ MyApi/
       <!-- Step 3: Real Example -->
       <div style="grid-column: 1 / -1;">
         <div class="example-code-panel">
-          <div class="file-label">Step 3: Listen to lifecycle events (#[AsEventListener])</div>
-          <div class="code-block"><span class="cm">// Listen to ActionCompleted for metrics</span>
+          <div class="file-label">Step 3: Listen to lifecycle events (no code changes needed)</div>
+          <div class="code-block"><span class="cm">// Wire listeners via Symfony EventDispatcher. No changes to ShopifyService.</span>
 <span class="attr">#[AsEventListener(event: ActionCompleted::class)]</span>
-<span class="kw">public function</span> <span class="fn">onActionCompleted</span>(<span class="cls">ActionCompleted</span> <span class="var">$event</span>): <span class="kw">void</span>
+<span class="kw">public function</span> <span class="fn">onIntegrationFinished</span>(<span class="cls">ActionCompleted</span> <span class="var">$event</span>): <span class="kw">void</span>
 {
-    <span class="cm">// $event->action() → GetProduct</span>
-    <span class="cm">// $event->response() → typed DTO</span>
-    <span class="cm">// $event->durationMs() → 342ms</span>
-    <span class="cm">// $event->integrationName() → 'shopify'</span>
+    <span class="cm">// What the event carries:</span>
+    <span class="var">$action</span> = <span class="var">$event</span>-&gt;<span class="fn">action</span>()-&gt;<span class="fn">getName</span>();        <span class="cm">// 'GetProduct'</span>
+    <span class="var">$duration</span> = <span class="var">$event</span>-&gt;<span class="fn">durationMs</span>();         <span class="cm">// 342ms</span>
+    <span class="var">$integration</span> = <span class="var">$event</span>-&gt;<span class="fn">integrationName</span>();  <span class="cm">// 'shopify'</span>
+    <span class="var">$dto</span> = <span class="var">$event</span>-&gt;<span class="fn">response</span>();             <span class="cm">// typed DTO</span>
 
-    <span class="var">$this</span>-&gt;<span class="var">prometheus</span>-&gt;<span class="fn">histogram</span>(
-        <span class="str\">'integration.duration'</span>,
-        <span class="var">$event</span>-&gt;<span class="fn">durationMs</span>(),
-        [<span class="str\">'action'</span> =&gt; <span class="var">$event</span>-&gt;<span class="fn">action</span>()-&gt;<span class="fn">getName</span>()]
-    );
-
-    <span class="kw">if</span> (<span class="var">$event</span>-&gt;<span class="fn">durationMs</span>() &gt; 3000) {
-        <span class="var">$this</span>-&gt;<span class="var">slack</span>-&gt;<span class="fn">alert</span>(<span class="str\">'Slow integration: '</span> . <span class="var">$event</span>-&gt;<span class="fn">action</span>()-&gt;<span class="fn">getName</span>());
+    <span class="cm">// Use case 1: Log slow requests to file</span>
+    <span class="kw">if</span> (<span class="var">$duration</span> &gt; 3000) {
+        <span class="var">$this</span>-&gt;<span class="var">logger</span>-&gt;<span class="fn">warning</span>(<span class="str\">{$integration}: {$action} took {$duration}ms\"</span>);
+        <span class="var">$this</span>-&gt;<span class="var">slack</span>-&gt;<span class="fn">notify</span>(<span class="str\">'⚠ Slow API call'</span>);
     }
+
+    <span class="cm">// Use case 2: Track metrics for dashboards (Datadog, New Relic, etc)</span>
+    <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">recordDuration</span>(<span class="var">$action</span>, <span class="var">$duration</span>);
 }</div>
         </div>
       </div>
