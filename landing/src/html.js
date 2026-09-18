@@ -303,7 +303,7 @@ MyApi/
     <p class="s-sub">${t.webhookSub}</p>
     <div class="example-panels">
 
-      <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.5rem; font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;"><span style="flex: 1; height: 1px; background: #ddd;"></span><strong>Without IntegrationEngine</strong><span style="flex: 1; height: 1px; background: #ddd;"></span></div>
+      <div style="margin-bottom: 2rem; padding: 1rem 0; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;"><strong>Without IntegrationEngine</strong></div>
 
       <!-- WEBHOOK ENTRY POINT: CONTROLLER -->
       <div class="example-code-panel">
@@ -357,7 +357,7 @@ MyApi/
 }</div>
       </div>
 
-      <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.5rem; margin-top: 2rem; font-size: 12px; color: #2f6fbd; text-transform: uppercase; letter-spacing: 0.5px;"><span style="flex: 1; height: 1px; background: #4a8fd4;"></span><strong>With IntegrationEngine</strong><span style="flex: 1; height: 1px; background: #4a8fd4;"></span></div>
+      <div style="margin-bottom: 2rem; margin-top: 2rem; padding: 1rem 0; border-top: 2px solid #2f6fbd; font-size: 12px; color: #2f6fbd; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;"><strong>With IntegrationEngine</strong></div>
 
       <!-- WITH ENGINE: 1. Configuration -->
       <div class="example-code-panel">
