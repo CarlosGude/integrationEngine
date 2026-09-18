@@ -208,7 +208,7 @@ my_api:
 $engine->send('get_orders', connection: $tenantId);
 ```
 
-→ [HTTP Clients — runtime connection resolution](docs/clients.md#runtime-connection-resolution--connectionresolverinterface) —
+→ [HTTP Clients — runtime connection resolution](docs/advanced/architecture/clients.md#runtime-connection-resolution--connectionresolverinterface) —
 `ConnectionResolverInterface`, `ConnectionCredentials`, the dynamic-auth token cache
 discriminator for connections sharing one `base_url`.
 
@@ -226,7 +226,7 @@ my_api:
         - App\Infrastructure\Integrations\MyApi\OAuth1SigningMiddleware
 ```
 
-→ [HTTP Clients — request middleware](docs/clients.md#request-middleware--full-request-signing) —
+→ [HTTP Clients — request middleware](docs/advanced/architecture/clients.md#request-middleware--full-request-signing) —
 the `Request` value object, chain semantics, why `sendMany()` degrades to sequential
 dispatch when configured.
 
@@ -238,7 +238,7 @@ In `dev`/`test`, every outgoing call made through any configured integration sho
 in the Symfony Toolbar/Profiler automatically — no configuration needed. In `prod`, the
 real client is used unwrapped: zero overhead.
 
-→ [Debugging](docs/debugging.md) — what the panel shows, why it's a decorator and not
+→ [Debugging](docs/advanced/debugging.md) — what the panel shows, why it's a decorator and not
 engine instrumentation, how it relates to the optional `LoggerInterface` logging.
 
 ---

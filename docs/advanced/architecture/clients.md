@@ -60,7 +60,7 @@ final class GetUserBody implements GraphQLBodyInterface
 from the response, and throws `RequestResponseException` on `errors`.
 
 > **Note:** The built-in GraphQL adapter sends requests sequentially in `sendMany()`.
-> For real concurrency with GraphQL, see [Batch Requests — Concurrency](batch-requests.md#concurrency).
+> For real concurrency with GraphQL, see [Batch Requests — Concurrency](../../getting-started/batch-requests.md#concurrency).
 
 ---
 

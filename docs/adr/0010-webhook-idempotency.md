@@ -12,7 +12,7 @@ Webhook providers (Stripe, PayPal, etc.) retry failed deliveries, resulting in t
 
 This ADR documents where and how to deduplicate, guided by the principle that **webhooks should not block the HTTP response on processing complexity**. The HTTP 202 response must be fast; deduplication happens async in the consumer.
 
-See: `docs/spikes/webhooks.md` for the spike investigation.
+See: `docs/archived/spikes/webhooks.md` for the spike investigation.
 
 ## Decision
 

@@ -178,9 +178,9 @@ The `WebhookPlatformRegistry` handles routing and verification automatically.
 ### Option B: Implement Custom Platform
 
 ```php
-use IntegrationEngine\Webhook\Contract\WebhookPlatformConfig;
-use IntegrationEngine\Webhook\Contract\SignatureVerifierInterface;
-use IntegrationEngine\Webhook\Contract\WebhookEventRegistry;
+use IntegrationEngine\Core\Webhook\WebhookPlatformConfig;
+use IntegrationEngine\Core\Contract\Webhook\SignatureVerifierInterface;
+use IntegrationEngine\Infrastructure\Webhook\WebhookEventRegistry;
 
 class CustomApiPlatformConfig extends WebhookPlatformConfig
 {
@@ -282,7 +282,7 @@ See:
 
 - [ ] Update `composer.json` to `^5.1`
 - [ ] Run `composer update`
-- [ ] Review new configuration options in `docs/WEBHOOK.md`
+- [ ] Review new configuration options in `WEBHOOK.md`
 - [ ] If using multiple platforms, implement or use built-in `WebhookPlatformConfig`
 - [ ] If using Messenger, configure webhook transport
 - [ ] If using DLQ, configure cache backend

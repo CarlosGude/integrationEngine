@@ -66,7 +66,7 @@ GetEmployee:
     path:   /employees/{id}
 ```
 
-→ [Acciones en profundidad](docs/actions.md) — todas las opciones YAML, `hasResponse: false`,
+→ [Acciones en profundidad](../getting-started/actions.md) — todas las opciones YAML, `hasResponse: false`,
 la invariante de statelessness.
 
 ---
@@ -86,7 +86,7 @@ $engine->send('UpdateEmployee', body: UpdateEmployeeBody::create(['id' => 42, 'n
 DefaultActionContext::create(['id' => 42]) // → /employees/42
 ```
 
-→ [Contexto y resolución de path](docs/context-and-path.md) — placeholders resueltos
+→ [Contexto y resolución de path](../getting-started/context-and-path.md) — placeholders resueltos
 desde el body, params requeridos vs. opcionales, contexto personalizado con
 validación, tabla de decisión.
 
@@ -117,7 +117,7 @@ final readonly class GetEmployeeResponse implements ResponseInterface
 }
 ```
 
-→ [Mappers y responses](docs/mappers-and-responses.md) — tabla de tipos, DTOs anidados,
+→ [Mappers y responses](../getting-started/mappers-and-responses.md) — tabla de tipos, DTOs anidados,
 lógica de mapper compartida, el contrato `toArray()`.
 
 ---
@@ -146,7 +146,7 @@ GetOrders:
         ttl:         3600
 ```
 
-→ [Autorización](docs/authorization.md) — todos los tipos estáticos (bearer, basic,
+→ [Autorización](../getting-started/authorization.md) — todos los tipos estáticos (bearer, basic,
 api\_key), configuración de auth dinámica, acción de token, caché (incluido el
 aislamiento por conexión en integraciones multi-conexión), reintento 401, Redis.
 
@@ -171,7 +171,7 @@ $results['alice']->error();      // \Throwable|null
 La concurrencia real es independiente del protocolo — depende de si el cliente implementa
 `BatchClientInterface`. El cliente REST por defecto lo implementa.
 
-→ [Peticiones en batch / paralelo](docs/batch-requests.md) — estrategias de fallo,
+→ [Peticiones en batch / paralelo](../getting-started/batch-requests.md) — estrategias de fallo,
 `sendManyOrFail()`, concurrencia por tipo de cliente, `AbstractBatchMapper` para batches
 homogéneos, batches de acciones mixtas.
 
@@ -190,7 +190,7 @@ my_api:
     client_service: 'App\Infrastructure\Http\RetryingHttpClient'
 ```
 
-→ [Clientes HTTP](docs/clients.md) — interfaz de body GraphQL, `client:` vs
+→ [Clientes HTTP](../advanced/architecture/clients.md) — interfaz de body GraphQL, `client:` vs
 `client_service:`, adaptadores de protocolo personalizados, `BatchClientInterface`.
 
 ---
@@ -210,7 +210,7 @@ my_api:
 $engine->send('get_orders', connection: $tenantId);
 ```
 
-→ [Clientes HTTP — resolución de conexión en runtime](docs/clients.md#runtime-connection-resolution--connectionresolverinterface) —
+→ [Clientes HTTP — resolución de conexión en runtime](../advanced/architecture/clients.md#runtime-connection-resolution--connectionresolverinterface) —
 `ConnectionResolverInterface`, `ConnectionCredentials`, el discriminador de cache de
 tokens dinámicos para conexiones que comparten un `base_url`.
 
@@ -228,7 +228,7 @@ my_api:
         - App\Infrastructure\Integrations\MyApi\OAuth1SigningMiddleware
 ```
 
-→ [Clientes HTTP — request middleware](docs/clients.md#request-middleware--full-request-signing) —
+→ [Clientes HTTP — request middleware](../advanced/architecture/clients.md#request-middleware--full-request-signing) —
 el value object `Request`, la semántica de la cadena, por qué `sendMany()` pasa a
 despacho secuencial cuando hay middlewares configurados.
 
@@ -281,7 +281,7 @@ $engine = new IntegrationEngine(
 
 Perfecto para logging personalizado, métricas Prometheus, tracking de errores (Sentry), auditoría y alertas.
 
-→ **[Guía de Eventos](./LIFECYCLE.md)** — ejemplos para logging, métricas, alertas y error tracking.
+→ **[Guía de Eventos](../../LIFECYCLE.md)** — ejemplos para logging, métricas, alertas y error tracking.
 
 ---
 
@@ -297,4 +297,4 @@ IntegrationEngine también soporta **recibir** webhooks de plataformas externas
 - **Confiabilidad** — dead-letter queue para webhooks fallidos, state machine para tracking del ciclo de vida
 - **Procesamiento asíncrono** — integración con Symfony Messenger para manejo no-bloqueante
 
-→ **[Guía de Webhooks de Entrada](./WEBHOOK.md)** — documentación completa para recibir y procesar webhooks de APIs externas.
+→ **[Guía de Webhooks de Entrada](../../WEBHOOK.md)** — documentación completa para recibir y procesar webhooks de APIs externas.

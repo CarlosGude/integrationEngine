@@ -166,7 +166,7 @@ aparece nada, la fase no ha empezado pese a que v5.1.0 ya está publicada.
 
 ### Fase 4 · Webhooks entrantes — código publicado, papeleo pendiente
 - [x] (aparentemente) Framework de webhooks entrantes, verificación HMAC, cola vía Messenger, dead-letter queue — anunciado en README v5.1.0.
-- [ ] Spike documentado contra el código fuente de Symfony (`docs/spikes/webhooks.md`).
+- [ ] Spike documentado contra el código fuente de Symfony (`docs/archived/spikes/webhooks.md`).
 - [ ] ADR 0011 (webhooks entrantes sobre `symfony/webhook`).
 - [ ] ADR 0012 revisado o superseded — el alcance publicado (idempotencia con ventana de 24h) contradice la decisión original ("expone el id, no deduplica").
 - [ ] Resolver la contradicción con ADR 0008 (Messenger) — supersederlo o quitar el bridge.
@@ -176,7 +176,7 @@ aparece nada, la fase no ha empezado pese a que v5.1.0 ya está publicada.
 - [x] (aparentemente) B5.8/B5.9 eventos de ciclo de vida — anunciado en README v5.2.0.
 - [ ] B5.1-B5.5: spike de inferencia PHPStan + ADR go/no-go, 3 reglas (`MapperActionRule`, `IntegrationFacadeReturnTypeRule`, `ResponseClassModifiersRule`), `extension.neon`, `docs/phpstan.md`.
 - [ ] B5.6/B5.7: SSRF — `allowed_hosts`, `block_private_networks`, `HostPolicy`, `NoPrivateNetworkHttpClient`, `DisallowedHostException`, `SECURITY.md`.
-- [ ] B5.10: cierre — sección "Reviewing this project? Start here" en README, `docs/QUALITY.md` con MSI y nº de tests actual.
+- [ ] B5.10: cierre — sección "Reviewing this project? Start here" en README, `docs/advanced/QUALITY.md` con MSI y nº de tests actual.
 
 ---
 

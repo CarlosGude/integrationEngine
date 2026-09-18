@@ -131,7 +131,7 @@ the cache.
 
 ## Contextual caching — multi-connection integrations
 
-If the integration uses [runtime connection resolution](clients.md#runtime-connection-resolution--connectionresolverinterface)
+If the integration uses [runtime connection resolution](../advanced/architecture/clients.md#runtime-connection-resolution--connectionresolverinterface)
 (`connection_resolver:` + a `connection` argument on `send()`/`sendMany()`),
 dynamic-auth tokens are cached per connection, not just per integration —
 two connections never share a cached token.

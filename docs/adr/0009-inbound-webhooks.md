@@ -14,7 +14,7 @@ The bundle needs to support inbound webhooks from external providers (e.g., Stri
 
 Symfony 6.4+ provides a webhook framework with `AbstractRequestParser`, `RemoteEvent`, and `WebhookController` (automatic routing). Investigation of the contract across versions 6.4, 7.4, and 8.x revealed a stable, well-designed interface with one backward-compatible return-type expansion in 7.4.
 
-See: `docs/spikes/webhooks.md` for the spike investigation.
+See: `docs/archived/spikes/webhooks.md` for the spike investigation.
 
 ## Decision
 
@@ -110,7 +110,7 @@ abstract class AbstractWebhookMapper
 
 ## References
 
-- Spike investigation: `docs/spikes/webhooks.md`
+- Spike investigation: `docs/archived/spikes/webhooks.md`
 - Related decision: ADR-0010 (Webhook Idempotency)
 - Symfony webhook component: https://symfony.com/doc/current/webhook.html
 - Stripe webhook security model: https://stripe.com/docs/webhooks/best-practices

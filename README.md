@@ -15,13 +15,10 @@
 - 🔗 [Deep dive: LIFECYCLE.md](./LIFECYCLE.md)
 
 **v5.1.0 Features:**
-- ✅ **Inbound webhook framework** (Shopify, WooCommerce, extensible)
-- ✅ HMAC signature verification per platform
-- ✅ Idempotency & replay protection (24h fingerprint window)
-- ✅ Dead-letter queue for failed webhooks
-- ✅ State machine & immutable audit trail
-- ✅ Async processing via Symfony Messenger
-- ✅ Multi-platform routing by path or header
+- ✅ **Inbound webhooks** on top of Symfony's Webhook component: base request parser, typed mappers, typed events for your listeners
+- ✅ Signature verifiers: HMAC, Stripe-style timestamped HMAC, Shopify, WooCommerce
+- ✅ Async processing via Symfony Messenger (Symfony's webhook controller hands events to the bus)
+- ✅ Contracts for idempotency (with fingerprinting), dead-letter queue and audit trail — bring your own storage
 - 🔗 [Guide: WEBHOOK.md](./WEBHOOK.md)
 
 ---

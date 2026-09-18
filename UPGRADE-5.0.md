@@ -51,7 +51,7 @@ php bin/console make:webhook stripe charge.succeeded
 ```php
 namespace App\Infrastructure\Webhooks\Stripe;
 
-use IntegrationEngine\Webhook\Contract\WebhookEventInterface;
+use IntegrationEngine\Core\Contract\Webhook\WebhookEventInterface;
 
 final readonly class ChargeSucceededEvent implements WebhookEventInterface
 {
@@ -78,8 +78,8 @@ final readonly class ChargeSucceededEvent implements WebhookEventInterface
 ```php
 namespace App\Infrastructure\Webhooks\Stripe;
 
-use IntegrationEngine\Webhook\Contract\AbstractWebhookMapper;
-use IntegrationEngine\Webhook\Contract\WebhookEventInterface;
+use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;
+use IntegrationEngine\Core\Contract\Webhook\WebhookEventInterface;
 
 final class ChargeSucceededMapper extends AbstractWebhookMapper
 {

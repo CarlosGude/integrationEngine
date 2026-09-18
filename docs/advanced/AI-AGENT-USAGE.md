@@ -12,7 +12,7 @@ You can point a compatible AI agent (Claude, GPT-4, etc.) at an API documentatio
 and have it generate a complete IntegrationEngine integration: Actions, Mappers, DTOs,
 Response classes, YAML config, and a typed facade.
 
-The agent uses the context in [`agent/integration-engine-agent-guide.md`](../agent/integration-engine-agent-guide.md)
+The agent uses the context in [`CLAUDE.md`](../../CLAUDE.md)
 to understand the engine's contracts and follow its conventions.
 
 ---
@@ -21,7 +21,7 @@ to understand the engine's contracts and follow its conventions.
 
 - An AI assistant with web browsing capability (Claude with web search, ChatGPT with
   browsing, etc.)
-- The `agent/integration-engine-agent-guide.md` file loaded into the agent's context
+- The `CLAUDE.md` file loaded into the agent's context
 - The API documentation URL (REST or GraphQL)
 
 ---
@@ -30,7 +30,7 @@ to understand the engine's contracts and follow its conventions.
 
 ### 1. Load the agent guide
 
-Paste the contents of `agent/integration-engine-agent-guide.md` into the conversation,
+Paste the contents of `CLAUDE.md` into the conversation,
 or attach the file directly. Tell the agent:
 
 ```

@@ -263,7 +263,7 @@ $action::class`) is enforced per item, exactly as in single `send()` calls.
 ## Per-item connection
 
 `EngineRequest`'s `connection` argument works exactly like `send()`'s (see
-[Clients — runtime connection resolution](clients.md#runtime-connection-resolution--connectionresolverinterface)):
+[Clients — runtime connection resolution](../advanced/architecture/clients.md#runtime-connection-resolution--connectionresolverinterface)):
 mix items for different connections in one batch by setting `connection` per
 item.
 
