@@ -120,7 +120,7 @@ final class PaymentIntentSucceededRequestParser extends IntegrationWebhookReques
 }
 ```
 
-> The secret the base parser actually verifies with is the one Symfony passes in from `framework.webhook.routing.<type>.secret`. `getSignatureSecret()` is not called by `IntegrationWebhookRequestParser` itself; keep both pointing at the same value.
+> The parser verifies with the secret Symfony passes in from `framework.webhook.routing.<type>.secret`, and falls back to `getSignatureSecret()` when that one is empty. If both are empty the request is rejected (`406`): an empty key would accept HMACs anyone can compute.
 
 The parser class must not be `readonly`: Symfony's `AbstractRequestParser` isn't, and a readonly class can't extend a non-readonly one.
 

@@ -47,6 +47,48 @@ final class IntegrationWebhookRequestParserTest extends TestCase
         self::assertSame($payload, $remoteEvent->getPayload());
     }
 
+    public function testFallsBackToTheParserSecretWhenTheRoutingSecretIsEmpty(): void
+    {
+        $body = json_encode(['id' => 'evt_123', 'type' => 'payment.completed'], JSON_THROW_ON_ERROR);
+        $request = Request::create(
+            uri: '/webhook',
+            method: 'POST',
+            server: ['HTTP_X_WEBHOOK_SIGNATURE' => 'sha256='.hash_hmac('sha256', $body, self::SECRET)],
+            content: $body,
+        );
+
+        $parser = new TestWebhookRequestParser(
+            new HmacSha256SignatureVerifier(self::SIGNATURE_HEADER, 'sha256='),
+            self::SECRET,
+        );
+
+        self::assertInstanceOf(RemoteEvent::class, $parser->parse($request, ''));
+    }
+
+    public function testRejectsWhenNoSecretIsConfigured(): void
+    {
+        // Signed with an empty key: this used to be accepted.
+        $body = json_encode(['id' => 'evt_123', 'type' => 'payment.completed'], JSON_THROW_ON_ERROR);
+        $request = Request::create(
+            uri: '/webhook',
+            method: 'POST',
+            server: ['HTTP_X_WEBHOOK_SIGNATURE' => 'sha256='.hash_hmac('sha256', $body, '')],
+            content: $body,
+        );
+
+        $parser = new TestWebhookRequestParser(
+            new HmacSha256SignatureVerifier(self::SIGNATURE_HEADER, 'sha256='),
+            '',
+        );
+
+        try {
+            $parser->parse($request, '');
+            self::fail('Expected RejectWebhookException');
+        } catch (RejectWebhookException $e) {
+            self::assertSame(406, $e->getStatusCode());
+        }
+    }
+
     public function testRejectWebhookWithInvalidSignature(): void
     {
         $payload = ['id' => 'evt_123', 'type' => 'payment.completed'];

@@ -80,6 +80,20 @@ abstract class IntegrationWebhookRequestParser extends AbstractRequestParser
      */
     protected function doParse(Request $request, #[\SensitiveParameter] string $secret): ?RemoteEvent
     {
+        // Symfony passes framework.webhook.routing.<type>.secret, which may be
+        // left empty: fall back to the parser's own secret, and never verify
+        // with an empty key — anyone can compute an HMAC with it.
+        if ('' === $secret) {
+            $secret = $this->getSignatureSecret();
+        }
+
+        if ('' === $secret) {
+            throw new RejectWebhookException(
+                statusCode: 406,
+                message: 'No webhook signing secret configured',
+            );
+        }
+
         $body = $request->getContent();
         $verifier = $this->getSignatureVerifier();
         $signatureHeader = $verifier->getHeaderName();

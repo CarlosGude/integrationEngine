@@ -15,6 +15,10 @@ use Symfony\Component\Routing\Attribute\Route;
  * Routes by path (/webhooks/shopify, /webhooks/woocommerce) or
  * X-Platform header to the correct verifier and event registry.
  *
+ * @deprecated since 5.3.2: it verifies and acknowledges webhooks but never
+ *             dispatches them. Use IntegrationWebhookRequestParser with
+ *             Symfony's Webhook component instead (see WEBHOOK.md).
+ *
  * @author Carlos Gude
  */
 final class MultiPlatformWebhookController
@@ -32,7 +36,6 @@ final class MultiPlatformWebhookController
     public function ingest(Request $request, string $platform): JsonResponse
     {
         try {
-
             $platformConfig = $this->platformRegistry->detectPlatform(
                 $request->headers->get('X-Platform'),
                 $request->getPathInfo()
@@ -50,12 +53,14 @@ final class MultiPlatformWebhookController
                 );
             }
 
-
-
-            if (!$platformConfig->verifier->verify($body, $signature, '')) {
-                return new JsonResponse(['error' => 'Invalid webhook signature'], 401);
+            // Verifying with an empty key would accept HMACs anyone can compute.
+            if ('' === $platformConfig->secret) {
+                return new JsonResponse(['error' => 'Webhook secret not configured for this platform'], 500);
             }
 
+            if (!$platformConfig->verifier->verify($body, $signature, $platformConfig->secret)) {
+                return new JsonResponse(['error' => 'Invalid webhook signature'], 401);
+            }
 
             return new JsonResponse(['status' => 'accepted'], 202);
         } catch (\DomainException $e) {

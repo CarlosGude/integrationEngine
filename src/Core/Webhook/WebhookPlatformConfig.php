@@ -22,5 +22,8 @@ final readonly class WebhookPlatformConfig
         public WebhookEventRegistry $eventRegistry,
         /** @var string[] */
         public array $supportedPaths = [],
+        /** Shared signing secret; MultiPlatformWebhookController rejects every request while it's empty. */
+        #[\SensitiveParameter]
+        public string $secret = '',
     ) {}
 }
