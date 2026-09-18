@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Lifecycle events now reach Symfony listeners.** `SymfonyEventDispatcherAdapter` couldn't be instantiated (`Cannot call constructor`: it called a parent constructor that doesn't exist), and the bundle never passed a `LifecycleEventDispatcher` to the integrations. The bundle now injects the `IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher` service into every integration; point that service at `SymfonyEventDispatcherAdapter` (as LIFECYCLE.md and the Flex recipe do) and `#[AsEventListener]` listeners receive `ActionStarted`, `ActionCompleted`, etc.
+- `HttpResponseReceived::statusCode()` reports the real HTTP status for the built-in REST and GraphQL clients; it was always `0`. The client response shape gains an optional `statusCode` key; a custom client that doesn't set it keeps reporting `0`.
+- Flex recipe: drops the unused `INTEGRATION_ENGINE_CACHE` env var, and shows the per-integration options inside an example integration instead of at the root, where they're invalid.
+
+### Security
+
+- `IntegrationWebhookRequestParser` verified signatures with an empty key when `framework.webhook.routing.<type>.secret` was empty. It now falls back to `getSignatureSecret()`, and rejects the request (`406`) when both are empty.
+- `MultiPlatformWebhookController` always verified signatures with an empty key, so it accepted HMACs anyone can compute. It now verifies with `WebhookPlatformConfig::$secret` and answers `500` while none is configured.
+
+### Added
+
+- `WebhookPlatformConfig` optional `secret` argument (last position, default `''`).
+
+### Deprecated
+
+- `MultiPlatformWebhookController`: it verifies and acknowledges webhooks but never dispatches them. Use `IntegrationWebhookRequestParser` with Symfony's Webhook component instead (see WEBHOOK.md).
+
+### Internal
+
+- PHPStan level max passes (it reported 59 errors) and php-cs-fixer is clean.
+- Contract test workflow: fixed the YAML syntax error that made every run fail instantly, and pointed it at the public demo app (`integrationEngine-demo`, PHP 8.4); the previous target was a private repository the workflow couldn't check out.
+- Broken documentation links and stale namespaces fixed; the documentation tests pass again.
+- README's webhook feature list now matches what ships: the DLQ, audit trail and idempotency pieces are contracts you provide storage for, and multi-platform routing is deprecated.
+
 ## [5.3.1] - 2026-09-18
 
 ### Fixed
@@ -298,7 +324,7 @@ See WEBHOOK.md for step-by-step guide.
 
 ### Added
 
-- `docs/QUALITY.md`: documented unified quality standards and interpretation of MSI metrics.
+- `docs/advanced/QUALITY.md`: documented unified quality standards and interpretation of MSI metrics.
 
 ## [4.0.0] - 2026-06-28
 
