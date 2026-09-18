@@ -366,7 +366,7 @@ MyApi/
       <div style="margin-bottom: 1.5rem;">
         <div class="example-code-panel">
           <div class="file-label">Step 1: Configuration (YAML only)</div>
-          <div class="code-block"><span class="key">webhooks</span>:
+          <div class="code-block" style="min-height: 200px;"><span class="key">webhooks</span>:
   <span class="key">products/update</span>:
     <span class="val">mapper_class</span>: App\\Shopify\\<span class="hl">ProductUpdatedMapper</span>
     <span class="val">signature</span>:
