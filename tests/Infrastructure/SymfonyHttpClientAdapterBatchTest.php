@@ -53,8 +53,8 @@ final class SymfonyHttpClientAdapterBatchTest extends TestCase
         ]);
 
         self::assertSame(['first', 'second'], array_keys($results));
-        self::assertSame(['body' => ['id' => 1], 'headers' => []], $results['first']);
-        self::assertSame(['body' => ['id' => 2], 'headers' => []], $results['second']);
+        self::assertSame(['body' => ['id' => 1], 'headers' => [], 'statusCode' => 200], $results['first']);
+        self::assertSame(['body' => ['id' => 2], 'headers' => [], 'statusCode' => 200], $results['second']);
         self::assertSame(
             ['https://api.example.com/orders/1', 'https://api.example.com/orders/2'],
             $spy->urls,
@@ -79,7 +79,7 @@ final class SymfonyHttpClientAdapterBatchTest extends TestCase
         self::assertInstanceOf(RequestResponseException::class, $error);
         self::assertSame(500, $error->statusCode);
         self::assertStringContainsString('GET /broken returned HTTP 500: server exploded', $error->getMessage());
-        self::assertSame(['body' => ['ok' => true], 'headers' => []], $results['ok']);
+        self::assertSame(['body' => ['ok' => true], 'headers' => [], 'statusCode' => 200], $results['ok']);
     }
 
     #[Test]
@@ -100,7 +100,7 @@ final class SymfonyHttpClientAdapterBatchTest extends TestCase
         self::assertInstanceOf(RequestResponseException::class, $error);
         self::assertSame(0, $error->statusCode);
         self::assertStringContainsString('Network error on GET /down: connection refused', $error->getMessage());
-        self::assertSame(['body' => ['ok' => true], 'headers' => []], $results['ok']);
+        self::assertSame(['body' => ['ok' => true], 'headers' => [], 'statusCode' => 200], $results['ok']);
     }
 
     #[Test]
@@ -135,7 +135,7 @@ final class SymfonyHttpClientAdapterBatchTest extends TestCase
         ]);
 
         self::assertInstanceOf(PathResolutionException::class, $results['unresolved']);
-        self::assertSame(['body' => ['ok' => true], 'headers' => []], $results['ok']);
+        self::assertSame(['body' => ['ok' => true], 'headers' => [], 'statusCode' => 200], $results['ok']);
     }
 
     #[Test]

@@ -30,9 +30,9 @@ interface RequestMiddlewareInterface
      * to reject it. The transport's own exceptions (e.g. RequestResponseException)
      * propagate through $next() like any other exception.
      *
-     * @param callable(Request): array{body: array<mixed>, headers: array<string, list<string>>} $next
+     * @param callable(Request): array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int} $next
      *
-     * @return array{body: array<mixed>, headers: array<string, list<string>>}
+     * @return array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}
      */
     public function handle(Request $request, callable $next): array;
 }

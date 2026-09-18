@@ -49,7 +49,7 @@ $engine = new IntegrationEngine(
 
 ### Option 2: Symfony EventDispatcher
 
-If your app already uses Symfony events, use the adapter:
+If your app already uses Symfony events, use the adapter. The bundle passes this service to every integration (5.3.2+; earlier versions never injected it, so listeners received nothing):
 
 ```yaml
 # services.yaml

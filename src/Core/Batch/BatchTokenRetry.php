@@ -76,7 +76,7 @@ final class BatchTokenRetry
      * single cache deletion; the same action against a different connection
      * is dropped separately since each holds its own cache entry.
      *
-     * @param array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable> $raw
+     * @param array<array-key, array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}|\Throwable> $raw
      *
      * @return array<array-key, DynamicAuthorizationConfig>
      */

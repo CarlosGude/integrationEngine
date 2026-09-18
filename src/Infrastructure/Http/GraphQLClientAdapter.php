@@ -55,7 +55,7 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
     }
 
     /**
-     * @return array{body: array<mixed>, headers: array<string, list<string>>}
+     * @return array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}
      *
      * @throws RequestResponseException on HTTP errors or GraphQL errors in the response
      */
@@ -86,7 +86,7 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
      *
      * @param array<array-key, PreparedRequest> $requests
      *
-     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}|\Throwable>
      */
     public function sendMany(array $requests): array
     {
@@ -100,7 +100,6 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
 
         foreach ($requests as $key => $request) {
             try {
-
                 // option building (incl. auth header resolution) are
                 // configuration concerns and propagate their own exception
                 // type raw, exactly as in send().
@@ -138,7 +137,7 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
     }
 
     /**
-     * @return array{body: array<mixed>, headers: array<string, list<string>>}
+     * @return array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}
      *
      * @throws RequestResponseException on HTTP errors, GraphQL errors, or network errors
      */
@@ -194,7 +193,7 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
     }
 
     /**
-     * @return array{body: array<mixed>, headers: array<string, list<string>>}
+     * @return array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}
      *
      * @throws RequestResponseException on HTTP errors or GraphQL errors in the response
      */
@@ -216,8 +215,6 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
 
         $data = $response->toArray();
 
-
-
         $errors = $data['errors'] ?? null;
         if (!empty($errors) && \is_array($errors)) {
             $firstError = isset($errors[0]) && \is_array($errors[0]) ? $errors[0] : [];
@@ -237,7 +234,7 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
 
         $result = $data['data'] ?? [];
 
-        return ['body' => \is_array($result) ? $result : [], 'headers' => $response->getHeaders(throw: false)];
+        return ['body' => \is_array($result) ? $result : [], 'headers' => $response->getHeaders(throw: false), 'statusCode' => $statusCode];
     }
 
     private function networkError(\Throwable $e): RequestResponseException
@@ -255,7 +252,7 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
     /**
      * @param array<array-key, PreparedRequest> $requests
      *
-     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}|\Throwable>
      */
     private function sendManySequentially(array $requests): array
     {

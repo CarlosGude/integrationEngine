@@ -20,14 +20,10 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
  */
 final class SymfonyEventDispatcherAdapter extends LifecycleEventDispatcher
 {
-    public function __construct(private EventDispatcherInterface $dispatcher)
-    {
-        parent::__construct();
-    }
+    public function __construct(private EventDispatcherInterface $dispatcher) {}
 
     public function dispatch(IntegrationEngineEvent $event): void
     {
-
         parent::dispatch($event);
         $this->dispatcher->dispatch($event, $event::class);
     }

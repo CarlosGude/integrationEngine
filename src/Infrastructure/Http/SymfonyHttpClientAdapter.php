@@ -54,7 +54,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
     }
 
     /**
-     * @return array{body: array<mixed>, headers: array<string, list<string>>}
+     * @return array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}
      *
      * @throws RequestResponseException on HTTP 4xx/5xx or network errors
      */
@@ -89,7 +89,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
      *
      * @param array<array-key, PreparedRequest> $requests
      *
-     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}|\Throwable>
      */
     public function sendMany(array $requests): array
     {
@@ -103,7 +103,6 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
 
         foreach ($requests as $key => $request) {
             try {
-
                 // option building (incl. auth header resolution) are
                 // configuration concerns and propagate their own exception
                 // type raw, exactly as in send() where they sit outside the
@@ -149,7 +148,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
     }
 
     /**
-     * @return array{body: array<mixed>, headers: array<string, list<string>>}
+     * @return array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}
      *
      * @throws RequestResponseException on HTTP 4xx/5xx or network errors
      */
@@ -192,7 +191,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
     }
 
     /**
-     * @return array{body: array<mixed>, headers: array<string, list<string>>}
+     * @return array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}
      *
      * @throws RequestResponseException on HTTP 4xx/5xx
      */
@@ -216,7 +215,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
         $content = $response->getContent(throw: false);
         $body = (204 === $statusCode || '' === trim($content)) ? [] : $response->toArray();
 
-        return ['body' => $body, 'headers' => $response->getHeaders(throw: false)];
+        return ['body' => $body, 'headers' => $response->getHeaders(throw: false), 'statusCode' => $statusCode];
     }
 
     private function networkError(string $method, string $path, \Throwable $e): RequestResponseException
@@ -235,7 +234,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
     /**
      * @param array<array-key, PreparedRequest> $requests
      *
-     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}|\Throwable>
      */
     private function sendManySequentially(array $requests): array
     {

@@ -7,6 +7,7 @@ namespace IntegrationEngine\Tests\Bundle\DependencyInjection;
 use IntegrationEngine\Bundle\DependencyInjection\Compiler\IntegrationCompilerPass;
 use IntegrationEngine\Bundle\Exception\IntegrationConfigurationException;
 use IntegrationEngine\Core\IntegrationEngine;
+use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
 use IntegrationEngine\Core\Registry\IntegrationRegistry;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
 use IntegrationEngine\Infrastructure\Cache\CachingMiddleware;
@@ -19,6 +20,7 @@ use IntegrationEngine\Tests\Fake\FakeRequestMiddleware;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 
@@ -434,6 +436,21 @@ final class IntegrationCompilerPassTest extends TestCase
         $this->expectExceptionMessageMatches('/Unknown client type "soap".*Registered types: rest, graphql/');
 
         (new IntegrationCompilerPass())->process($container);
+    }
+
+    #[Test]
+    public function injectsTheLifecycleEventDispatcherIntoEachEngine(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig()]);
+
+        (new IntegrationCompilerPass())->process($container);
+
+        // Without it the engine gets no dispatcher and lifecycle listeners
+        // (e.g. via SymfonyEventDispatcherAdapter) never receive anything.
+        $dispatcher = $container->getDefinition('integration_engine.integration.my_api')->getArgument(7);
+        self::assertSame(LifecycleEventDispatcher::class, $this->referencedServiceId($dispatcher));
+        self::assertInstanceOf(Reference::class, $dispatcher);
+        self::assertSame(ContainerInterface::IGNORE_ON_INVALID_REFERENCE, $dispatcher->getInvalidBehavior());
     }
 
     private function referencedServiceId(mixed $argument): string

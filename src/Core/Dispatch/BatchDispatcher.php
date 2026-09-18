@@ -28,7 +28,7 @@ final class BatchDispatcher
      *
      * @param array<array-key, PreparedRequest> $prepared
      *
-     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}|\Throwable>
      */
     public function dispatch(array $prepared): array
     {
@@ -57,11 +57,12 @@ final class BatchDispatcher
      * $prepared is updated in place for retried keys so the caller's copy
      * reflects the fresh-token action actually used.
      *
-     * @param array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable> $raw
-     * @param array<array-key, DynamicAuthorizationConfig>                                                 $toRetry
-     * @param array<array-key, PreparedRequest>                                                            $prepared
+     * @param array<array-key, array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}|\Throwable> $raw
+     * @param array<array-key, DynamicAuthorizationConfig>                                                                   $toRetry
+     * @param callable(array-key, PreparedRequest, DynamicAuthorizationConfig): PreparedRequest                              $prepareRetry
+     * @param array<array-key, PreparedRequest>                                                                              $prepared
      *
-     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}|\Throwable>
      */
     public function retry(
         array $raw,
@@ -102,7 +103,7 @@ final class BatchDispatcher
     /**
      * @param array<array-key, PreparedRequest> $prepared
      *
-     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}|\Throwable>
      */
     private function dispatchGroup(ClientInterface $client, array $prepared): array
     {

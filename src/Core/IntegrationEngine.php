@@ -114,7 +114,7 @@ final readonly class IntegrationEngine
                     action: $action,
                     integrationName: $this->integrationName,
                     timestamp: $startTime,
-                    statusCode: (int) ($rawResponse['statusCode'] ?? 0),
+                    statusCode: $rawResponse['statusCode'] ?? 0,
                     durationMs: $httpDuration,
                 ));
 
@@ -205,7 +205,7 @@ final readonly class IntegrationEngine
         $raw = $this->batchDispatcher->retry(
             $raw,
             $tokenRetry->plan($raw),
-            fn ($key, $original, $auth) => new PreparedRequest(
+            fn (int|string $key, PreparedRequest $original, DynamicAuthorizationConfig $auth): PreparedRequest => new PreparedRequest(
                 $this->authHandler->withStaticToken($original->action, $auth, client: $this->resolveClient($original->baseUrl), cacheDiscriminator: $original->cacheDiscriminator),
                 $original->context,
                 $original->headers,

@@ -35,6 +35,10 @@ final readonly class HttpResponseReceived implements IntegrationEngineEvent
         return $this->timestamp;
     }
 
+    /**
+     * HTTP status reported by the client; 0 when the client doesn't report one
+     * (a custom ClientInterface, or a response short-circuited by a middleware).
+     */
     public function statusCode(): int
     {
         return $this->statusCode;

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace IntegrationEngine\Bundle\DependencyInjection\Compiler;
 
 use IntegrationEngine\Bundle\Exception\IntegrationConfigurationException;
+use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 use IntegrationEngine\Core\Dispatch\AuthenticationHandler;
 use IntegrationEngine\Core\IntegrationEngine;
+use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
 use IntegrationEngine\Core\Registry\IntegrationRegistry;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
 use IntegrationEngine\Infrastructure\Cache\CachingMiddleware;
@@ -22,6 +24,19 @@ use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\DataCollector\DataCollectorInterface;
 
+/**
+ * @phpstan-type IntegrationConfig array{
+ *     config_path: null|string,
+ *     base_url: null|string,
+ *     client_service: null|string,
+ *     client: string,
+ *     cache_service: null|string,
+ *     connection_resolver: null|string,
+ *     middlewares: list<string>,
+ *     request_middlewares: list<string>,
+ *     headers: array<string, string>,
+ * }
+ */
 final class IntegrationCompilerPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container): void
@@ -30,6 +45,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
             return;
         }
 
+        /** @var array<string, IntegrationConfig> $integrations normalised by Configuration */
         $integrations = $container->getParameter('integration_engine.integrations');
 
         $middlewareResolver = new MiddlewareResolver();
@@ -46,6 +62,12 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         }
     }
 
+    /**
+     * @param IntegrationConfig                                   $config
+     * @param array<string, class-string<ClientAdapterInterface>> $adapterMap
+     * @param array<string, true>                                 $registeredMiddlewares
+     * @param array<string, true>                                 $registeredRequestMiddlewares
+     */
     private function wireIntegration(
         ContainerBuilder $container,
         Definition $registry,
@@ -88,7 +110,18 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         $integrationId = "integration_engine.integration.{$name}";
         $container->setDefinition($integrationId, new Definition(
             IntegrationEngine::class,
-            [new Reference($configId), $clientRef, $cacheRef, $name, $loggerRef, new Reference($authHandlerId), $connectionResolverRef],
+            [
+                new Reference($configId),
+                $clientRef,
+                $cacheRef,
+                $name,
+                $loggerRef,
+                new Reference($authHandlerId),
+                $connectionResolverRef,
+                // Swap this service for SymfonyEventDispatcherAdapter to receive
+                // lifecycle events through #[AsEventListener].
+                new Reference(LifecycleEventDispatcher::class, ContainerInterface::IGNORE_ON_INVALID_REFERENCE),
+            ],
         ));
 
         $registry->addMethodCall('register', [$name, new Reference($integrationId)]);
@@ -208,7 +241,6 @@ final class IntegrationCompilerPass implements CompilerPassInterface
     private function registerDataCollector(ContainerBuilder $container): Reference
     {
         $id = IntegrationEngineDataCollector::class;
-
 
         // definition, so check isAbstract() too before reusing it.
         if (!$container->hasDefinition($id) || $container->getDefinition($id)->isAbstract()) {

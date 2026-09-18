@@ -24,7 +24,7 @@ interface BatchClientInterface
      *
      * @param array<array-key, PreparedRequest> $requests
      *
-     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>}|\Throwable>
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}|\Throwable>
      */
     public function sendMany(array $requests): array;
 }

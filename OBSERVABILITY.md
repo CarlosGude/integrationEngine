@@ -450,7 +450,7 @@ When you need to identify performance bottlenecks precisely, subscribe to interm
 
 - **ActionStarted:** before anything (baseline t=0)
 - **HttpResponseReceived:** after raw HTTP response arrives
-  - `statusCode()` — HTTP status
+  - `statusCode()` — HTTP status (`0` when the client doesn't report one: a custom `ClientInterface` or a response short-circuited by a middleware)
   - `durationMs()` — time spent in network + API processing
 - **ResponseMapped:** after DTO mapping is complete
   - `httpDurationMs()` — same as HttpResponseReceived duration

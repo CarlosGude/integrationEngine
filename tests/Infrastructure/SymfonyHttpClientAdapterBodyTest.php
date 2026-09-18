@@ -109,7 +109,7 @@ final class SymfonyHttpClientAdapterBodyTest extends TestCase
 
         $result = $adapter->send(BodyTestAction::create('GET', '/orders'));
 
-        self::assertSame(['body' => ['ok' => true], 'headers' => []], $result);
+        self::assertSame(['body' => ['ok' => true], 'headers' => [], 'statusCode' => 399], $result);
     }
 
     // ── \Throwable network error ──────────────────────────────────────────────
@@ -155,7 +155,7 @@ final class SymfonyHttpClientAdapterBodyTest extends TestCase
 
         $result = $adapter->send(BodyTestAction::create('DELETE', '/orders/1'));
 
-        self::assertSame(['body' => [], 'headers' => []], $result);
+        self::assertSame(['body' => [], 'headers' => [], 'statusCode' => 204], $result);
     }
 
     #[Test]
@@ -166,7 +166,7 @@ final class SymfonyHttpClientAdapterBodyTest extends TestCase
 
         $result = $adapter->send(BodyTestAction::create('DELETE', '/orders/1'));
 
-        self::assertSame(['body' => [], 'headers' => []], $result);
+        self::assertSame(['body' => [], 'headers' => [], 'statusCode' => 204], $result);
     }
 
     #[Test]
@@ -177,7 +177,7 @@ final class SymfonyHttpClientAdapterBodyTest extends TestCase
 
         $result = $adapter->send(BodyTestAction::create('GET', '/orders'));
 
-        self::assertSame(['body' => [], 'headers' => []], $result);
+        self::assertSame(['body' => [], 'headers' => [], 'statusCode' => 200], $result);
     }
 
     #[Test]
@@ -188,7 +188,7 @@ final class SymfonyHttpClientAdapterBodyTest extends TestCase
 
         $result = $adapter->send(BodyTestAction::create('GET', '/orders'));
 
-        self::assertSame(['body' => [], 'headers' => []], $result);
+        self::assertSame(['body' => [], 'headers' => [], 'statusCode' => 200], $result);
     }
 
     #[Test]
@@ -199,7 +199,7 @@ final class SymfonyHttpClientAdapterBodyTest extends TestCase
 
         $result = $adapter->send(BodyTestAction::create('GET', '/orders'));
 
-        self::assertSame(['body' => ['data' => 'ok'], 'headers' => []], $result);
+        self::assertSame(['body' => ['data' => 'ok'], 'headers' => [], 'statusCode' => 200], $result);
     }
 }
 

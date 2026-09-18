@@ -16,10 +16,10 @@ trait RunsRequestMiddlewares
      * common case — this reduces to a direct call to $terminal, no
      * behavior change from before request middlewares existed.
      *
-     * @param list<RequestMiddlewareInterface>                                                   $requestMiddlewares
-     * @param callable(Request): array{body: array<mixed>, headers: array<string, list<string>>} $terminal
+     * @param list<RequestMiddlewareInterface>                                                                     $requestMiddlewares
+     * @param callable(Request): array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int} $terminal
      *
-     * @return array{body: array<mixed>, headers: array<string, list<string>>}
+     * @return array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}
      */
     private function dispatchThroughRequestMiddlewares(Request $request, array $requestMiddlewares, callable $terminal): array
     {

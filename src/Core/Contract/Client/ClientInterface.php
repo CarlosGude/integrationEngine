@@ -12,9 +12,10 @@ interface ClientInterface
     /**
      * Executes the HTTP request and returns the raw response payload plus
      * the response's HTTP headers. The engine passes body and headers to
-     * the action's mapper as separate arguments.
+     * the action's mapper as separate arguments. statusCode is optional:
+     * it only feeds HttpResponseReceived, which reports 0 when it's absent.
      *
-     * @return array{body: array<mixed>, headers: array<string, list<string>>}
+     * @return array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}
      */
     public function send(
         AbstractAction $action,
