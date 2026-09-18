@@ -355,35 +355,45 @@ MyApi/
 }</div>
       </div>
 
-      <!-- WITH ENGINE: CONFIGURATION ONLY -->
+      <!-- WITH ENGINE: MAPPER DOES IT ALL -->
       <div class="example-code-panel">
-        <div class="file-label">With IntegrationEngine: Same flow, different code</div>
-        <div class="code-block"><span class="cm">// 1. Configuration (YAML) — done once</span>
+        <div class="file-label">With IntegrationEngine: Mapper handles the update directly</div>
+        <div class="code-block"><span class="cm">// 1. Configuration (YAML) — that's it</span>
 <span class="key">webhooks</span>:
   <span class="key">products/update</span>:
-    <span class="val">mapper_class</span>: App\\...\\<span class="hl">ProductUpdatedMapper</span>
+    <span class="val">mapper_class</span>: App\\Shopify\\<span class="hl">ProductUpdatedMapper</span>
     <span class="val">signature</span>:
       <span class="val">type</span>: hmac_sha256
       <span class="val">header</span>: X-Shopify-Hmac-SHA256
 
-<span class="cm">// 2. Entry point (Controller) — 1 line</span>
-POST /webhooks/shopify → <span class="hl">IntegrationEngine handles everything</span>
+<span class="cm">// 2. Entry point (Controller) → POST /webhooks/shopify</span>
+<span class="cm">// Framework: verifies signature, checks duplicates, calls mapper</span>
 
-<span class="cm">// 3. Your mapper — raw → typed</span>
+<span class="cm">// 3. Mapper: parses + updates (no separate listener needed)</span>
 <span class="kw">final class</span> <span class="cls">ProductUpdatedMapper</span> <span class="kw">extends</span> <span class="cls">AbstractWebhookMapper</span>
 {
-    <span class="kw">public function</span> <span class="fn">map</span>(<span class="cls">array</span> <span class="var">$p</span>): <span class="cls">ProductUpdated</span>
+    <span class="kw">public function</span> <span class="fn">__construct</span>(<span class="kw">private</span> <span class="cls">InventoryService</span> <span class="var">$inventory</span>) {}
+
+    <span class="kw">public function</span> <span class="fn">map</span>(<span class="cls">array</span> <span class="var">$payload</span>): <span class="cls">WebhookEventInterface</span>
     {
+        <span class="var">$productId</span> = <span class="var">$payload</span>[<span class="str\">'id'</span>];
+        <span class="var">$productTitle</span> = <span class="var">$payload</span>[<span class="str\">'title'</span>];
+        <span class="var">$productPrice</span> = (float) <span class="var">$payload</span>[<span class="str\">'price'</span>];
+
+        <span class="cm">// Do the update right here (transactional)</span>
+        <span class="var">$this</span>-&gt;<span class="var">inventory</span>-&gt;<span class="fn">syncProduct</span>(
+            <span class="var">$productId</span>,
+            <span class="var">$productTitle</span>,
+            <span class="var">$productPrice</span>
+        );
+
+        <span class="cm">// Return event (framework handles storage, state tracking)</span>
         <span class="kw">return new</span> <span class="cls">ProductUpdated</span>(
-            <span class="var">$p</span>[<span class="str\">'id'</span>], <span class="var">$p</span>[<span class="str\">'title'</span>], (float) <span class="var">$p</span>[<span class="str\">'price'</span>]
+            <span class="var">$productId</span>,
+            <span class="var">$productTitle</span>,
+            <span class="var">$productPrice</span>
         );
     }
-}
-
-<span class="cm">// 4. Your listener — just business logic</span>
-<span class="kw">public function</span> <span class="fn">onProductUpdated</span>(<span class="cls">ProductUpdated</span> <span class="var">$e</span>): <span class="cls">void</span>
-{
-    <span class="var">$this</span>-&gt;<span class="var">inventory</span>-&gt;<span class="fn">syncProduct</span>(<span class="var">$e</span>-&gt;<span class="var">id</span>, <span class="var">$e</span>-&gt;<span class="var">price</span>);
 }</div>
       </div>
 

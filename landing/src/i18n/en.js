@@ -164,8 +164,8 @@ export default {
 
     // Webhook example section
     webhookEyebrow: 'Inbound Example',
-    webhookH2:      'Receive webhooks without reinventing the wheel.',
-    webhookSub:     'Same webhook arrives at your controller (POST /webhooks/shopify). Without the engine: 50 lines of verification, duplicate checking, parsing, storage, worker jobs. With IntegrationEngine: 1 line of config + 1 mapper + your listener. No signature logic, no raw arrays, no failed-webhook handling—the framework does it.',
+    webhookH2:      'Receive webhooks. Your mapper does the update.',
+    webhookSub:     'Same webhook arrives at your controller (POST /webhooks/shopify). Without the engine: 50 lines (verification, duplicate checks, parsing, storage, worker jobs, manual state). With IntegrationEngine: 1 YAML config + 1 mapper with explicit variable names + do the update inside. No signature logic, no raw arrays, no worker jobs, no failed-webhook handling—the framework automates it all.',
     webhookBtn:     'View webhook guide',
 
     // Thanks section
