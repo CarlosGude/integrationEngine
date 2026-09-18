@@ -24,6 +24,10 @@ use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 use IntegrationEngine\Core\Exception\ConnectionResolutionException;
 use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Exception\NotMappedActionException;
+use IntegrationEngine\Core\Lifecycle\ActionCompleted;
+use IntegrationEngine\Core\Lifecycle\ActionFailed;
+use IntegrationEngine\Core\Lifecycle\ActionStarted;
+use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
 use IntegrationEngine\Core\Response\EmptyResponse;
@@ -41,6 +45,7 @@ final readonly class IntegrationEngine
         private ?LoggerInterface $logger = null,
         ?DynamicAuthHandler $authHandler = null,
         private ?ConnectionResolverInterface $connectionResolver = null,
+        private ?LifecycleEventDispatcher $eventDispatcher = null,
     ) {
         $this->authHandler = $authHandler ?? new DynamicAuthHandler($config, $client, $cache, $integrationName, $logger);
     }
@@ -70,28 +75,57 @@ final readonly class IntegrationEngine
         ?string $baseUrl = null,
         mixed $connection = null,
     ): ResponseInterface {
+        $startTime = microtime(true);
         $action = $this->config->getAction($actionName, $body);
         $resolved = $this->resolveForDispatch($action, $connection, $baseUrl);
         $action = $resolved['action'];
         $client = $resolved['client'];
 
-        $auth = $action->getAuthorization();
+        $this->eventDispatcher?->dispatch(new ActionStarted(
+            action: $action,
+            integrationName: $this->integrationName,
+            timestamp: $startTime,
+        ));
 
-        if ($auth instanceof DynamicAuthorizationConfig) {
-            return $this->authHandler->handle(
+        try {
+            $auth = $action->getAuthorization();
+
+            if ($auth instanceof DynamicAuthorizationConfig) {
+                $response = $this->authHandler->handle(
+                    action: $action,
+                    auth: $auth,
+                    context: $context,
+                    headers: $headers,
+                    buildResponse: fn (AbstractAction $a, array $respBody, array $respHeaders): ResponseInterface => $this->buildResponse($a, $respBody, $respHeaders),
+                    client: $client,
+                    cacheDiscriminator: $resolved['cacheDiscriminator'],
+                );
+            } else {
+                $rawResponse = $client->send($action, $context, $headers);
+                $response = $this->buildResponse($action, $rawResponse['body'], $rawResponse['headers']);
+            }
+
+            $duration = (microtime(true) - $startTime) * 1000;
+            $this->eventDispatcher?->dispatch(new ActionCompleted(
                 action: $action,
-                auth: $auth,
-                context: $context,
-                headers: $headers,
-                buildResponse: fn (AbstractAction $a, array $respBody, array $respHeaders): ResponseInterface => $this->buildResponse($a, $respBody, $respHeaders),
-                client: $client,
-                cacheDiscriminator: $resolved['cacheDiscriminator'],
-            );
+                integrationName: $this->integrationName,
+                timestamp: $startTime,
+                response: $response,
+                durationMs: $duration,
+            ));
+
+            return $response;
+        } catch (\Throwable $e) {
+            $duration = (microtime(true) - $startTime) * 1000;
+            $this->eventDispatcher?->dispatch(new ActionFailed(
+                action: $action,
+                integrationName: $this->integrationName,
+                timestamp: $startTime,
+                error: $e,
+                durationMs: $duration,
+            ));
+            throw $e;
         }
-
-        $rawResponse = $client->send($action, $context, $headers);
-
-        return $this->buildResponse($action, $rawResponse['body'], $rawResponse['headers']);
     }
 
     // ── Batch requests ─────────────────────────────────────────────────────────

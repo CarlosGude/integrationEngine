@@ -167,6 +167,16 @@ integration_engine:
             request_middlewares: []    # optional, ordered RequestMiddlewareInterface service IDs (built-in adapters only)
 ```
 
+## Lifecycle Events (v5.2.0+)
+
+Tap into integration lifecycle for observability. See **[LIFECYCLE.md](./LIFECYCLE.md)** for:
+
+- `ActionStarted`, `ActionCompleted`, `ActionFailed` events
+- Examples: logging, Prometheus metrics, error tracking (Sentry), audit trails
+- Built-in dispatcher + Symfony EventDispatcher adapter
+
+---
+
 ## Inbound Webhooks (v5.1.0+)
 
 For **receiving** webhooks from external platforms (Shopify, WooCommerce, etc.), see **[WEBHOOK.md](./WEBHOOK.md)**. It covers:

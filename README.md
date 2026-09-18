@@ -3,10 +3,16 @@
 [![CI](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml/badge.svg)](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml)
 
 **Website:** [integrationengine.dev](https://integrationengine.dev)  
-**Status:** v5.1.0 Live — Inbound Webhooks Complete  
+**Status:** v5.2.0 Live — Lifecycle Events + Observability  
 **Roadmap:** [See public roadmap](./ROADMAP.md) — Now/Next/Later, no dates, transparent progress.
 
-**✨ v5.1.0 Features:**
+**✨ v5.2.0 Features:**
+- ✅ **Lifecycle events** (ActionStarted, ActionCompleted, ActionFailed)
+- ✅ Built-in event dispatcher + Symfony EventDispatcher adapter
+- ✅ Examples: custom logging, Prometheus metrics, Sentry integration, audit trails
+- 🔗 [Guide: LIFECYCLE.md](./LIFECYCLE.md)
+
+**v5.1.0 Features:**
 - ✅ **Inbound webhook framework** (Shopify, WooCommerce, extensible)
 - ✅ HMAC signature verification per platform
 - ✅ Idempotency & replay protection (24h fingerprint window)

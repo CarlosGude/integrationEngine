@@ -251,6 +251,40 @@ no se ven afectados.
 
 ---
 
+## Eventos de Ciclo de Vida (v5.2.0+)
+
+Integra observabilidad con eventos del lifecycle para logging, métricas y auditoría.
+
+```php
+$dispatcher = new LifecycleEventDispatcher();
+
+$dispatcher->subscribe(ActionCompleted::class, function(ActionCompleted $event) {
+    $logger->info('Acción completada', [
+        'action' => $event->action()->getName(),
+        'duration_ms' => $event->durationMs(),
+    ]);
+});
+
+$engine = new IntegrationEngine(
+    config: $config,
+    client: $client,
+    cache: $cache,
+    integrationName: 'stripe',
+    eventDispatcher: $dispatcher,
+);
+```
+
+**Eventos:**
+- `ActionStarted` — antes de la llamada HTTP
+- `ActionCompleted` — después del mapeo exitoso (incluye response DTO, duración)
+- `ActionFailed` — en caso de error (incluye excepción, duración)
+
+Perfecto para logging personalizado, métricas Prometheus, tracking de errores (Sentry), auditoría y alertas.
+
+→ **[Guía de Eventos](./LIFECYCLE.md)** — ejemplos para logging, métricas, alertas y error tracking.
+
+---
+
 ## Webhooks de Entrada (v5.1.0+)
 
 IntegrationEngine también soporta **recibir** webhooks de plataformas externas
