@@ -343,11 +343,34 @@ MyApi/
 }</div>
       </div>
 
-      <!-- USAGE (full width) -->
-      <div class="example-code-panel example-panel-full">
-        <div class="file-label">Receives inbound webhook on POST /webhooks/shopify &mdash; Signature verified, duplicates filtered, state tracked automatically</div>
-        <div class="code-block"><span class="cm">// Symfony event listener automatically receives typed DTO</span>
-<span class="cm">// No raw arrays, no signature verification logic in your code</span>
+      <!-- WITHOUT PATTERN -->
+      <div class="example-code-panel">
+        <div class="file-label">Without the pattern: raw webhook</div>
+        <div class="code-block"><span class="cm">// Verify signature manually (easy to get wrong)</span>
+<span class="kw">if</span> (!hash_equals(
+    base64_encode(hash_hmac(<span class="str">'sha256'</span>, $body, $secret, <span class="kw">true</span>)),
+    $request-&gt;headers-&gt;<span class="fn">get</span>(<span class="str">'X-Shopify-Hmac-SHA256'</span>)
+)) { <span class="kw">throw new</span> <span class="cls">InvalidSignatureException</span>; }
+
+<span class="cm">// Check for duplicates manually (if you remember)</span>
+<span class="cm">// Parse the raw array (arrays leak everywhere)</span>
+<span class="var">$payload</span> = json_decode($body, <span class="kw">true</span>);
+<span class="var">$id</span> = <span class="var">$payload</span>[<span class="str\">'id'</span>];
+<span class="var">$title</span> = <span class="var">$payload</span>[<span class="str\">'title'</span>];
+<span class="var">$price</span> = <span class="var">$payload</span>[<span class="str\">'price'</span>]; <span class="cm">// What if API renames this?</span>
+
+<span class="kw">echo</span> <span class="var">$title</span>; <span class="cm">// Now it's in your domain code</span></div>
+      </div>
+
+      <!-- WITH PATTERN -->
+      <div class="example-code-panel">
+        <div class="file-label">With IntegrationEngine: automatic, typed, reliable</div>
+        <div class="code-block"><span class="cm">// Framework handles everything:</span>
+<span class="cm">// ✓ HMAC signature verification</span>
+<span class="cm">// ✓ Duplicate detection (24h fingerprint)</span>
+<span class="cm">// ✓ Typed DTO (only raw field access is in Mapper)</span>
+<span class="cm">// ✓ Failed webhooks → dead-letter queue (replayable)</span>
+<span class="cm">// ✓ State machine (received → processing → success)</span>
 
 <span class="kw">class</span> <span class="cls">ProductUpdatedListener</span>
 {

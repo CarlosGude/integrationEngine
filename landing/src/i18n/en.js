@@ -164,8 +164,8 @@ export default {
 
     // Webhook example section
     webhookEyebrow: 'Inbound Example',
-    webhookH2:      'Receive Shopify webhooks in under 20 lines.',
-    webhookSub:     'One signature verifier. One DTO per event type. One mapper. Automatic duplicate detection, state tracking, and dead-letter queue for failures &mdash; no webhook logic in your service layer.',
+    webhookH2:      'Receive and process webhooks without the boilerplate.',
+    webhookSub:     'Your listener receives a typed DTO. The framework handles signature verification, duplicate detection, failed webhook storage, state tracking, and replay. No raw arrays, no manual HMAC logic, no webhook plumbing in your domain code.',
     webhookBtn:     'View webhook guide',
 
     // Thanks section
