@@ -8,12 +8,12 @@ export default {
 
     // Hero
     heroH1:  'Stop writing integration code twice.',
-    heroP:   'Every integration your team ships follows the same predictable standard. New developers understand any existing API in minutes &mdash; not days. Automatic OAuth2, parallel requests and typed DTOs built in. One Symfony bundle &mdash; distilled from production integrations at scale.',
+    heroP:   'Every integration your team ships follows the same predictable standard. Send requests to external APIs or receive webhooks from them &mdash; both with automatic OAuth2, parallel execution, and typed DTOs. New developers understand any existing API in minutes &mdash; not days. One Symfony bundle &mdash; distilled from production integrations at scale.',
     heroBenefits: [
         '&#10003;&nbsp;OAuth2, Bearer &amp; API Key',
         '&#10003;&nbsp;Parallel requests',
         '&#10003;&nbsp;Typed DTOs',
-        '&#10003;&nbsp;Symfony native',
+        '&#10003;&nbsp;Inbound webhooks (v5.1.0)',
     ],
     heroBtn1: 'See the pattern',
     heroBtn2: 'GitHub',
@@ -155,11 +155,11 @@ export default {
 
     // Status section
     statusEyebrow:      'Status',
-    statusH2:           'Phase 1: Presentable',
-    statusP:            'Public roadmap, unified quality gates, live demo coming next. No promises with dates &mdash; just transparent, working software and the next milestone in the pipeline.',
-    statusNow:          '<strong>Now:</strong> Bundle foundations solid. v4.1.1 released. Landing and docs live.',
-    statusNext:         '<strong>Next:</strong> Full demo online (TMDB + Stripe). Tour showing the pattern in action across 6 phases.',
-    statusLater:        '<strong>Later:</strong> Open-source plugins, legacy migration patterns, certified training.',
+    statusH2:           'v5.1.0 Live — Inbound Webhooks Complete',
+    statusP:            'Outbound integrations (Stripe, Shopify, etc.) + inbound webhooks (receive events from external platforms). Multi-platform routing, signature verification, idempotency, and state machine built in. No promises with dates &mdash; just transparent, working software.',
+    statusNow:          '<strong>Now:</strong> v5.1.0 released. Multi-platform webhook framework (Shopify, WooCommerce). 596 tests passing. Production-ready.',
+    statusNext:         '<strong>Next:</strong> Phase 5: Quality of design (PHPStan rule extensions, SSRF protection). Phase 6: Platform ecosystem (pre-built integrations).',
+    statusLater:        '<strong>Later:</strong> Admin dashboard (webhook replay UI), open-source plugins, certified training.',
     statusRoadmapLink:  'Full roadmap →',
 
     // Thanks section

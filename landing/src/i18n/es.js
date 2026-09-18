@@ -8,12 +8,12 @@ export default {
 
     // Hero
     heroH1:  'Deja de escribir código de integración dos veces.',
-    heroP:   'Cada integración que entrega tu equipo sigue el mismo estándar predecible. Los desarrolladores nuevos entienden cualquier API en minutos &mdash; no en días. OAuth2 automático, peticiones en paralelo y DTOs tipados incluidos. Un solo bundle de Symfony &mdash; destilado de experiencia en producción a escala.',
+    heroP:   'Cada integración que entrega tu equipo sigue el mismo estándar predecible. Envía requests a APIs externas o recibe webhooks de ellas &mdash; ambas con OAuth2 automático, ejecución en paralelo y DTOs tipados. Los desarrolladores nuevos entienden cualquier API en minutos &mdash; no en días. Un solo bundle de Symfony &mdash; destilado de experiencia en producción a escala.',
     heroBenefits: [
         '&#10003;&nbsp;OAuth2, Bearer &amp; API Key',
         '&#10003;&nbsp;Peticiones en paralelo',
         '&#10003;&nbsp;DTOs tipados',
-        '&#10003;&nbsp;Symfony nativo',
+        '&#10003;&nbsp;Webhooks inbound (v5.1.0)',
     ],
     heroBtn1: 'Ver el patrón',
     heroBtn2: 'GitHub',
@@ -155,11 +155,11 @@ export default {
 
     // Status section
     statusEyebrow:      'Estado',
-    statusH2:           'Fase 1: Presentable',
-    statusP:            'Hoja de ruta pública, puertas de calidad unificadas, demo en vivo próximamente. Sin promesas con fecha &mdash; solo software funcionando y transparencia en cada hito.',
-    statusNow:          '<strong>Ahora:</strong> Bundle sólido. v4.1.1 publicada. Landing y docs en vivo.',
-    statusNext:         '<strong>Próximo:</strong> Demo completa en línea (TMDB + Stripe). Tour mostrando el patrón en acción a través de 6 fases.',
-    statusLater:        '<strong>Después:</strong> Plugins open-source, patrones de migración legacy, formación certificada.',
+    statusH2:           'v5.1.0 en vivo — Webhooks inbound completados',
+    statusP:            'Integraciones salientes (Stripe, Shopify, etc.) + webhooks inbound (recibe eventos de plataformas externas). Enrutamiento multi-plataforma, verificación de firmas, idempotencia y state machine incluidos. Sin promesas con fecha &mdash; solo software funcionando y transparencia en cada hito.',
+    statusNow:          '<strong>Ahora:</strong> v5.1.0 publicada. Framework de webhooks multi-plataforma (Shopify, WooCommerce). 596 tests pasando. Listo para producción.',
+    statusNext:         '<strong>Próximo:</strong> Fase 5: Calidad del diseño (extensiones PHPStan, protección SSRF). Fase 6: Ecosistema de plataformas (integraciones pre-construidas).',
+    statusLater:        '<strong>Después:</strong> Dashboard admin (UI de replay de webhooks), plugins open-source, formación certificada.',
     statusRoadmapLink:  'Hoja de ruta completa →',
 
     // Thanks section
