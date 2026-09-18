@@ -8,24 +8,8 @@ on:
 
 jobs:
   demo-contract:
-    name: Verify demo app still works with this bundle version
+    name: Demo app still works with this bundle
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        php-version: [ '8.2', '8.3' ]
-        symfony: [ '6.4', '7.0' ]
-
-    services:
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
 
     steps:
       - name: Checkout bundle
@@ -36,73 +20,30 @@ jobs:
       - name: Checkout demo app
         uses: actions/checkout@v4
         with:
-          repository: CarlosGude/integrationEngine-use-example
+          repository: CarlosGude/integrationEngine-demo
           path: demo
           ref: main
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-version }}
-          extensions: redis, mbstring, intl
+          php-version: '8.4'
+          extensions: pdo_sqlite, intl, zip
           coverage: none
 
-      - name: Get Composer cache directory
-        id: composer-cache
-        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-
-      - name: Cache Composer packages
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('demo/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
-
-      - name: Require bundle from local path (instead of Packagist)
+      # A high version keeps the demo's own constraint (^5.x) satisfied by
+      # this checkout, so the demo's composer.json doesn't need to change.
+      - name: Install the demo against this bundle checkout
         working-directory: demo
         run: |
-          composer config repositories.bundle path ../bundle
-          composer require carlosgude/integration-engine:"*@dev" symfony/framework-bundle:"^${{ matrix.symfony }}"
-
-      - name: Install demo dependencies
-        working-directory: demo
-        run: composer install --no-interaction --prefer-dist
+          composer config repositories.bundle '{"type": "path", "url": "../bundle", "options": {"symlink": false, "versions": {"carlosgude/integration-engine": "5.99.0"}}}'
+          composer update --no-interaction --prefer-dist
+          composer show carlosgude/integration-engine | grep -E '^(versions|source|dist)'
 
       - name: Run demo tests
         working-directory: demo
         run: make test
-        env:
-          REDIS_URL: redis://localhost:6379
 
       - name: Run demo static analysis
         working-directory: demo
         run: make stan
-        continue-on-error: true
-
-      - name: Report success
-        if: success()
-        run: echo "✅ Demo contract verified: bundle v${{ github.sha }} is compatible with demo app"
-
-      - name: Report failure
-        if: failure()
-        run: |
-          echo "❌ Demo contract broken: bundle changes broke the demo app tests"
-          echo "This means:"
-          echo "1. The bundle introduced a breaking change (unlikely in minor/patch)"
-          echo "2. The demo app is out of sync with the bundle (update demo dependencies)"
-          echo "3. A test in the demo is flaky (review test output above)"
-          exit 1
-
-  status-check:
-    name: Contract test passed
-    needs: [ demo-contract ]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Check contract test status
-        run: |
-          if [ "${{ needs.demo-contract.result }}" != "success" ]; then
-            echo "❌ Contract test failed: changes to the bundle must not break the demo"
-            exit 1
-          fi
-          echo "✅ Contract test passed: demo app is compatible"
