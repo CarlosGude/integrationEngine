@@ -485,24 +485,32 @@ MyApi/
       <div style="grid-column: 1 / -1;">
         <div class="example-code-panel">
           <div class="file-label">Step 3: Listen to lifecycle events (no code changes needed)</div>
-          <div class="code-block"><span class="cm">// Wire listeners via Symfony EventDispatcher. No changes to ShopifyService.</span>
-<span class="attr">#[AsEventListener(event: ActionCompleted::class)]</span>
-<span class="kw">public function</span> <span class="fn">onIntegrationFinished</span>(<span class="cls">ActionCompleted</span> <span class="var">$event</span>): <span class="kw">void</span>
+          <div class="code-block"><span class="cm">// 3 lifecycle events. Listeners auto-discovered by Symfony.</span>
+<span class="cm"></span>
+<span class="cm">// 1. Request starts</span>
+<span class="attr">#[AsEventListener(event: ActionStarted::class)]</span>
+<span class="kw">public function</span> <span class="fn">onActionStarted</span>(<span class="cls">ActionStarted</span> <span class="var">$event</span>): <span class="kw">void</span>
 {
-    <span class="cm">// What the event carries:</span>
-    <span class="var">$action</span> = <span class="var">$event</span>-&gt;<span class="fn">action</span>()-&gt;<span class="fn">getName</span>();        <span class="cm">// 'GetProduct'</span>
-    <span class="var">$duration</span> = <span class="var">$event</span>-&gt;<span class="fn">durationMs</span>();         <span class="cm">// 342ms</span>
-    <span class="var">$integration</span> = <span class="var">$event</span>-&gt;<span class="fn">integrationName</span>();  <span class="cm">// 'shopify'</span>
-    <span class="var">$dto</span> = <span class="var">$event</span>-&gt;<span class="fn">response</span>();             <span class="cm">// typed DTO</span>
+    <span class="var">$this</span>-&gt;<span class="var">logger</span>-&gt;<span class="fn">info</span>(<span class="str\"'Calling '</span> . <span class="var">$event</span>-&gt;<span class="fn">action</span>()-&gt;<span class="fn">getName</span>());
+}
 
-    <span class="cm">// Use case 1: Log slow requests to file</span>
+<span class="cm">// 2. Request succeeds</span>
+<span class="attr">#[AsEventListener(event: ActionCompleted::class)]</span>
+<span class="kw">public function</span> <span class="fn">onActionCompleted</span>(<span class="cls">ActionCompleted</span> <span class="var">$event</span>): <span class="kw">void</span>
+{
+    <span class="var">$duration</span> = <span class="var">$event</span>-&gt;<span class="fn">durationMs</span>();
     <span class="kw">if</span> (<span class="var">$duration</span> &gt; 3000) {
-        <span class="var">$this</span>-&gt;<span class="var">logger</span>-&gt;<span class="fn">warning</span>(<span class="str\">{$integration}: {$action} took {$duration}ms\"</span>);
-        <span class="var">$this</span>-&gt;<span class="var">slack</span>-&gt;<span class="fn">notify</span>(<span class="str\">'⚠ Slow API call'</span>);
+        <span class="var">$this</span>-&gt;<span class="var">slack</span>-&gt;<span class="fn">alert</span>(<span class="str\"'⚠ Slow: '</span> . <span class="var">$event</span>-&gt;<span class="fn">action</span>()-&gt;<span class="fn">getName</span>());
     }
+    <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">record</span>(<span class="var">$event</span>-&gt;<span class="fn">action</span>()-&gt;<span class="fn">getName</span>(), <span class="var">$duration</span>);
+}
 
-    <span class="cm">// Use case 2: Track metrics for dashboards (Datadog, New Relic, etc)</span>
-    <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">recordDuration</span>(<span class="var">$action</span>, <span class="var">$duration</span>);
+<span class="cm">// 3. Request fails</span>
+<span class="attr">#[AsEventListener(event: ActionFailed::class)]</span>
+<span class="kw">public function</span> <span class="fn">onActionFailed</span>(<span class="cls">ActionFailed</span> <span class="var">$event</span>): <span class="kw">void</span>
+{
+    <span class="var">$this</span>-&gt;<span class="var">sentry</span>-&gt;<span class="fn">captureException</span>(<span class="var">$event</span>-&gt;<span class="fn">error</span>());
+    <span class="var">$this</span>-&gt;<span class="var">logger</span>-&gt;<span class="fn">error</span>(<span class="str\"'Failed: '</span> . <span class="var">$event</span>-&gt;<span class="fn">error</span>()-&gt;<span class="fn">getMessage</span>());
 }</div>
         </div>
       </div>
