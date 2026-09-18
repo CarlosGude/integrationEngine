@@ -9,6 +9,9 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 final class AdapterMapBuilder
 {
+    /**
+     * @return array<string, class-string<ClientAdapterInterface>>
+     */
     public function buildAdapterMap(ContainerBuilder $container): array
     {
         $adapters = $container->findTaggedServiceIds('integration_engine.client_adapter');

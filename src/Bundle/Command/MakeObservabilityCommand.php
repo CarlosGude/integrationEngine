@@ -194,6 +194,11 @@ PHP;
         }
 
         $content = file_get_contents($path);
+        if (false === $content) {
+            $io->error("Could not read {$path}");
+            return;
+        }
+
         $entry = <<<YAML
 
   app.{$integration}.observability:
@@ -231,8 +236,22 @@ YAML);
             return 'App';
         }
 
-        $composer = json_decode(file_get_contents($composerFile), true);
-        foreach ($composer['autoload']['psr-4'] ?? [] as $namespace => $path) {
+        $content = file_get_contents($composerFile);
+        if (false === $content) {
+            return 'App';
+        }
+
+        $composer = json_decode($content, true);
+        if (!\is_array($composer)) {
+            return 'App';
+        }
+
+        $psr4 = $composer['autoload']['psr-4'] ?? null;
+        if (!\is_array($psr4)) {
+            return 'App';
+        }
+
+        foreach ($psr4 as $namespace => $path) {
             if ('src/' === $path) {
                 return rtrim($namespace, '\\');
             }

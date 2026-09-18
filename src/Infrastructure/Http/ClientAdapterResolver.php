@@ -16,6 +16,7 @@ final class ClientAdapterResolver
      * Later registrations override earlier ones — project adapters
      * are registered after bundle built-ins, so they always win.
      *
+     * @param string $clientType
      * @param class-string<ClientAdapterInterface> $adapterClass
      */
     public function register(string $clientType, string $adapterClass): void
