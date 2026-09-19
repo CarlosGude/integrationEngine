@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [5.4.0] - 2026-09-19
+
 ### Fixed
 
 - **Lifecycle events now reach Symfony listeners.** `SymfonyEventDispatcherAdapter` couldn't be instantiated (`Cannot call constructor`: it called a parent constructor that doesn't exist), and the bundle never passed a `LifecycleEventDispatcher` to the integrations. The bundle now injects the `IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher` service into every integration; point that service at `SymfonyEventDispatcherAdapter` (as LIFECYCLE.md and the Flex recipe do) and `#[AsEventListener]` listeners receive `ActionStarted`, `ActionCompleted`, etc.
@@ -16,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - Cache keys for dynamic-auth tokens and cached responses are hashed with `xxh128` instead of `sha1` (non-cryptographic use). After upgrading, tokens and responses cached under the old keys aren't found and are fetched once again.
+- `MultiPlatformWebhookController::ingest()` no longer declares the unused `$platform` argument. Callers passing it keep working: PHP accepts extra arguments, and Symfony resolves controller arguments by name.
 
 ### Security
 
@@ -37,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Contract test workflow: fixed the YAML syntax error that made every run fail instantly, and pointed it at the public demo app (`integrationEngine-demo`, PHP 8.4); the previous target was a private repository the workflow couldn't check out.
 - Broken documentation links and stale namespaces fixed; the documentation tests pass again.
 - README's webhook feature list now matches what ships: the DLQ, audit trail and idempotency pieces are contracts you provide storage for, and multi-platform routing is deprecated.
+- Landing page: code snippets showed PHP namespaces without their backslashes, and 14 snippets never rendered (a span missing its `>`).
 - SonarCloud: the analysis config moves to `.sonarcloud.properties`, the only file automatic analysis reads (its exclusions were being ignored, so tests and the landing's i18n counted as duplication). Intentional `composer update` steps and a false positive are annotated, and the remaining issues are fixed.
 
 ## [5.3.1] - 2026-09-18
