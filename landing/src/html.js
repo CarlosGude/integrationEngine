@@ -32,7 +32,7 @@ export function getHTML(lang = 'en') {
         <p>${i.desc}</p>
       </div>`).join('');
 
-    return `<!DOCTYPE html>
+    return String.raw`<!DOCTYPE html>
 <html lang="${t.lang}">
 <head>
 <meta charset="UTF-8">
@@ -254,12 +254,12 @@ MyApi/
       <div class="struct-panel">
         <div class="struct-header">STRIPE.YAML</div>
         <pre><span class="key">GetToken</span>:
-    <span class="val">action</span>: App\\...\\<span class="hl">GetTokenAction</span>
+    <span class="val">action</span>: App\...\<span class="hl">GetTokenAction</span>
     <span class="val">method</span>: POST
     <span class="val">path</span>:   /v1/oauth/token
 
 <span class="key">CreatePaymentIntent</span>:
-    <span class="val">action</span>: App\\...\\<span class="hl">CreatePaymentIntentAction</span>
+    <span class="val">action</span>: App\...\<span class="hl">CreatePaymentIntentAction</span>
     <span class="val">method</span>: POST
     <span class="val">path</span>:   /v1/payment_intents
     <span class="val">authorization</span>:
@@ -387,7 +387,7 @@ MyApi/
           <div class="file-label">Step 1: Configuration (YAML only)</div>
           <div class="code-block" style="min-height: 200px;"><span class="key">webhooks</span>:
   <span class="key">products/update</span>:
-    <span class="val">mapper_class</span>: App\\Shopify\\<span class="hl">ProductUpdatedMapper</span>
+    <span class="val">mapper_class</span>: App\Shopify\<span class="hl">ProductUpdatedMapper</span>
     <span class="val">signature</span>:
       <span class="val">type</span>: hmac_sha256
       <span class="val">header</span>: X-Shopify-Hmac-SHA256</div>
@@ -516,7 +516,7 @@ MyApi/
     <span class="kw">private function</span> <span class="fn">recordError</span>(<span class="cls">ActionFailed</span> <span class="var">$event</span>): <span class="kw">void</span>
     {
         <span class="cm">// Uncomment and fill:</span>
-        <span class="cm">// \\Sentry\\captureException($event->error(), [</span>
+        <span class="cm">// \Sentry\captureException($event->error(), [</span>
         <span class="cm">//     'tags' => ['integration' => 'shopify'],</span>
         <span class="cm">//     'extra' => ['duration_ms' => $event->durationMs()],</span>
         <span class="cm">// ]);</span>
@@ -529,9 +529,9 @@ MyApi/
       <div class="example-code-panel">
         <div class="file-label">Step 3: Auto-wired in services.yaml</div>
         <div class="code-block"><span class="key">app.shopify.observability</span>:
-    <span class="key">class</span>: <span class="val">App\\Integration\\Shopify\\ShopifyObservabilitySetup</span>
+    <span class="key">class</span>: <span class="val">App\Integration\Shopify\ShopifyObservabilitySetup</span>
     <span class="key">calls</span>:
-      - [<span class="fn">register</span>, [<span class="str">'@IntegrationEngine\\Core\\Lifecycle\\LifecycleEventDispatcher'</span>, <span class="str">'@logger'</span>]]</div>
+      - [<span class="fn">register</span>, [<span class="str">'@IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher'</span>, <span class="str">'@logger'</span>]]</div>
       </div>
 
       <!-- Step 4: Optional scaling -->
@@ -663,9 +663,9 @@ MyApi/
           <div class="cpanel bad">
             <div class="cpanel-head"><span class="panel-dot"></span>${t.withoutPattern}</div>
             <div class="file-label">src/Traditional/RailwayApiService.php</div>
-            <div class="code-block"><span class="kw">namespace</span> App\\Traditional;
+            <div class="code-block"><span class="kw">namespace</span> App\Traditional;
 
-<span class="kw">use</span> <span class="cls">Symfony\\Contracts\\HttpClient\\HttpClientInterface</span>;
+<span class="kw">use</span> <span class="cls">Symfony\Contracts\HttpClient\HttpClientInterface</span>;
 
 <span class="kw">class</span> <span class="cls">RailwayApiService</span>
 {
@@ -712,17 +712,17 @@ MyApi/
             <div class="cpanel-head"><span class="panel-dot"></span>${t.enginePattern}</div>
             <div class="file-label">src/Engine/Infrastructure/Integrations/RailwayStations/RailwayStations.yaml</div>
             <div class="code-block"><span class="good-hl"><span class="key">GetStats</span>:
-    <span class="key">action</span>: <span class="str">App\\...\\GetStatsAction</span>
+    <span class="key">action</span>: <span class="str">App\...\GetStatsAction</span>
     <span class="key">method</span>: <span class="str">GET</span>
     <span class="key">path</span>:   <span class="str">/stats</span></span>
 
 <span class="good-hl"><span class="key">GetStationsByCountry</span>:
-    <span class="key">action</span>: <span class="str">App\\...\\GetStationsByCountryAction</span>
+    <span class="key">action</span>: <span class="str">App\...\GetStationsByCountryAction</span>
     <span class="key">method</span>: <span class="str">GET</span>
     <span class="key">path</span>:   <span class="str">/photoStationsByCountry/{country}</span></span>
 
 <span class="good-hl"><span class="key">GetStationById</span>:
-    <span class="key">action</span>: <span class="str">App\\...\\GetStationByIdAction</span>
+    <span class="key">action</span>: <span class="str">App\...\GetStationByIdAction</span>
     <span class="key">method</span>: <span class="str">GET</span>
     <span class="key">path</span>:   <span class="str">/photoStationById/{country}/{stationId}</span></span></div>
             <div class="file-label">config/packages/integration_engine.yaml</div>
@@ -788,7 +788,7 @@ MyApi/
             <span class="str">'stationId'</span> =&gt; <span class="var">$stationId</span>,
         ])</span>,
     );
-    \\assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetStationByIdResponse</span>);
+    \assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetStationByIdResponse</span>);
     <span class="kw">return</span> <span class="var">$response</span>;
 }
 
@@ -875,9 +875,9 @@ MyApi/
           <div class="cpanel bad">
             <div class="cpanel-head"><span class="panel-dot"></span>${t.withoutPattern}</div>
             <div class="file-label">src/Traditional/Controller/GetStationsByCountryController.php</div>
-            <div class="code-block"><span class="kw">namespace</span> App\\Traditional\\Controller;
+            <div class="code-block"><span class="kw">namespace</span> App\Traditional\Controller;
 
-<span class="bad-hl"><span class="kw">use</span> <span class="cls">App\\Traditional\\RailwayApiService</span>;</span>
+<span class="bad-hl"><span class="kw">use</span> <span class="cls">App\Traditional\RailwayApiService</span>;</span>
 
 <span class="kw">class</span> <span class="cls">GetStationsByCountryController</span>
 {
@@ -896,9 +896,9 @@ MyApi/
           <div class="cpanel good">
             <div class="cpanel-head"><span class="panel-dot"></span>${t.enginePattern}</div>
             <div class="file-label">src/Engine/Controller/GetStationsByCountryController.php</div>
-            <div class="code-block"><span class="kw">namespace</span> App\\Engine\\Controller;
+            <div class="code-block"><span class="kw">namespace</span> App\Engine\Controller;
 
-<span class="good-hl"><span class="kw">use</span> <span class="cls">App\\Engine\\Application\\StationService</span>;</span>
+<span class="good-hl"><span class="kw">use</span> <span class="cls">App\Engine\Application\StationService</span>;</span>
 
 <span class="kw">final class</span> <span class="cls">GetStationsByCountryController</span>
 {
