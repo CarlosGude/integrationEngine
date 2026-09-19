@@ -13,10 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `HttpResponseReceived::statusCode()` reports the real HTTP status for the built-in REST and GraphQL clients; it was always `0`. The client response shape gains an optional `statusCode` key; a custom client that doesn't set it keeps reporting `0`.
 - Flex recipe: drops the unused `INTEGRATION_ENGINE_CACHE` env var, and shows the per-integration options inside an example integration instead of at the root, where they're invalid.
 
+### Changed
+
+- Cache keys for dynamic-auth tokens and cached responses are hashed with `xxh128` instead of `sha1` (non-cryptographic use). After upgrading, tokens and responses cached under the old keys aren't found and are fetched once again.
+
 ### Security
 
 - `IntegrationWebhookRequestParser` verified signatures with an empty key when `framework.webhook.routing.<type>.secret` was empty. It now falls back to `getSignatureSecret()`, and rejects the request (`406`) when both are empty.
 - `MultiPlatformWebhookController` always verified signatures with an empty key, so it accepted HMACs anyone can compute. It now verifies with `WebhookPlatformConfig::$secret` and answers `500` while none is configured.
+- Dead-letter queue failure ids are generated from `random_bytes()` instead of `mt_rand()`.
 
 ### Added
 
@@ -32,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Contract test workflow: fixed the YAML syntax error that made every run fail instantly, and pointed it at the public demo app (`integrationEngine-demo`, PHP 8.4); the previous target was a private repository the workflow couldn't check out.
 - Broken documentation links and stale namespaces fixed; the documentation tests pass again.
 - README's webhook feature list now matches what ships: the DLQ, audit trail and idempotency pieces are contracts you provide storage for, and multi-platform routing is deprecated.
+- SonarCloud: the analysis config moves to `.sonarcloud.properties`, the only file automatic analysis reads (its exclusions were being ignored, so tests and the landing's i18n counted as duplication). Intentional `composer update` steps and a false positive are annotated, and the remaining issues are fixed.
 
 ## [5.3.1] - 2026-09-18
 
