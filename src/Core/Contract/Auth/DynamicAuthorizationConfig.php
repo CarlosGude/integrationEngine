@@ -35,7 +35,7 @@ final readonly class DynamicAuthorizationConfig extends AuthorizationConfig
      */
     public function cacheKey(string $integrationName, ?string $discriminator = null): string
     {
-        return \sprintf('integration_engine.token.%s.%s.%s', $integrationName, $this->action, sha1($discriminator ?? ''));
+        return \sprintf('integration_engine.token.%s.%s.%s', $integrationName, $this->action, hash('xxh128', $discriminator ?? ''));
     }
 
     public function toStaticConfig(string $token): StaticAuthorizationConfig

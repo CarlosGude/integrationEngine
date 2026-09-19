@@ -57,18 +57,15 @@ final class ProcessWebhookHandler
         }
     }
 
+    /**
+     * RFC 4122 v4 UUID from a CSPRNG, so failure ids are unpredictable and collision-safe.
+     */
     private function generateFailureId(): string
     {
-        return \sprintf(
-            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            mt_rand(0, 0xFFFF),
-            mt_rand(0, 0xFFFF),
-            mt_rand(0, 0xFFFF),
-            mt_rand(0, 0x0FFF) | 0x4000,
-            mt_rand(0, 0x3FFF) | 0x8000,
-            mt_rand(0, 0xFFFF),
-            mt_rand(0, 0xFFFF),
-            mt_rand(0, 0xFFFF),
-        );
+        $bytes = random_bytes(16);
+        $bytes[6] = \chr((\ord($bytes[6]) & 0x0F) | 0x40); // version 4
+        $bytes[8] = \chr((\ord($bytes[8]) & 0x3F) | 0x80); // RFC 4122 variant
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }
 }

@@ -143,7 +143,7 @@ final class WebhookFileGeneratorTest extends TestCase
             }
             $file = $dir.'/'.str_replace('\\', '/', substr($class, \strlen($prefix))).'.php';
             if (is_file($file)) {
-                require $file;
+                require_once $file;
             }
         };
         spl_autoload_register($autoload);

@@ -26,8 +26,8 @@ use PHPUnit\Framework\Attributes\Test;
 
 final class BatchSendSadPathTest extends IntegrationEngineTestCase
 {
-    // Trailing segment is sha1('') — the baseUrl component of the key when no baseUrl is used.
-    private const TOKEN_CACHE_KEY = 'integration_engine.token.test_integration.fake_fetch_token.da39a3ee5e6b4b0d3255bfef95601890afd80709';
+    // Trailing segment is hash('xxh128', '') — the baseUrl component of the key when no baseUrl is used.
+    private const TOKEN_CACHE_KEY = 'integration_engine.token.test_integration.fake_fetch_token.99aa06d3014798d86001c324468d497f';
 
     // ── Partial failures ──────────────────────────────────────────────────────
 
@@ -205,7 +205,7 @@ final class BatchSendSadPathTest extends IntegrationEngineTestCase
     {
         $this->registerProtectedActionPair();
         $baseUrl = 'https://tenant-a.example.com';
-        $cacheKey = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1($baseUrl);
+        $cacheKey = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', $baseUrl);
         $this->cache->set($cacheKey, 'stale_token', 60);
         $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'fresh_token']);
         $this->client->setResponse(FakeProtectedAction::getName(), []);
@@ -233,8 +233,8 @@ final class BatchSendSadPathTest extends IntegrationEngineTestCase
         $this->registerProtectedActionPair();
         $baseUrlA = 'https://tenant-a.example.com';
         $baseUrlB = 'https://tenant-b.example.com';
-        $cacheKeyA = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1($baseUrlA);
-        $cacheKeyB = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1($baseUrlB);
+        $cacheKeyA = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', $baseUrlA);
+        $cacheKeyB = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', $baseUrlB);
         $this->cache->set($cacheKeyA, 'token_a', 60);
         $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'token_b']);
         $this->client->setResponse(FakeProtectedAction::getName(), []);

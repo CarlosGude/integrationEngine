@@ -54,7 +54,7 @@ final class LoggingTest extends IntegrationEngineTestCase
     {
         $this->registerProtectedPair();
         $this->cache->set(
-            'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1(''),
+            'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', ''),
             'cached_token',
             60,
         );
@@ -75,7 +75,7 @@ final class LoggingTest extends IntegrationEngineTestCase
     #[Test]
     public function singleRetryAfter401IsLoggedAtWarningLevel(): void
     {
-        $cacheKey = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('');
+        $cacheKey = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', '');
         $this->cache->set($cacheKey, 'stale', 60);
         $this->registerProtectedPair();
         $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'fresh']);
@@ -100,7 +100,7 @@ final class LoggingTest extends IntegrationEngineTestCase
     #[Test]
     public function batchRetryAfter401IsLoggedAtWarningLevel(): void
     {
-        $cacheKey = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('');
+        $cacheKey = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', '');
         $this->cache->set($cacheKey, 'stale', 60);
         $this->registerProtectedPair();
         $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'fresh']);

@@ -128,7 +128,7 @@ final class CachingMiddleware extends AbstractClientMiddleware implements BaseUr
         return \sprintf(
             'ie_response_%s_%s',
             $this->integrationName,
-            sha1(json_encode([
+            hash('xxh128', json_encode([
                 $action::class,
                 $this->baseUrl,
                 $context?->toArray() ?? [],

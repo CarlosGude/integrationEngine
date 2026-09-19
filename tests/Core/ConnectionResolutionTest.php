@@ -140,11 +140,11 @@ final class ConnectionResolutionTest extends IntegrationEngineTestCase
 
         self::assertSame(
             'token_a',
-            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('tenant_a')),
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', 'tenant_a')),
         );
         self::assertSame(
             'token_b',
-            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('tenant_b')),
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', 'tenant_b')),
         );
 
         // A repeat call for tenant_a must reuse its own token, not tenant_b's.
@@ -185,11 +185,11 @@ final class ConnectionResolutionTest extends IntegrationEngineTestCase
 
         self::assertSame(
             'token_a',
-            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('tenant_a')),
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', 'tenant_a')),
         );
         self::assertSame(
             'token_b',
-            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('tenant_b')),
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', 'tenant_b')),
         );
 
         $auth = $this->client->lastAction()?->getAuthorization();
@@ -221,10 +221,10 @@ final class ConnectionResolutionTest extends IntegrationEngineTestCase
 
         self::assertSame(
             'tok',
-            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('resolved_id')),
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', 'resolved_id')),
         );
         self::assertNull(
-            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('raw_key')),
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', 'raw_key')),
         );
     }
 
@@ -250,7 +250,7 @@ final class ConnectionResolutionTest extends IntegrationEngineTestCase
 
         self::assertSame(
             'tok',
-            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('42')),
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', '42')),
         );
     }
 
@@ -315,7 +315,7 @@ final class ConnectionResolutionTest extends IntegrationEngineTestCase
         )));
         $sharedUrl = 'https://shared.example.com';
         $this->resolver->register('tenant_a', new ConnectionCredentials(baseUrl: $sharedUrl, connectionId: 'tenant_a'));
-        $staleCacheKey = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('tenant_a');
+        $staleCacheKey = 'integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', 'tenant_a');
         $this->cache->set($staleCacheKey, 'stale_token', 60);
         $this->client->setResponse(FakeTokenAction::getName(), ['access_token' => 'fresh_token']);
         $this->client->setResponse(FakeProtectedAction::getName(), []);

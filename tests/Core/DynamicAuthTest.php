@@ -95,10 +95,10 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
         // proving the constructor used it instead of building its own.
         self::assertSame(
             'injected_token',
-            $this->cache->get('integration_engine.token.injected_integration.'.FakeTokenAction::getName().'.'.sha1('')),
+            $this->cache->get('integration_engine.token.injected_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', '')),
         );
         self::assertNull(
-            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('')),
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', '')),
         );
     }
 
@@ -254,7 +254,7 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
     #[Test]
     public function dynamicAuthUsesTokenFromCacheWhenAvailable(): void
     {
-        $this->cache->set('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1(''), 'pre_cached_token', 60);
+        $this->cache->set('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', ''), 'pre_cached_token', 60);
 
         $this->config->register(FakeProtectedAction::getName(), FakeProtectedAction::create('GET', '/protected', null, new DynamicAuthorizationConfig(
             action: FakeTokenAction::getName(),
@@ -319,11 +319,11 @@ final class DynamicAuthTest extends IntegrationEngineTestCase
 
         self::assertSame(
             'token_a',
-            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('https://tenant-a.example.com')),
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', 'https://tenant-a.example.com')),
         );
         self::assertSame(
             'token_b',
-            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.sha1('https://tenant-b.example.com')),
+            $this->cache->get('integration_engine.token.test_integration.'.FakeTokenAction::getName().'.'.hash('xxh128', 'https://tenant-b.example.com')),
         );
 
         // A repeat call for tenant A must reuse tenant A's own cached
