@@ -44,7 +44,7 @@ final class FakeLogger implements LoggerInterface
             }
         }
 
-        throw new \RuntimeException(\sprintf('No log entry found at level "%s" containing "%s".', $level, $messageContains));
+        throw new FakeFailure(\sprintf('No log entry found at level "%s" containing "%s".', $level, $messageContains));
     }
 
     /** @return list<array{level: string, message: string, context: array<string, mixed>}> */

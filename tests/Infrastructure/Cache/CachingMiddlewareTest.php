@@ -218,7 +218,7 @@ final class CachingMiddlewareTest extends TestCase
         );
 
         // Second call: ctx1 is hit, ctx2 is miss
-        $forwarded = null;
+        $forwarded = [];
         $results = $mw->processMany(
             [
                 'a' => new PreparedRequest($action, $ctx1, null),
@@ -308,12 +308,12 @@ final class CachingMiddlewareTest extends TestCase
         $mw = new CachingMiddleware($cache, 'my_api');
         $action = FakePathAction::create('GET', '/items');
 
-        $mw->processMany(['a' => new PreparedRequest($action, null, null)], static function (array $reqs) use (&$calls): array {
+        $mw->processMany(['a' => new PreparedRequest($action, null, null)], static function () use (&$calls): array {
             ++$calls;
 
             return ['a' => []];
         });
-        $mw->processMany(['a' => new PreparedRequest($action, null, null)], static function (array $reqs) use (&$calls): array {
+        $mw->processMany(['a' => new PreparedRequest($action, null, null)], static function () use (&$calls): array {
             ++$calls;
 
             return ['a' => []];

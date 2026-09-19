@@ -93,6 +93,6 @@ final class TestWebhookMapperForDlqWithError extends AbstractWebhookMapper
 
     public function map(array $payload, array $headers): WebhookEventInterface
     {
-        throw new \RuntimeException('Processing error: invalid payload');
+        throw new FakeFailure('Processing error: invalid payload');
     }
 }

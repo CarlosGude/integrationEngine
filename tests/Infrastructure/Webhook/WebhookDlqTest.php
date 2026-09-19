@@ -7,6 +7,7 @@ namespace IntegrationEngine\Tests\Infrastructure\Webhook;
 use IntegrationEngine\Core\Webhook\WebhookFailure;
 use IntegrationEngine\Infrastructure\Webhook\Handler\ProcessWebhookHandler;
 use IntegrationEngine\Infrastructure\Webhook\Message\ProcessWebhookMessage;
+use IntegrationEngine\Tests\Fake\FakeFailure;
 use IntegrationEngine\Tests\Fake\TestWebhookMapperForDlq;
 use IntegrationEngine\Tests\Fake\TestWebhookMapperForDlqWithError;
 use IntegrationEngine\Tests\Fake\WebhookDlqAdapter;
@@ -84,8 +85,33 @@ final class WebhookDlqTest extends TestCase
         self::assertSame('products/update', $failure->eventType);
         self::assertSame(123, $failure->payload['id']);
         self::assertStringContainsString('invalid payload', $failure->errorMessage);
-        self::assertSame(\RuntimeException::class, $failure->errorClass);
+        self::assertSame(FakeFailure::class, $failure->errorClass);
         self::assertSame(0, $failure->retryCount);
+    }
+
+    public function testFailureIdsAreDistinctV4Uuids(): void
+    {
+        $this->resolverAdapter->register('products/update', new TestWebhookMapperForDlqWithError());
+
+        $message = new ProcessWebhookMessage(
+            eventType: 'products/update',
+            payload: ['id' => 123],
+            headers: [],
+        );
+
+        ($this->handler)($message);
+        ($this->handler)($message);
+
+        $failures = $this->dlq->findUnresolved();
+        self::assertCount(2, $failures);
+
+        foreach ($failures as $failure) {
+            self::assertMatchesRegularExpression(
+                '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/',
+                $failure->id,
+            );
+        }
+        self::assertNotSame($failures[0]->id, $failures[1]->id);
     }
 
     public function testUnknownEventTypeIsIgnored(): void

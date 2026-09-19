@@ -12,13 +12,6 @@ use Symfony\Component\Yaml\Yaml;
 
 final class YamlConfigAdapterWebhooksTest extends TestCase
 {
-    protected function tearDown(): void
-    {
-        parent::tearDown();
-        // Cleanup temp files created during test
-        // (in real tests, use vfsStream or temp dir auto-cleanup)
-    }
-
     public function testParseWebhookDefinitionWithHmacSignature(): void
     {
         $configPath = $this->createTempYaml([
