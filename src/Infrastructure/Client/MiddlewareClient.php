@@ -112,7 +112,7 @@ final class MiddlewareClient implements ClientInterface, BatchClientInterface, D
      *
      * @return array<array-key, array<mixed>|\Throwable>
      */
-    private function dispatchBatch(array $requests): array
+    private function dispatchBatch(array $requests): array // NOSONAR: used as a first-class callable in sendMany()
     {
         if ($this->inner instanceof BatchClientInterface) {
             return $this->inner->sendMany($requests);

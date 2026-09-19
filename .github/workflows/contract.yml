@@ -25,7 +25,7 @@ jobs:
           ref: main
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # 2.37.1
         with:
           php-version: '8.4'
           extensions: pdo_sqlite, intl, zip
@@ -37,7 +37,7 @@ jobs:
         working-directory: demo
         run: |
           composer config repositories.bundle '{"type": "path", "url": "../bundle", "options": {"symlink": false, "versions": {"carlosgude/integration-engine": "5.99.0"}}}'
-          composer update --no-interaction --prefer-dist
+          composer update --no-interaction --prefer-dist # NOSONAR: the demo has no lock file; this resolves it against this checkout on purpose
           composer show carlosgude/integration-engine | grep -E '^(versions|source|dist)'
 
       - name: Run demo tests

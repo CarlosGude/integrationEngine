@@ -98,7 +98,7 @@ jobs:
       - name: Install dependencies pinned to Symfony ${{ matrix.symfony }}
         env:
           SYMFONY_REQUIRE: ${{ matrix.symfony }}
-        run: composer update --prefer-dist --no-progress ${{ matrix.deps == 'lowest' && '--prefer-lowest --prefer-stable' || '' }}
+        run: composer update --prefer-dist --no-progress ${{ matrix.deps == 'lowest' && '--prefer-lowest --prefer-stable' || '' }} # NOSONAR: the matrix resolves each Symfony version and lowest/highest deps on purpose
 
       - name: Show resolved Symfony version
         run: composer show symfony/http-client | grep versions
