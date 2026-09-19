@@ -342,15 +342,15 @@ MyApi/
     <span class="cm">// Check duplicates manually (if you remember)</span>
     <span class="var">$fingerprint</span> = md5($body);
     <span class="kw">if</span> (<span class="var">$this</span>-&gt;<span class="var">cache</span>-&gt;<span class="fn">has</span>(<span class="var">$fingerprint</span>)) {
-        <span class="kw">return new</span> <span class="cls">Response</span>(<span class="str\">''</span>, 200); <span class="cm">// silent duplicate</span>
+        <span class="kw">return new</span> <span class="cls">Response</span>(<span class="str">''</span>, 200); <span class="cm">// silent duplicate</span>
     }
 
     <span class="cm">// Parse &amp; store manually</span>
     <span class="var">$payload</span> = json_decode($body, <span class="kw">true</span>);
-    <span class="var">$this</span>-&gt;<span class="var">db</span>-&gt;<span class="fn">insert</span>(<span class="str\">'webhooks'</span>, <span class="var">$payload</span>);
+    <span class="var">$this</span>-&gt;<span class="var">db</span>-&gt;<span class="fn">insert</span>(<span class="str">'webhooks'</span>, <span class="var">$payload</span>);
     <span class="var">$this</span>-&gt;<span class="var">cache</span>-&gt;<span class="fn">set</span>(<span class="var">$fingerprint</span>, <span class="kw">true</span>, 86400);
 
-    <span class="kw">return new</span> <span class="cls">Response</span>(<span class="str\">''</span>, 202);
+    <span class="kw">return new</span> <span class="cls">Response</span>(<span class="str">''</span>, 202);
 }</div>
         </div>
 
@@ -358,21 +358,21 @@ MyApi/
         <div class="example-code-panel">
           <div class="file-label">Step 2: Worker job (process from DB, manual parsing &amp; update)</div>
           <div class="code-block"><span class="cm">// Worker job or command: Get raw data from DB</span>
-<span class="var">$webhook</span> = <span class="var">$this</span>-&gt;<span class="var">db</span>-&gt;<span class="fn">query</span>(<span class="str\">'SELECT * FROM webhooks WHERE processed=0'</span>);
+<span class="var">$webhook</span> = <span class="var">$this</span>-&gt;<span class="var">db</span>-&gt;<span class="fn">query</span>(<span class="str">'SELECT * FROM webhooks WHERE processed=0'</span>);
 
 <span class="kw">foreach</span> (<span class="var">$webhook</span> <span class="kw">as</span> <span class="var">$row</span>) {
     <span class="cm">// Parse again (already parsed above, but here we go)</span>
-    <span class="var">$payload</span> = json_decode(<span class="var">$row</span>[<span class="str\">'body'</span>], <span class="kw">true</span>);
+    <span class="var">$payload</span> = json_decode(<span class="var">$row</span>[<span class="str">'body'</span>], <span class="kw">true</span>);
 
     <span class="cm">// Raw array accessed directly (bad)</span>
-    <span class="var">$id</span> = <span class="var">$payload</span>[<span class="str\">'id'</span>];
-    <span class="var">$title</span> = <span class="var">$payload</span>[<span class="str\">'title'</span>];
-    <span class="var">$price</span> = (float) <span class="var">$payload</span>[<span class="str\">'price'</span>];
+    <span class="var">$id</span> = <span class="var">$payload</span>[<span class="str">'id'</span>];
+    <span class="var">$title</span> = <span class="var">$payload</span>[<span class="str">'title'</span>];
+    <span class="var">$price</span> = (float) <span class="var">$payload</span>[<span class="str">'price'</span>];
 
     <span class="cm">// Do the actual update</span>
     <span class="var">$this</span>-&gt;<span class="var">inventory</span>-&gt;<span class="fn">syncProduct</span>(<span class="var">$id</span>, <span class="var">title</span>, <span class="var">$price</span>);
 
-    <span class="var">$this</span>-&gt;<span class="var">db</span>-&gt;<span class="fn">update</span>(<span class="str\">'webhooks'</span>, [<span class="str\">'processed'</span> =&gt; 1]);
+    <span class="var">$this</span>-&gt;<span class="var">db</span>-&gt;<span class="fn">update</span>(<span class="str">'webhooks'</span>, [<span class="str">'processed'</span> =&gt; 1]);
 }</div>
         </div>
       </div>
@@ -422,9 +422,9 @@ MyApi/
 
     <span class="kw">public function</span> <span class="fn">map</span>(<span class="cls">array</span> <span class="var">$payload</span>): <span class="cls">WebhookEventInterface</span>
     {
-        <span class="var">$productId</span> = <span class="var">$payload</span>[<span class="str\">'id'</span>];
-        <span class="var">$productTitle</span> = <span class="var">$payload</span>[<span class="str\">'title'</span>];
-        <span class="var">$productPrice</span> = (float) <span class="var">$payload</span>[<span class="str\">'price'</span>];
+        <span class="var">$productId</span> = <span class="var">$payload</span>[<span class="str">'id'</span>];
+        <span class="var">$productTitle</span> = <span class="var">$payload</span>[<span class="str">'title'</span>];
+        <span class="var">$productPrice</span> = (float) <span class="var">$payload</span>[<span class="str">'price'</span>];
 
         <span class="var">$this</span>-&gt;<span class="var">inventory</span>-&gt;<span class="fn">syncProduct</span>(
             <span class="var">$productId</span>,
@@ -485,21 +485,21 @@ MyApi/
     {
         <span class="cm">// Layer 1: Auto-logging (ActionStarted, ActionCompleted, ActionFailed)</span>
         <span class="cls">ObservabilitySetup</span>::<span class="fn">register</span>(<span class="var">$dispatcher</span>, <span class="var">$this</span>-&gt;<span class="var">logger</span>, [
-            <span class="str\">'logging'</span> =&gt; <span class="kw">true</span>,
-            <span class="str\">'slow_request_threshold_ms'</span> =&gt; 3000,
-            <span class="str\">'integration_filter'</span> =&gt; <span class="str\"'shopify'</span>,
+            <span class="str">'logging'</span> =&gt; <span class="kw">true</span>,
+            <span class="str">'slow_request_threshold_ms'</span> =&gt; 3000,
+            <span class="str">'integration_filter'</span> =&gt; <span class="str">'shopify'</span>,
         ]);
 
         <span class="cm">// Layer 2: Metrics (ActionCompleted + ActionFailed)</span>
         <span class="cls">ObservabilitySetup</span>::<span class="fn">register</span>(<span class="var">$dispatcher</span>, <span class="var">$this</span>-&gt;<span class="var">logger</span>, [
-            <span class="str\"'metrics_callback'</span> =&gt; <span class="fn">fn</span>(<span class="var">$e</span>) =&gt; <span class="var">$this</span>-&gt;<span class="fn">recordMetrics</span>(<span class="var">$e</span>),
-            <span class="str\"'integration_filter'</span> =&gt; <span class="str\"'shopify'</span>,
+            <span class="str">'metrics_callback'</span> =&gt; <span class="fn">fn</span>(<span class="var">$e</span>) =&gt; <span class="var">$this</span>-&gt;<span class="fn">recordMetrics</span>(<span class="var">$e</span>),
+            <span class="str">'integration_filter'</span> =&gt; <span class="str">'shopify'</span>,
         ]);
 
         <span class="cm">// Layer 3: Errors (ActionFailed)</span>
         <span class="cls">ObservabilitySetup</span>::<span class="fn">register</span>(<span class="var">$dispatcher</span>, <span class="var">$this</span>-&gt;<span class="var">logger</span>, [
-            <span class="str\"'error_callback'</span> =&gt; <span class="fn">fn</span>(<span class="var">$e</span>) =&gt; <span class="var">$this</span>-&gt;<span class="fn">recordError</span>(<span class="var">$e</span>),
-            <span class="str\"'integration_filter'</span> =&gt; <span class="str\"'shopify'</span>,
+            <span class="str">'error_callback'</span> =&gt; <span class="fn">fn</span>(<span class="var">$e</span>) =&gt; <span class="var">$this</span>-&gt;<span class="fn">recordError</span>(<span class="var">$e</span>),
+            <span class="str">'integration_filter'</span> =&gt; <span class="str">'shopify'</span>,
         ]);
     }
 
@@ -516,7 +516,7 @@ MyApi/
     <span class="kw">private function</span> <span class="fn">recordError</span>(<span class="cls">ActionFailed</span> <span class="var">$event</span>): <span class="kw">void</span>
     {
         <span class="cm">// Uncomment and fill:</span>
-        <span class="cm">// \Sentry\captureException($event->error(), [</span>
+        <span class="cm">// \\Sentry\\captureException($event->error(), [</span>
         <span class="cm">//     'tags' => ['integration' => 'shopify'],</span>
         <span class="cm">//     'extra' => ['duration_ms' => $event->durationMs()],</span>
         <span class="cm">// ]);</span>
@@ -529,9 +529,9 @@ MyApi/
       <div class="example-code-panel">
         <div class="file-label">Step 3: Auto-wired in services.yaml</div>
         <div class="code-block"><span class="key">app.shopify.observability</span>:
-    <span class="key">class</span>: <span class="val">App\Integration\Shopify\ShopifyObservabilitySetup</span>
+    <span class="key">class</span>: <span class="val">App\\Integration\\Shopify\\ShopifyObservabilitySetup</span>
     <span class="key">calls</span>:
-      - [<span class="fn">register</span>, [<span class="str\"'@IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher'</span>, <span class="str\"'@logger'</span>]]</div>
+      - [<span class="fn">register</span>, [<span class="str">'@IntegrationEngine\\Core\\Lifecycle\\LifecycleEventDispatcher'</span>, <span class="str">'@logger'</span>]]</div>
       </div>
 
       <!-- Step 4: Optional scaling -->
@@ -550,8 +550,8 @@ MyApi/
     <span class="kw">public function</span> <span class="fn">register</span>(<span class="cls">LifecycleEventDispatcher</span> <span class="var">$dispatcher</span>): <span class="kw">void</span>
     {
         <span class="cls">ObservabilitySetup</span>::<span class="fn">register</span>(<span class="var">$dispatcher</span>, <span class="var">$this</span>-&gt;<span class="var">logger</span>, [
-            <span class="str\"'metrics_callback'</span> =&gt; <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">record</span>(...),
-            <span class="str\"'error_callback'</span> =&gt; <span class="var">$this</span>-&gt;<span class="var">errors</span>-&gt;<span class="fn">handle</span>(...),
+            <span class="str">'metrics_callback'</span> =&gt; <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">record</span>(...),
+            <span class="str">'error_callback'</span> =&gt; <span class="var">$this</span>-&gt;<span class="var">errors</span>-&gt;<span class="fn">handle</span>(...),
         ]);
     }
 }</div>
@@ -571,9 +571,9 @@ MyApi/
     <span class="var">$mappingTime</span> = <span class="var">$event</span>-&gt;<span class="fn">mappingDurationMs</span>();
     <span class="var">$overhead</span> = <span class="var">$event</span>-&gt;<span class="fn">totalDurationMs</span>() - <span class="var">$httpTime</span> - <span class="var">$mappingTime</span>;
 
-    <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">gauge</span>(<span class="str\"'shopify.http_ms'</span>, <span class="var">$httpTime</span>);
-    <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">gauge</span>(<span class="str\"'shopify.mapping_ms'</span>, <span class="var">$mappingTime</span>);
-    <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">gauge</span>(<span class="str\"'shopify.overhead_ms'</span>, <span class="var">$overhead</span>);
+    <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">gauge</span>(<span class="str">'shopify.http_ms'</span>, <span class="var">$httpTime</span>);
+    <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">gauge</span>(<span class="str">'shopify.mapping_ms'</span>, <span class="var">$mappingTime</span>);
+    <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">gauge</span>(<span class="str">'shopify.overhead_ms'</span>, <span class="var">$overhead</span>);
 }</div>
         </div>
       </div>
