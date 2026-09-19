@@ -70,6 +70,7 @@ final class WebhookPlatformRegistry
 
                 return $this->getByPlatform($platform);
             } catch (\ValueError) {
+                // Unknown X-Platform value: fall back to path detection.
             }
         }
 

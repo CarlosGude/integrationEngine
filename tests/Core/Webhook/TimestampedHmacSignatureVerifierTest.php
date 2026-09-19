@@ -126,6 +126,58 @@ final class TimestampedHmacSignatureVerifierTest extends TestCase
         self::assertFalse($verifier->verify($body, $signature, self::SECRET));
     }
 
+    public function testRejectMultiPartSignatureMissingTimestamp(): void
+    {
+        $clock = new FakeClock(1000);
+        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
+
+        $body = 'test body';
+        $hash = hash_hmac('sha256', '1000.'.$body, self::SECRET);
+        $signature = "v0=ignored,v1={$hash}";
+
+        self::assertFalse($verifier->verify($body, $signature, self::SECRET));
+    }
+
+    public function testRejectMultiPartSignatureWithOnlyV0Versions(): void
+    {
+        $clock = new FakeClock(1000);
+        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
+
+        $timestamp = 1000;
+        $body = 'test body';
+        // A valid hash under v0 must not count.
+        $hash = hash_hmac('sha256', "{$timestamp}.{$body}", self::SECRET);
+        $signature = "t={$timestamp},v0={$hash}";
+
+        self::assertFalse($verifier->verify($body, $signature, self::SECRET));
+    }
+
+    public function testAcceptSignatureExactlyAtToleranceBoundary(): void
+    {
+        $clock = new FakeClock(1000 + self::TOLERANCE);
+        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
+
+        $timestamp = 1000;
+        $body = 'test body';
+        $hash = hash_hmac('sha256', "{$timestamp}.{$body}", self::SECRET);
+        $signature = "t={$timestamp},v1={$hash}";
+
+        self::assertTrue($verifier->verify($body, $signature, self::SECRET));
+    }
+
+    public function testRejectSignatureOneSecondPastTolerance(): void
+    {
+        $clock = new FakeClock(1000 + self::TOLERANCE + 1);
+        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
+
+        $timestamp = 1000;
+        $body = 'test body';
+        $hash = hash_hmac('sha256', "{$timestamp}.{$body}", self::SECRET);
+        $signature = "t={$timestamp},v1={$hash}";
+
+        self::assertFalse($verifier->verify($body, $signature, self::SECRET));
+    }
+
     public function testRejectInvalidTimestampFormat(): void
     {
         $clock = new FakeClock(1000);

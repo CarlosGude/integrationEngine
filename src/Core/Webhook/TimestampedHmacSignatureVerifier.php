@@ -30,42 +30,26 @@ final readonly class TimestampedHmacSignatureVerifier implements SignatureVerifi
 
     public function verify(string $body, string $signature, string $secret): bool
     {
-        $parts = explode(',', $signature);
-
-        if (\count($parts) < 2) {
-            return false;
-        }
-
         $timestamp = null;
-        $versions = [];
+        $providedHashes = [];
 
-        foreach ($parts as $part) {
+        foreach (explode(',', $signature) as $part) {
             if (str_starts_with($part, 't=')) {
                 $timestamp = substr($part, 2);
             } elseif (str_starts_with($part, 'v1=')) {
-                $versions['v1'][] = substr($part, 3);
+                $providedHashes[] = substr($part, 3);
             }
         }
 
-        if (null === $timestamp || !isset($versions['v1'])) {
-            return false;
-        }
-
-        if (!is_numeric($timestamp)) {
+        // is_numeric() also rejects a missing (null) timestamp.
+        if ([] === $providedHashes || !is_numeric($timestamp) || !$this->isWithinTolerance((int) $timestamp)) {
             return false;
         }
 
         $timestampInt = (int) $timestamp;
-        $currentTime = (int) $this->clock->now()->format('U');
-        $timeDiff = abs($currentTime - $timestampInt);
-
-        if ($timeDiff > $this->timestampToleranceSeconds) {
-            return false;
-        }
-
         $expectedHash = hash_hmac('sha256', "{$timestampInt}.{$body}", $secret);
 
-        foreach ($versions['v1'] as $providedHash) {
+        foreach ($providedHashes as $providedHash) {
             if (hash_equals($expectedHash, $providedHash)) {
                 return true;
             }
@@ -77,5 +61,12 @@ final readonly class TimestampedHmacSignatureVerifier implements SignatureVerifi
     public function getHeaderName(): string
     {
         return $this->headerName;
+    }
+
+    private function isWithinTolerance(int $timestamp): bool
+    {
+        $currentTime = (int) $this->clock->now()->format('U');
+
+        return abs($currentTime - $timestamp) <= $this->timestampToleranceSeconds;
     }
 }

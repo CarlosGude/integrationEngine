@@ -33,7 +33,7 @@ final class MultiPlatformWebhookController
         name: 'webhook_ingest',
         requirements: ['platform' => '(shopify|woocommerce)'],
     )]
-    public function ingest(Request $request, string $platform): JsonResponse
+    public function ingest(Request $request): JsonResponse
     {
         try {
             $platformConfig = $this->platformRegistry->detectPlatform(
@@ -42,32 +42,22 @@ final class MultiPlatformWebhookController
             );
 
             $body = $request->getContent();
-            $signature = $request->headers->get(
-                $platformConfig->verifier->getHeaderName()
-            );
+            $headerName = $platformConfig->verifier->getHeaderName();
+            $signature = $request->headers->get($headerName);
 
-            if (null === $signature) {
-                return new JsonResponse(
-                    ['error' => \sprintf('Missing signature header: %s', $platformConfig->verifier->getHeaderName())],
+            return match (true) {
+                null === $signature => new JsonResponse(
+                    ['error' => \sprintf('Missing signature header: %s', $headerName)],
                     400
-                );
-            }
-
-            // Verifying with an empty key would accept HMACs anyone can compute.
-            if ('' === $platformConfig->secret) {
-                return new JsonResponse(['error' => 'Webhook secret not configured for this platform'], 500);
-            }
-
-            if (!$platformConfig->verifier->verify($body, $signature, $platformConfig->secret)) {
-                return new JsonResponse(['error' => 'Invalid webhook signature'], 401);
-            }
-
-            return new JsonResponse(['status' => 'accepted'], 202);
-        } catch (\DomainException $e) {
+                ),
+                // Verifying with an empty key would accept HMACs anyone can compute.
+                '' === $platformConfig->secret => new JsonResponse(['error' => 'Webhook secret not configured for this platform'], 500),
+                !$platformConfig->verifier->verify($body, $signature, $platformConfig->secret) => new JsonResponse(['error' => 'Invalid webhook signature'], 401),
+                default => new JsonResponse(['status' => 'accepted'], 202),
+            };
+        } catch (\DomainException|\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\InvalidArgumentException $e) {
-            return new JsonResponse(['error' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             return new JsonResponse(['error' => 'Webhook processing failed'], 500);
         }
     }

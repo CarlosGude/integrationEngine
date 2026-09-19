@@ -63,8 +63,6 @@ PHP;
         $mapperClassName = $ctx->mapperClassName();
         $integration = $ctx->integration;
         $event = $ctx->event;
-        $headerName = $ctx->headerName;
-        $verifierType = $ctx->verifierType;
 
         $verifierSetup = $this->generateVerifierSetup($ctx);
 

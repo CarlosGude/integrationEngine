@@ -55,28 +55,24 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         $adapterBuilder = new AdapterMapBuilder();
         $adapterMap = $adapterBuilder->buildAdapterMap($container);
 
+        $wiring = new IntegrationWiringContext($middlewareResolver, $adapterMap, $registeredMiddlewares, $registeredRequestMiddlewares);
+
         $registry = $container->findDefinition(IntegrationRegistry::class);
 
         foreach ($integrations as $name => $config) {
-            $this->wireIntegration($container, $registry, $name, $config, $adapterMap, $registeredMiddlewares, $registeredRequestMiddlewares, $middlewareResolver);
+            $this->wireIntegration($container, $registry, $name, $config, $wiring);
         }
     }
 
     /**
-     * @param IntegrationConfig                                   $config
-     * @param array<string, class-string<ClientAdapterInterface>> $adapterMap
-     * @param array<string, true>                                 $registeredMiddlewares
-     * @param array<string, true>                                 $registeredRequestMiddlewares
+     * @param IntegrationConfig $config
      */
     private function wireIntegration(
         ContainerBuilder $container,
         Definition $registry,
         string $name,
         array $config,
-        array $adapterMap,
-        array $registeredMiddlewares,
-        array $registeredRequestMiddlewares,
-        MiddlewareResolver $middlewareResolver,
+        IntegrationWiringContext $wiring,
     ): void {
         if (null === $config['config_path']) {
             throw IntegrationConfigurationException::missingConfigPath($name);
@@ -94,9 +90,9 @@ final class IntegrationCompilerPass implements CompilerPassInterface
 
         $loggerRef = new Reference('logger', ContainerInterface::IGNORE_ON_INVALID_REFERENCE);
 
-        $integrationRequestMiddlewares = $middlewareResolver->resolveIntegrationRequestMiddlewares($config['request_middlewares'], $registeredRequestMiddlewares, $name);
-        $httpClientRef = $this->resolveHttpClientRef($container, $name, $config, $adapterMap, $integrationRequestMiddlewares);
-        $integrationMiddlewares = $middlewareResolver->resolveIntegrationMiddlewares($config['middlewares'], $registeredMiddlewares, $name);
+        $integrationRequestMiddlewares = $wiring->middlewareResolver->resolveIntegrationRequestMiddlewares($config['request_middlewares'], $wiring->registeredRequestMiddlewares, $name);
+        $httpClientRef = $this->resolveHttpClientRef($container, $name, $config, $wiring->adapterMap, $integrationRequestMiddlewares);
+        $integrationMiddlewares = $wiring->middlewareResolver->resolveIntegrationMiddlewares($config['middlewares'], $wiring->registeredMiddlewares, $name);
         $clientRef = $this->buildMiddlewareClient($container, $name, $httpClientRef, $cacheRef, $integrationMiddlewares);
 
         $authHandlerId = "integration_engine.auth_handler.{$name}";

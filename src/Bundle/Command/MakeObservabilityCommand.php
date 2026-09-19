@@ -227,28 +227,14 @@ YAML);
 
     private function guessNamespace(): string
     {
+        // Each step degrades to null so any missing/invalid piece falls through to 'App'.
         $composerFile = "{$this->projectDir}/composer.json";
-        if (!$this->filesystem->exists($composerFile)) {
-            return 'App';
-        }
-
-        $content = file_get_contents($composerFile);
-        if (false === $content) {
-            return 'App';
-        }
-
-        $composer = json_decode($content, true);
-        if (!\is_array($composer)) {
-            return 'App';
-        }
-
-        $autoload = $composer['autoload'] ?? null;
+        $content = $this->filesystem->exists($composerFile) ? file_get_contents($composerFile) : false;
+        $composer = false === $content ? null : json_decode($content, true);
+        $autoload = \is_array($composer) ? ($composer['autoload'] ?? null) : null;
         $psr4 = \is_array($autoload) ? ($autoload['psr-4'] ?? null) : null;
-        if (!\is_array($psr4)) {
-            return 'App';
-        }
 
-        foreach ($psr4 as $namespace => $path) {
+        foreach (\is_array($psr4) ? $psr4 : [] as $namespace => $path) {
             if ('src/' === $path) {
                 return rtrim($namespace, '\\');
             }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Bundle\Command;
 
+use IntegrationEngine\Bundle\Generator\GeneratedFileWriter;
 use IntegrationEngine\Bundle\Generator\IntegrationContext;
 use IntegrationEngine\Bundle\Generator\IntegrationFileGenerator;
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
@@ -105,12 +106,12 @@ final class MakeIntegrationCommand extends Command
 
         if (!$this->generator->integrationExists($ctx)) {
             foreach ($this->generator->generateIntegrationFiles($ctx) as $file => $content) {
-                $this->writeFile($file, $content, $io, $force);
+                GeneratedFileWriter::write($file, $content, $io, $force);
             }
         }
 
         foreach ($this->generator->generateActionFiles($ctx) as $file => $content) {
-            $this->writeFile($file, $content, $io, $force);
+            GeneratedFileWriter::write($file, $content, $io, $force);
         }
 
         $configPath = $this->generator->appendActionToConfig($ctx);
@@ -211,32 +212,6 @@ final class MakeIntegrationCommand extends Command
         }
 
         return [\is_string($actionPath) ? $actionPath : '/', \is_string($method) ? $method : 'POST'];
-    }
-
-    private function writeFile(string $filePath, string $content, SymfonyStyle $io, bool $force): void
-    {
-        $dir = \dirname($filePath);
-
-        if (!is_dir($dir) && !mkdir($dir, 0o755, true) && !is_dir($dir)) {
-            $io->error("Cannot create directory: {$dir}");
-
-            return;
-        }
-
-        $exists = file_exists($filePath);
-
-        if ($exists && !$force) {
-            $io->warning("Skipped (already exists): {$filePath}");
-
-            return;
-        }
-
-        if (false === file_put_contents($filePath, $content)) {
-            $io->error("Could not write file: {$filePath}");
-
-            return;
-        }
-        $io->text($exists ? "  updated  {$filePath}" : "  created  {$filePath}");
     }
 
     /**

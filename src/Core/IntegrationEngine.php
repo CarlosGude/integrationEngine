@@ -44,7 +44,7 @@ final readonly class IntegrationEngine
         private ClientInterface $client,
         private CachePort $cache,
         private string $integrationName,
-        private ?LoggerInterface $logger = null,
+        ?LoggerInterface $logger = null,
         ?AuthenticationHandler $authHandler = null,
         ?ConnectionResolverInterface $connectionResolver = null,
         private ?LifecycleEventDispatcher $eventDispatcher = null,

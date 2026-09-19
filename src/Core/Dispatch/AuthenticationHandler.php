@@ -23,7 +23,7 @@ final class AuthenticationHandler
         ConfigPort $config,
         ClientInterface $client,
         CachePort $cache,
-        private string $integrationName,
+        string $integrationName,
         ?LoggerInterface $logger = null,
     ) {
         $this->dynamicAuthHandler = new DynamicAuthHandler($config, $client, $cache, $integrationName, $logger);

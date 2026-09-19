@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Bundle\Command;
 
+use IntegrationEngine\Bundle\Generator\GeneratedFileWriter;
 use IntegrationEngine\Bundle\Generator\WebhookContext;
 use IntegrationEngine\Bundle\Generator\WebhookFileGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -92,38 +93,11 @@ final class MakeWebhookCommand extends Command
         $io->title(\sprintf('Generating webhook: %s / %s', $integration, $event));
 
         foreach ($this->generator->generateFiles($ctx) as $file => $content) {
-            $this->writeFile($file, $content, $io, $force);
+            GeneratedFileWriter::write($file, $content, $io, $force);
         }
 
         $io->success('Done.');
 
         return Command::SUCCESS;
-    }
-
-    private function writeFile(string $filePath, string $content, SymfonyStyle $io, bool $force): void
-    {
-        $dir = \dirname($filePath);
-
-        if (!is_dir($dir) && !mkdir($dir, 0o755, true) && !is_dir($dir)) {
-            $io->error("Cannot create directory: {$dir}");
-
-            return;
-        }
-
-        $exists = file_exists($filePath);
-
-        if ($exists && !$force) {
-            $io->warning("Skipped (already exists): {$filePath}");
-
-            return;
-        }
-
-        if (false === file_put_contents($filePath, $content)) {
-            $io->error("Could not write file: {$filePath}");
-
-            return;
-        }
-
-        $io->text($exists ? "  updated  {$filePath}" : "  created  {$filePath}");
     }
 }

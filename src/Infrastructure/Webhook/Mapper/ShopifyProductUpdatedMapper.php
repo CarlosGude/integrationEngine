@@ -40,6 +40,7 @@ final class ShopifyProductUpdatedMapper extends AbstractWebhookMapper
             try {
                 $updatedAt = new \DateTimeImmutable($payload['updated_at']);
             } catch (\Exception) {
+                // Unparseable date: leave it null.
             }
         }
 

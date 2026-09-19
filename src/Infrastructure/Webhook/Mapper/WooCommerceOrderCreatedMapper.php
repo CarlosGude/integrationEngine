@@ -53,6 +53,7 @@ final class WooCommerceOrderCreatedMapper extends AbstractWebhookMapper
             try {
                 $createdAt = new \DateTimeImmutable($payload['date_created']);
             } catch (\Exception) {
+                // Unparseable date: leave it null.
             }
         }
 
