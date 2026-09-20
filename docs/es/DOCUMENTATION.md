@@ -294,7 +294,7 @@ IntegrationEngine también soporta **recibir** webhooks de plataformas externas
 - **Verificación de firmas** — validación HMAC, extensible por plataforma
 - **Mapeo de eventos** — transforma payloads de webhooks en DTOs tipados
 - **Idempotencia** — detección automática de duplicados (ventana de 24h)
-- **Confiabilidad** — dead-letter queue para webhooks fallidos, state machine para tracking del ciclo de vida
+- **Confiabilidad** — detección de duplicados sobre el almacenamiento que tú pongas; los reintentos son cosa de Messenger
 - **Procesamiento asíncrono** — integración con Symfony Messenger para manejo no-bloqueante
 
 → **[Guía de Webhooks de Entrada](../../WEBHOOK.md)** — documentación completa para recibir y procesar webhooks de APIs externas.

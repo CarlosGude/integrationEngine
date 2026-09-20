@@ -10,3 +10,5 @@ symfony.lock
 .DS_Store
 .wrangler
 memory/
+/.deptrac.cache
+

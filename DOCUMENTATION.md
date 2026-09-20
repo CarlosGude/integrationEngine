@@ -333,7 +333,7 @@ IntegrationEngine also supports **receiving** webhooks from external platforms
 - **Signature verification** — HMAC-based validation, extensible per platform
 - **Event mapping** — transform webhook payloads into typed DTOs
 - **Idempotency** — automatic duplicate detection (24h fingerprint window)
-- **Reliability** — dead-letter queue for failed webhooks, state machine for lifecycle tracking
+- **Reliability** — duplicate detection over storage you provide; retries are Messenger's job
 - **Async processing** — Symfony Messenger integration for non-blocking handling
 
 → **[Inbound Webhooks Guide](./WEBHOOK.md)** — complete documentation for receiving and processing webhooks from external APIs.

@@ -191,5 +191,5 @@ For **receiving** webhooks from external platforms, see **[WEBHOOK.md](./WEBHOOK
 
 - How the bundle plugs into Symfony's Webhook component: `IntegrationWebhookRequestParser` → `#[AsRemoteEventConsumer]` → `WebhookEventDispatcher` → typed event listeners
 - Signature verifiers for the three common schemes (hex HMAC behind a prefix, raw HMAC in base64, timestamped HMAC) and payload mapping
-- Contracts shipped without a built-in adapter: idempotency, dead-letter queue, audit trail, Messenger handler
+- Idempotency: `WebhookIdempotencyService` and `WebhookFingerprinter`, over a `WebhookIdempotencyPort` you implement
 - Step-by-step guide and end-to-end test example

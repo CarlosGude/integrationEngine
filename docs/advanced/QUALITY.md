@@ -22,20 +22,19 @@ the single source of these numbers, and that its `source.excludes` and
 
 ## Current numbers
 
-As of 2026-09-20, measured locally on PHP 8.5:
+As of 2026-09-21, measured locally on PHP 8.5:
 
-- **Covered Code MSI: 98–99%** — above the 95% floor.
-- 901 mutants generated; 9 to 11 escape depending on the run.
+- **Covered Code MSI: 100%** — 755 mutants generated, every one killed.
 
-The survivors are the UUID bit masks described below, which is also why the
-number moves between runs. Every other mutant is killed by a test, and nothing
-here lowers a threshold to cover anything up.
+The mutants that used to survive lived in the webhook dead-letter handler,
+which 6.0 removed along with the rest of the vendor-specific surface
+([ADR 0014](../adr/0014-no-vendor-integrations-in-the-bundle.md)).
 
 Infection also reports **Mutation Code Coverage: 100%** and no uncovered
 mutants. Don't read that as full coverage: it generates no mutants at all for
 lines no test executes, so code like `GraphQLClientAdapter::sendMany()` — which
 has no test — counts neither way. `vendor/bin/phpunit --coverage-clover` is what
-answers that question; it reports 86% of lines.
+answers that question; it reports 88% of lines.
 
 ## `Bundle` exclusion from mutation testing
 
@@ -77,19 +76,3 @@ If a future mutant appears "equivalent" but isn't in this table, don't add a
 new `ignore` entry to make CI pass — write the test instead, or bring it here
 with the same reasoning this table requires: which observable behavior, given
 how the code is actually called, makes the mutation unkillable.
-
-### Not ignored: the failure id's UUID bits
-
-`ProcessWebhookHandler::generateFailureId()` builds a v4 UUID by masking two
-bytes (`& 0x0F | 0x40`, `& 0x3F | 0x80`). `WebhookDlqTest` asserts the v4
-format, which kills every mutant that moves a byte index, and every mask shift
-that lands outside the version/variant nibbles. What survives are the shifts
-that only move bits the format leaves free (`| 0x40` → `| 0x41` is still
-version 4), plus two that die or survive depending on what `random_bytes()`
-returned that run — so this method makes the MSI wobble by a mutant or two
-between runs.
-
-They stay unignored on purpose. Both masks share a line with the byte index
-next to them, and Infection's `ignore` is per class, method or line: silencing
-the equivalent masks would silence the index mutants the test does kill. A
-couple of surviving mutants is the cheaper price.

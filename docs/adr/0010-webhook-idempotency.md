@@ -3,6 +3,8 @@
 - **Status:** Accepted
 - **Date:** 2026-09-17
 
+> **Superseded in part by [ADR 0014](./0014-no-vendor-integrations-in-the-bundle.md).** The ports and value objects for the dead-letter queue and the audit trail were removed in 6.0 ([ADR 0014](./0014-no-vendor-integrations-in-the-bundle.md)); the idempotency service and its fingerprinter stayed.
+
 ## Context
 
 Webhook providers (Stripe, PayPal, etc.) retry failed deliveries, resulting in the same event being received multiple times. Without deduplication, the application could process the same event twice, causing side effects:

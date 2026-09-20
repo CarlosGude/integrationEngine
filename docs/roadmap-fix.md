@@ -244,9 +244,8 @@ parsers de Shopify.
 - [x] Landing, bloque de estado: decía "v5.2.0 Live" y "607 tests"; ahora pone v5.4.0, 666 tests y
   el mutation score. Las etiquetas de versión de las secciones de webhooks y observabilidad también
   estaban desfasadas.
-- [ ] `docs/PLAN-STATUS.md` sigue mostrando la "discrepancia crítica" de versiones (v4.1.1 frente a
-  v5.x), que ya está resuelta. Es un plan interno dentro de `docs/`, que es público: moverlo a
-  `docs/archived/` o borrarlo. Lo mismo con este fichero cuando se cierre.
+- [x] El `PLAN-STATUS` que vivía en `docs/` era un plan interno desfasado, dentro de una carpeta
+  pública. Borrado.
 - [ ] `CLAUDE.md` no coincide con el `Makefile`: `make qa` también ejecuta PHPStan (CLAUDE.md dice
   cs + test), y `make pre-commit` es un alias de `ci`, que ejecuta `cs` en dry-run y no `cs-fix`.
   Igualar uno de los dos.
@@ -255,16 +254,15 @@ parsers de Shopify.
 
 ## 6. Limpieza del repo
 
-- [ ] `.deptrac.cache` (2,8 MB) está versionado, pero Deptrac no está en `composer.json`: la rama
-  `day06-b1.6-deptrac-hexagonal-architecture` nunca se mergeó. Hacer `git rm --cached` y añadirlo
-  al `.gitignore`.
-- [ ] `.mcp.json` está versionado con el puerto local de PhpStorm (`127.0.0.1:64442`). A quien
-  clone el repo no le sirve. Decidir si se queda.
-- [ ] Borrar las ramas ya mergeadas: de `day01-b1.1-…` a `day05-b1.5-…` en local, y `day01` y
-  `day02` en `origin`.
-- [ ] Decidir qué hacer con las ramas sin mergear: `day06-b1.6-deptrac-hexagonal-architecture`
-  (1 commit, 2026-09-16), `infection-test` (1 commit, 2026-06-08) y `multi-request` (7 commits,
-  2026-06-13).
+- [x] `.deptrac.cache` (2,8 MB) estaba versionado sin que Deptrac esté en `composer.json`. Fuera del
+  índice y añadido al `.gitignore`.
+- [x] Borradas las ramas mergeadas `day01-b1.1-…` a `day05-b1.5-…`, en local y en `origin`. En
+  `origin` ya solo queda `main`.
+- [ ] Decidir qué hacer con las tres ramas locales sin mergear:
+  `day06-b1.6-deptrac-hexagonal-architecture` (1 commit, 2026-09-16), `infection-test` (2026-06-08)
+  y `multi-request` (7 commits, 2026-06-13).
+- [ ] `.mcp.json` está versionado con el puerto local de PhpStorm (`127.0.0.1:64442`). A quien clone
+  el repo no le sirve. Decidir si se queda.
 
 ---
 

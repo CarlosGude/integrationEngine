@@ -3,6 +3,8 @@
 - **Status:** Accepted  
 - **Date:** 2026-09-18
 
+> **Superseded in part by [ADR 0014](./0014-no-vendor-integrations-in-the-bundle.md).** Still current: the fingerprint strategy lives on in WebhookFingerprinter. The dead-letter pieces around it were removed in 6.0 ([ADR 0014](./0014-no-vendor-integrations-in-the-bundle.md)).
+
 ## Context
 
 Webhooks are delivered via HTTP with at-least-once semantics. Network retries, client timeouts, or provider redelivery can cause the same webhook event to be received multiple times. For example:

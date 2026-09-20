@@ -4,6 +4,8 @@
 - **Date:** 2026-09-18
 - **Supersedes:** [0008 · No Messenger bridge in the bundle](./0008-no-messenger-bridge-in-the-bundle.md)
 
+> **Superseded in part by [ADR 0014](./0014-no-vendor-integrations-in-the-bundle.md).** Reversed in 6.0 ([ADR 0014](./0014-no-vendor-integrations-in-the-bundle.md)): the Messenger message and handler were removed, which restores [ADR 0008](./0008-no-messenger-bridge-in-the-bundle.md). Symfony hands webhooks to Messenger on its own through ConsumeRemoteEventMessage.
+
 ## Context
 
 ADR 0008 decided that the bundle does not include Messenger integration. However, experience with v5.0 and v5.1 webhook implementations shows that:

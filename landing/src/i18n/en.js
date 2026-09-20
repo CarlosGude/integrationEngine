@@ -166,7 +166,7 @@ export default {
     // Status section
     statusEyebrow:      'Status',
     statusH2:           'v5.4.0 Live — Lifecycle Events + Observability',
-    statusP:            'Outbound integrations (Stripe, Shopify, etc.) + inbound webhooks (receive events from external platforms). Signature verification and typed events built in; idempotency, dead-letter queue and audit trail ship as contracts you back with your own storage. No promises with dates &mdash; just transparent, working software.',
+    statusP:            'Outbound integrations (Stripe, Shopify, etc.) + inbound webhooks (receive events from external platforms). Signature verification and typed events built in; duplicate detection ships as a service over storage you provide. No promises with dates &mdash; just transparent, working software.',
     statusNow:          '<strong>Now:</strong> v5.4.0 released. Lifecycle events reach Symfony listeners, with HTTP and mapping timings reported separately. Observability helpers for logging, Prometheus, Sentry. Symfony Flex recipe. 666 tests passing. Production-ready.',
     statusNext:         '<strong>Next:</strong> Phase 5: Quality of design (PHPStan rule extensions, SSRF protection). Phase 6: Platform ecosystem (pre-built integrations).',
     statusLater:        '<strong>Later:</strong> Admin dashboard (webhook replay UI), open-source plugins, certified training.',
@@ -182,7 +182,7 @@ export default {
         'Typed events in your listeners, never a raw payload array',
         'One parser class per event type &mdash; no controller to write',
         'Async when you want it: Symfony hands the event to Messenger',
-        'Idempotency, dead-letter queue and audit trail as contracts &mdash; you pick the storage',
+        'Duplicate detection by payload fingerprint, over storage you provide',
     ],
     webhookBtn:     'View webhook guide →',
 

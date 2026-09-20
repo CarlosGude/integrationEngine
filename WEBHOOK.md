@@ -280,5 +280,5 @@ Also worth covering: a forged signature and an expired timestamp (both `406`), a
 ## See Also
 
 - **CLAUDE.md**: Architecture overview and command reference
-- **tests/Infrastructure/Webhook/**: Parser, idempotency and DLQ tests
+- **tests/Infrastructure/Webhook/**: parser, consumer trait and idempotency tests
 - **src/Core/Contract/Webhook/**: Ports and mapper contracts

@@ -166,7 +166,7 @@ export default {
     // Status section
     statusEyebrow:      'Estado',
     statusH2:           'v5.4.0 en vivo — Lifecycle Events + Observability',
-    statusP:            'Integraciones salientes (Stripe, Shopify, etc.) + webhooks inbound (recibe eventos de plataformas externas). Verificación de firmas y eventos tipados incluidos; idempotencia, dead-letter queue y audit trail son contratos que respaldas con tu propio almacenamiento. Sin promesas con fecha &mdash; solo software funcionando y transparencia en cada hito.',
+    statusP:            'Integraciones salientes (Stripe, Shopify, etc.) + webhooks inbound (recibe eventos de plataformas externas). Verificación de firmas y eventos tipados incluidos; la detección de duplicados es un servicio sobre el almacenamiento que tú pongas. Sin promesas con fecha &mdash; solo software funcionando y transparencia en cada hito.',
     statusNow:          '<strong>Ahora:</strong> v5.4.0 publicada. Los lifecycle events llegan a los listeners de Symfony, con los tiempos de HTTP y de mapeo por separado. Observability helpers para logging, Prometheus, Sentry. Receta de Symfony Flex. 666 tests pasando. Listo para producción.',
     statusNext:         '<strong>Próximo:</strong> Fase 5: Calidad del diseño (extensiones PHPStan, protección SSRF). Fase 6: Ecosistema de plataformas (integraciones pre-construidas).',
     statusLater:        '<strong>Después:</strong> Dashboard admin (UI de replay de webhooks), plugins open-source, formación certificada.',
@@ -182,7 +182,7 @@ export default {
         'Eventos tipados en tus listeners, nunca un array crudo',
         'Una clase parser por tipo de evento &mdash; sin controller que escribir',
         'Async cuando quieras: Symfony entrega el evento a Messenger',
-        'Idempotencia, dead-letter queue y audit trail como contratos &mdash; el almacenamiento lo eliges tú',
+        'Detección de duplicados por fingerprint del payload, sobre tu almacenamiento',
     ],
     webhookBtn:     'Ver guía de webhooks →',
 

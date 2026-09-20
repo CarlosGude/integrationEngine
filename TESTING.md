@@ -402,7 +402,7 @@ a temporary project directory. No kernel boot needed.
 
 ## Webhook suites
 
-Cover inbound webhook processing in `tests/Infrastructure/Webhook/` — signature verification, event mapping, idempotency, dead-letter queue, state machine, and multi-platform routing. See **[WEBHOOK.md](./WEBHOOK.md)** for comprehensive webhook documentation.
+Cover inbound webhook processing in `tests/Infrastructure/Webhook/` — signature verification, event mapping and idempotency. See **[WEBHOOK.md](./WEBHOOK.md)** for comprehensive webhook documentation.
 
 | Suite | What it covers |
 |------|-----------------|
@@ -410,9 +410,6 @@ Cover inbound webhook processing in `tests/Infrastructure/Webhook/` — signatur
 | `Base64HmacSignatureVerifierTest` (5 tests) | The base64 scheme: encoding, wrong secret, wrong body, header |
 | `ConsumesWebhookEventsTest` (5 tests) | The consumer trait: mapping, skipping another type, overriding the check |
 | `WebhookIdempotencyTest` (10 tests) | Duplicate detection via fingerprinting (event type + timestamp + payload hash), order-invariant hashing, 24h retention window, cleanup |
-| `WebhookDlqTest` (8 tests) | Dead-letter queue: success/failure envelopes, retry tracking, failure ordering, `ProcessWebhookHandler` integration |
-| `WebhookEventStateTransitionTest` (8 tests) | State machine: received → validating → processing → success/failed, terminal states, transition history, per-state filtering |
-| `WebhookEventRegistryTest` (3 tests) | Event registry: registration, listing, unknown event rejection |
 | `YamlConfigAdapterWebhooks` (7 tests) | YAML webhook config parsing: event type → mapper mapping, signature verification config, validation errors |
 
 Total webhook tests: **65 tests**, covering all Happy Path + error scenarios.
@@ -444,9 +441,6 @@ no PHPUnit `createMock()`.
 | `FakePathAction` | `AbstractAction` | Action with a path parameter (`/orders/{id}`). No response — used to verify context propagation and path resolution |
 | `FakeProtectedAction` | `AbstractAction` | Action that requires authorization. No response — used to verify auth substitution |
 | `WebhookIdempotencyAdapter` | `WebhookIdempotencyPort` | In-memory fingerprint storage with 24h expiry. Used to verify duplicate detection and cleanup |
-| `WebhookDlqAdapter` | `WebhookDlqPort` | In-memory failure storage with retry tracking. Used to test DLQ success/failure paths and retry ordering |
-| `WebhookEventAuditAdapter` | `WebhookEventAuditPort` | In-memory state transition log. Used to test state machine and audit trail queries |
-| `WebhookMapperResolverAdapter` | `WebhookMapperResolverPort` | Test mapper resolver with configurable mappers. Used to test event type → mapper lookup |
 
 ---
 
