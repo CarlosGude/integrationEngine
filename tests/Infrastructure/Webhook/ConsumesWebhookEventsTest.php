@@ -63,9 +63,9 @@ final class ConsumesWebhookEventsTest extends TestCase
     #[Test]
     public function handlesAPayloadThatCarriesNoTypeAtAll(): void
     {
-        // Shopify and WooCommerce send the topic as a header, so there is
-        // nothing in the payload to discriminate on: the event is handled,
-        // not silently dropped.
+        // Providers that send the event type as a header leave nothing in the
+        // payload to discriminate on: the event is handled, not silently
+        // dropped.
         $this->consumer()->consume(new RemoteEvent('products/update', 'evt_3', ['id' => 789]));
 
         self::assertCount(1, $this->received);

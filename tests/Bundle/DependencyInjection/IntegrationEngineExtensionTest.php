@@ -10,8 +10,6 @@ use IntegrationEngine\Bundle\IntegrationEngineBundle;
 use IntegrationEngine\Infrastructure\Http\ClientAdapterResolver;
 use IntegrationEngine\Infrastructure\Http\GraphQLClientAdapter;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
-use IntegrationEngine\Infrastructure\Webhook\Controller\MultiPlatformWebhookController;
-use IntegrationEngine\Infrastructure\Webhook\Controller\ShopifyWebhookController;
 use IntegrationEngine\Infrastructure\Webhook\Handler\ProcessWebhookHandler;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -68,12 +66,13 @@ final class IntegrationEngineExtensionTest extends TestCase
     {
         $container = $this->load(['integrations' => []]);
 
-        // Autoconfigured as controller / message handler, these would be kept
-        // in the app container and fail to autowire (secret string, ports with
-        // no implementation), breaking compilation for every consuming app.
-        foreach ([ShopifyWebhookController::class, MultiPlatformWebhookController::class, ProcessWebhookHandler::class] as $class) {
-            self::assertFalse($container->hasDefinition($class), \sprintf('%s must not be autodiscovered.', $class));
-        }
+        // Autoconfigured as a message handler, this one would be kept in the
+        // app container and fail to autowire (ports with no implementation),
+        // breaking compilation for every consuming app.
+        self::assertFalse(
+            $container->hasDefinition(ProcessWebhookHandler::class),
+            'ProcessWebhookHandler must not be autodiscovered.',
+        );
     }
 
     #[Test]

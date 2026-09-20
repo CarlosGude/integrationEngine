@@ -6,7 +6,7 @@ Public roadmap: what's live, what's next, and what stays out of scope.
 
 ## Recently shipped
 
-- **v5.1.0** — Multi-platform inbound webhooks (Shopify, WooCommerce), signature verification, idempotency, dead-letter queue, state machine & audit trail, async Messenger integration.
+- **v5.1.0** — Inbound webhooks: signature verification, and the contracts for idempotency, dead-letter queue and audit trail.
 - **v5.0.0** — Webhook framework foundation, signature verification (HMAC, timestamped), `AbstractWebhookMapper`, `IntegrationWebhookRequestParser`, YAML webhook config.
 - **v4.1.0** — Unified quality gates (MSI 85/95%, PHPStan max, CI matrix).
 - **v4.0.0** — Middleware pipeline, request middleware (OAuth 1.0a signing), connection resolver, per-action timeout, path resolution from request body.
@@ -23,10 +23,6 @@ Making the design decisions visible as executable guarantees: no SSRF escapes, n
 ---
 
 ## Next (Post-Phase 5)
-
-**Phase 6: Platform ecosystem** — Pre-built integrations (WooCommerce, Magento, BigCommerce, Stripe, Shopify advanced features).
-
-Curated adapters for common platforms, built-in request/response middleware, turnkey solutions for e-commerce and payment gateways.
 
 **Phase 7: Admin experience** — CLI commands, dashboard, webhook replay/debugging UI.
 

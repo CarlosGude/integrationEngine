@@ -48,7 +48,7 @@ final class WebhookDlqTest extends TestCase
         $message = new ProcessWebhookMessage(
             eventType: 'products/update',
             payload: ['id' => 123, 'title' => 'Product'],
-            headers: ['X-Shopify-Topic' => 'products/update'],
+            headers: ['X-Event-Topic' => 'products/update'],
         );
 
         // Process the message

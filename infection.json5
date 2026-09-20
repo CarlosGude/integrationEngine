@@ -75,22 +75,6 @@
                 "IntegrationEngine\\Core\\Dispatch\\ConnectionResolver::resolve"
             ]
         },
-        "Foreach_": {
-            "ignore": [
-                // The headers this loop builds are handed to the mapper, and no
-                // Shopify mapper reads them (the flattening exists for mappers
-                // that would). Nothing this controller exposes can tell the
-                // difference.
-                "IntegrationEngine\\Infrastructure\\Webhook\\Controller\\ShopifyWebhookController::handleShopifyWebhook::68"
-            ]
-        },
-        "Ternary": {
-            "ignore": [
-                // Same headers, same reason: the value picked for a repeated
-                // header never reaches anything observable.
-                "IntegrationEngine\\Infrastructure\\Webhook\\Controller\\ShopifyWebhookController::handleShopifyWebhook::69"
-            ]
-        },
         "LogicalNot": {
             "ignore": [
                 // $this->subscribers[$eventClass][] = … creates the array by

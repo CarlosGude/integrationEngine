@@ -175,10 +175,10 @@ export default {
     // Webhook showcase section
     webhookEyebrow: 'Webhooks Inbound',
     webhookH2:      'Recibe de cualquier plataforma.',
-    webhookSub:     '<strong>v5.4.0:</strong> El componente Webhook de Symfony, ya montado. Un parser verifica la firma y decodifica el payload; tu listener recibe un evento tipado, no un array crudo. Shopify y WooCommerce vienen con parsers, mappers y verificadores &mdash; cualquier otro proveedor es una clase parser.',
+    webhookSub:     '<strong>v6.0.0:</strong> El componente Webhook de Symfony, ya montado. Un parser verifica la firma y decodifica el payload; tu listener recibe un evento tipado, no un array crudo. `make:webhook` escribe el parser, el mapper, el DTO y el consumer en tu app: las clases que conocen a tu proveedor son tuyas, no del bundle.',
     webhookPlatforms: 'Shopify &nbsp;•&nbsp; WooCommerce &nbsp;•&nbsp; Stripe &nbsp;•&nbsp; Custom',
     webhookFeatures: [
-        'Verificación de firma HMAC: Shopify, WooCommerce, timestamped estilo Stripe',
+        'Esquemas de firma cubiertos: HMAC hex tras prefijo, HMAC crudo en base64, HMAC con timestamp',
         'Eventos tipados en tus listeners, nunca un array crudo',
         'Una clase parser por tipo de evento &mdash; sin controller que escribir',
         'Async cuando quieras: Symfony entrega el evento a Messenger',

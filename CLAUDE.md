@@ -187,9 +187,9 @@ Tap into integration lifecycle for observability. See **[LIFECYCLE.md](./LIFECYC
 
 ## Inbound Webhooks (v5.1.0+)
 
-For **receiving** webhooks from external platforms (Shopify, WooCommerce, etc.), see **[WEBHOOK.md](./WEBHOOK.md)**. It covers:
+For **receiving** webhooks from external platforms, see **[WEBHOOK.md](./WEBHOOK.md)**. It covers:
 
 - How the bundle plugs into Symfony's Webhook component: `IntegrationWebhookRequestParser` → `#[AsRemoteEventConsumer]` → `WebhookEventDispatcher` → typed event listeners
-- Signature verifiers (HMAC, Stripe timestamped HMAC, Shopify, WooCommerce) and payload mapping
+- Signature verifiers for the three common schemes (hex HMAC behind a prefix, raw HMAC in base64, timestamped HMAC) and payload mapping
 - Contracts shipped without a built-in adapter: idempotency, dead-letter queue, audit trail, Messenger handler
 - Step-by-step guide and end-to-end test example

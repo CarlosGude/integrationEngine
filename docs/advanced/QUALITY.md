@@ -71,7 +71,6 @@ method, never to a whole mutator globally.
 | `CastInt` | `TimestampedHmacSignatureVerifier::verify`, line 49 | Only a non-canonical numeric timestamp (`"1700000000.0"`, `" 1700000000"`) signs a different string with and without the cast, and no provider sends one. Pinned to the line so the cast feeding `isWithinTolerance()` stays mutated. |
 | `CastInt` | `TimestampedHmacSignatureVerifier::isWithinTolerance` | `format('U')` returns a numeric string; subtracting it yields the same int with or without the cast. |
 | `IncrementInteger`, `DecrementInteger` | `TracingMiddleware::process`, `::processMany` | The `* 1000` seconds-to-milliseconds conversion would need an injectable clock to assert sub-1% precision deterministically; `TracingMiddlewareTest` instead asserts the correct order of magnitude (catches the operator itself being swapped, e.g. `-`↔`+`, `*`↔`/`). Worth revisiting once the engine has an injectable clock elsewhere. |
-| `Foreach_`, `Ternary` | `ShopifyWebhookController::handleShopifyWebhook`, lines 68 and 69 | The headers this loop flattens are handed to the mapper, and no Shopify mapper reads them — the flattening is there for mappers that would. Nothing the controller exposes can tell the mutants apart. |
 | `IncrementInteger`, `DecrementInteger` | `IntegrationEngine::send`, lines 111, 123, 125, 137, 148 | The same `* 1000` conversion, here for the durations carried by the lifecycle events. Pinned to those lines so the rest of the method stays mutated. |
 
 If a future mutant appears "equivalent" but isn't in this table, don't add a

@@ -1,5 +1,7 @@
 # Upgrading from v5.0 to v5.1
 
+> **Superseded in 6.0.** The multi-platform pieces described here — `WebhookPlatform`, `WebhookPlatformConfig`, `WebhookPlatformRegistry`, `MultiPlatformWebhookController` — and the shipped Shopify and WooCommerce classes were removed in 6.0. See [UPGRADE-6.0.md](./UPGRADE-6.0.md). The rest of this guide is kept as the record of what 5.1 introduced.
+
 This guide covers the enhancements in v5.1 and how to migrate your webhook integrations.
 
 ## Overview of v5.1
@@ -158,67 +160,10 @@ If you already have v5.0 webhooks, v5.1 is **backward compatible** — no breaki
 
 To adopt v5.1 features:
 
-### Option A: Use Built-in Platform (Shopify/WooCommerce)
+### Options A and B (removed in 6.0)
 
-```yaml
-integrations:
-    shopify:
-        client: rest
-        base_url: 'https://%env(SHOPIFY_STORE)%.myshopify.com'
-        config_path: '%kernel.project_dir%/config/integrations/shopify.yaml'
-        webhooks:
-            products/update:
-                mapper: 'App\Infrastructure\Webhooks\Shopify\ProductUpdatedMapper'
-            orders/create:
-                mapper: 'App\Infrastructure\Webhooks\Shopify\OrderCreatedMapper'
-```
+v5.1 offered two routes here: a built-in platform (Shopify or WooCommerce) and a custom `WebhookPlatformConfig` registered under the `integration_engine.webhook_platform` tag. Both are gone in 6.0, along with the platform registry and the multi-platform controller — see [UPGRADE-6.0.md](./UPGRADE-6.0.md) for what replaces them.
 
-The `WebhookPlatformRegistry` handles routing and verification automatically.
-
-### Option B: Implement Custom Platform
-
-```php
-use IntegrationEngine\Core\Webhook\WebhookPlatformConfig;
-use IntegrationEngine\Core\Contract\Webhook\SignatureVerifierInterface;
-use IntegrationEngine\Infrastructure\Webhook\WebhookEventRegistry;
-
-class CustomApiPlatformConfig extends WebhookPlatformConfig
-{
-    public function __construct(
-        private CustomApiSignatureVerifier $verifier,
-        private WebhookEventRegistry $eventRegistry,
-    ) {}
-
-    public function platformName(): string
-    {
-        return 'customapi';
-    }
-
-    public function signatureVerifier(): SignatureVerifierInterface
-    {
-        return $this->verifier;
-    }
-
-    public function eventRegistry(): WebhookEventRegistry
-    {
-        return $this->eventRegistry;
-    }
-}
-```
-
-Register in DI:
-
-```yaml
-services:
-    App\Infrastructure\Webhooks\CustomApiPlatformConfig:
-        tags:
-            - integration_engine.webhook_platform
-
-    integration_engine.webhook_platform_registry:
-        class: IntegrationEngine\Webhook\Infrastructure\MultiPlatformWebhookRouter
-        arguments:
-            - !tagged_iterator integration_engine.webhook_platform
-```
 
 ### Option C: Enable Async Processing
 

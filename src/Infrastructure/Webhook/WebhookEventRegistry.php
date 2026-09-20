@@ -10,7 +10,7 @@ use IntegrationEngine\Core\Contract\Webhook\WebhookEventInterface;
  * Registry mapping webhook event types to their DTO classes.
  *
  * Enables dynamic, platform-agnostic lookup of which DTO class to instantiate
- * for a given webhook event type (e.g., 'products/update' → ShopifyProductUpdated).
+ * for a given webhook event type (e.g., 'products/update' → ProductUpdated).
  *
  * @author Carlos Gude
  */

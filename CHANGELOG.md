@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Removed — BREAKING
+
+- **The bundle no longer ships integrations for specific providers.** Gone: `ShopifyHmacSignatureVerifier` and `WooCommerceHmacSignatureVerifier` (the same scheme twice — use `Base64HmacSignatureVerifier` with the header as an argument), the two Shopify parsers, the six webhook mappers and six event DTOs, `ShopifyWebhookController`, and the multi-platform routing set (`MultiPlatformWebhookController`, deprecated in 5.4.0, plus `WebhookPlatform`, `WebhookPlatformConfig`, `WebhookPlatformRegistry`). What stays is provider-agnostic: the parser base class, the three signature schemes, the mapper and event contracts, the dispatcher, the consumer trait, the event registry, and the idempotency, dead-letter and audit contracts. `make:webhook` writes the provider-specific classes into your application instead. See [UPGRADE-6.0.md](./UPGRADE-6.0.md) and [ADR 0014](./docs/adr/0014-no-vendor-integrations-in-the-bundle.md).
+
 ### Fixed
 
 - A test in `WebhookIdempotencyTest` pinned "now" to a fixed date while the fake adapter cleaned up against the real clock, so the suite started failing 24 hours later. It now uses a date relative to the clock, like the other webhook tests.

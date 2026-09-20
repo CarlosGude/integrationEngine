@@ -18,7 +18,7 @@
 
 **Inbound webhooks (since v5.1.0):**
 - ✅ **Inbound webhooks** on top of Symfony's Webhook component: a request parser verifies the signature, a consumer maps the payload, your listener receives a typed event — no controller to write
-- ✅ Signature verifiers: HMAC, Stripe-style timestamped HMAC, Shopify, WooCommerce
+- ✅ Signature verifiers for the three common schemes: hex HMAC behind a prefix, raw HMAC in base64, timestamped HMAC
 - ✅ Async processing via Symfony Messenger (Symfony's webhook controller hands events to the bus)
 - ✅ Contracts for idempotency (with fingerprinting), dead-letter queue and audit trail — bring your own storage
 - 🔗 [Guide: WEBHOOK.md](./WEBHOOK.md)

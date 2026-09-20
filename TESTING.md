@@ -407,12 +407,12 @@ Cover inbound webhook processing in `tests/Infrastructure/Webhook/` — signatur
 | Suite | What it covers |
 |------|-----------------|
 | `MultiPlatformWebhookRouterTest` (11 tests) | Platform detection by path (`/webhooks/shopify`) and header (`X-Platform`), fallback logic, error handling, platform isolation, verifier & event registry per platform |
-| `ShopifyWebhookIngestionsTest` (5 tests) | Shopify signature validation (X-Shopify-Hmac-SHA256), endpoint routing, unknown event rejection |
-| `WooCommerceWebhookIngestionsTest` (7 tests) | WooCommerce signature validation (X-WC-Webhook-Signature), payload mapping, minimal payloads, serialization |
+| `Base64HmacSignatureVerifierTest` (5 tests) | The base64 scheme: encoding, wrong secret, wrong body, header |
+| `ConsumesWebhookEventsTest` (5 tests) | The consumer trait: mapping, skipping another type, overriding the check |
 | `WebhookIdempotencyTest` (10 tests) | Duplicate detection via fingerprinting (event type + timestamp + payload hash), order-invariant hashing, 24h retention window, cleanup |
 | `WebhookDlqTest` (8 tests) | Dead-letter queue: success/failure envelopes, retry tracking, failure ordering, `ProcessWebhookHandler` integration |
 | `WebhookEventStateTransitionTest` (8 tests) | State machine: received → validating → processing → success/failed, terminal states, transition history, per-state filtering |
-| `ShopifyEventDiscoveryTest` (9 tests) | Event registry: registration, payload parsing, multiple event types, unknown event rejection |
+| `WebhookEventRegistryTest` (3 tests) | Event registry: registration, listing, unknown event rejection |
 | `YamlConfigAdapterWebhooks` (7 tests) | YAML webhook config parsing: event type → mapper mapping, signature verification config, validation errors |
 
 Total webhook tests: **65 tests**, covering all Happy Path + error scenarios.

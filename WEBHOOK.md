@@ -199,7 +199,7 @@ final class PaymentIntentSucceededListener
 
 ### Request headers
 
-`RemoteEvent` doesn't carry request headers, so a mapper driven from a consumer receives whatever you pass to `WebhookEventDispatcher::dispatch()` (usually `[]`). If a mapper needs headers, dispatch from a controller that still has the `Request` — see `ShopifyWebhookController`.
+`RemoteEvent` doesn't carry request headers, so a mapper driven from a consumer receives whatever you pass to `WebhookEventDispatcher::dispatch()` (usually `[]`). A mapper that needs a header has to be driven from somewhere that still holds the `Request` — your own controller calling `WebhookEventDispatcher::dispatch()` with the headers you pick out of it.
 
 ### Signature verifiers
 
@@ -207,25 +207,9 @@ final class PaymentIntentSucceededListener
 |---|---|---|
 | `HmacSha256SignatureVerifier($header, $prefix)` | `{prefix}{hex HMAC-SHA256(body)}`; prefix `sha256=` when empty | — |
 | `TimestampedHmacSignatureVerifier($header, $toleranceSeconds, ClockInterface)` | Stripe: `t={ts},v1={hex HMAC-SHA256("{ts}.{body}")}`; rejects timestamps outside the tolerance; any matching `v1` passes (key rotation) | — |
-| `ShopifyHmacSignatureVerifier($header)` | base64 HMAC-SHA256(body) | `X-Shopify-Hmac-SHA256` |
-| `WooCommerceHmacSignatureVerifier($header)` | base64 HMAC-SHA256(body) | `X-WC-Webhook-Signature` |
+| `Base64HmacSignatureVerifier($header)` | base64 HMAC-SHA256(body), sent whole | `X-Shopify-Hmac-SHA256`, `X-WC-Webhook-Signature` |
 
 Any other scheme: implement `SignatureVerifierInterface` (`verify($body, $signature, $secret)` and `getHeaderName()`).
-
-### Reference implementation: Shopify
-
-`ShopifyWebhookController` picks the parser from the `X-Shopify-Topic` header (`ShopifyProductUpdatedParser`, `ShopifyOrderCreatedParser`) and dispatches through `WebhookEventDispatcher` with the real request headers. It is **not** registered by the bundle: register it as a service with its `$shopifyWebhookSecret` argument and import its route if you want to use it.
-
-## Building Blocks Without a Built-in Adapter
-
-These contracts ship with the bundle, but the bundle provides no implementation for the ports and does not wire any of them into the flow above. Use them from your consumer if you need them.
-
-| Contract | What it gives you |
-|---|---|
-| `WebhookIdempotencyPort` + `WebhookIdempotencyService` + `WebhookFingerprinter` | Duplicate detection. Fingerprint: `{eventType}:{unix timestamp}:{sha256 of the key-sorted payload}`. Call `isDuplicate()` / `recordProcessed()` from your consumer; you implement the storage |
-| `WebhookDlqPort` + `WebhookFailure` | Dead-letter storage for failed webhooks; you implement the storage and any retry tooling |
-| `WebhookEventAuditPort` + `WebhookEventState` / `WebhookEventStateTransition` | State-transition audit trail; you implement the storage |
-| `WebhookMapperResolverPort` + `ProcessWebhookMessage` / `ProcessWebhookHandler` | A Messenger handler that resolves the mapper by event type, dispatches the typed event and stores failures in the DLQ. Needs `WebhookMapperResolverPort` and `WebhookDlqPort` implementations and must be registered explicitly — it is not autodiscovered |
 
 ### YAML webhook definitions
 
