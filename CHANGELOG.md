@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- A test in `WebhookIdempotencyTest` pinned "now" to a fixed date while the fake adapter cleaned up against the real clock, so the suite started failing 24 hours later. It now uses a date relative to the clock, like the other webhook tests.
+- `IntegrationWebhookRequestParser` no longer maps the payload while parsing. It built the request headers, called `getMapper()->map()` and threw the result away — the `RemoteEvent` has always carried the raw payload, and the real mapping happens in the consumer through `WebhookEventDispatcher`. A provider that sends several event types to one URL (the case WEBHOOK.md tells you to filter in the consumer) made a mapper fail inside the parser, so Symfony answered `500` instead of `406` and the consumer's own type check never ran. Every payload was also mapped twice.
+
+### Internal
+
+- Mutation testing is back over its threshold: 98–99% covered MSI, up from 92%. 41 escaped mutants turned into tests (lifecycle event durations and `ActionFailed`, the HMAC prefix check, `SignatureConfig` validation, the webhook mappers' defaults and casts, the request parser's id extraction and POST-only matcher, actions declared after a `webhooks:` block), and the equivalent ones are documented one by one in `docs/advanced/QUALITY.md`.
+- Landing page, webhook section: it documented a flow that does not exist — a `webhooks:` YAML block that nothing in the request flow reads, a controller built on the deprecated `MultiPlatformWebhookController`, a `mapper_class` key (it is `mapper`), a mapper missing its `$headers` argument, and business logic inside that mapper. It now shows the real path: `framework.webhook.routing` → a parser extending `IntegrationWebhookRequestParser` → `#[AsRemoteEventConsumer]` → a typed event in an `#[AsEventListener]` listener. Idempotency, DLQ and audit trail are described as contracts you back with your own storage, in both languages. The status block also still announced v5.2.0 and 607 tests; it now reports v5.4.0, 666 tests and the mutation score.
+- README's status block announced v5.2.0 and listed the 5.2.0 feature set; it now reports v5.4.0, the events that actually reach Symfony listeners, the separate HTTP/mapping timings and the Flex recipe, and describes the webhook flow as parser + consumer + listener.
+- Two `infection.json5` ignores still pointed at `IntegrationEngine::dispatchBatch` and `::resolveConnection`, methods that moved to `BatchDispatcher` and `ConnectionResolver` — so the mutants they excused escaped at their new home.
+
 ## [5.4.0] - 2026-09-19
 
 ### Fixed

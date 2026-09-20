@@ -3,19 +3,21 @@
 [![CI](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml/badge.svg)](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml)
 
 **Website:** [integrationengine.dev](https://integrationengine.dev)  
-**Status:** v5.2.0 Live — Lifecycle Events + Observability  
+**Status:** v5.4.0 Live — Lifecycle Events + Observability  
 **Roadmap:** [See public roadmap](./ROADMAP.md) — Now/Next/Later, no dates, transparent progress.
 
-**✨ v5.2.0 Features:**
-- ✅ **Lifecycle events** (ActionStarted, ActionCompleted, ActionFailed)
+**✨ v5.4.0 Features:**
+- ✅ **Lifecycle events** (ActionStarted, HttpResponseReceived, ResponseMapped, ActionCompleted, ActionFailed), delivered to `#[AsEventListener]` listeners in Symfony apps
+- ✅ HTTP latency and DTO mapping time reported separately, with the real HTTP status code
 - ✅ Built-in event dispatcher + Symfony EventDispatcher adapter
 - ✅ `ObservabilitySetup` helper for instant logging + metrics + alerting
 - ✅ Examples: custom logging, Prometheus metrics, Sentry integration, audit trails
+- ✅ Symfony Flex recipe
 - 🔗 [Quick setup: OBSERVABILITY.md](./OBSERVABILITY.md) (recommended)
 - 🔗 [Deep dive: LIFECYCLE.md](./LIFECYCLE.md)
 
-**v5.1.0 Features:**
-- ✅ **Inbound webhooks** on top of Symfony's Webhook component: base request parser, typed mappers, typed events for your listeners
+**Inbound webhooks (since v5.1.0):**
+- ✅ **Inbound webhooks** on top of Symfony's Webhook component: a request parser verifies the signature, a consumer maps the payload, your listener receives a typed event — no controller to write
 - ✅ Signature verifiers: HMAC, Stripe-style timestamped HMAC, Shopify, WooCommerce
 - ✅ Async processing via Symfony Messenger (Symfony's webhook controller hands events to the bus)
 - ✅ Contracts for idempotency (with fingerprinting), dead-letter queue and audit trail — bring your own storage
