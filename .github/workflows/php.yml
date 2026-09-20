@@ -137,9 +137,9 @@ jobs:
       # src/Bundle/IntegrationEngineBundle.php, so Flex silently skips it
       # (no recipe, no config/bundles.php entry — confirmed against a real
       # Symfony 6.4 app). extra.symfony.bundles in this bundle's
-      # composer.json is not read anywhere in Flex's source. Tracked as
-      # debt in agent/PLAN.md (Día 03 note, and the Backlog table) — fix
-      # it there, not by deleting this step.
+      # composer.json is not read anywhere in Flex's source. The fix is the
+      # recipe in .symfony-recipes/, once it is accepted into
+      # symfony/recipes-contrib — not deleting this step.
       - name: Register the bundle manually (works around the Flex auto-registration bug above)
         working-directory: app
         run: |
