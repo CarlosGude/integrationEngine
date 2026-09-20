@@ -16,14 +16,15 @@ use Symfony\Component\Webhook\Client\AbstractRequestParser;
 use Symfony\Component\Webhook\Exception\RejectWebhookException;
 
 /**
- * Base class for webhook request parsers that verify signatures and map payloads.
+ * Base class for webhook request parsers that verify signatures and decode payloads.
  *
  * Extends Symfony's AbstractRequestParser to provide signature verification
- * and payload mapping via our webhook infrastructure.
+ * via our webhook infrastructure. Mapping the payload to a typed event is the
+ * consumer's job, through WebhookEventDispatcher.
  *
  * Subclasses must:
  * 1. Implement getDefinition() — return the webhook event type name
- * 2. Implement getMapper() — return the AbstractWebhookMapper for this event type
+ * 2. Implement getMapper() — return the AbstractWebhookMapper the consumer maps with
  * 3. Implement getSignatureVerifier() — return the configured signature verifier
  * 4. Implement getSignatureSecret() — return the secret for signature verification
  *
@@ -70,7 +71,7 @@ abstract class IntegrationWebhookRequestParser extends AbstractRequestParser
      * Parse and verify a webhook request.
      *
      * Verifies the request signature using the configured verifier,
-     * then maps the payload to a RemoteEvent using the configured mapper.
+     * then decodes the payload into a RemoteEvent.
      *
      * @param Request $request The incoming webhook request
      *
@@ -130,14 +131,6 @@ abstract class IntegrationWebhookRequestParser extends AbstractRequestParser
         }
 
         /** @var array<string, mixed> $payload */
-        $headers = [];
-        foreach ($request->headers->all() as $key => $headerValues) {
-            $headers[$key] = reset($headerValues) ?: null;
-        }
-
-        $mapper = $this->getMapper();
-        $mapper->map($payload, $headers);
-
         $id = '';
         if (isset($payload['id']) && (\is_string($payload['id']) || \is_int($payload['id']))) {
             $id = (string) $payload['id'];
