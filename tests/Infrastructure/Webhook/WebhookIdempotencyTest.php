@@ -126,8 +126,10 @@ final class WebhookIdempotencyTest extends TestCase
         $eventType = 'products/update';
         $payload = ['id' => 123];
 
-        // Record a webhook with current timestamp
-        $now = new \DateTimeImmutable('2026-09-18T10:00:00Z');
+        // Record a webhook well inside the retention window. The adapter's
+        // cleanup() cuts off against the real clock, so a fixed date would
+        // start failing the moment it falls outside that window.
+        $now = new \DateTimeImmutable('-1 hour');
         $this->service->recordProcessed($eventType, $payload, $now);
 
         // Verify it's marked as processed
