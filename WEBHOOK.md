@@ -30,7 +30,9 @@ Symfony answers `202 Accepted` once the event has been handed to Messenger.
 
 ## Step by Step
 
-The example is Stripe's `payment_intent.succeeded`. `php bin/console make:webhook stripe payment_intent.succeeded` asks for the verifier type and signature header and scaffolds steps 1–3 under `src/Webhooks/Stripe/` (namespace `App\Webhooks\Stripe`; change with `--namespace` / `--path`).
+The example is Stripe's `payment_intent.succeeded`. `php bin/console make:webhook stripe payment_intent.succeeded` asks for the verifier type and signature header and scaffolds steps 1–3 and 5 under `src/Webhooks/Stripe/` (namespace `App\Webhooks\Stripe`; change with `--namespace` / `--path`). It then prints the routing entry for step 4, keyed `stripe_payment_intent_succeeded` — the same name the generated consumer answers to, and the URL segment the provider posts to.
+
+Only step 6, the listener, is left: that one is your domain.
 
 ### 1. Event DTO
 

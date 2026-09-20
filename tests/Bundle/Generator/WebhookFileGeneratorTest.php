@@ -8,6 +8,7 @@ use IntegrationEngine\Bundle\Generator\WebhookContext;
 use IntegrationEngine\Bundle\Generator\WebhookFileGenerator;
 use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\RemoteEvent\Consumer\ConsumerInterface;
 
 final class WebhookFileGeneratorTest extends TestCase
 {
@@ -31,10 +32,52 @@ final class WebhookFileGeneratorTest extends TestCase
 
         $files = $this->generator->generateFiles($ctx);
 
-        self::assertCount(3, $files);
+        self::assertCount(4, $files);
         self::assertArrayHasKey('/tmp/webhooks/Stripe/ChargeSucceededEvent.php', $files);
         self::assertArrayHasKey('/tmp/webhooks/Stripe/ChargeSucceededEventMapper.php', $files);
         self::assertArrayHasKey('/tmp/webhooks/Stripe/ChargeSucceededRequestParser.php', $files);
+        self::assertArrayHasKey('/tmp/webhooks/Stripe/ChargeSucceededConsumer.php', $files);
+    }
+
+    public function testConsumerIsKeyedByTheSameRoutingNameAsTheUrl(): void
+    {
+        $ctx = new WebhookContext(
+            integration: 'stripe',
+            event: 'charge.succeeded',
+            verifierType: 'timestamped_hmac',
+            headerName: 'Stripe-Signature',
+            baseNamespace: 'App\Webhooks',
+            basePath: '/tmp/webhooks',
+        );
+
+        $consumer = $this->generator->generateFiles($ctx)['/tmp/webhooks/Stripe/ChargeSucceededConsumer.php'];
+
+        self::assertSame('stripe_charge_succeeded', $ctx->routingKey());
+        self::assertStringContainsString("#[AsRemoteEventConsumer('stripe_charge_succeeded')]", $consumer);
+        // The same key names the route the parser is reachable at.
+        self::assertStringContainsString('stripe_charge_succeeded:', $consumer);
+        self::assertStringContainsString('service: App\Webhooks\Stripe\ChargeSucceededRequestParser', $consumer);
+    }
+
+    public function testConsumerDispatchesThroughTheWebhookEventDispatcher(): void
+    {
+        $ctx = new WebhookContext(
+            integration: 'stripe',
+            event: 'charge.succeeded',
+            verifierType: 'timestamped_hmac',
+            headerName: 'Stripe-Signature',
+            baseNamespace: 'App\Webhooks',
+            basePath: '/tmp/webhooks',
+        );
+
+        $consumer = $this->generator->generateFiles($ctx)['/tmp/webhooks/Stripe/ChargeSucceededConsumer.php'];
+
+        self::assertStringContainsString('implements ConsumerInterface', $consumer);
+        self::assertStringContainsString('use IntegrationEngine\Infrastructure\Webhook\WebhookEventDispatcher;', $consumer);
+        self::assertStringContainsString('$this->dispatcher->dispatch($event, $mapper, []);', $consumer);
+        // Events of another type reaching the same URL are skipped, not mapped:
+        // WebhookEventDispatcher throws when the definitions do not match.
+        self::assertStringContainsString("if ((\$event->getPayload()['type'] ?? null) !== \$mapper->getDefinition()) {", $consumer);
     }
 
     public function testEventFileImplementsWebhookEventInterface(): void
@@ -160,6 +203,10 @@ final class WebhookFileGeneratorTest extends TestCase
 
             // Loading the parser is what used to fatal (readonly extending non-readonly).
             self::assertTrue(class_exists($ctx->parserClassFqn()));
+
+            $consumerClass = $ctx->namespace().'\\'.$ctx->consumerClassName();
+            self::assertTrue(class_exists($consumerClass));
+            self::assertContains(ConsumerInterface::class, class_implements($consumerClass) ?: []);
         } finally {
             spl_autoload_unregister($autoload);
             foreach (glob($dir.'/*/*.php') ?: [] as $file) {

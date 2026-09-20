@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - A test in `WebhookIdempotencyTest` pinned "now" to a fixed date while the fake adapter cleaned up against the real clock, so the suite started failing 24 hours later. It now uses a date relative to the clock, like the other webhook tests.
 - `IntegrationWebhookRequestParser` no longer maps the payload while parsing. It built the request headers, called `getMapper()->map()` and threw the result away — the `RemoteEvent` has always carried the raw payload, and the real mapping happens in the consumer through `WebhookEventDispatcher`. A provider that sends several event types to one URL (the case WEBHOOK.md tells you to filter in the consumer) made a mapper fail inside the parser, so Symfony answered `500` instead of `406` and the consumer's own type check never ran. Every payload was also mapped twice.
 
+### Added
+
+- `make:webhook` also generates the consumer, the piece that was missing between Symfony's Messenger and `WebhookEventDispatcher` and that everyone had to copy by hand. It carries `#[AsRemoteEventConsumer]` keyed after the integration and event (`stripe_charge_succeeded`), skips events of another type reaching the same URL, and the command prints the matching `framework.webhook.routing` entry, which uses that same key. Only the listener is left to write.
+
 ### Internal
 
 - Mutation testing is back over its threshold: 98–99% covered MSI, up from 92%. 41 escaped mutants turned into tests (lifecycle event durations and `ActionFailed`, the HMAC prefix check, `SignatureConfig` validation, the webhook mappers' defaults and casts, the request parser's id extraction and POST-only matcher, actions declared after a `webhooks:` block), and the equivalent ones are documented one by one in `docs/advanced/QUALITY.md`.

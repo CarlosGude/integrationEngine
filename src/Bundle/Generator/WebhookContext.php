@@ -42,6 +42,25 @@ final readonly class WebhookContext
     }
 
     /**
+     * Get the webhook consumer class name (e.g., ChargeSucceededConsumer).
+     */
+    public function consumerClassName(): string
+    {
+        return str_replace(' ', '', ucwords(str_replace(['.', '_', '-'], ' ', $this->event))).'Consumer';
+    }
+
+    /**
+     * The key that ties the three ends together: the URL segment
+     * (POST /webhook/<key>), the framework.webhook.routing entry, and the
+     * consumer's AsRemoteEventConsumer name. One key per event type, so a
+     * provider can deliver several of them side by side.
+     */
+    public function routingKey(): string
+    {
+        return strtolower($this->integration.'_'.str_replace(['.', '-', '/'], '_', $this->event));
+    }
+
+    /**
      * Namespace of the generated classes. Mirrors generationPath() so the
      * files are PSR-4 autoloadable.
      */

@@ -24,7 +24,68 @@ final class WebhookFileGenerator
             $generationPath.'/'.$ctx->eventClassName().'.php' => $this->generateEventFile($ctx),
             $generationPath.'/'.$ctx->mapperClassName().'.php' => $this->generateMapperFile($ctx),
             $generationPath.'/'.$ctx->parserClassName().'.php' => $this->generateParserFile($ctx),
+            $generationPath.'/'.$ctx->consumerClassName().'.php' => $this->generateConsumerFile($ctx),
         ];
+    }
+
+    private function generateConsumerFile(WebhookContext $ctx): string
+    {
+        $namespace = $ctx->namespace();
+        $className = $ctx->consumerClassName();
+        $mapperClassName = $ctx->mapperClassName();
+        $routingKey = $ctx->routingKey();
+
+        return <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace {$namespace};
+
+use IntegrationEngine\\Infrastructure\\Webhook\\WebhookEventDispatcher;
+use Symfony\\Component\\RemoteEvent\\Attribute\\AsRemoteEventConsumer;
+use Symfony\\Component\\RemoteEvent\\Consumer\\ConsumerInterface;
+use Symfony\\Component\\RemoteEvent\\RemoteEvent;
+
+/**
+ * Consumes the verified {$ctx->integration}.{$ctx->event} webhook.
+ *
+ * Symfony hands the RemoteEvent to this consumer through Messenger, keyed by
+ * the routing name below. Map here, and put the domain work in a listener of
+ * the typed event.
+ *
+ * Register the matching route:
+ *
+ *     framework:
+ *         webhook:
+ *             routing:
+ *                 {$routingKey}:
+ *                     service: {$ctx->parserClassFqn()}
+ *                     secret: '%env(WEBHOOK_SECRET)%'
+ */
+#[AsRemoteEventConsumer('{$routingKey}')]
+final readonly class {$className} implements ConsumerInterface
+{
+    public function __construct(
+        private WebhookEventDispatcher \$dispatcher,
+    ) {}
+
+    public function consume(RemoteEvent \$event): void
+    {
+        \$mapper = new {$mapperClassName}();
+
+        // Every event parsed at this URL is named after the parser's
+        // getDefinition(), so a provider posting several event types to the
+        // same URL has to be filtered here. Drop this guard when the payload
+        // carries no "type" (Shopify, for one, sends it as a header).
+        if ((\$event->getPayload()['type'] ?? null) !== \$mapper->getDefinition()) {
+            return;
+        }
+
+        \$this->dispatcher->dispatch(\$event, \$mapper, []);
+    }
+}
+PHP;
     }
 
     private function generateEventFile(WebhookContext $ctx): string

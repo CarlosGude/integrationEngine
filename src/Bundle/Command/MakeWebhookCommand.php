@@ -98,6 +98,19 @@ final class MakeWebhookCommand extends Command
 
         $io->success('Done.');
 
+        $io->writeln([
+            'Route it, so the webhook reaches the parser:',
+            '',
+            '    # config/packages/framework.yaml',
+            '    framework:',
+            '        webhook:',
+            '            routing:',
+            \sprintf('                %s:                # POST /webhook/%s', $ctx->routingKey(), $ctx->routingKey()),
+            \sprintf('                    service: %s', $ctx->parserClassFqn()),
+            "                    secret: '%env(WEBHOOK_SECRET)%'",
+            '',
+        ]);
+
         return Command::SUCCESS;
     }
 }
