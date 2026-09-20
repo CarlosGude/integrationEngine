@@ -113,22 +113,18 @@ PHP;
         $integration = $ctx->integration;
         $event = $ctx->event;
 
-        $trait = $this->parserTrait($ctx);
-
         $imports = [
             'use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;',
-            null === $trait ? 'use IntegrationEngine\Core\Contract\Webhook\SignatureVerifierInterface;' : '',
+            'use IntegrationEngine\Core\Contract\Webhook\SignatureVerifierInterface;',
             $this->generateVerifierSetup($ctx),
             'use IntegrationEngine\Infrastructure\Webhook\IntegrationWebhookRequestParser;',
-            null === $trait ? '' : 'use IntegrationEngine\Infrastructure\Webhook\Parser\\'.$trait.';',
         ];
         if ('timestamped_hmac' === $ctx->verifierType) {
             $imports[] = 'use Psr\Clock\ClockInterface;';
         }
         $useStatements = implode("\n", array_filter($imports));
         $constructor = $this->generateParserConstructor($ctx);
-        $traitUse = null === $trait ? '' : "    use {$trait};\n\n";
-        $verifierMethod = null === $trait ? $this->generateVerifierMethod($ctx) : '';
+        $verifierMethod = $this->generateVerifierMethod($ctx);
 
         return <<<PHP
 <?php
@@ -149,7 +145,7 @@ namespace {$namespace};
  */
 final class {$className} extends IntegrationWebhookRequestParser
 {
-{$traitUse}{$constructor}    public function getDefinition(): string
+{$constructor}    public function getDefinition(): string
     {
         return '{$event}';
     }
@@ -190,20 +186,6 @@ PHP;
 PHP;
     }
 
-    /**
-     * Shopify and WooCommerce sign their own way, on their own header, so a
-     * parser for them takes the verifier from a trait instead of spelling it
-     * out — and has nothing left to configure.
-     */
-    private function parserTrait(WebhookContext $ctx): ?string
-    {
-        return match ($ctx->verifierType) {
-            'shopify' => 'VerifiesShopifySignature',
-            'woocommerce' => 'VerifiesWooCommerceSignature',
-            default => null,
-        };
-    }
-
     private function generateVerifierMethod(WebhookContext $ctx): string
     {
         $verifier = match ($ctx->verifierType) {
@@ -211,6 +193,7 @@ PHP;
                 "new TimestampedHmacSignatureVerifier('%s', 300, \$this->clock)",
                 $ctx->headerName,
             ),
+            'hmac_base64' => \sprintf("new Base64HmacSignatureVerifier('%s')", $ctx->headerName),
             default => \sprintf("new HmacSha256SignatureVerifier('%s', 'sha256=')", $ctx->headerName),
         };
 
@@ -264,6 +247,7 @@ PHP;
     {
         return match ($ctx->verifierType) {
             'hmac_sha256' => 'use IntegrationEngine\Core\Webhook\HmacSha256SignatureVerifier;',
+            'hmac_base64' => 'use IntegrationEngine\Core\Webhook\Base64HmacSignatureVerifier;',
             'timestamped_hmac' => 'use IntegrationEngine\Core\Webhook\TimestampedHmacSignatureVerifier;',
             default => '',
         };

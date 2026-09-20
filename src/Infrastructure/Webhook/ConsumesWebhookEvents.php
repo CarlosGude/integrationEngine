@@ -59,9 +59,9 @@ trait ConsumesWebhookEvents
      * URL has to be told apart here — WebhookEventDispatcher throws when the
      * mapper's definition doesn't match the event name.
      *
-     * The payload's "type" is the Stripe-style convention. Override this for a
-     * provider that says it elsewhere, or return true when one URL only ever
-     * carries one type.
+     * A "type" key in the payload is the common convention. Override this for
+     * a provider that names the event elsewhere — a header, say — or return
+     * true when one URL only ever carries one type.
      */
     protected function handles(RemoteEvent $event, AbstractWebhookMapper $mapper): bool
     {

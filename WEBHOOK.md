@@ -3,7 +3,7 @@
 IntegrationEngine does not ship its own webhook endpoint. Inbound webhooks go through Symfony's Webhook component (`symfony/webhook` + `symfony/remote-event`), and the bundle provides the pieces that plug into it:
 
 - **`IntegrationWebhookRequestParser`** — base request parser that verifies the signature and decodes the payload
-- **Signature verifiers** — HMAC, timestamped HMAC (Stripe), Shopify, WooCommerce; or your own `SignatureVerifierInterface`
+- **Signature verifiers** — hex HMAC behind a prefix, raw HMAC in base64, timestamped HMAC; or your own `SignatureVerifierInterface`
 - **`AbstractWebhookMapper`** — turns the raw payload into a typed `WebhookEventInterface` DTO
 - **`WebhookEventDispatcher`** — maps a verified `RemoteEvent` and dispatches the typed event to your listeners
 
@@ -30,7 +30,7 @@ Symfony answers `202 Accepted` once the event has been handed to Messenger.
 
 ## Step by Step
 
-The example is Stripe's `payment_intent.succeeded`. `php bin/console make:webhook stripe payment_intent.succeeded` asks for the verifier type (`hmac_sha256`, `timestamped_hmac`, `shopify` or `woocommerce` — the last two bring their own header and skip the question) and the signature header and scaffolds steps 1–3 and 5 under `src/Webhooks/Stripe/` (namespace `App\Webhooks\Stripe`; change with `--namespace` / `--path`). It then prints the routing entry for step 4, keyed `stripe_payment_intent_succeeded` — the same name the generated consumer answers to, and the URL segment the provider posts to.
+The example is Stripe's `payment_intent.succeeded`. `php bin/console make:webhook stripe payment_intent.succeeded` asks for the verifier type (`hmac_sha256` for a hex digest behind a prefix, `hmac_base64` for the raw digest base64-encoded, `timestamped_hmac` for the signed-timestamp shape) and the signature header and scaffolds steps 1–3 and 5 under `src/Webhooks/Stripe/` (namespace `App\Webhooks\Stripe`; change with `--namespace` / `--path`). It then prints the routing entry for step 4, keyed `stripe_payment_intent_succeeded` — the same name the generated consumer answers to, and the URL segment the provider posts to.
 
 Only step 6, the listener, is left: that one is your domain.
 

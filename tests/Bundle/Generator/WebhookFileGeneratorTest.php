@@ -41,13 +41,13 @@ final class WebhookFileGeneratorTest extends TestCase
 
     public function testEventNamesWithSlashesBecomeUsableClassNames(): void
     {
-        // Shopify separates its topics with a slash, which is neither a valid
-        // class name nor a valid file name.
+        // Some providers separate their event names with a slash, which is
+        // neither a valid class name nor a valid file name.
         $ctx = new WebhookContext(
-            integration: 'shopify',
+            integration: 'storefront',
             event: 'products/update',
             verifierType: 'hmac_sha256',
-            headerName: 'X-Shopify-Hmac-SHA256',
+            headerName: 'X-Storefront-Signature',
             baseNamespace: 'App\Webhooks',
             basePath: '/tmp/webhooks',
         );
@@ -55,19 +55,19 @@ final class WebhookFileGeneratorTest extends TestCase
         self::assertSame('ProductsUpdateEvent', $ctx->eventClassName());
         self::assertSame('ProductsUpdateRequestParser', $ctx->parserClassName());
         self::assertSame('ProductsUpdateConsumer', $ctx->consumerClassName());
-        self::assertSame('shopify_products_update', $ctx->routingKey());
+        self::assertSame('storefront_products_update', $ctx->routingKey());
         self::assertSame(
             [
-                '/tmp/webhooks/Shopify/ProductsUpdateEvent.php',
-                '/tmp/webhooks/Shopify/ProductsUpdateEventMapper.php',
-                '/tmp/webhooks/Shopify/ProductsUpdateRequestParser.php',
-                '/tmp/webhooks/Shopify/ProductsUpdateConsumer.php',
+                '/tmp/webhooks/Storefront/ProductsUpdateEvent.php',
+                '/tmp/webhooks/Storefront/ProductsUpdateEventMapper.php',
+                '/tmp/webhooks/Storefront/ProductsUpdateRequestParser.php',
+                '/tmp/webhooks/Storefront/ProductsUpdateConsumer.php',
             ],
             array_keys($this->generator->generateFiles($ctx)),
         );
 
         // The event type itself keeps its slash where it matters.
-        $parser = $this->generator->generateFiles($ctx)['/tmp/webhooks/Shopify/ProductsUpdateRequestParser.php'];
+        $parser = $this->generator->generateFiles($ctx)['/tmp/webhooks/Storefront/ProductsUpdateRequestParser.php'];
         self::assertStringContainsString("return 'products/update';", $parser);
     }
 

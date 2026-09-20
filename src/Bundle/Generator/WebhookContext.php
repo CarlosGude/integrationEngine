@@ -95,7 +95,7 @@ final readonly class WebhookContext
 
     /**
      * The event name as a class-name fragment: every separator a provider
-     * uses — Stripe's dots, Shopify's slashes — collapses into StudlyCase.
+     * uses — dots, slashes, dashes — collapses into StudlyCase.
      */
     private function studlyEvent(): string
     {

@@ -53,18 +53,16 @@ final class MakeWebhookCommandTest extends TestCase
         self::assertStringContainsString('service: App\Webhooks\Stripe\ChargeSucceededRequestParser', $output);
     }
 
-    public function testPickingAProviderSkipsTheHeaderQuestion(): void
+    public function testTheBase64SchemeGetsItsOwnVerifier(): void
     {
-        // Shopify's header is part of its verifier, so the command only asks
-        // for the verification type.
-        $tester = $this->generate(['shopify', 'products/update'], ['shopify']);
+        // The other common shape: the raw digest, base64-encoded, sent whole.
+        $tester = $this->generate(['storefront', 'products/update'], ['hmac_base64', 'X-Storefront-Signature']);
 
         $tester->assertCommandIsSuccessful();
-        self::assertStringNotContainsString('Signature header name', $tester->getDisplay());
 
-        $parser = (string) file_get_contents($this->projectDir.'/src/Webhooks/Shopify/ProductsUpdateRequestParser.php');
-        self::assertStringContainsString('use VerifiesShopifySignature;', $parser);
-        self::assertStringNotContainsString('getSignatureVerifier', $parser);
+        $parser = (string) file_get_contents($this->projectDir.'/src/Webhooks/Storefront/ProductsUpdateRequestParser.php');
+        self::assertStringContainsString("new Base64HmacSignatureVerifier('X-Storefront-Signature')", $parser);
+        self::assertStringNotContainsString('__construct', $parser);
     }
 
     private function removeDirectory(string $dir): void

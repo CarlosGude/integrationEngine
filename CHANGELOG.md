@@ -14,8 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- Three traits cut what a webhook costs per event type: `ConsumesWebhookEvents` carries the consumer's `consume()` and its event-type check (override `handles()` for a provider that names the type somewhere else), and `VerifiesShopifySignature` / `VerifiesWooCommerceSignature` carry the verifier — the bundle's own Shopify parsers use the latter.
-- `make:webhook` takes `shopify` and `woocommerce` as verifier types, and generates a parser with **no constructor at all**: the signing secret comes from `framework.webhook.routing.<key>.secret`, so the parser is autowired as it stands and needs no `services.yaml` entry. The timestamped variant only injects a PSR-20 clock, which is autowired too.
+- `ConsumesWebhookEvents` carries the consumer's `consume()` and its event-type check; override `handles()` for a provider that names the event somewhere other than the payload's `type`.
+- `Base64HmacSignatureVerifier`: the raw HMAC-SHA256 digest, base64-encoded and sent whole, named after the scheme rather than after the two providers that use it (whose verifiers duplicate it).
+- `make:webhook` takes `hmac_base64` as a verifier type, and generates a parser with **no constructor at all**: the signing secret comes from `framework.webhook.routing.<key>.secret`, so the parser is autowired as it stands and needs no `services.yaml` entry. The timestamped variant only injects a PSR-20 clock, which is autowired too.
 - `make:webhook` also generates the consumer, the piece that was missing between Symfony's Messenger and `WebhookEventDispatcher` and that everyone had to copy by hand. It carries `#[AsRemoteEventConsumer]` keyed after the integration and event (`stripe_charge_succeeded`), skips events of another type reaching the same URL, and the command prints the matching `framework.webhook.routing` entry, which uses that same key. Only the listener is left to write.
 
 ### Internal
