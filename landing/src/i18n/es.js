@@ -13,7 +13,7 @@ export default {
         '&#10003;&nbsp;OAuth2, Bearer &amp; API Key',
         '&#10003;&nbsp;Peticiones en paralelo',
         '&#10003;&nbsp;DTOs tipados',
-        '&#10003;&nbsp;Webhooks inbound (v5.1.0)',
+        '&#10003;&nbsp;Webhooks inbound',
     ],
     heroBtn1: 'Ver el patrón',
     heroBtn2: 'GitHub',
@@ -157,7 +157,7 @@ export default {
     proofEyebrow: 'Construido para Producción',
     proofH2:      'Probado a escala.',
     proofItems: [
-        { stat: '607 tests',      desc: 'PHPStan level max. Cero breaking changes en v5.x.' },
+        { stat: '666 tests',      desc: 'PHPStan level max, 98% de mutation score. Cero breaking changes en v5.x.' },
         { stat: '5+ protocolos',  desc: 'REST, GraphQL, CSV, Webhooks, adaptadores custom.' },
         { stat: '5–13x más rápido', desc: 'Ejecución paralela por defecto. Disponibilidad en Booking.com: 17 queries paralelas por cliente, por ciudad.' },
         { stat: 'Uso en producción', desc: 'Integraciones Shopify, marketplace POF, migraciones legacy a escala.' },
@@ -165,31 +165,31 @@ export default {
 
     // Status section
     statusEyebrow:      'Estado',
-    statusH2:           'v5.2.0 en vivo — Lifecycle Events + Observability',
-    statusP:            'Integraciones salientes (Stripe, Shopify, etc.) + webhooks inbound (recibe eventos de plataformas externas). Enrutamiento multi-plataforma, verificación de firmas, idempotencia y state machine incluidos. Sin promesas con fecha &mdash; solo software funcionando y transparencia en cada hito.',
-    statusNow:          '<strong>Ahora:</strong> v5.2.0 publicada. Lifecycle events (ActionStarted, ActionCompleted, ActionFailed). Observability helpers para logging, Prometheus, Sentry. 607 tests pasando. Listo para producción.',
+    statusH2:           'v5.4.0 en vivo — Lifecycle Events + Observability',
+    statusP:            'Integraciones salientes (Stripe, Shopify, etc.) + webhooks inbound (recibe eventos de plataformas externas). Verificación de firmas y eventos tipados incluidos; idempotencia, dead-letter queue y audit trail son contratos que respaldas con tu propio almacenamiento. Sin promesas con fecha &mdash; solo software funcionando y transparencia en cada hito.',
+    statusNow:          '<strong>Ahora:</strong> v5.4.0 publicada. Los lifecycle events llegan a los listeners de Symfony, con los tiempos de HTTP y de mapeo por separado. Observability helpers para logging, Prometheus, Sentry. Receta de Symfony Flex. 666 tests pasando. Listo para producción.',
     statusNext:         '<strong>Próximo:</strong> Fase 5: Calidad del diseño (extensiones PHPStan, protección SSRF). Fase 6: Ecosistema de plataformas (integraciones pre-construidas).',
     statusLater:        '<strong>Después:</strong> Dashboard admin (UI de replay de webhooks), plugins open-source, formación certificada.',
     statusRoadmapLink:  'Ver fases: descubrimiento, confiabilidad, generalización, release →',
 
-    // Webhook showcase section (v5.1.0)
+    // Webhook showcase section
     webhookEyebrow: 'Webhooks Inbound',
     webhookH2:      'Recibe de cualquier plataforma.',
-    webhookSub:     '<strong>v5.1.0:</strong> Framework de webhooks multi-plataforma con verificación de firma automática, detección de duplicados (ventana 24h), state machine, dead-letter queue y soporte async con Symfony Messenger. Prebuilts para Shopify y WooCommerce; extensible para custom providers.',
+    webhookSub:     '<strong>v5.4.0:</strong> El componente Webhook de Symfony, ya montado. Un parser verifica la firma y decodifica el payload; tu listener recibe un evento tipado, no un array crudo. Shopify y WooCommerce vienen con parsers, mappers y verificadores &mdash; cualquier otro proveedor es una clase parser.',
     webhookPlatforms: 'Shopify &nbsp;•&nbsp; WooCommerce &nbsp;•&nbsp; Stripe &nbsp;•&nbsp; Custom',
     webhookFeatures: [
-        'Verificación de firma HMAC (específica por plataforma)',
-        'Idempotencia: detección de duplicados basada en fingerprint',
-        'State machine: RECEIVED → VALIDATING → PROCESSING → SUCCESS',
-        'Dead-letter queue para webhooks fallidos (replay manual)',
-        'Async opcional vía Symfony Messenger',
+        'Verificación de firma HMAC: Shopify, WooCommerce, timestamped estilo Stripe',
+        'Eventos tipados en tus listeners, nunca un array crudo',
+        'Una clase parser por tipo de evento &mdash; sin controller que escribir',
+        'Async cuando quieras: Symfony entrega el evento a Messenger',
+        'Idempotencia, dead-letter queue y audit trail como contratos &mdash; el almacenamiento lo eliges tú',
     ],
     webhookBtn:     'Ver guía de webhooks →',
 
-    // Observability section (v5.2.0)
+    // Observability section
     obsEyebrow: 'Observabilidad',
     obsH2:      'Monitoreo de producción incluido.',
-    obsSub:     '<strong>v5.2.0:</strong> Lifecycle events (ActionStarted, HttpResponseReceived, ResponseMapped, ActionCompleted, ActionFailed) se disparan en cada etapa. Trackea latencia HTTP vs. transformación a DTO por separado. Un comando para wire logging, métricas Prometheus, error tracking Sentry, o audit trails custom. Cero overhead en producción (0.06ms por llamada, imperceptible).',
+    obsSub:     '<strong>v5.3.0+:</strong> Lifecycle events (ActionStarted, HttpResponseReceived, ResponseMapped, ActionCompleted, ActionFailed) se disparan en cada etapa. Trackea latencia HTTP vs. transformación a DTO por separado. Un comando para wire logging, métricas Prometheus, error tracking Sentry, o audit trails custom. Cero overhead en producción (0.06ms por llamada, imperceptible).',
     obsFeatures: [
         'Timing detallado: duración HTTP call + duración DTO mapping',
         'Lifecycle events con metadata (action, integration, duration, status)',

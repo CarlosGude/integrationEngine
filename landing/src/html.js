@@ -381,61 +381,82 @@ MyApi/
     <div style="border-top: 2px solid #2f6fbd; padding-top: 2rem;">
       <div style="font-size: 12px; color: #2f6fbd; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 1.5rem;"><strong>With IntegrationEngine</strong></div>
 
-      <!-- Configuration: Full width -->
+      <!-- Routing: Full width -->
       <div style="margin-bottom: 1.5rem;">
         <div class="example-code-panel">
-          <div class="file-label">Step 1: Configuration (YAML only)</div>
-          <div class="code-block" style="min-height: 200px;"><span class="key">webhooks</span>:
-  <span class="key">products/update</span>:
-    <span class="val">mapper_class</span>: App\Shopify\<span class="hl">ProductUpdatedMapper</span>
-    <span class="val">signature</span>:
-      <span class="val">type</span>: hmac_sha256
-      <span class="val">header</span>: X-Shopify-Hmac-SHA256</div>
+          <div class="file-label">Step 1: Route it (Symfony&#39;s Webhook component &mdash; no controller)</div>
+          <div class="code-block" style="min-height: 200px;"><span class="cm"># config/packages/framework.yaml</span>
+<span class="key">framework</span>:
+  <span class="key">webhook</span>:
+    <span class="key">routing</span>:
+      <span class="key">shopify</span>:                 <span class="cm"># POST /webhook/shopify</span>
+        <span class="val">service</span>: App\Webhooks\Shopify\<span class="hl">ProductUpdatedParser</span>
+        <span class="val">secret</span>: <span class="str">'%env(SHOPIFY_WEBHOOK_SECRET)%'</span></div>
         </div>
       </div>
 
-      <!-- Controller + Mapper: 50/50 layout -->
+      <!-- Parser + Listener: 50/50 layout -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-        <!-- WITH ENGINE: 2. Controller -->
+        <!-- WITH ENGINE: 2. Parser -->
         <div class="example-code-panel">
-          <div class="file-label">Step 2: Controller (framework handles signature, dedup, storage)</div>
-          <div class="code-block"><span class="kw">final class</span> <span class="cls">ShopifyWebhookController</span>
+          <div class="file-label">Step 2: Parser (signature verified before anything is decoded)</div>
+          <div class="code-block"><span class="kw">final class</span> <span class="cls">ProductUpdatedParser</span> <span class="kw">extends</span> <span class="cls">IntegrationWebhookRequestParser</span>
 {
     <span class="kw">public function</span> <span class="fn">__construct</span>(
-        <span class="kw">private</span> <span class="cls">MultiPlatformWebhookController</span> <span class="var">$engine</span>
+        <span class="attribute">#[Autowire(env: </span><span class="str">'SHOPIFY_WEBHOOK_SECRET'</span><span class="attribute">)]</span>
+        <span class="kw">private</span> <span class="cls">string</span> <span class="var">$secret</span>,
     ) {}
 
-    <span class="attribute">#[Route(</span><span class="str">'/webhooks/shopify'</span>, methods: [<span class="str">'POST'</span>]<span class="attribute">)]</span>
-    <span class="kw">public function</span> <span class="fn">ingest</span>(<span class="cls">Request</span> <span class="var">$request</span>): <span class="cls">Response</span>
+    <span class="kw">public function</span> <span class="fn">getDefinition</span>(): <span class="cls">string</span>
     {
-        <span class="kw">return</span> <span class="var">$this</span>-&gt;<span class="var">engine</span>-&gt;<span class="fn">ingest</span>(<span class="var">$request</span>, <span class="str">'shopify'</span>);
+        <span class="kw">return</span> <span class="str">'products/update'</span>;
+    }
+
+    <span class="kw">public function</span> <span class="fn">getMapper</span>(): <span class="cls">AbstractWebhookMapper</span>
+    {
+        <span class="cm">// Payload in, typed DTO out. Nothing else.</span>
+        <span class="kw">return new</span> <span class="cls">ProductUpdatedMapper</span>();
+    }
+
+    <span class="kw">protected function</span> <span class="fn">getSignatureVerifier</span>(): <span class="cls">SignatureVerifierInterface</span>
+    {
+        <span class="kw">return new</span> <span class="cls">ShopifyHmacSignatureVerifier</span>();
+    }
+
+    <span class="kw">protected function</span> <span class="fn">getSignatureSecret</span>(): <span class="cls">string</span>
+    {
+        <span class="kw">return</span> <span class="var">$this</span>-&gt;<span class="var">secret</span>;
     }
 }</div>
         </div>
 
-        <!-- WITH ENGINE: 3. Mapper -->
+        <!-- WITH ENGINE: 3. Consumer + listener -->
         <div class="example-code-panel">
-          <div class="file-label">Step 3: Mapper (parse payload, call business logic)</div>
-          <div class="code-block"><span class="kw">final class</span> <span class="cls">ProductUpdatedMapper</span> <span class="kw">extends</span> <span class="cls">AbstractWebhookMapper</span>
+          <div class="file-label">Step 3: Listener (typed event, business logic in your domain)</div>
+          <div class="code-block"><span class="attribute">#[AsRemoteEventConsumer(</span><span class="str">'shopify'</span><span class="attribute">)]</span>
+<span class="kw">final readonly class</span> <span class="cls">ShopifyConsumer</span> <span class="kw">implements</span> <span class="cls">ConsumerInterface</span>
 {
-    <span class="kw">public function</span> <span class="fn">__construct</span>(<span class="kw">private</span> <span class="cls">InventoryService</span> <span class="var">$inventory</span>) {}
+    <span class="kw">public function</span> <span class="fn">__construct</span>(
+        <span class="kw">private</span> <span class="cls">WebhookEventDispatcher</span> <span class="var">$dispatcher</span>
+    ) {}
 
-    <span class="kw">public function</span> <span class="fn">map</span>(<span class="cls">array</span> <span class="var">$payload</span>): <span class="cls">WebhookEventInterface</span>
+    <span class="kw">public function</span> <span class="fn">consume</span>(<span class="cls">RemoteEvent</span> <span class="var">$event</span>): <span class="cls">void</span>
     {
-        <span class="var">$productId</span> = <span class="var">$payload</span>[<span class="str">'id'</span>];
-        <span class="var">$productTitle</span> = <span class="var">$payload</span>[<span class="str">'title'</span>];
-        <span class="var">$productPrice</span> = (float) <span class="var">$payload</span>[<span class="str">'price'</span>];
-
-        <span class="var">$this</span>-&gt;<span class="var">inventory</span>-&gt;<span class="fn">syncProduct</span>(
-            <span class="var">$productId</span>,
-            <span class="var">$productTitle</span>,
-            <span class="var">$productPrice</span>
+        <span class="var">$this</span>-&gt;<span class="var">dispatcher</span>-&gt;<span class="fn">dispatch</span>(
+            <span class="var">$event</span>, <span class="kw">new</span> <span class="cls">ProductUpdatedMapper</span>(), []
         );
+    }
+}
 
-        <span class="kw">return new</span> <span class="cls">ProductUpdated</span>(
-            <span class="var">$productId</span>,
-            <span class="var">$productTitle</span>,
-            <span class="var">$productPrice</span>
+<span class="kw">final class</span> <span class="cls">ProductUpdatedListener</span>
+{
+    <span class="attribute">#[AsEventListener]</span>
+    <span class="kw">public function</span> <span class="fn">__invoke</span>(<span class="cls">ProductUpdated</span> <span class="var">$event</span>): <span class="cls">void</span>
+    {
+        <span class="var">$this</span>-&gt;<span class="var">inventory</span>-&gt;<span class="fn">syncProduct</span>(
+            <span class="var">$event</span>-&gt;<span class="var">productId</span>,
+            <span class="var">$event</span>-&gt;<span class="var">title</span>,
+            <span class="var">$event</span>-&gt;<span class="var">price</span>
         );
     }
 }</div>
