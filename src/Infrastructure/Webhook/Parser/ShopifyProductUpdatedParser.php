@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace IntegrationEngine\Infrastructure\Webhook\Parser;
 
 use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;
-use IntegrationEngine\Core\Contract\Webhook\SignatureVerifierInterface;
-use IntegrationEngine\Core\Webhook\ShopifyHmacSignatureVerifier;
 use IntegrationEngine\Infrastructure\Webhook\IntegrationWebhookRequestParser;
 use IntegrationEngine\Infrastructure\Webhook\Mapper\ShopifyProductUpdatedMapper;
 
@@ -20,8 +18,15 @@ use IntegrationEngine\Infrastructure\Webhook\Mapper\ShopifyProductUpdatedMapper;
  */
 final class ShopifyProductUpdatedParser extends IntegrationWebhookRequestParser
 {
+    use VerifiesShopifySignature;
+
+    /**
+     * The secret is optional: Symfony passes the one from
+     * framework.webhook.routing.<key>.secret, and this is only the fallback,
+     * so the parser can also be autowired with no arguments at all.
+     */
     public function __construct(
-        private string $webhookSecret,
+        private string $webhookSecret = '',
     ) {}
 
     public function getDefinition(): string
@@ -32,11 +37,6 @@ final class ShopifyProductUpdatedParser extends IntegrationWebhookRequestParser
     public function getMapper(): AbstractWebhookMapper
     {
         return new ShopifyProductUpdatedMapper();
-    }
-
-    protected function getSignatureVerifier(): SignatureVerifierInterface
-    {
-        return new ShopifyHmacSignatureVerifier();
     }
 
     protected function getSignatureSecret(): string

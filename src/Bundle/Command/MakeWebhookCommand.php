@@ -62,10 +62,16 @@ final class MakeWebhookCommand extends Command
 
         $verifierTypeChoice = $io->choice(
             'Signature verification type',
-            ['hmac_sha256', 'timestamped_hmac'],
+            ['hmac_sha256', 'timestamped_hmac', 'shopify', 'woocommerce'],
             'hmac_sha256'
         );
         $verifierType = \is_string($verifierTypeChoice) ? $verifierTypeChoice : 'hmac_sha256';
+
+        // Shopify and WooCommerce sign their own way, on their own header:
+        // the parser gets it from a trait, so there is nothing to ask.
+        if (\in_array($verifierType, ['shopify', 'woocommerce'], true)) {
+            return $this->generate($io, $integration, $event, $verifierType, '', $baseNamespace, $basePath, $force);
+        }
 
         $headerNameInput = $io->ask(
             'Signature header name (e.g., X-Webhook-Signature)',
@@ -81,6 +87,19 @@ final class MakeWebhookCommand extends Command
         );
         $headerName = \is_string($headerNameInput) ? $headerNameInput : 'X-Webhook-Signature';
 
+        return $this->generate($io, $integration, $event, $verifierType, $headerName, $baseNamespace, $basePath, $force);
+    }
+
+    private function generate(
+        SymfonyStyle $io,
+        string $integration,
+        string $event,
+        string $verifierType,
+        string $headerName,
+        string $baseNamespace,
+        string $basePath,
+        bool $force,
+    ): int {
         $ctx = new WebhookContext(
             integration: $integration,
             event: $event,

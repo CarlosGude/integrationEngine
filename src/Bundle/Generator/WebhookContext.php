@@ -25,7 +25,7 @@ final readonly class WebhookContext
      */
     public function eventClassName(): string
     {
-        return str_replace(' ', '', ucwords(str_replace(['.', '_', '-'], ' ', $this->event))).'Event';
+        return $this->studlyEvent().'Event';
     }
 
     /**
@@ -33,7 +33,7 @@ final readonly class WebhookContext
      */
     public function parserClassName(): string
     {
-        return str_replace(' ', '', ucwords(str_replace(['.', '_', '-'], ' ', $this->event))).'RequestParser';
+        return $this->studlyEvent().'RequestParser';
     }
 
     public function mapperClassName(): string
@@ -46,7 +46,7 @@ final readonly class WebhookContext
      */
     public function consumerClassName(): string
     {
-        return str_replace(' ', '', ucwords(str_replace(['.', '_', '-'], ' ', $this->event))).'Consumer';
+        return $this->studlyEvent().'Consumer';
     }
 
     /**
@@ -91,5 +91,14 @@ final readonly class WebhookContext
     public function generationPath(): string
     {
         return $this->basePath.'/'.ucfirst($this->integration);
+    }
+
+    /**
+     * The event name as a class-name fragment: every separator a provider
+     * uses — Stripe's dots, Shopify's slashes — collapses into StudlyCase.
+     */
+    private function studlyEvent(): string
+    {
+        return str_replace(' ', '', ucwords(str_replace(['.', '_', '-', '/'], ' ', $this->event)));
     }
 }

@@ -42,17 +42,17 @@ declare(strict_types=1);
 
 namespace {$namespace};
 
-use IntegrationEngine\\Infrastructure\\Webhook\\WebhookEventDispatcher;
+use IntegrationEngine\\Core\\Contract\\Webhook\\AbstractWebhookMapper;
+use IntegrationEngine\\Infrastructure\\Webhook\\ConsumesWebhookEvents;
 use Symfony\\Component\\RemoteEvent\\Attribute\\AsRemoteEventConsumer;
 use Symfony\\Component\\RemoteEvent\\Consumer\\ConsumerInterface;
-use Symfony\\Component\\RemoteEvent\\RemoteEvent;
 
 /**
  * Consumes the verified {$ctx->integration}.{$ctx->event} webhook.
  *
  * Symfony hands the RemoteEvent to this consumer through Messenger, keyed by
- * the routing name below. Map here, and put the domain work in a listener of
- * the typed event.
+ * the routing name below. The mapping happens here; put the domain work in a
+ * listener of the typed event.
  *
  * Register the matching route:
  *
@@ -64,25 +64,13 @@ use Symfony\\Component\\RemoteEvent\\RemoteEvent;
  *                     secret: '%env(WEBHOOK_SECRET)%'
  */
 #[AsRemoteEventConsumer('{$routingKey}')]
-final readonly class {$className} implements ConsumerInterface
+final class {$className} implements ConsumerInterface
 {
-    public function __construct(
-        private WebhookEventDispatcher \$dispatcher,
-    ) {}
+    use ConsumesWebhookEvents;
 
-    public function consume(RemoteEvent \$event): void
+    protected function mapper(): AbstractWebhookMapper
     {
-        \$mapper = new {$mapperClassName}();
-
-        // Every event parsed at this URL is named after the parser's
-        // getDefinition(), so a provider posting several event types to the
-        // same URL has to be filtered here. Drop this guard when the payload
-        // carries no "type" (Shopify, for one, sends it as a header).
-        if ((\$event->getPayload()['type'] ?? null) !== \$mapper->getDefinition()) {
-            return;
-        }
-
-        \$this->dispatcher->dispatch(\$event, \$mapper, []);
+        return new {$mapperClassName}();
     }
 }
 PHP;
@@ -125,7 +113,22 @@ PHP;
         $integration = $ctx->integration;
         $event = $ctx->event;
 
-        $verifierSetup = $this->generateVerifierSetup($ctx);
+        $trait = $this->parserTrait($ctx);
+
+        $imports = [
+            'use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;',
+            null === $trait ? 'use IntegrationEngine\Core\Contract\Webhook\SignatureVerifierInterface;' : '',
+            $this->generateVerifierSetup($ctx),
+            'use IntegrationEngine\Infrastructure\Webhook\IntegrationWebhookRequestParser;',
+            null === $trait ? '' : 'use IntegrationEngine\Infrastructure\Webhook\Parser\\'.$trait.';',
+        ];
+        if ('timestamped_hmac' === $ctx->verifierType) {
+            $imports[] = 'use Psr\Clock\ClockInterface;';
+        }
+        $useStatements = implode("\n", array_filter($imports));
+        $constructor = $this->generateParserConstructor($ctx);
+        $traitUse = null === $trait ? '' : "    use {$trait};\n\n";
+        $verifierMethod = null === $trait ? $this->generateVerifierMethod($ctx) : '';
 
         return <<<PHP
 <?php
@@ -134,25 +137,19 @@ declare(strict_types=1);
 
 namespace {$namespace};
 
-use IntegrationEngine\\Core\\Contract\\Webhook\\AbstractWebhookMapper;
-use IntegrationEngine\\Core\\Contract\\Webhook\\SignatureVerifierInterface;
-use IntegrationEngine\\Infrastructure\\Webhook\\IntegrationWebhookRequestParser;
-{$verifierSetup}
+{$useStatements}
 
 /**
  * Webhook request parser for {$integration}.{$event}.
  *
- * Extends IntegrationWebhookRequestParser to handle incoming webhook requests
- * from {$integration}, verify their signatures, and map to typed event DTOs.
+ * Verifies the signature of incoming {$integration} requests and hands the
+ * payload over as a RemoteEvent. The signing secret comes from
+ * framework.webhook.routing.<key>.secret, so this class needs no wiring of its
+ * own: it is autowired as it stands.
  */
 final class {$className} extends IntegrationWebhookRequestParser
 {
-    public function __construct(
-        private SignatureVerifierInterface \$verifier,
-        private string \$secret,
-    ) {}
-
-    public function getDefinition(): string
+{$traitUse}{$constructor}    public function getDefinition(): string
     {
         return '{$event}';
     }
@@ -162,16 +159,68 @@ final class {$className} extends IntegrationWebhookRequestParser
         return new {$mapperClassName}();
     }
 
-    protected function getSignatureVerifier(): SignatureVerifierInterface
-    {
-        return \$this->verifier;
-    }
-
+{$verifierMethod}    /**
+     * Only a fallback: Symfony passes the routing secret to parse(). Both
+     * being empty is rejected with a 406, never verified with an empty key.
+     */
     protected function getSignatureSecret(): string
     {
-        return \$this->secret;
+        return '';
     }
 }
+PHP;
+    }
+
+    /**
+     * Only the timestamped verifier needs anything injected, and a PSR-20
+     * clock is autowired like any other service.
+     */
+    private function generateParserConstructor(WebhookContext $ctx): string
+    {
+        if ('timestamped_hmac' !== $ctx->verifierType) {
+            return '';
+        }
+
+        return <<<'PHP'
+    public function __construct(
+        private readonly ClockInterface $clock,
+    ) {}
+
+
+PHP;
+    }
+
+    /**
+     * Shopify and WooCommerce sign their own way, on their own header, so a
+     * parser for them takes the verifier from a trait instead of spelling it
+     * out — and has nothing left to configure.
+     */
+    private function parserTrait(WebhookContext $ctx): ?string
+    {
+        return match ($ctx->verifierType) {
+            'shopify' => 'VerifiesShopifySignature',
+            'woocommerce' => 'VerifiesWooCommerceSignature',
+            default => null,
+        };
+    }
+
+    private function generateVerifierMethod(WebhookContext $ctx): string
+    {
+        $verifier = match ($ctx->verifierType) {
+            'timestamped_hmac' => \sprintf(
+                "new TimestampedHmacSignatureVerifier('%s', 300, \$this->clock)",
+                $ctx->headerName,
+            ),
+            default => \sprintf("new HmacSha256SignatureVerifier('%s', 'sha256=')", $ctx->headerName),
+        };
+
+        return <<<PHP
+    protected function getSignatureVerifier(): SignatureVerifierInterface
+    {
+        return {$verifier};
+    }
+
+
 PHP;
     }
 

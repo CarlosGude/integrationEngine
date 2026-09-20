@@ -30,9 +30,11 @@ Symfony answers `202 Accepted` once the event has been handed to Messenger.
 
 ## Step by Step
 
-The example is Stripe's `payment_intent.succeeded`. `php bin/console make:webhook stripe payment_intent.succeeded` asks for the verifier type and signature header and scaffolds steps 1–3 and 5 under `src/Webhooks/Stripe/` (namespace `App\Webhooks\Stripe`; change with `--namespace` / `--path`). It then prints the routing entry for step 4, keyed `stripe_payment_intent_succeeded` — the same name the generated consumer answers to, and the URL segment the provider posts to.
+The example is Stripe's `payment_intent.succeeded`. `php bin/console make:webhook stripe payment_intent.succeeded` asks for the verifier type (`hmac_sha256`, `timestamped_hmac`, `shopify` or `woocommerce` — the last two bring their own header and skip the question) and the signature header and scaffolds steps 1–3 and 5 under `src/Webhooks/Stripe/` (namespace `App\Webhooks\Stripe`; change with `--namespace` / `--path`). It then prints the routing entry for step 4, keyed `stripe_payment_intent_succeeded` — the same name the generated consumer answers to, and the URL segment the provider posts to.
 
 Only step 6, the listener, is left: that one is your domain.
+
+The generated parser has no constructor and needs no `services.yaml` entry: it is autowired as it stands, and the signing secret arrives from the routing entry.
 
 ### 1. Event DTO
 
@@ -145,36 +147,31 @@ webhook:
     prefix: /webhook
 ```
 
+> On Symfony 6.4 and 7.0–7.2 that file is `webhook.xml`: the `.php` variant arrives in 7.3, which is also when the XML one starts warning it is deprecated. Importing the wrong one fails with `Unable to find file "@FrameworkBundle/Resources/config/routing/webhook.php"`.
+
 ### 5. Consumer
 
 ```php
 namespace App\Webhooks\Stripe;
 
-use IntegrationEngine\Infrastructure\Webhook\WebhookEventDispatcher;
+use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;
+use IntegrationEngine\Infrastructure\Webhook\ConsumesWebhookEvents;
 use Symfony\Component\RemoteEvent\Attribute\AsRemoteEventConsumer;
 use Symfony\Component\RemoteEvent\Consumer\ConsumerInterface;
-use Symfony\Component\RemoteEvent\RemoteEvent;
 
 #[AsRemoteEventConsumer('stripe')]
-final readonly class PaymentIntentSucceededConsumer implements ConsumerInterface
+final class PaymentIntentSucceededConsumer implements ConsumerInterface
 {
-    public function __construct(
-        private WebhookEventDispatcher $dispatcher,
-    ) {}
+    use ConsumesWebhookEvents;
 
-    public function consume(RemoteEvent $event): void
+    protected function mapper(): AbstractWebhookMapper
     {
-        $mapper = new PaymentIntentSucceededEventMapper();
-
-        // See "One parser per event type" below.
-        if (($event->getPayload()['type'] ?? null) !== $mapper->getDefinition()) {
-            return;
-        }
-
-        $this->dispatcher->dispatch($event, $mapper, []);
+        return new PaymentIntentSucceededEventMapper();
     }
 }
 ```
+
+`ConsumesWebhookEvents` brings the constructor (it takes the `WebhookEventDispatcher`), `consume()`, and the check that skips events of another type arriving at the same URL — see *One parser per event type* below. A provider that names the type somewhere other than `payload['type']` overrides `handles()`.
 
 ### 6. Listener
 

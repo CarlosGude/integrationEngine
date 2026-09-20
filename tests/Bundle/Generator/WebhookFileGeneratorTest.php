@@ -39,6 +39,38 @@ final class WebhookFileGeneratorTest extends TestCase
         self::assertArrayHasKey('/tmp/webhooks/Stripe/ChargeSucceededConsumer.php', $files);
     }
 
+    public function testEventNamesWithSlashesBecomeUsableClassNames(): void
+    {
+        // Shopify separates its topics with a slash, which is neither a valid
+        // class name nor a valid file name.
+        $ctx = new WebhookContext(
+            integration: 'shopify',
+            event: 'products/update',
+            verifierType: 'hmac_sha256',
+            headerName: 'X-Shopify-Hmac-SHA256',
+            baseNamespace: 'App\Webhooks',
+            basePath: '/tmp/webhooks',
+        );
+
+        self::assertSame('ProductsUpdateEvent', $ctx->eventClassName());
+        self::assertSame('ProductsUpdateRequestParser', $ctx->parserClassName());
+        self::assertSame('ProductsUpdateConsumer', $ctx->consumerClassName());
+        self::assertSame('shopify_products_update', $ctx->routingKey());
+        self::assertSame(
+            [
+                '/tmp/webhooks/Shopify/ProductsUpdateEvent.php',
+                '/tmp/webhooks/Shopify/ProductsUpdateEventMapper.php',
+                '/tmp/webhooks/Shopify/ProductsUpdateRequestParser.php',
+                '/tmp/webhooks/Shopify/ProductsUpdateConsumer.php',
+            ],
+            array_keys($this->generator->generateFiles($ctx)),
+        );
+
+        // The event type itself keeps its slash where it matters.
+        $parser = $this->generator->generateFiles($ctx)['/tmp/webhooks/Shopify/ProductsUpdateRequestParser.php'];
+        self::assertStringContainsString("return 'products/update';", $parser);
+    }
+
     public function testConsumerIsKeyedByTheSameRoutingNameAsTheUrl(): void
     {
         $ctx = new WebhookContext(
@@ -73,11 +105,12 @@ final class WebhookFileGeneratorTest extends TestCase
         $consumer = $this->generator->generateFiles($ctx)['/tmp/webhooks/Stripe/ChargeSucceededConsumer.php'];
 
         self::assertStringContainsString('implements ConsumerInterface', $consumer);
-        self::assertStringContainsString('use IntegrationEngine\Infrastructure\Webhook\WebhookEventDispatcher;', $consumer);
-        self::assertStringContainsString('$this->dispatcher->dispatch($event, $mapper, []);', $consumer);
-        // Events of another type reaching the same URL are skipped, not mapped:
-        // WebhookEventDispatcher throws when the definitions do not match.
-        self::assertStringContainsString("if ((\$event->getPayload()['type'] ?? null) !== \$mapper->getDefinition()) {", $consumer);
+        // consume() and the event-type check live in the bundle's trait; the
+        // generated class only names its mapper.
+        self::assertStringContainsString('use IntegrationEngine\Infrastructure\Webhook\ConsumesWebhookEvents;', $consumer);
+        self::assertStringContainsString('use ConsumesWebhookEvents;', $consumer);
+        self::assertStringContainsString('return new ChargeSucceededEventMapper();', $consumer);
+        self::assertStringNotContainsString('function consume(', $consumer);
     }
 
     public function testEventFileImplementsWebhookEventInterface(): void
@@ -97,6 +130,46 @@ final class WebhookFileGeneratorTest extends TestCase
         self::assertStringContainsString('implements WebhookEventInterface', $eventFile);
         self::assertStringContainsString('public readonly string $id', $eventFile);
         self::assertStringContainsString('public readonly string $type', $eventFile);
+    }
+
+    public function testParserNeedsNoWiringOfItsOwn(): void
+    {
+        $ctx = new WebhookContext(
+            integration: 'stripe',
+            event: 'charge.succeeded',
+            verifierType: 'hmac_sha256',
+            headerName: 'X-Webhook-Signature',
+            baseNamespace: 'App\Webhooks',
+            basePath: '/tmp/webhooks',
+        );
+
+        $parser = $this->generator->generateFiles($ctx)['/tmp/webhooks/Stripe/ChargeSucceededRequestParser.php'];
+
+        // No constructor at all: autowired as it stands, no services.yaml entry.
+        self::assertStringNotContainsString('__construct', $parser);
+        self::assertStringContainsString("new HmacSha256SignatureVerifier('X-Webhook-Signature', 'sha256=')", $parser);
+        // The secret arrives from framework.webhook.routing; this is the fallback.
+        self::assertStringContainsString("protected function getSignatureSecret(): string\n    {\n        return '';", $parser);
+    }
+
+    public function testTimestampedParserOnlyInjectsAClock(): void
+    {
+        $ctx = new WebhookContext(
+            integration: 'stripe',
+            event: 'charge.succeeded',
+            verifierType: 'timestamped_hmac',
+            headerName: 'Stripe-Signature',
+            baseNamespace: 'App\Webhooks',
+            basePath: '/tmp/webhooks',
+        );
+
+        $parser = $this->generator->generateFiles($ctx)['/tmp/webhooks/Stripe/ChargeSucceededRequestParser.php'];
+
+        // A PSR-20 clock is autowired like any other service, so this one needs
+        // no configuration either.
+        self::assertStringContainsString('private readonly ClockInterface $clock,', $parser);
+        self::assertStringContainsString('use Psr\Clock\ClockInterface;', $parser);
+        self::assertStringContainsString("new TimestampedHmacSignatureVerifier('Stripe-Signature', 300, \$this->clock)", $parser);
     }
 
     public function testParserExtendsIntegrationWebhookRequestParser(): void
