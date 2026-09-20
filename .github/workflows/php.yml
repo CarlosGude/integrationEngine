@@ -95,6 +95,14 @@ jobs:
           composer global config --no-plugins allow-plugins.symfony/flex true
           composer global require --no-progress --no-scripts --no-plugins symfony/flex
 
+      # infection/infection requires PHP >= 8.3, so on 8.2 it makes the whole
+      # dev install unresolvable. The bundle itself supports 8.2 (its runtime
+      # requirements never pull infection in), and the mutation gate runs on
+      # its own job with PHP 8.4.
+      - name: Drop the mutation tool on PHP 8.2
+        if: matrix.php == '8.2'
+        run: composer remove --dev --no-update infection/infection
+
       - name: Install dependencies pinned to Symfony ${{ matrix.symfony }}
         env:
           SYMFONY_REQUIRE: ${{ matrix.symfony }}
@@ -151,6 +159,16 @@ jobs:
               IntegrationEngine\Bundle\IntegrationEngineBundle::class => ['all' => true],
           ];
           PHP
+
+      # composer require left a compiled container without the bundle, and
+      # container freshness compares filemtime at one-second granularity: when
+      # both land in the same second, the stale container is taken as fresh and
+      # make:integration is not registered.
+      - name: Rebuild the container
+        working-directory: app
+        run: |
+          rm -rf var/cache
+          php bin/console cache:clear
 
       - name: Generate an integration
         working-directory: app
