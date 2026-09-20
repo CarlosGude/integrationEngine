@@ -162,6 +162,65 @@ final class IntegrationWebhookRequestParserTest extends TestCase
             self::assertSame(406, $e->getStatusCode());
         }
     }
+
+    public function testRejectWebhookSentWithAnotherMethodThanPost(): void
+    {
+        // Everything else about this request is valid: only the method is wrong.
+        try {
+            $this->parse($this->signedRequest(['id' => 'evt_123'], method: 'GET'));
+            self::fail('Expected RejectWebhookException');
+        } catch (RejectWebhookException $e) {
+            self::assertSame(406, $e->getStatusCode());
+        }
+    }
+
+    public function testIntegerPayloadIdBecomesTheRemoteEventId(): void
+    {
+        $remoteEvent = $this->parse($this->signedRequest(['id' => 123]));
+
+        self::assertInstanceOf(RemoteEvent::class, $remoteEvent);
+        self::assertSame('123', $remoteEvent->getId());
+    }
+
+    public function testRemoteEventIdIsEmptyWhenThePayloadIdIsNotAStringOrInteger(): void
+    {
+        $remoteEvent = $this->parse($this->signedRequest(['id' => ['nested' => 'value']]));
+
+        self::assertInstanceOf(RemoteEvent::class, $remoteEvent);
+        self::assertSame('', $remoteEvent->getId());
+    }
+
+    public function testRemoteEventIdIsEmptyWhenThePayloadHasNoId(): void
+    {
+        $remoteEvent = $this->parse($this->signedRequest(['type' => 'payment.completed']));
+
+        self::assertInstanceOf(RemoteEvent::class, $remoteEvent);
+        self::assertSame('', $remoteEvent->getId());
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function signedRequest(array $payload, string $method = 'POST'): Request
+    {
+        $body = json_encode($payload, JSON_THROW_ON_ERROR);
+
+        return Request::create(
+            uri: '/webhook',
+            method: $method,
+            server: ['HTTP_X_WEBHOOK_SIGNATURE' => 'sha256='.hash_hmac('sha256', $body, self::SECRET)],
+            content: $body,
+        );
+    }
+
+    /** @return null|array<RemoteEvent>|RemoteEvent */
+    private function parse(Request $request): array|RemoteEvent|null
+    {
+        $parser = new TestWebhookRequestParser(
+            new HmacSha256SignatureVerifier(self::SIGNATURE_HEADER, 'sha256='),
+            self::SECRET,
+        );
+
+        return $parser->parse($request, self::SECRET);
+    }
 }
 
 /**

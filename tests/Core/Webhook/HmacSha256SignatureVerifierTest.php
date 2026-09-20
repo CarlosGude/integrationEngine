@@ -81,6 +81,19 @@ final class HmacSha256SignatureVerifierTest extends TestCase
         self::assertFalse($verifier->verify($body, $signature, self::SECRET));
     }
 
+    public function testRejectWhenPrefixIsWrongButAsLongAsTheExpectedOne(): void
+    {
+        // A prefix of the expected length is the case the prefix check has to
+        // catch on its own: drop it and the hash still lines up, so the
+        // signature would verify with any 7-character prefix.
+        $verifier = new HmacSha256SignatureVerifier('X-Signature', '');
+        $body = 'request body content';
+        // 'sha999=' is exactly as long as the expected 'sha256='.
+        $signature = 'sha999='.hash_hmac('sha256', $body, self::SECRET);
+
+        self::assertFalse($verifier->verify($body, $signature, self::SECRET));
+    }
+
     public function testGetHeaderName(): void
     {
         $verifier = new HmacSha256SignatureVerifier('X-Custom-Sig', 'sha256=');

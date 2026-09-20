@@ -109,6 +109,30 @@ final class YamlConfigAdapterTest extends TestCase
     }
 
     #[Test]
+    public function getActionFindsActionsDeclaredAfterTheWebhooksBlock(): void
+    {
+        // "webhooks" is skipped, not a stop sign: what follows it is still
+        // read as actions.
+        $adapter = $this->buildAdapter(<<<'YAML'
+            webhooks:
+                charge.succeeded:
+                    mapper: 'App\Mapper'
+                    signature:
+                        type: hmac_sha256
+                        header: X-Sig
+            get_employee:
+                action: '%s'
+                method: GET
+                path: /employees/{id}
+            YAML);
+
+        $action = $adapter->getAction('get_employee');
+
+        self::assertInstanceOf(FakePathAction::class, $action);
+        self::assertSame('/employees/{id}', $action->getRawPath());
+    }
+
+    #[Test]
     public function getActionBuildsActionWithConfiguredMethodAndPath(): void
     {
         $adapter = $this->buildAdapter(<<<'YAML'

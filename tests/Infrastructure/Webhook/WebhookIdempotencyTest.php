@@ -178,6 +178,21 @@ final class WebhookIdempotencyTest extends TestCase
         self::assertFalse($this->service->isDuplicate($eventType2, $payload, $timestamp));
     }
 
+    public function testNestedPayloadOrderDoesntAffectDuplicate(): void
+    {
+        $eventType = 'orders/create';
+        $timestamp = new \DateTimeImmutable('-1 hour');
+
+        // Same content, nested keys in a different order: the fingerprint sorts
+        // every level, not just the top one.
+        $first = ['id' => 1, 'customer' => ['email' => 'a@example.com', 'name' => 'Ada'], 'items' => [['sku' => 'x', 'qty' => 2]]];
+        $second = ['customer' => ['name' => 'Ada', 'email' => 'a@example.com'], 'items' => [['qty' => 2, 'sku' => 'x']], 'id' => 1];
+
+        $this->service->recordProcessed($eventType, $first, $timestamp);
+
+        self::assertTrue($this->service->isDuplicate($eventType, $second, $timestamp));
+    }
+
     public function testFingerprintFormat(): void
     {
         $eventType = 'products/update';

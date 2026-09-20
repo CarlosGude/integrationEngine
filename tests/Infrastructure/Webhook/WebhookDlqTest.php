@@ -8,6 +8,7 @@ use IntegrationEngine\Core\Webhook\WebhookFailure;
 use IntegrationEngine\Infrastructure\Webhook\Handler\ProcessWebhookHandler;
 use IntegrationEngine\Infrastructure\Webhook\Message\ProcessWebhookMessage;
 use IntegrationEngine\Tests\Fake\FakeFailure;
+use IntegrationEngine\Tests\Fake\TestWebhookEventForDlq;
 use IntegrationEngine\Tests\Fake\TestWebhookMapperForDlq;
 use IntegrationEngine\Tests\Fake\TestWebhookMapperForDlqWithError;
 use IntegrationEngine\Tests\Fake\WebhookDlqAdapter;
@@ -24,15 +25,16 @@ final class WebhookDlqTest extends TestCase
 {
     private WebhookDlqAdapter $dlq;
     private WebhookMapperResolverAdapter $resolverAdapter;
+    private EventDispatcher $eventDispatcher;
     private ProcessWebhookHandler $handler;
 
     protected function setUp(): void
     {
         $this->dlq = new WebhookDlqAdapter();
         $this->resolverAdapter = new WebhookMapperResolverAdapter();
-        $eventDispatcher = new EventDispatcher();
+        $this->eventDispatcher = new EventDispatcher();
         $this->handler = new ProcessWebhookHandler(
-            $eventDispatcher,
+            $this->eventDispatcher,
             $this->resolverAdapter,
             $this->dlq,
         );
@@ -57,6 +59,28 @@ final class WebhookDlqTest extends TestCase
         if ($unresolved) {
             self::fail('Expected no failures, but got: '.$unresolved[0]->errorMessage);
         }
+        self::assertSame(0, $this->dlq->countUnresolved());
+    }
+
+    public function testSuccessfulWebhookDispatchesTheTypedEvent(): void
+    {
+        $received = [];
+        $this->eventDispatcher->addListener(
+            TestWebhookEventForDlq::class,
+            static function (TestWebhookEventForDlq $event) use (&$received): void {
+                $received[] = $event;
+            },
+        );
+        $this->resolverAdapter->register('products/update', new TestWebhookMapperForDlq('products/update'));
+
+        ($this->handler)(new ProcessWebhookMessage(
+            eventType: 'products/update',
+            payload: ['id' => 123, 'title' => 'Product'],
+            headers: [],
+        ));
+
+        self::assertCount(1, $received);
+        self::assertSame('123', $received[0]->id);
         self::assertSame(0, $this->dlq->countUnresolved());
     }
 

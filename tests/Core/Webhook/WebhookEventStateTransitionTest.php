@@ -237,4 +237,22 @@ final class WebhookEventStateTransitionTest extends TestCase
         self::assertNull($this->audit->getCurrentState('unknown-webhook'));
         self::assertEmpty($this->audit->getTransitionHistory('unknown-webhook'));
     }
+
+    public function testEveryStateHasItsOwnLabel(): void
+    {
+        $labels = [];
+
+        foreach (WebhookEventState::cases() as $state) {
+            $labels[$state->value] = $state->label();
+        }
+
+        self::assertSame([
+            'received' => 'Received',
+            'validating' => 'Validating',
+            'processing' => 'Processing',
+            'success' => 'Success',
+            'failed' => 'Failed',
+            'retrying' => 'Retrying',
+        ], $labels);
+    }
 }

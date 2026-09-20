@@ -57,6 +57,26 @@ final class ShopifyEventDiscoveryTest extends TestCase
         $this->registry->getEventClass('unknown/event');
     }
 
+    public function testUnknownEventTypeErrorListsTheRegisteredTypes(): void
+    {
+        try {
+            $this->registry->getEventClass('unknown/event');
+            self::fail('An unregistered event type must be rejected.');
+        } catch (\InvalidArgumentException $error) {
+            // The message names the event types, not the DTO classes behind them.
+            self::assertStringContainsString('Registered types: products/update, orders/create', $error->getMessage());
+            self::assertStringNotContainsString(ShopifyProductUpdated::class, $error->getMessage());
+        }
+    }
+
+    public function testListEventTypesReturnsTheRegisteredTypes(): void
+    {
+        self::assertSame(
+            ['products/update', 'orders/create', 'customers/update', 'inventory_levels/update'],
+            $this->registry->listEventTypes(),
+        );
+    }
+
     public function testMapperParsesProductUpdatePayload(): void
     {
         $mapper = new ShopifyProductUpdatedMapper();
@@ -195,6 +215,50 @@ final class ShopifyEventDiscoveryTest extends TestCase
         self::assertNull($event->customerName);
         self::assertEmpty($event->lineItems);
         self::assertNull($event->createdAt);
+    }
+
+    public function testOrderMapperNormalisesEveryLineItemField(): void
+    {
+        $mapper = new ShopifyOrderCreatedMapper();
+
+        $payload = [
+            'id' => 123,
+            'order_number' => 1,
+            'email' => 'customer@example.com',
+            'total_price' => '10.00',
+            'currency' => 'USD',
+            'line_items' => [
+                // Shopify sends ids and prices as strings or numbers alike.
+                ['id' => 42, 'title' => 'Product A', 'quantity' => '3', 'price' => '19.99'],
+                // Everything optional missing: each field falls back to its default.
+                [],
+            ],
+        ];
+
+        $event = $mapper->map($payload, []);
+
+        self::assertInstanceOf(ShopifyOrderCreated::class, $event);
+        self::assertSame(
+            ['id' => '42', 'title' => 'Product A', 'quantity' => 3, 'price' => 19.99],
+            $event->lineItems[0],
+        );
+        self::assertSame(
+            ['id' => '', 'title' => '', 'quantity' => 0, 'price' => 0.0],
+            $event->lineItems[1],
+        );
+    }
+
+    public function testCustomerMapperTreatsAMissingVerifiedFlagAsNotVerified(): void
+    {
+        $mapper = new ShopifyCustomerUpdatedMapper();
+
+        $event = $mapper->map([
+            'id' => 555,
+            'email' => 'john@example.com',
+        ], []);
+
+        self::assertInstanceOf(ShopifyCustomerUpdated::class, $event);
+        self::assertFalse($event->isVerified);
     }
 
     public function testProductMapperHandlesTagsAsEmptyString(): void

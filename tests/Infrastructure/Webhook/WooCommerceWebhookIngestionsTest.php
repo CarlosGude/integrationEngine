@@ -124,6 +124,25 @@ final class WooCommerceWebhookIngestionsTest extends TestCase
         self::assertNull($event->price);
         self::assertNull($event->stockQty);
         self::assertNull($event->updatedAt);
+        // WooCommerce omits the status for a published product.
+        self::assertSame('publish', $event->status);
+    }
+
+    public function testWooCommerceMapperNormalisesStockAndKeepsTheSentStatus(): void
+    {
+        $mapper = new WooCommerceProductUpdatedMapper();
+
+        // WooCommerce sends numbers as strings in its REST payloads.
+        $event = $mapper->map([
+            'id' => 99,
+            'name' => 'Draft Product',
+            'stock_quantity' => '7',
+            'status' => 'draft',
+        ], []);
+
+        self::assertInstanceOf(WooCommerceProductUpdated::class, $event);
+        self::assertSame(7, $event->stockQty);
+        self::assertSame('draft', $event->status);
     }
 
     public function testWooCommerceOrderMapperHandlesMinimalBilling(): void
