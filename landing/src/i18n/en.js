@@ -206,12 +206,12 @@ export default {
     wikiH2:        'Complete documentation and guides.',
     wikiSub:       'Configuration, patterns, testing, troubleshooting. Architecture Decision Records explaining every design choice. Migration guides for every upgrade path.',
     wikiFeatures: [
-        { title: '01-Getting-Started', desc: 'Quick start guide, installation, and basic usage', href: 'https://github.com/CarlosGude/integrationEngine/wiki/01-Getting-Started' },
-        { title: '02-Architecture', desc: 'Core abstractions, data flow, and design patterns', href: 'https://github.com/CarlosGude/integrationEngine/wiki/02-Architecture' },
-        { title: '04-Testing', desc: 'Test structure, strategies, and running tests', href: 'https://github.com/CarlosGude/integrationEngine/wiki/04-Testing' },
-        { title: '05-Lifecycle-Events', desc: 'Observability hooks for integrations', href: 'https://github.com/CarlosGude/integrationEngine/wiki/05-Lifecycle-Events' },
-        { title: '06-Observability', desc: 'Logging, metrics, error tracking integration', href: 'https://github.com/CarlosGude/integrationEngine/wiki/06-Observability' },
-        { title: '07-Webhooks', desc: 'Receiving webhooks, signature verification, idempotency', href: 'https://github.com/CarlosGude/integrationEngine/wiki/07-Webhooks' },
+        { title: 'Getting Started', desc: 'Quick start guide, installation, and basic usage', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Getting-Started' },
+        { title: 'Architecture', desc: 'Core abstractions, data flow, and design patterns', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Architecture' },
+        { title: 'Testing', desc: 'Test structure, strategies, and running tests', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Testing' },
+        { title: 'Lifecycle Events', desc: 'Observability hooks for integrations', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Lifecycle-Events' },
+        { title: 'Observability', desc: 'Logging, metrics, error tracking integration', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Observability' },
+        { title: 'Webhooks', desc: 'Receiving webhooks, signature verification, idempotency', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Webhooks' },
     ],
     wikiBtn:     'Browse documentation →',
 
