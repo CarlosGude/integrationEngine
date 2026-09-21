@@ -206,12 +206,12 @@ export default {
     wikiH2:        'Documentación completa y guías.',
     wikiSub:       'Configuración, patrones, testing, troubleshooting. Architecture Decision Records explicando cada decisión de diseño. Guías de migración para cada actualización.',
     wikiFeatures: [
-        { title: 'DOCUMENTATION.md', desc: 'Configuración, todas las opciones, flujo de datos', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION.md' },
-        { title: 'ARCHITECTURE.md', desc: 'Decisiones de diseño y patrones', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/ARCHITECTURE.md' },
-        { title: 'Getting Started', desc: 'Quick start, instalación, uso básico', href: 'https://github.com/CarlosGude/integrationEngine/tree/main/docs/getting-started' },
-        { title: 'ADRs', desc: 'Por qué lo construimos así (14 registros)', href: 'https://github.com/CarlosGude/integrationEngine/tree/main/docs/adr' },
-        { title: 'TESTING.md', desc: 'Estrategia y estructura de suite', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/TESTING.md' },
-        { title: 'Guías de UPGRADE', desc: 'v4.0 → v5.0 → v6.0 → v7.0', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/UPGRADE-7.0.md' },
+        { title: '01-Getting-Started', desc: 'Guía de inicio rápido, instalación y uso básico', href: 'https://github.com/CarlosGude/integrationEngine/wiki/01-Getting-Started' },
+        { title: '02-Architecture', desc: 'Abstracciones, flujo de datos y patrones de diseño', href: 'https://github.com/CarlosGude/integrationEngine/wiki/02-Architecture' },
+        { title: '04-Testing', desc: 'Estructura de tests, estrategias y ejecución', href: 'https://github.com/CarlosGude/integrationEngine/wiki/04-Testing' },
+        { title: '05-Lifecycle-Events', desc: 'Hooks de observabilidad para integraciones', href: 'https://github.com/CarlosGude/integrationEngine/wiki/05-Lifecycle-Events' },
+        { title: '06-Observability', desc: 'Logs, métricas e integración de error tracking', href: 'https://github.com/CarlosGude/integrationEngine/wiki/06-Observability' },
+        { title: '07-Webhooks', desc: 'Recibir webhooks, verificación de firma, idempotencia', href: 'https://github.com/CarlosGude/integrationEngine/wiki/07-Webhooks' },
     ],
     wikiBtn:     'Explorar documentación →',
 

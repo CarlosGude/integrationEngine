@@ -206,12 +206,12 @@ export default {
     wikiH2:        'Complete documentation and guides.',
     wikiSub:       'Configuration, patterns, testing, troubleshooting. Architecture Decision Records explaining every design choice. Migration guides for every upgrade path.',
     wikiFeatures: [
-        { title: 'DOCUMENTATION.md', desc: 'Configuration, all options, data flow', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION.md' },
-        { title: 'ARCHITECTURE.md', desc: 'Design decisions and patterns', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/ARCHITECTURE.md' },
-        { title: 'Getting Started', desc: 'Quick start, installation, basic usage', href: 'https://github.com/CarlosGude/integrationEngine/tree/main/docs/getting-started' },
-        { title: 'ADRs', desc: 'Why we built it this way (14 records)', href: 'https://github.com/CarlosGude/integrationEngine/tree/main/docs/adr' },
-        { title: 'TESTING.md', desc: 'Strategy and suite structure', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/TESTING.md' },
-        { title: 'UPGRADE guides', desc: 'v4.0 → v5.0 → v6.0 → v7.0', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/UPGRADE-7.0.md' },
+        { title: '01-Getting-Started', desc: 'Quick start guide, installation, and basic usage', href: 'https://github.com/CarlosGude/integrationEngine/wiki/01-Getting-Started' },
+        { title: '02-Architecture', desc: 'Core abstractions, data flow, and design patterns', href: 'https://github.com/CarlosGude/integrationEngine/wiki/02-Architecture' },
+        { title: '04-Testing', desc: 'Test structure, strategies, and running tests', href: 'https://github.com/CarlosGude/integrationEngine/wiki/04-Testing' },
+        { title: '05-Lifecycle-Events', desc: 'Observability hooks for integrations', href: 'https://github.com/CarlosGude/integrationEngine/wiki/05-Lifecycle-Events' },
+        { title: '06-Observability', desc: 'Logging, metrics, error tracking integration', href: 'https://github.com/CarlosGude/integrationEngine/wiki/06-Observability' },
+        { title: '07-Webhooks', desc: 'Receiving webhooks, signature verification, idempotency', href: 'https://github.com/CarlosGude/integrationEngine/wiki/07-Webhooks' },
     ],
     wikiBtn:     'Browse documentation →',
 
