@@ -72,7 +72,21 @@
                 // tenant-id shape per this method's own docs — would expose
                 // the missing cast, via PHP's own float-to-int array-key
                 // truncation.
-                "IntegrationEngine\\Core\\Dispatch\\ConnectionResolver::resolve"
+                "IntegrationEngine\\Core\\Dispatch\\ConnectionResolver::resolve",
+                // mb_convert_encoding() is declared string|false but only
+                // returns false on an invalid encoding name, which throws a
+                // ValueError first on PHP 8. The cast exists for PHPStan, not
+                // for runtime, so dropping it is unobservable.
+                "IntegrationEngine\\Utils\\CsvParser::parse"
+            ]
+        },
+        "LogicalAnd": {
+            "ignore": [
+                // Swapping "&&" for "||" only widens the guard to the two
+                // cases it excludes — encoding 'UTF-8', and null, which makes
+                // mb_convert_encoding() fall back to the UTF-8 internal
+                // encoding. Both transcode UTF-8 to UTF-8, i.e. identity.
+                "IntegrationEngine\\Utils\\CsvParser::parse"
             ]
         },
         "LogicalNot": {

@@ -71,10 +71,6 @@ final class CsvParser
 
             $values = self::parseRow($line, $options->delimiter, $options->enclosure);
 
-            if (empty($line) && $options->skipEmptyLines) {
-                continue;
-            }
-
             // Ensure column count matches header
             if (\count($values) !== $headerCount) {
                 throw new \InvalidArgumentException(
@@ -100,8 +96,11 @@ final class CsvParser
      */
     private static function parseRow(string $line, string $delimiter = ',', string $enclosure = '"'): array
     {
-        // Use str_getcsv for RFC 4180 compliance
-        $values = str_getcsv($line, $delimiter, $enclosure);
+        // $escape is passed explicitly as '' — RFC 4180 has no escape character,
+        // it escapes an enclosure by doubling it ("" inside a quoted field).
+        // PHP's default is still "\\" but emits a deprecation from 8.4 and flips
+        // to '' in PHP 9; pinning it here keeps one behaviour across versions.
+        $values = str_getcsv($line, $delimiter, $enclosure, '');
 
         // Trim whitespace from each value
         return array_map(static fn ($v) => trim($v ?? ''), $values);

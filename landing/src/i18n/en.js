@@ -159,7 +159,7 @@ export default {
     proofEyebrow: 'Built for Production',
     proofH2:      'Proven at scale.',
     proofItems: [
-        { stat: '601 tests',      desc: 'PHPStan level max, 100% mutation score, every gate green in CI.' },
+        { stat: '646 tests',      desc: 'PHPStan level max, 100% mutation score, every gate green in CI.' },
         { stat: 'REST · GraphQL', desc: 'Two client adapters built in, inbound webhooks, and a tag for your own.' },
         { stat: '5–13x faster',   desc: 'Parallel execution by default: total time is the slowest call, not the sum of all of them.' },
         { stat: 'Built from real work', desc: 'Distilled from travel and e-commerce integrations the author shipped and maintained.' },
@@ -167,9 +167,9 @@ export default {
 
     // Status section
     statusEyebrow:      'Status',
-    statusH2:           'v7.0.1 Live — Per-integration clients, middleware pipeline, request signing',
+    statusH2:           'v7.0.2 Live — Per-integration clients, middleware pipeline, request signing',
     statusP:            'Outbound integrations (Stripe, Shopify, etc.) + inbound webhooks (receive events from external platforms). Signature verification and typed events built in; duplicate detection ships as a service over storage you provide. No promises with dates &mdash; just transparent, working software.',
-    statusNow:          '<strong>Now:</strong> v7.0.1 released.<br/>• Per-integration clients with flexible middleware<br/>• Request signing for OAuth 1.0a, AWS SigV4<br/>• Multi-tenant support via connection resolver<br/>• 601 tests, 100% mutation score<br/>• PHP 8.4 compatible<br/>• <a href="https://github.com/CarlosGude/integrationEngine/wiki" target="_blank">Full wiki</a> and migration guides included',
+    statusNow:          '<strong>Now:</strong> v7.0.2 released.<br/>• Per-integration clients with flexible middleware<br/>• Request signing for OAuth 1.0a, AWS SigV4<br/>• Multi-tenant support via connection resolver<br/>• 646 tests, 100% mutation score<br/>• PHP 8.4 compatible<br/>• <a href="https://github.com/CarlosGude/integrationEngine/wiki" target="_blank">Full wiki</a> and migration guides included',
     statusNext:         '<strong>Next:</strong> Phase 7: Admin experience (console commands to inspect integrations, Prometheus exports).',
     statusLater:        '<strong>Later:</strong> Open-source plugins ecosystem, legacy migration patterns, certified training materials.',
     statusRoadmapLink:  'See phases: now, next, later →',

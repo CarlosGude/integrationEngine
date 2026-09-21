@@ -3,7 +3,7 @@
 [![CI](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml/badge.svg)](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml)
 
 **Website:** [integrationengine.dev](https://integrationengine.dev)  
-**Status:** v7.0.1 Live — Per-integration middleware, request signing, connection resolver  
+**Status:** v7.0.2 Live — Per-integration middleware, request signing, connection resolver  
 **Roadmap:** [See public roadmap](./ROADMAP.md) — Now/Next/Later, no dates, transparent progress.
 
 **✨ v7.0.0:**

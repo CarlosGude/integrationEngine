@@ -159,7 +159,7 @@ export default {
     proofEyebrow: 'Construido para Producción',
     proofH2:      'Probado a escala.',
     proofItems: [
-        { stat: '601 tests',      desc: 'PHPStan level max, 100% de mutation score, todos los gates en verde en CI.' },
+        { stat: '646 tests',      desc: 'PHPStan level max, 100% de mutation score, todos los gates en verde en CI.' },
         { stat: 'REST · GraphQL', desc: 'Dos adapters de cliente incluidos, webhooks inbound, y un tag para el tuyo.' },
         { stat: '5–13x más rápido', desc: 'Ejecución paralela por defecto: el tiempo total es la llamada más lenta, no la suma de todas.' },
         { stat: 'Nacido de trabajo real', desc: 'Destilado de integraciones de viajes y e-commerce que el autor entregó y mantuvo.' },
@@ -167,9 +167,9 @@ export default {
 
     // Status section
     statusEyebrow:      'Estado',
-    statusH2:           'v7.0.1 en vivo — Clientes por integración, pipeline de middleware, firma de requests',
+    statusH2:           'v7.0.2 en vivo — Clientes por integración, pipeline de middleware, firma de requests',
     statusP:            'Integraciones salientes (Stripe, Shopify, etc.) + webhooks inbound (recibe eventos de plataformas externas). Verificación de firmas y eventos tipados incluidos; la detección de duplicados es un servicio sobre el almacenamiento que tú pongas. Sin promesas con fecha &mdash; solo software funcionando y transparencia en cada hito.',
-    statusNow:          '<strong>Ahora:</strong> v7.0.1 publicada.<br/>• Clientes por integración con middleware flexible<br/>• Firma de requests para OAuth 1.0a, AWS SigV4<br/>• Soporte multi-inquilino vía connection resolver<br/>• 601 tests, 100% de mutation score<br/>• Compatible con PHP 8.4<br/>• <a href="https://github.com/CarlosGude/integrationEngine/wiki" target="_blank">Wiki completa</a> y guías de migración incluidas',
+    statusNow:          '<strong>Ahora:</strong> v7.0.2 publicada.<br/>• Clientes por integración con middleware flexible<br/>• Firma de requests para OAuth 1.0a, AWS SigV4<br/>• Soporte multi-inquilino vía connection resolver<br/>• 646 tests, 100% de mutation score<br/>• Compatible con PHP 8.4<br/>• <a href="https://github.com/CarlosGude/integrationEngine/wiki" target="_blank">Wiki completa</a> y guías de migración incluidas',
     statusNext:         '<strong>Próximo:</strong> Fase 7: Admin experience (comandos de consola para inspeccionar integraciones, exports de Prometheus).',
     statusLater:        '<strong>Después:</strong> Ecosistema de plugins open-source, patrones de migración legacy, materiales de formación certificada.',
     statusRoadmapLink:  'Ver fases: ahora, próximo, después →',

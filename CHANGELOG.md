@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [7.0.2] - 2026-09-21
+
+### Fixed
+
+- **`CsvParser` dropped any row whose whole line was `0`.** A duplicated empty-line
+  guard used `empty($line)`, and `empty('0')` is `true` in PHP, so a single-column
+  row carrying the value `0` was silently skipped. The guard above it already
+  handled genuinely empty lines, so the duplicate is gone. Parsing a
+  single-column CSV of prices or quantities no longer loses rows.
+- **`CsvParser` now passes `str_getcsv()`'s `$escape` explicitly as `''`.** PHP's
+  default is `"\\"`, which emits a deprecation from 8.4 and flips to `''` in
+  PHP 9; pinning it keeps one behaviour across versions. This matches RFC 4180,
+  which has no escape character and escapes an enclosure by doubling it.
+  **Output changes** for one input shape: a backslash-escaped quote inside a
+  quoted field (`"x\"y"`) now parses as `x\y"` instead of `x"y`. Doubled quotes
+  (`"x""y"`) and plain backslashes (`C:\tmp\file`) are unaffected.
+
+### Internal
+
+- `CsvParser` and `CsvParseOptions` had no tests; they now have 23. Covering them
+  is what surfaced both bugs above — the aggregate MSI had been reporting 100%
+  while Infection generated no mutants at all for the uncovered class.
+- Mutation testing: 795 mutants, 0 escaped.
+
 ## [7.0.1] - 2026-09-21
 
 ### Fixed

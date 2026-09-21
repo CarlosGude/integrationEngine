@@ -24,7 +24,7 @@ the single source of these numbers, and that its `source.excludes` and
 
 As of 2026-09-21, measured locally on PHP 8.5:
 
-- **Covered Code MSI: 100%** — 755 mutants generated, every one killed.
+- **Covered Code MSI: 100%** — 795 mutants generated, every one killed.
 
 The mutants that used to survive lived in the webhook dead-letter handler,
 which 6.0 removed along with the rest of the vendor-specific surface
@@ -63,6 +63,8 @@ method, never to a whole mutator globally.
 | `CastFloat` | `DynamicAuthorizationConfig::fromArray` | The preceding `is_int`/`is_float`/`ctype_digit` guard already restricts `ttl` to values where casting to `float` before `< 0` changes nothing. |
 | `ReturnRemoval` | `BatchDispatcher::dispatch`, line 36 | `dispatch([])`'s early `return []` and its fallthrough path (three loops over an empty array) produce the identical `[]` result. Pinned to the line so the method's real `return` stays mutated. |
 | `CastString` | `ConnectionResolver::resolve` | The missing cast is only observable for a fractional-float `$connection` — not the documented tenant-id shape — via PHP's own float-to-int array-key truncation. |
+| `CastString` | `CsvParser::parse` | `mb_convert_encoding()` is declared `string\|false` but only returns `false` for an invalid encoding name, which throws a `ValueError` first on PHP 8. The cast is there for PHPStan, not for runtime. |
+| `LogicalAnd` | `CsvParser::parse` | Turning `&&` into `\|\|` only widens the transcoding guard to the two cases it excludes: encoding `'UTF-8'`, and `null`, which makes `mb_convert_encoding()` fall back to the UTF-8 internal encoding. Both transcode UTF-8 to UTF-8, i.e. identity. |
 | `Throw_` | `ResponseBuilder::applyMapper`, line 41 | `AbstractMapper::map()` is `final` and repeats this same mapper/action check, throwing the same exception with the same arguments, so removing this `throw` changes nothing observable. Pinned to the line: the `NotMappedActionException` above it stays mutated. |
 | `LogicalNot` | `LifecycleEventDispatcher::subscribe` | `$this->subscribers[$eventClass][] = …` creates the array by itself, so negating the `isset()` guard it sits behind cannot change the resulting state. |
 | `LessThanOrEqualTo` | `HmacSha256SignatureVerifier::verify` | A signature exactly as long as its prefix leaves an empty hash, which `hash_equals()` rejects anyway: `<` and `<=` both end in `return false`. |
