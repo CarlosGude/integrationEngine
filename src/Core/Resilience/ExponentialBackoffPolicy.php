@@ -20,14 +20,11 @@ use Throwable;
  *
  * Max 3 retries by default. After exhaustion, throws exception.
  */
-final readonly class ExponentialBackoffPolicy implements ResiliencePolicyInterface
+final class ExponentialBackoffPolicy implements ResiliencePolicyInterface
 {
-    private int $maxAttempts;
-    private int $initialBackoffMs;
-
     public function __construct(
-        int $maxAttempts = 3,
-        int $initialBackoffMs = 100,
+        private readonly int $maxAttempts = 3,
+        private readonly int $initialBackoffMs = 100,
     ) {
         if ($maxAttempts < 1) {
             throw new \InvalidArgumentException('maxAttempts must be >= 1');
@@ -35,9 +32,6 @@ final readonly class ExponentialBackoffPolicy implements ResiliencePolicyInterfa
         if ($initialBackoffMs < 0) {
             throw new \InvalidArgumentException('initialBackoffMs must be >= 0');
         }
-
-        $this->maxAttempts = $maxAttempts;
-        $this->initialBackoffMs = $initialBackoffMs;
     }
 
     public function shouldRetry(Throwable $e, int $attempt): bool

@@ -25,17 +25,19 @@ use Symfony\Contracts\HttpClient\ResponseInterface as HttpResponseInterface;
  *
  * amount=2000&currency=usd&description=Widget
  */
-final readonly class FormEncodedClientAdapter implements ClientAdapterInterface
+final class FormEncodedClientAdapter implements ClientAdapterInterface
 {
     use ResolvesAuthHeaders;
 
     public const CLIENT_TYPE = 'form_encoded';
 
+    /**
+     * @param array<string, string> $defaultHeaders
+     */
     public function __construct(
-        private HttpClientInterface $httpClient,
-        private string $baseUrl,
-        /** @var array<string, string> */
-        private array $defaultHeaders = [],
+        private readonly HttpClientInterface $httpClient,
+        private readonly string $baseUrl,
+        private readonly array $defaultHeaders = [],
     ) {}
 
     public function withBaseUrl(string $baseUrl): static
