@@ -169,7 +169,7 @@ export default {
     statusEyebrow:      'Status',
     statusH2:           'v7.0.1 Live — Per-integration clients, middleware pipeline, request signing',
     statusP:            'Outbound integrations (Stripe, Shopify, etc.) + inbound webhooks (receive events from external platforms). Signature verification and typed events built in; duplicate detection ships as a service over storage you provide. No promises with dates &mdash; just transparent, working software.',
-    statusNow:          '<strong>Now:</strong> v7.0.1 released.<br/>• Per-integration clients with flexible middleware<br/>• Request signing for OAuth 1.0a, AWS SigV4<br/>• Multi-tenant support via connection resolver<br/>• 601 tests, 100% mutation score<br/>• PHP 8.4 compatible<br/>• Full wiki and migration guides included',
+    statusNow:          '<strong>Now:</strong> v7.0.1 released.<br/>• Per-integration clients with flexible middleware<br/>• Request signing for OAuth 1.0a, AWS SigV4<br/>• Multi-tenant support via connection resolver<br/>• 601 tests, 100% mutation score<br/>• PHP 8.4 compatible<br/>• <a href="https://github.com/CarlosGude/integrationEngine/wiki" target="_blank">Full wiki</a> and migration guides included',
     statusNext:         '<strong>Next:</strong> Phase 7: Admin experience (console commands to inspect integrations, Prometheus exports).',
     statusLater:        '<strong>Later:</strong> Open-source plugins ecosystem, legacy migration patterns, certified training materials.',
     statusRoadmapLink:  'See phases: now, next, later →',
