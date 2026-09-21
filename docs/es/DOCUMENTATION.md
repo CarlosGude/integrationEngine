@@ -285,16 +285,15 @@ Perfecto para logging personalizado, métricas Prometheus, tracking de errores (
 
 ---
 
-## Webhooks de Entrada (v5.1.0+)
+## Webhooks de Entrada
 
-IntegrationEngine también soporta **recibir** webhooks de plataformas externas
-(Shopify, WooCommerce, etc.). El framework de webhooks proporciona:
+IntegrationEngine también soporta **recibir** webhooks, sobre el componente
+Webhook de Symfony. Proporciona:
 
-- **Enrutamiento multi-plataforma** — un único endpoint maneja múltiples plataformas
-- **Verificación de firmas** — validación HMAC, extensible por plataforma
-- **Mapeo de eventos** — transforma payloads de webhooks en DTOs tipados
-- **Idempotencia** — detección automática de duplicados (ventana de 24h)
-- **Confiabilidad** — detección de duplicados sobre el almacenamiento que tú pongas; los reintentos son cosa de Messenger
-- **Procesamiento asíncrono** — integración con Symfony Messenger para manejo no-bloqueante
+- **Verificación de firmas** — los tres esquemas HMAC habituales, o el verificador que escribas
+- **Mapeo de eventos** — convierte el payload en el DTO tipado que recibe tu listener
+- **Scaffolding** — `make:webhook` escribe el parser, el mapper, el DTO y el consumer en tu app
+- **Idempotencia** — detección de duplicados por fingerprint del payload, sobre tu almacenamiento
+- **Procesamiento asíncrono** — Symfony entrega el evento a Messenger cuando lo quieras fuera de la petición
 
 → **[Guía de Webhooks de Entrada](../../WEBHOOK.md)** — documentación completa para recibir y procesar webhooks de APIs externas.

@@ -157,19 +157,19 @@ export default {
     proofEyebrow: 'Construido para Producción',
     proofH2:      'Probado a escala.',
     proofItems: [
-        { stat: '666 tests',      desc: 'PHPStan level max, 98% de mutation score. Cero breaking changes en v5.x.' },
-        { stat: '5+ protocolos',  desc: 'REST, GraphQL, CSV, Webhooks, adaptadores custom.' },
+        { stat: '620 tests',      desc: 'PHPStan level max, 100% de mutation score, todos los gates en verde en CI.' },
+        { stat: 'REST · GraphQL', desc: 'Dos adapters de cliente incluidos, webhooks inbound, y un tag para el tuyo.' },
         { stat: '5–13x más rápido', desc: 'Ejecución paralela por defecto. Disponibilidad en Booking.com: 17 queries paralelas por cliente, por ciudad.' },
         { stat: 'Uso en producción', desc: 'Integraciones Shopify, marketplace POF, migraciones legacy a escala.' },
     ],
 
     // Status section
     statusEyebrow:      'Estado',
-    statusH2:           'v5.4.0 en vivo — Lifecycle Events + Observability',
+    statusH2:           'v6.0.0 en vivo — Esquemas y contratos, sin lastre de proveedor',
     statusP:            'Integraciones salientes (Stripe, Shopify, etc.) + webhooks inbound (recibe eventos de plataformas externas). Verificación de firmas y eventos tipados incluidos; la detección de duplicados es un servicio sobre el almacenamiento que tú pongas. Sin promesas con fecha &mdash; solo software funcionando y transparencia en cada hito.',
-    statusNow:          '<strong>Ahora:</strong> v5.4.0 publicada. Los lifecycle events llegan a los listeners de Symfony, con los tiempos de HTTP y de mapeo por separado. Observability helpers para logging, Prometheus, Sentry. Receta de Symfony Flex. 666 tests pasando. Listo para producción.',
-    statusNext:         '<strong>Próximo:</strong> Fase 5: Calidad del diseño (extensiones PHPStan, protección SSRF). Fase 6: Ecosistema de plataformas (integraciones pre-construidas).',
-    statusLater:        '<strong>Después:</strong> Dashboard admin (UI de replay de webhooks), plugins open-source, formación certificada.',
+    statusNow:          '<strong>Ahora:</strong> v6.0.0 publicada. Webhooks reducidos a lo que sirve para cualquier proveedor: tres esquemas de firma, eventos tipados y un generador que escribe en tu app las clases que conocen al proveedor. Lifecycle events con los tiempos de HTTP y de mapeo por separado. 620 tests, 100% de mutation score.',
+    statusNext:         '<strong>Próximo:</strong> Fase 5: Calidad del diseño (extensiones PHPStan, protección SSRF).',
+    statusLater:        '<strong>Después:</strong> Comandos de consola para inspeccionar integraciones, exports de Prometheus, formación.',
     statusRoadmapLink:  'Ver fases: descubrimiento, confiabilidad, generalización, release →',
 
     // Webhook showcase section

@@ -148,7 +148,7 @@ Tests live in `tests/` with `Fake/` subdirectories containing minimal test doubl
 - `tests/Core/` — engine contract, action path resolution, dynamic auth (including 401 retry), connection resolution, mapper invariant
 - `tests/Infrastructure/` — HTTP adapter headers/response headers, request middleware, GraphQL adapter, PSR-6 cache, adapter resolver
 - `tests/Bundle/` — bundle configuration, DI extension, compiler pass, generator, `make:integration` command
-- `tests/Fake/` — `FakeClient`, `FakeCache`, `FakeConfigPort`, `FakeContext`, `FakeMiddleware`, `FakeConnectionResolver`, `FakeRequestMiddleware`, etc.
+- `tests/Fake/` — `FakeClient`, `FakeCache`, `FakeConfigPort`, `FakeContext`, `FakeMiddleware`, `FakeConnectionResolver`, `FakeRequestMiddleware`, `FakeSlowAction`/`FakeSlowMapper` (measurable delays for the lifecycle durations), `WebhookIdempotencyAdapter`, etc.
 
 ## Creating a New Integration
 
@@ -175,7 +175,7 @@ integration_engine:
             request_middlewares: []    # optional, ordered RequestMiddlewareInterface service IDs (built-in adapters only)
 ```
 
-## Lifecycle Events (v5.2.0+)
+## Lifecycle Events
 
 Tap into integration lifecycle for observability. See **[LIFECYCLE.md](./LIFECYCLE.md)** for:
 
@@ -185,7 +185,7 @@ Tap into integration lifecycle for observability. See **[LIFECYCLE.md](./LIFECYC
 
 ---
 
-## Inbound Webhooks (v5.1.0+)
+## Inbound Webhooks
 
 For **receiving** webhooks from external platforms, see **[WEBHOOK.md](./WEBHOOK.md)**. It covers:
 

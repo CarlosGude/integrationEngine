@@ -406,13 +406,12 @@ Cover inbound webhook processing in `tests/Infrastructure/Webhook/` — signatur
 
 | Suite | What it covers |
 |------|-----------------|
-| `MultiPlatformWebhookRouterTest` (11 tests) | Platform detection by path (`/webhooks/shopify`) and header (`X-Platform`), fallback logic, error handling, platform isolation, verifier & event registry per platform |
 | `Base64HmacSignatureVerifierTest` (5 tests) | The base64 scheme: encoding, wrong secret, wrong body, header |
 | `ConsumesWebhookEventsTest` (5 tests) | The consumer trait: mapping, skipping another type, overriding the check |
 | `WebhookIdempotencyTest` (10 tests) | Duplicate detection via fingerprinting (event type + timestamp + payload hash), order-invariant hashing, 24h retention window, cleanup |
 | `YamlConfigAdapterWebhooks` (7 tests) | YAML webhook config parsing: event type → mapper mapping, signature verification config, validation errors |
 
-Total webhook tests: **65 tests**, covering all Happy Path + error scenarios.
+Total webhook tests: **around 30**, covering the happy path and the error cases of each piece.
 
 ---
 

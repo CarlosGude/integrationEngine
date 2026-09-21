@@ -3,10 +3,10 @@
 [![CI](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml/badge.svg)](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml)
 
 **Website:** [integrationengine.dev](https://integrationengine.dev)  
-**Status:** v5.4.0 Live — Lifecycle Events + Observability  
+**Status:** v6.0.0 Live — Webhooks: schemes and contracts, no vendor integrations  
 **Roadmap:** [See public roadmap](./ROADMAP.md) — Now/Next/Later, no dates, transparent progress.
 
-**✨ v5.4.0 Features:**
+**✨ v6.0.0:**
 - ✅ **Lifecycle events** (ActionStarted, HttpResponseReceived, ResponseMapped, ActionCompleted, ActionFailed), delivered to `#[AsEventListener]` listeners in Symfony apps
 - ✅ HTTP latency and DTO mapping time reported separately, with the real HTTP status code
 - ✅ Built-in event dispatcher + Symfony EventDispatcher adapter

@@ -260,7 +260,7 @@ are unaffected.
 
 ---
 
-## Lifecycle Events & Observability (v5.2.0+)
+## Lifecycle Events & Observability
 
 Tap into integration lifecycle for logging, metrics, and observability with **zero boilerplate**.
 
@@ -324,16 +324,15 @@ $engine = new IntegrationEngine(
 
 ---
 
-## Inbound Webhooks (v5.1.0+)
+## Inbound Webhooks
 
-IntegrationEngine also supports **receiving** webhooks from external platforms
-(Shopify, WooCommerce, etc.). The webhook framework provides:
+IntegrationEngine also supports **receiving** webhooks, on top of Symfony's
+Webhook component. It provides:
 
-- **Multi-platform routing** — single endpoint handles multiple platforms
-- **Signature verification** — HMAC-based validation, extensible per platform
-- **Event mapping** — transform webhook payloads into typed DTOs
-- **Idempotency** — automatic duplicate detection (24h fingerprint window)
-- **Reliability** — duplicate detection over storage you provide; retries are Messenger's job
-- **Async processing** — Symfony Messenger integration for non-blocking handling
+- **Signature verification** — the three common HMAC schemes, or your own verifier
+- **Event mapping** — transform webhook payloads into typed DTOs your listeners receive
+- **Scaffolding** — `make:webhook` writes the parser, mapper, DTO and consumer into your app
+- **Idempotency** — duplicate detection by payload fingerprint, over storage you provide
+- **Async processing** — Symfony routes the event to Messenger when you want it off the request
 
 → **[Inbound Webhooks Guide](./WEBHOOK.md)** — complete documentation for receiving and processing webhooks from external APIs.

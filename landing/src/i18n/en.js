@@ -157,19 +157,19 @@ export default {
     proofEyebrow: 'Built for Production',
     proofH2:      'Proven at scale.',
     proofItems: [
-        { stat: '666 tests',      desc: 'PHPStan level max, 98% mutation score. Zero breaking changes across v5.x.' },
-        { stat: '5+ protocols',   desc: 'REST, GraphQL, CSV, Webhooks, custom adapters.' },
+        { stat: '620 tests',      desc: 'PHPStan level max, 100% mutation score, every gate green in CI.' },
+        { stat: 'REST · GraphQL', desc: 'Two client adapters built in, inbound webhooks, and a tag for your own.' },
         { stat: '5–13x faster',   desc: 'Parallel execution by default. Booking.com availability: 17 parallel queries per customer, per city.' },
         { stat: 'Production use', desc: 'Shopify integrations, POF marketplace, legacy migrations at scale.' },
     ],
 
     // Status section
     statusEyebrow:      'Status',
-    statusH2:           'v5.4.0 Live — Lifecycle Events + Observability',
+    statusH2:           'v6.0.0 Live — Schemes and contracts, no vendor baggage',
     statusP:            'Outbound integrations (Stripe, Shopify, etc.) + inbound webhooks (receive events from external platforms). Signature verification and typed events built in; duplicate detection ships as a service over storage you provide. No promises with dates &mdash; just transparent, working software.',
-    statusNow:          '<strong>Now:</strong> v5.4.0 released. Lifecycle events reach Symfony listeners, with HTTP and mapping timings reported separately. Observability helpers for logging, Prometheus, Sentry. Symfony Flex recipe. 666 tests passing. Production-ready.',
-    statusNext:         '<strong>Next:</strong> Phase 5: Quality of design (PHPStan rule extensions, SSRF protection). Phase 6: Platform ecosystem (pre-built integrations).',
-    statusLater:        '<strong>Later:</strong> Admin dashboard (webhook replay UI), open-source plugins, certified training.',
+    statusNow:          '<strong>Now:</strong> v6.0.0 released. Webhooks pared back to what works for any provider: three signature schemes, typed events, scaffolding that writes the provider-specific classes into your app. Lifecycle events with separate HTTP and mapping timings. 620 tests, 100% mutation score.',
+    statusNext:         '<strong>Next:</strong> Phase 5: Quality of design (PHPStan rule extensions, SSRF protection).',
+    statusLater:        '<strong>Later:</strong> Console commands to inspect integrations, Prometheus exports, training material.',
     statusRoadmapLink:  'See phases: discovery, reliability, generalization, release →',
 
     // Webhook showcase section

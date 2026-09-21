@@ -14,7 +14,9 @@ The reasoning is in [ADR 0014](./docs/adr/0014-no-vendor-integrations-in-the-bun
 | `ShopifyWebhookController` | A parser per event type plus `framework.webhook.routing` (see WEBHOOK.md), or your own controller if you need the request headers |
 | `MultiPlatformWebhookController` (deprecated in 5.4.0), `WebhookPlatform`, `WebhookPlatformConfig`, `WebhookPlatformRegistry` | Symfony's webhook routing: one key, one parser, one secret per event type |
 
-Everything else stays where it was: `IntegrationWebhookRequestParser`, `AbstractWebhookMapper`, `WebhookEventDispatcher`, `ConsumesWebhookEvents`, `WebhookEventRegistry`, `HmacSha256SignatureVerifier`, `TimestampedHmacSignatureVerifier`, and the idempotency, dead-letter and audit contracts.
+Everything else stays where it was: `IntegrationWebhookRequestParser`, `AbstractWebhookMapper`, `WebhookEventDispatcher`, `ConsumesWebhookEvents`, `HmacSha256SignatureVerifier`, `TimestampedHmacSignatureVerifier`, `Base64HmacSignatureVerifier`, and `WebhookIdempotencyService` with its fingerprinter.
+
+6.0 also drops the scaffolding that only declared intentions: `WebhookDlqPort`, `WebhookEventAuditPort`, `WebhookMapperResolverPort`, `WebhookFailure`, `WebhookEventState`, `WebhookEventStateTransition`, `WebhookEventRegistry`, `ProcessWebhookMessage` and `ProcessWebhookHandler`. Nothing in the bundle called them, and Symfony's Messenger failure transport already is a dead-letter queue: route `ConsumeRemoteEventMessage` to a transport with `failure_transport` set and retries and dead letters are handled for you.
 
 ## Migrating
 

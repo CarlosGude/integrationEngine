@@ -6,7 +6,9 @@ Public roadmap: what's live, what's next, and what stays out of scope.
 
 ## Recently shipped
 
-- **v5.1.0** — Inbound webhooks: signature verification, and the contracts for idempotency, dead-letter queue and audit trail.
+- **v6.0.0** — Webhooks pared back to what is provider-agnostic: three signature schemes, the parser and mapper contracts, the consumer trait, idempotency. The vendor integrations and the unused reliability scaffolding are gone ([ADR 0014](./docs/adr/0014-no-vendor-integrations-in-the-bundle.md)).
+- **v5.2.0–v5.4.0** — Lifecycle events with separate HTTP and mapping timings, observability helpers, Symfony Flex recipe.
+- **v5.1.0** — Inbound webhooks: signature verification and duplicate detection by payload fingerprint.
 - **v5.0.0** — Webhook framework foundation, signature verification (HMAC, timestamped), `AbstractWebhookMapper`, `IntegrationWebhookRequestParser`, YAML webhook config.
 - **v4.1.0** — Unified quality gates (MSI 85/95%, PHPStan max, CI matrix).
 - **v4.0.0** — Middleware pipeline, request middleware (OAuth 1.0a signing), connection resolver, per-action timeout, path resolution from request body.
@@ -18,18 +20,18 @@ Public roadmap: what's live, what's next, and what stays out of scope.
 
 **Phase 5: Quality of design visible** — PHPStan rule extensions, SSRF protection, lifecycle events, observability.
 
-Making the design decisions visible as executable guarantees: no SSRF escapes, no untyped arrays leaking, observable lifecycle. Webhook audit trails provide foundation for compliance + debugging.
+Making the design decisions visible as executable guarantees: no SSRF escapes, no untyped arrays leaking, observable lifecycle.
 
 ---
 
 ## Next (Post-Phase 5)
 
-**Phase 7: Admin experience** — CLI commands, dashboard, webhook replay/debugging UI.
+**Phase 7: Admin experience** — CLI commands and a debugging surface for what the engine already records.
 
-- `webhook:list`, `webhook:dlq:list`, `webhook:dlq:retry` commands
-- Admin dashboard: webhook history, audit trail, state machine visualization
-- Replay UI for failed webhooks
+- Inspecting configured integrations and actions from the console
 - Metrics/observability (Prometheus exports)
+
+Webhook replay and dead letters are not on this list: Symfony's Messenger failure transport already does that, and 6.0 stopped pretending the bundle should.
 
 ---
 
