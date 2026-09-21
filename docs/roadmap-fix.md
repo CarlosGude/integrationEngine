@@ -258,11 +258,11 @@ parsers de Shopify.
   índice y añadido al `.gitignore`.
 - [x] Borradas las ramas mergeadas `day01-b1.1-…` a `day05-b1.5-…`, en local y en `origin`. En
   `origin` ya solo queda `main`.
-- [ ] Decidir qué hacer con las tres ramas locales sin mergear:
-  `day06-b1.6-deptrac-hexagonal-architecture` (1 commit, 2026-09-16), `infection-test` (2026-06-08)
-  y `multi-request` (7 commits, 2026-06-13).
-- [ ] `.mcp.json` está versionado con el puerto local de PhpStorm (`127.0.0.1:64442`). A quien clone
-  el repo no le sirve. Decidir si se queda.
+- [x] Borradas las tres ramas locales sin mergear: `day06-b1.6-deptrac-hexagonal-architecture`
+  (`c9ac4fd`), `infection-test` (`c4e4f6a`) y `multi-request` (`21a695e`). Las puntas quedan en el
+  reflog unos 90 días por si acaso.
+- [x] `.mcp.json` fuera del control de versiones (sigue en disco, para que tu PhpStorm no se entere)
+  y añadido al `.gitignore`.
 
 ---
 

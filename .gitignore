@@ -11,4 +11,4 @@ symfony.lock
 .wrangler
 memory/
 /.deptrac.cache
-
+/.mcp.json
