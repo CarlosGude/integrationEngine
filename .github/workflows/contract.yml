@@ -40,7 +40,7 @@ jobs:
       - name: Install the demo against this bundle checkout
         working-directory: demo
         run: |
-          composer config repositories.bundle '{"type": "path", "url": "../bundle", "options": {"symlink": false, "versions": {"carlosgude/integration-engine": "7.0.1"}}}'
+          composer config repositories.bundle '{"type": "path", "url": "../bundle", "options": {"symlink": false, "versions": {"carlosgude/integration-engine": "6.0.99"}}}'
           composer update --no-interaction --prefer-dist # NOSONAR: the demo has no lock file; this resolves it against this checkout on purpose
           composer show carlosgude/integration-engine | grep -E '^(versions|source|dist)'
 
