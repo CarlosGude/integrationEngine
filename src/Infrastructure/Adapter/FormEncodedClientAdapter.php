@@ -61,9 +61,9 @@ final class FormEncodedClientAdapter implements ClientAdapterInterface
     }
 
     /**
-     * @throws RequestResponseException on HTTP 4xx/5xx or network errors
-     *
      * @return array{body: array<mixed>, headers: array<string, list<string>>}
+     *
+     * @throws RequestResponseException on HTTP 4xx/5xx or network errors
      */
     public function send(
         AbstractAction $action,
@@ -102,7 +102,7 @@ final class FormEncodedClientAdapter implements ClientAdapterInterface
         ];
 
         $body = $action->getBody();
-        if ($body !== null && \in_array($action->getMethod(), ['POST', 'PUT', 'PATCH'], strict: true)) {
+        if (null !== $body && \in_array($action->getMethod(), ['POST', 'PUT', 'PATCH'], strict: true)) {
             $options['headers']['Content-Type'] = 'application/x-www-form-urlencoded';
             $options['body'] = http_build_query($body->toArray());
         }
@@ -113,9 +113,9 @@ final class FormEncodedClientAdapter implements ClientAdapterInterface
     /**
      * Consume HTTP response and convert to standard format.
      *
-     * @throws RequestResponseException on HTTP 4xx/5xx
-     *
      * @return array{body: array<mixed>, headers: array<string, list<string>>}
+     *
+     * @throws RequestResponseException on HTTP 4xx/5xx
      */
     private function consume(HttpResponseInterface $response, string $method, string $path): array
     {
@@ -124,7 +124,7 @@ final class FormEncodedClientAdapter implements ClientAdapterInterface
         if ($statusCode >= 400) {
             throw new RequestResponseException(
                 statusCode: $statusCode,
-                context: sprintf(
+                context: \sprintf(
                     '%s %s returned HTTP %d: %s',
                     $method,
                     $path,
@@ -147,7 +147,7 @@ final class FormEncodedClientAdapter implements ClientAdapterInterface
     {
         return new RequestResponseException(
             statusCode: 0,
-            context: sprintf(
+            context: \sprintf(
                 'Network error on %s %s: %s',
                 $method,
                 $path,

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace IntegrationEngine\Core\Resilience;
 
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
-use Throwable;
 
 /**
  * Resilience policy for handling failures in API calls.
@@ -20,7 +19,7 @@ interface ResiliencePolicyInterface
      *
      * @return bool true if the error is transient and retryable
      */
-    public function shouldRetry(Throwable $e, int $attempt): bool;
+    public function shouldRetry(\Throwable $e, int $attempt): bool;
 
     /**
      * Calculate backoff time before retry N.
@@ -28,6 +27,7 @@ interface ResiliencePolicyInterface
      * Example: exponential backoff returns 100ms, 200ms, 400ms, 800ms...
      *
      * @param int $attempt the retry attempt number (1-indexed)
+     *
      * @return int milliseconds to wait before retry
      */
     public function getBackoffMs(int $attempt): int;
@@ -43,12 +43,13 @@ interface ResiliencePolicyInterface
      * Fallback value if all retries are exhausted.
      *
      * @param AbstractAction $action the action that failed
-     * @param Throwable $e the final exception
+     * @param \Throwable     $e      the final exception
+     *
      * @return mixed the fallback value (null, cached data, default, or throw)
      *
-     * @throws Throwable if no fallback is available
+     * @throws \Throwable if no fallback is available
      */
-    public function getFallback(AbstractAction $action, Throwable $e): mixed;
+    public function getFallback(AbstractAction $action, \Throwable $e): mixed;
 
     /**
      * Human-readable name for this policy.

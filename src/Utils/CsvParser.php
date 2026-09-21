@@ -23,8 +23,9 @@ final class CsvParser
     /**
      * Parse CSV string into array of associative arrays.
      *
-     * @param string $csv raw CSV content
-     * @param CsvParseOptions|null $options parsing options
+     * @param string               $csv     raw CSV content
+     * @param null|CsvParseOptions $options parsing options
+     *
      * @return array<array<string, string>> array of rows with headers as keys
      *
      * @throws \InvalidArgumentException if CSV is malformed
@@ -45,7 +46,7 @@ final class CsvParser
         // Get header row
         if ($options->headerRow >= \count($lines)) {
             throw new \InvalidArgumentException(
-                sprintf('headerRow %d exceeds line count %d', $options->headerRow, \count($lines))
+                \sprintf('headerRow %d exceeds line count %d', $options->headerRow, \count($lines))
             );
         }
 
@@ -77,7 +78,7 @@ final class CsvParser
             // Ensure column count matches header
             if (\count($values) !== $headerCount) {
                 throw new \InvalidArgumentException(
-                    sprintf(
+                    \sprintf(
                         'Row %d has %d columns, expected %d',
                         $i + 1,
                         \count($values),

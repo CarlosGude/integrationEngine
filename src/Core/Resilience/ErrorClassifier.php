@@ -6,7 +6,6 @@ namespace IntegrationEngine\Core\Resilience;
 
 use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
-use Throwable;
 
 /**
  * Classify errors as transient (retryable) or permanent (fail-fast).
@@ -30,7 +29,7 @@ final class ErrorClassifier
     /**
      * Is this error transient and retryable?
      */
-    public static function isTransient(Throwable $e): bool
+    public static function isTransient(\Throwable $e): bool
     {
         // Network errors are always transient
         if (self::isNetworkError($e)) {
@@ -58,7 +57,7 @@ final class ErrorClassifier
     /**
      * Is this error permanent (no point retrying)?
      */
-    public static function isPermanent(Throwable $e): bool
+    public static function isPermanent(\Throwable $e): bool
     {
         // HTTP 4xx errors are permanent (except 408, 429)
         if (self::isClientError($e)) {
@@ -76,7 +75,7 @@ final class ErrorClassifier
     /**
      * Get HTTP status code if available.
      */
-    public static function getStatusCode(Throwable $e): ?int
+    public static function getStatusCode(\Throwable $e): ?int
     {
         if ($e instanceof HttpExceptionInterface) {
             return $e->getResponse()->getStatusCode();
@@ -88,7 +87,7 @@ final class ErrorClassifier
     /**
      * Network-level errors (transport).
      */
-    private static function isNetworkError(Throwable $e): bool
+    private static function isNetworkError(\Throwable $e): bool
     {
         return $e instanceof TransportExceptionInterface;
     }
@@ -96,9 +95,9 @@ final class ErrorClassifier
     /**
      * HTTP 5xx (server errors).
      */
-    private static function isServerError(Throwable $e): bool
+    private static function isServerError(\Throwable $e): bool
     {
-        if (!($e instanceof HttpExceptionInterface)) {
+        if (!$e instanceof HttpExceptionInterface) {
             return false;
         }
 
@@ -110,9 +109,9 @@ final class ErrorClassifier
     /**
      * HTTP 429 (rate limit).
      */
-    private static function isRateLimitError(Throwable $e): bool
+    private static function isRateLimitError(\Throwable $e): bool
     {
-        if (!($e instanceof HttpExceptionInterface)) {
+        if (!$e instanceof HttpExceptionInterface) {
             return false;
         }
 
@@ -122,9 +121,9 @@ final class ErrorClassifier
     /**
      * HTTP 408 (request timeout).
      */
-    private static function isTimeoutError(Throwable $e): bool
+    private static function isTimeoutError(\Throwable $e): bool
     {
-        if (!($e instanceof HttpExceptionInterface)) {
+        if (!$e instanceof HttpExceptionInterface) {
             return false;
         }
 
@@ -134,9 +133,9 @@ final class ErrorClassifier
     /**
      * HTTP 4xx (client errors, except 408 and 429).
      */
-    private static function isClientError(Throwable $e): bool
+    private static function isClientError(\Throwable $e): bool
     {
-        if (!($e instanceof HttpExceptionInterface)) {
+        if (!$e instanceof HttpExceptionInterface) {
             return false;
         }
 
@@ -153,9 +152,9 @@ final class ErrorClassifier
     /**
      * HTTP 401 (unauthorized).
      */
-    private static function isAuthenticationError(Throwable $e): bool
+    private static function isAuthenticationError(\Throwable $e): bool
     {
-        if (!($e instanceof HttpExceptionInterface)) {
+        if (!$e instanceof HttpExceptionInterface) {
             return false;
         }
 

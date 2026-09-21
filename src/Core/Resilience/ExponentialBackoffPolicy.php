@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace IntegrationEngine\Core\Resilience;
 
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
-use IntegrationEngine\Core\Resilience\ErrorClassifier;
-use Throwable;
 
 /**
  * Exponential backoff retry policy.
@@ -34,7 +32,7 @@ final class ExponentialBackoffPolicy implements ResiliencePolicyInterface
         }
     }
 
-    public function shouldRetry(Throwable $e, int $attempt): bool
+    public function shouldRetry(\Throwable $e, int $attempt): bool
     {
         if ($attempt >= $this->maxAttempts) {
             return false; // Max attempts reached
@@ -57,7 +55,7 @@ final class ExponentialBackoffPolicy implements ResiliencePolicyInterface
         return $this->maxAttempts;
     }
 
-    public function getFallback(AbstractAction $action, Throwable $e): mixed
+    public function getFallback(AbstractAction $action, \Throwable $e): mixed
     {
         // No fallback: throw the exception
         throw $e;

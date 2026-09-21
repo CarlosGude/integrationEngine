@@ -10,7 +10,6 @@ use IntegrationEngine\Core\Contract\Client\AbstractClientMiddleware;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use Throwable;
 
 /**
  * Logging middleware for API requests and responses.
@@ -50,7 +49,7 @@ final class LoggingMiddleware extends AbstractClientMiddleware
             $this->logResponse($action, $response, $duration);
 
             return $response;
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $duration = (microtime(true) - $startTime) * 1000;
             $this->logError($action, $e, $duration);
 
@@ -87,7 +86,7 @@ final class LoggingMiddleware extends AbstractClientMiddleware
     /**
      * Log API error.
      */
-    private function logError(AbstractAction $action, Throwable $e, float $durationMs): void
+    private function logError(AbstractAction $action, \Throwable $e, float $durationMs): void
     {
         $this->logger->error('API Failure', [
             'action' => $action::getName(),
