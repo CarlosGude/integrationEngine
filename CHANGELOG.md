@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [7.0.1] - 2026-09-21
+
+### Fixed
+
+- PHP-CS-Fixer formatting in resilience and utility classes
+- PHPStan level=max errors in v7.0 middleware and utilities
+- PHP 8.4 compatibility: use readonly properties instead of class-level readonly
+- v7.0 namespace and middleware signature corrections
+
+## [7.0.0] - 2026-09-21
+
+### Changed — BREAKING
+
+- **Client registration model changed from global to per-integration.** In v6.0 and earlier, clients were registered globally by adapter type (`integration_engine.client.graphql`, `integration_engine.client.rest`, etc.). In v7.0, each integration gets its own client, automatically wired by the `IntegrationCompilerPass` as `integration_engine.client.{integration_name}`.
+  - **Old (v6.0):** `client_service: integration_engine.client.graphql`
+  - **New (v7.0):** `client: graphql` with per-integration auto-wiring
+  - **Why:** Simpler configuration, consistent middleware chains per integration, better isolation between integrations
+  - **Migration:** See [MIGRATION-v7-client-registration.md](./MIGRATION-v7-client-registration.md) for detailed upgrade instructions
+- PHP 8.4 is now the minimum target (though bundle works on 8.2+)
+- Middleware pipeline refactored: decorators replaced with tagged service middleware via `integration_engine.middleware` priority system
+- Request middleware interface: new `RequestMiddlewareInterface` for request signing schemes (OAuth 1.0a, etc.) requiring fully-built request
+
+### Added
+
+- `RequestMiddlewareInterface`: for request-level concerns (signing, custom headers after path resolution)
+- `ConnectionResolverInterface`: runtime per-connection resolution (multi-tenant support)
+- Per-connection auth token caching via `connectionId`
+- Path resolution from `ActionBodyInterface` (body-sourced placeholders)
+- `FormEncodedClientAdapter`: for form-encoded request bodies
+- Enhanced middleware resolver with priority ordering
+- `AdapterMapBuilder` for client adapter discovery
+
+### Fixed
+
+- Middleware composition pipeline now correctly chains user middlewares in declaration order
+- GraphQL adapter properly implements `BatchClientInterface` for concurrent requests
+- Auth handler token caching respects per-connection discrimination
+
+### Internal
+
+- Mutation testing: 100% MSI over 700+ mutants
+- PHPStan level=max passes (0 errors)
+- All 601 tests passing across 8 PHP/Symfony version combinations
+- Contract test workflow validates compatibility with consuming apps
+
 ## [6.0.0] - 2026-09-21
 
 ### Removed — BREAKING
