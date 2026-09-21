@@ -5,12 +5,13 @@ export default {
     navProblem: 'Problem',
     navPattern:  'The Pattern',
     navExample:  'Example',
+    navWebhooks: 'Webhooks',
 
     // Hero
     heroH1:  'Stop writing integration code twice.',
-    heroP:   'Every integration your team ships follows the same predictable standard. Send requests to external APIs or receive webhooks from them &mdash; both with automatic OAuth2, parallel execution, and typed DTOs. New developers understand any existing API in minutes &mdash; not days. One Symfony bundle &mdash; distilled from production integrations at scale.',
+    heroP:   'Every integration your team ships follows the same predictable standard. Send requests to external APIs or receive webhooks from them &mdash; both with token auth handled for you, parallel execution, and typed DTOs. New developers understand any existing API in minutes &mdash; not days. One Symfony bundle &mdash; distilled from production integrations at scale.',
     heroBenefits: [
-        '&#10003;&nbsp;OAuth2, Bearer &amp; API Key',
+        '&#10003;&nbsp;Token, Bearer &amp; API Key auth',
         '&#10003;&nbsp;Parallel requests',
         '&#10003;&nbsp;Typed DTOs',
         '&#10003;&nbsp;Inbound webhooks',
@@ -25,7 +26,7 @@ export default {
     bizEyebrow: 'Why it matters',
     bizH2:      'The cost of no standard compounds.',
     bizItems: [
-        { stat: 'Days &rarr; Hours',  desc: 'Time from zero to a working, tested integration &mdash; including OAuth, parallel calls and typed responses.' },
+        { stat: 'Days &rarr; Hours',  desc: 'Time from zero to a working, tested integration &mdash; auth, parallel calls and typed responses included.' },
         { stat: '1 command',          desc: 'Scaffold the action, mapper and response for any endpoint. Your whole team generates the same structure, every time.' },
         { stat: 'Zero rewrites',      desc: 'Installs alongside your existing code. New endpoints follow the standard; legacy integrations migrate at your pace.' },
     ],
@@ -44,12 +45,12 @@ export default {
     // Problem section
     problemEyebrow: 'The Problem',
     problemH2:  'Integration debt accumulates by default.',
-    problemSub: 'Each new API added without a standard costs your team days to set up and compounds with every new integration. Hardcoded URLs, duplicated OAuth logic, arrays leaking into domain code &mdash; the next one is always harder than the last.',
+    problemSub: 'Each new API added without a standard costs your team days to set up and compounds with every new integration. Hardcoded URLs, duplicated token handling, arrays leaking into domain code &mdash; the next one is always harder than the last.',
     compareWithout: 'Without a standard',
     compareWith:    'With Integration Engine',
     compareItems: [
         { without: '700-line god classes',              with: 'One typed action per endpoint' },
-        { without: 'OAuth logic duplicated everywhere', with: 'Auth declared once in YAML' },
+        { without: 'Token handling duplicated everywhere', with: 'Auth declared once in YAML' },
         { without: 'Arrays leaking into domain',        with: 'Typed DTOs from every response' },
         { without: 'Sequential HTTP calls',             with: 'Parallel execution built in' },
     ],
@@ -57,7 +58,7 @@ export default {
     // Parallel section
     parallelEyebrow:      'Parallel Requests',
     parallelH2:           'Stop waiting for APIs one by one.',
-    parallelSub:          '<code>sendManyOrFail()</code> dispatches all requests concurrently. Total time &asymp; the slowest single request &mdash; regardless of how many you send. In production, a Booking.com availability search requires 4 parallel queries for a small city and 17 for Paris &mdash; per customer. This handles it.',
+    parallelSub:          '<code>sendManyOrFail()</code> dispatches all requests concurrently. Total time &asymp; the slowest single request &mdash; regardless of how many you send. An availability search on a travel marketplace takes 4 parallel queries for a small city and 17 for a big one &mdash; per customer. This handles it.',
     parallelBefore:       'Sequential (foreach)',
     parallelAfter:        'Parallel (sendManyOrFail)',
     parallelBeforeTime:   '4.2s',
@@ -68,7 +69,7 @@ export default {
     // Stripe example section
     stripeEyebrow: 'Real Example',
     stripeH2:      'A Stripe integration in under 30 lines.',
-    stripeSub:     'One YAML entry. One mapper. One typed response. OAuth2 token refresh is handled automatically &mdash; no token logic in your application code.',
+    stripeSub:     'One YAML entry. One mapper. One typed response. The token is fetched, cached and refetched on a 401 &mdash; declared in YAML, not written in your application code.',
     stripeBtn:     'View source on GitHub',
 
     // Mid-page CTA
@@ -83,6 +84,7 @@ export default {
     startStep1Code:  'composer require carlosgude/integration-engine',
     startStep2Title: 'Scaffold',
     startStep2Code:  'php bin/console make:integration MyApi GetUser',
+    startStep2Tree:  `src/Infrastructure/Integrations/MyApi/\n├─ MyApi.yaml                  <span class="cm">← the endpoint, declared</span>\n├─ MyApiIntegration.php\n└─ GetUser/\n   ├─ Request/GetUserAction.php   <span class="cm">← what goes in</span>\n   └─ Response/\n      ├─ GetUserMapper.php        <span class="cm">← payload → DTO</span>\n      └─ GetUserResponse.php      <span class="cm">← the typed DTO</span>`,
     startStep2Desc:  'Add the logic and 3 lines to MyApi.yaml &mdash; done.',
     startSub:        'Installs alongside your existing code. No big-bang rewrite &mdash; use the pattern for the next new endpoint and migrate legacy at your own pace.',
     startStep3Title: 'Go deeper',
@@ -159,8 +161,8 @@ export default {
     proofItems: [
         { stat: '620 tests',      desc: 'PHPStan level max, 100% mutation score, every gate green in CI.' },
         { stat: 'REST · GraphQL', desc: 'Two client adapters built in, inbound webhooks, and a tag for your own.' },
-        { stat: '5–13x faster',   desc: 'Parallel execution by default. Booking.com availability: 17 parallel queries per customer, per city.' },
-        { stat: 'Production use', desc: 'Shopify integrations, POF marketplace, legacy migrations at scale.' },
+        { stat: '5–13x faster',   desc: 'Parallel execution by default: total time is the slowest call, not the sum of all of them.' },
+        { stat: 'Built from real work', desc: 'Distilled from travel and e-commerce integrations the author shipped and maintained.' },
     ],
 
     // Status section
@@ -202,7 +204,7 @@ export default {
     // Thanks section
     thanksEyebrow: 'Before you go',
     thanksH2:      'Thanks for reading.',
-    thanksP:       'I&rsquo;ve tested this pattern with production integrations &mdash; Booking.com, Iberia, Lleego, Hostalia and more. Booking.com availability alone requires 4 parallel queries for a small city, 17 for Paris, per customer. An earlier version of this engine handled that without breaking a sweat. This bundle is what production experience taught me: made explicit, tested, and open.',
+    thanksP:       'I built this pattern over years of integrating travel and hosting APIs &mdash; availability searches that fan out to 17 parallel queries per customer, booking flows, billing. An earlier version of this engine carried that load. This bundle is what the work taught me: made explicit, tested, and open.',
 
     // CTA
     ctaEyebrow:   'Get in touch',

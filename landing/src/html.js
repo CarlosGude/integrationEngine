@@ -59,6 +59,7 @@ export function getHTML(lang = 'en') {
   <div class="topnav-links">
     <a href="#problem">${t.navProblem}</a>
     <a href="#example">${t.navExample}</a>
+    <a href="#webhooks">${t.navWebhooks}</a>
     <a href="#pattern">${t.navPattern}</a>
   </div>
   <div class="topnav-actions">
@@ -86,6 +87,7 @@ export function getHTML(lang = 'en') {
 <div class="nav-mobile-menu" id="nav-mobile-menu">
   <a href="#problem" onclick="toggleNav()">${t.navProblem}</a>
   <a href="#example" onclick="toggleNav()">${t.navExample}</a>
+  <a href="#webhooks" onclick="toggleNav()">${t.navWebhooks}</a>
   <a href="#pattern" onclick="toggleNav()">${t.navPattern}</a>
   <hr class="nav-mobile-sep">
   <a href="${docsHref}" target="_blank" rel="noopener">Docs ↗</a>
@@ -139,7 +141,7 @@ export function getHTML(lang = 'en') {
 </section>
 
 <!-- BUSINESS VALUE -->
-<section class="s-white biz-section">
+<section id="value" class="s-white biz-section">
   <div class="container">
     <div class="eyebrow">${t.bizEyebrow}</div>
     <h2 class="s-heading">${t.bizH2}</h2>
@@ -149,7 +151,7 @@ export function getHTML(lang = 'en') {
 </section>
 
 <!-- SOCIAL PROOF -->
-<section class="s-light proof-section">
+<section id="proof" class="s-light proof-section">
   <div class="container">
     <div class="eyebrow">${t.proofEyebrow}</div>
     <h2 class="s-heading">${t.proofH2}</h2>
@@ -213,6 +215,7 @@ export function getHTML(lang = 'en') {
         <div class="step-num">2</div>
         <h3>${t.startStep2Title}</h3>
         <div class="step-code">${t.startStep2Code}</div>
+        <div class="step-tree">${t.startStep2Tree}</div>
         <p>${t.startStep2Desc}</p>
       </div>
       <div class="step">
@@ -243,7 +246,7 @@ MyApi/
 </section>
 
 <!-- STRIPE EXAMPLE -->
-<section id="example" class="s-light">
+<section id="example" class="s-white">
   <div class="container">
     <div class="eyebrow">${t.stripeEyebrow}</div>
     <h2 class="s-heading">${t.stripeH2}</h2>
@@ -317,8 +320,8 @@ MyApi/
     <h2 class="s-heading">${t.webhookH2}</h2>
     <p class="s-sub">${t.webhookSub}</p>
     <div class="webhook-platforms" style="text-align: center; font-weight: 600; color: #2f6fbd; margin: 1.5rem 0; font-size: 14px;">${t.webhookPlatforms}</div>
-    <div class="webhook-features" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
-      ${t.webhookFeatures.map(f => `<div style="padding: 0.75rem; background: #f5f8fb; border-radius: 6px; font-size: 13px;">✓ ${f}</div>`).join('')}
+    <div class="webhook-features feature-grid">
+      ${t.webhookFeatures.map(f => `<div>✓ ${f}</div>`).join('')}
     </div>
 
     <div style="border-top: 1px solid #ddd; padding-top: 2rem; margin-bottom: 2rem;">
@@ -395,8 +398,8 @@ MyApi/
         </div>
       </div>
 
-      <!-- Parser + Listener: 50/50 layout -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+      <!-- Parser + Listener: side by side, stacked on small screens -->
+      <div class="panel-duo">
         <!-- WITH ENGINE: 2. Parser -->
         <div class="example-code-panel">
           <div class="file-label">Step 2: Parser (signature verified before anything is decoded)</div>
@@ -470,13 +473,13 @@ MyApi/
 </section>
 
 <!-- OBSERVABILITY -->
-<section class="s-light">
+<section id="observability" class="s-white">
   <div class="container">
     <div class="eyebrow">${t.obsEyebrow}</div>
     <h2 class="s-heading">${t.obsH2}</h2>
     <p class="s-sub">${t.obsSub}</p>
-    <div class="obs-features" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
-      ${t.obsFeatures.map(f => `<div style="padding: 0.75rem; background: #f5f8fb; border-radius: 6px; font-size: 13px;">✓ ${f}</div>`).join('')}
+    <div class="obs-features feature-grid">
+      ${t.obsFeatures.map(f => `<div>✓ ${f}</div>`).join('')}
     </div>
     <div class="example-panels">
 
@@ -607,7 +610,7 @@ MyApi/
 </section>
 
 <!-- EXTENSION POINTS -->
-<section class="s-dark ext-section">
+<section id="extend" class="s-dark ext-section">
   <div class="container">
     <div class="eyebrow lt">${t.extEyebrow}</div>
     <h2 class="s-heading lt">${t.extH2}</h2>
@@ -629,7 +632,7 @@ MyApi/
 </div>
 
 <!-- PROJECT STATUS -->
-<section class="s-light">
+<section id="status" class="s-light">
   <div class="container">
     <div class="eyebrow">${t.statusEyebrow}</div>
     <h2 class="s-heading">${t.statusH2}</h2>
@@ -1020,7 +1023,7 @@ MyApi/
 </section>
 
 <!-- THANKS -->
-<section class="s-white thanks-section">
+<section id="thanks" class="s-white thanks-section">
   <div class="container">
     <div class="eyebrow">${t.thanksEyebrow}</div>
     <h2 class="s-heading">${t.thanksH2}</h2>
