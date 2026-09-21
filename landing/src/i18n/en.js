@@ -203,17 +203,17 @@ export default {
 
     // Wiki section
     wikiEyebrow:   'Learn & Reference',
-    wikiH2:        'Full wiki with guides and API reference.',
-    wikiSub:       'Complete documentation on configuration, patterns, testing, and troubleshooting. Architecture Decision Records (ADRs), upgrade guides, and real-world examples.',
+    wikiH2:        'Complete documentation and guides.',
+    wikiSub:       'Configuration, patterns, testing, troubleshooting. Architecture Decision Records explaining every design choice. Migration guides for every upgrade path.',
     wikiFeatures: [
-        'DOCUMENTATION.md — Configuration, all options, data flow',
-        'ARCHITECTURE.md — Design decisions and patterns',
-        'GitHub Wiki — Step-by-step guides and FAQs',
-        'ADRs — Why we built it this way (docs/adr/)',
-        'TESTING.md — Test strategy and suite structure',
-        'MIGRATION guides — v6→v7 and other upgrades',
+        { title: 'DOCUMENTATION.md', desc: 'Configuration, all options, data flow', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION.md' },
+        { title: 'ARCHITECTURE.md', desc: 'Design decisions and patterns', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/ARCHITECTURE.md' },
+        { title: 'Getting Started', desc: 'Quick start, installation, basic usage', href: 'https://github.com/CarlosGude/integrationEngine/tree/main/docs/getting-started' },
+        { title: 'ADRs', desc: 'Why we built it this way (14 records)', href: 'https://github.com/CarlosGude/integrationEngine/tree/main/docs/adr' },
+        { title: 'TESTING.md', desc: 'Strategy and suite structure', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/TESTING.md' },
+        { title: 'UPGRADE guides', desc: 'v4.0 → v5.0 → v6.0 → v7.0', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/UPGRADE-7.0.md' },
     ],
-    wikiBtn:     'Explore the wiki →',
+    wikiBtn:     'Browse documentation →',
 
     // Thanks section
     thanksEyebrow: 'Before you go',

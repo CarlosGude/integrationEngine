@@ -203,17 +203,17 @@ export default {
 
     // Wiki section
     wikiEyebrow:   'Aprende y Consulta',
-    wikiH2:        'Wiki completa con guías y referencia de API.',
-    wikiSub:       'Documentación completa sobre configuración, patrones, testing y troubleshooting. Architecture Decision Records (ADRs), guías de migración y ejemplos del mundo real.',
+    wikiH2:        'Documentación completa y guías.',
+    wikiSub:       'Configuración, patrones, testing, troubleshooting. Architecture Decision Records explicando cada decisión de diseño. Guías de migración para cada actualización.',
     wikiFeatures: [
-        'DOCUMENTATION.md — Configuración, todas las opciones, flujo de datos',
-        'ARCHITECTURE.md — Decisiones de diseño y patrones',
-        'GitHub Wiki — Guías paso a paso y FAQs',
-        'ADRs — Por qué lo construimos así (docs/adr/)',
-        'TESTING.md — Estrategia de tests y estructura de suite',
-        'Guías de MIGRATION — v6→v7 y otros upgrades',
+        { title: 'DOCUMENTATION.md', desc: 'Configuración, todas las opciones, flujo de datos', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION.md' },
+        { title: 'ARCHITECTURE.md', desc: 'Decisiones de diseño y patrones', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/ARCHITECTURE.md' },
+        { title: 'Getting Started', desc: 'Quick start, instalación, uso básico', href: 'https://github.com/CarlosGude/integrationEngine/tree/main/docs/getting-started' },
+        { title: 'ADRs', desc: 'Por qué lo construimos así (14 registros)', href: 'https://github.com/CarlosGude/integrationEngine/tree/main/docs/adr' },
+        { title: 'TESTING.md', desc: 'Estrategia y estructura de suite', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/TESTING.md' },
+        { title: 'Guías de UPGRADE', desc: 'v4.0 → v5.0 → v6.0 → v7.0', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/UPGRADE-7.0.md' },
     ],
-    wikiBtn:     'Explorar la wiki →',
+    wikiBtn:     'Explorar documentación →',
 
     // Thanks section
     thanksEyebrow: 'Antes de irte',

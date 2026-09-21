@@ -1019,10 +1019,10 @@ MyApi/
     <h2 class="s-heading">${t.wikiH2}</h2>
     <p class="s-sub">${t.wikiSub}</p>
     <div class="wiki-features feature-grid">
-      ${t.wikiFeatures.map(f => `<div>📚 ${f}</div>`).join('')}
+      ${t.wikiFeatures.map(f => `<a href="${f.href}" target="_blank" rel="noopener" style="text-decoration: none; color: inherit; display: block;">📚 <strong>${f.title}</strong><br/><small>${f.desc}</small></a>`).join('')}
     </div>
     <div style="margin-top: 2.5rem; text-align: center;">
-      <a href="https://github.com/CarlosGude/integrationEngine/wiki" target="_blank" rel="noopener" class="btn-primary">${t.wikiBtn}</a>
+      <a href="https://github.com/CarlosGude/integrationEngine/tree/main/docs" target="_blank" rel="noopener" class="btn-primary">${t.wikiBtn}</a>
     </div>
   </div>
 </section>
