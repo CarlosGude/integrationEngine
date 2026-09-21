@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace CarlosgudeSdk\IntegrationEngine\Core\Resilience;
+namespace IntegrationEngine\Core\Resilience;
 
 use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;

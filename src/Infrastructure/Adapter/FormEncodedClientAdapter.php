@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace CarlosgudeSdk\IntegrationEngine\Infrastructure\Adapter;
+namespace IntegrationEngine\Infrastructure\Adapter;
 
-use CarlosgudeSdk\IntegrationEngine\Core\Contract\Action\AbstractAction;
-use CarlosgudeSdk\IntegrationEngine\Core\Contract\Action\ActionContextInterface;
-use CarlosgudeSdk\IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
-use CarlosgudeSdk\IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
-use CarlosgudeSdk\IntegrationEngine\Core\Exception\RequestResponseException;
-use CarlosgudeSdk\IntegrationEngine\Infrastructure\Http\ResolvesAuthHeaders;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
+use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
+use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
+use IntegrationEngine\Core\Exception\RequestResponseException;
+use IntegrationEngine\Infrastructure\Http\ResolvesAuthHeaders;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface as HttpResponseInterface;
 

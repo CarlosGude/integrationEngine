@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace CarlosgudeSdk\IntegrationEngine\Core\Resilience;
+namespace IntegrationEngine\Core\Resilience;
 
-use CarlosgudeSdk\IntegrationEngine\Core\Contract\Action\AbstractAction;
-use CarlosgudeSdk\IntegrationEngine\Core\Resilience\ErrorClassifier;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Resilience\ErrorClassifier;
 use Throwable;
 
 /**

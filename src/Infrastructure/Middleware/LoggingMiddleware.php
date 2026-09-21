@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace CarlosgudeSdk\IntegrationEngine\Infrastructure\Middleware;
+namespace IntegrationEngine\Infrastructure\Middleware;
 
-use CarlosgudeSdk\IntegrationEngine\Core\Contract\Action\AbstractAction;
-use CarlosgudeSdk\IntegrationEngine\Core\Contract\Action\ActionContextInterface;
-use CarlosgudeSdk\IntegrationEngine\Core\Contract\Client\Middleware\ClientMiddlewareInterface;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
+use IntegrationEngine\Core\Contract\Client\AbstractClientMiddleware;
+use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Throwable;
@@ -26,7 +27,7 @@ use Throwable;
  * [API Response] status=200 duration_ms=145
  * ```
  */
-final class LoggingMiddleware implements ClientMiddlewareInterface
+final class LoggingMiddleware extends AbstractClientMiddleware
 {
     public function __construct(
         private LoggerInterface $logger = new NullLogger(),
@@ -34,7 +35,8 @@ final class LoggingMiddleware implements ClientMiddlewareInterface
 
     public function process(
         AbstractAction $action,
-        ActionContextInterface $context,
+        ?ActionContextInterface $context,
+        ?RequestHeadersInterface $headers,
         callable $next,
     ): array {
         $startTime = microtime(true);
@@ -42,7 +44,7 @@ final class LoggingMiddleware implements ClientMiddlewareInterface
         $this->logRequest($action, $context);
 
         try {
-            $response = $next($action, $context);
+            $response = $next($action, $context, $headers);
             $duration = (microtime(true) - $startTime) * 1000; // convert to ms
 
             $this->logResponse($action, $response, $duration);

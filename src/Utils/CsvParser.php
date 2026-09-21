@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace CarlosgudeSdk\IntegrationEngine\Utils;
+namespace IntegrationEngine\Utils;
 
 /**
  * Parse CSV data into arrays.
