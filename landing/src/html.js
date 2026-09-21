@@ -67,7 +67,7 @@ export function getHTML(lang = 'en') {
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
       Docs
     </a>
-    <a href="https://github.com/CarlosGude/integrationEngine/wiki" target="_blank" rel="noopener" class="nav-btn">
+    <a href="https://github.com/CarlosGude/integrationEngine/tree/main/docs" target="_blank" rel="noopener" class="nav-btn">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>
       Wiki
     </a>
@@ -95,7 +95,7 @@ export function getHTML(lang = 'en') {
   <a href="#pattern" onclick="toggleNav()">${t.navPattern}</a>
   <hr class="nav-mobile-sep">
   <a href="${docsHref}" target="_blank" rel="noopener">Docs ↗</a>
-  <a href="https://github.com/CarlosGude/integrationEngine/wiki" target="_blank" rel="noopener">Wiki ↗</a>
+  <a href="https://github.com/CarlosGude/integrationEngine/tree/main/docs" target="_blank" rel="noopener">Wiki ↗</a>
   <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener">GitHub ↗</a>
 </div>
 
@@ -1022,7 +1022,7 @@ MyApi/
       ${t.wikiFeatures.map(f => `<div>📚 ${f}</div>`).join('')}
     </div>
     <div style="margin-top: 2.5rem; text-align: center;">
-      <a href="https://github.com/CarlosGude/integrationEngine/wiki" target="_blank" rel="noopener" class="btn-primary">${t.wikiBtn}</a>
+      <a href="https://github.com/CarlosGude/integrationEngine/tree/main/docs" target="_blank" rel="noopener" class="btn-primary">${t.wikiBtn}</a>
     </div>
   </div>
 </section>
@@ -1063,7 +1063,7 @@ MyApi/
       &nbsp;&middot;&nbsp;
       <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener noreferrer">GitHub</a>
       &nbsp;&middot;&nbsp;
-      <a href="https://github.com/CarlosGude/integrationEngine/wiki" target="_blank" rel="noopener noreferrer">Wiki</a>
+      <a href="https://github.com/CarlosGude/integrationEngine/tree/main/docs" target="_blank" rel="noopener noreferrer">Docs</a>
       &nbsp;&middot;&nbsp;
       <a href="https://packagist.org/packages/carlosgude/integration-engine" target="_blank" rel="noopener noreferrer">Packagist</a>
     </p>
