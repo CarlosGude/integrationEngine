@@ -481,7 +481,7 @@ MyApi/
     <div class="obs-features feature-grid">
       ${t.obsFeatures.map(f => `<div>✓ ${f}</div>`).join('')}
     </div>
-    <div class="example-panels">
+    <div class="panel-stack">
 
       <!-- Step 1: Generate -->
       <div class="example-code-panel">
@@ -494,7 +494,7 @@ MyApi/
       </div>
 
       <!-- Step 2: The generated class -->
-      <div style="grid-column: 1 / -1;">
+      <div class="example-panel-full">
         <div class="example-code-panel">
           <div class="file-label">Step 2: Generated class with 3 observability layers</div>
           <div class="code-block"><span class="kw">class</span> <span class="cls">ShopifyObservabilitySetup</span>
@@ -527,24 +527,9 @@ MyApi/
         ]);
     }
 
-    <span class="kw">private function</span> <span class="fn">recordMetrics</span>(<span class="var">$event</span>): <span class="kw">void</span>
-    {
-        <span class="cm">// Uncomment and fill:</span>
-        <span class="cm">// $this->prometheus->histogram(</span>
-        <span class="cm">//     'shopify_api_duration_ms',</span>
-        <span class="cm">//     $event->durationMs(),</span>
-        <span class="cm">//     ['action' => $event->action()->getName()]</span>
-        <span class="cm">// );</span>
-    }
-
-    <span class="kw">private function</span> <span class="fn">recordError</span>(<span class="cls">ActionFailed</span> <span class="var">$event</span>): <span class="kw">void</span>
-    {
-        <span class="cm">// Uncomment and fill:</span>
-        <span class="cm">// \Sentry\captureException($event->error(), [</span>
-        <span class="cm">//     'tags' => ['integration' => 'shopify'],</span>
-        <span class="cm">//     'extra' => ['duration_ms' => $event->durationMs()],</span>
-        <span class="cm">// ]);</span>
-    }
+    <span class="cm">// …and two stubs it writes for you, one per callback:</span>
+    <span class="cm">// recordMetrics() with a commented Prometheus histogram,</span>
+    <span class="cm">// recordError() with a commented Sentry captureException().</span>
 }</div>
         </div>
       </div>
@@ -559,7 +544,7 @@ MyApi/
       </div>
 
       <!-- Step 4: Optional scaling -->
-      <div style="grid-column: 1 / -1;">
+      <div class="example-panel-full">
         <div class="example-code-panel">
           <div class="file-label">Step 4 (optional): Extract to handlers for clarity</div>
           <div class="code-block"><span class="cm">// As your observability grows, split into handlers</span>
@@ -583,7 +568,7 @@ MyApi/
       </div>
 
       <!-- Bonus: Timing breakdown -->
-      <div style="grid-column: 1 / -1;">
+      <div class="example-panel-full">
         <div class="example-code-panel">
           <div class="file-label">Bonus: Track HTTP vs. mapping separately</div>
           <div class="code-block"><span class="cm">// Listen to ResponseMapped to see the breakdown</span>

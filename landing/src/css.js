@@ -244,6 +244,9 @@ footer a:hover { text-decoration: underline; }
 .example-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem; }
 @media (max-width: 900px) { .example-panels { grid-template-columns: 1fr; } }
 .example-panel-full { grid-column: 1 / -1; }
+/* Sequential steps read top to bottom: a two-column grid with full-width
+   children leaves a hole next to every half-width one. */
+.panel-stack { display: grid; gap: 1rem; margin-top: 2rem; }
 .example-code-panel { border-radius: 10px; overflow: hidden; border: 1px solid #dde3ec; }
 .example-cta { margin-top: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .link-arrow { color: var(--blue); font-weight: 600; font-size: .88rem; text-decoration: none; }
