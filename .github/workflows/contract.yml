@@ -35,12 +35,15 @@ jobs:
       - name: Fetch git tags
         run: cd bundle && git fetch --tags
 
-      # A high version keeps the demo's own constraint (^6.0+) satisfied by
-      # this checkout, so the demo's composer.json doesn't need to change.
+      # The demo requires "dev-main", so the path repo has to offer exactly that
+      # version: a path repo is canonical, and anything it does not match makes
+      # the package uninstallable rather than falling through to the VCS repo.
+      # (It used to declare 6.0.99, which worked only while the demo asked for
+      # "@dev" — an implicit "*" that any version satisfies.)
       - name: Install the demo against this bundle checkout
         working-directory: demo
         run: |
-          composer config repositories.bundle '{"type": "path", "url": "../bundle", "options": {"symlink": false, "versions": {"carlosgude/integration-engine": "6.0.99"}}}'
+          composer config repositories.bundle '{"type": "path", "url": "../bundle", "options": {"symlink": false, "versions": {"carlosgude/integration-engine": "dev-main"}}}'
           composer update --no-interaction --prefer-dist # NOSONAR: the demo has no lock file; this resolves it against this checkout on purpose
           composer show carlosgude/integration-engine | grep -E '^(versions|source|dist)'
 
