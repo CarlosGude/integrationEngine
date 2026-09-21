@@ -2,7 +2,7 @@
 
 One breaking change: **the bundle no longer ships integrations for specific providers.** It ships the signature schemes, the contracts and the generator; the classes that know a provider's payload now live in your application, where you can edit them.
 
-The reasoning is in [ADR 0014](./docs/adr/0014-no-vendor-integrations-in-the-bundle.md). Outbound integrations are untouched — if you don't receive webhooks, there is nothing to do.
+The reasoning is in [ADR 0014](./adr/0014-no-vendor-integrations-in-the-bundle.md). Outbound integrations are untouched — if you don't receive webhooks, there is nothing to do.
 
 ## What was removed
 

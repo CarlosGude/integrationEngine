@@ -209,4 +209,4 @@ This is a major release. **No backwards compatibility shims** for `client_servic
 - [DOCUMENTATION.md](./DOCUMENTATION.md) → *Middleware Pipeline* section
 - [DOCUMENTATION.md](./DOCUMENTATION.md) → *Connection Resolver* section
 - [DOCUMENTATION.md](./DOCUMENTATION.md) → *Request Middleware* section
-- [CHANGELOG.md](./CHANGELOG.md) → v7.0.0 and v7.0.1 entries
+- [CHANGELOG.md](../CHANGELOG.md) → v7.0.0 and v7.0.1 entries

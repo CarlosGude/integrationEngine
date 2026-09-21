@@ -189,5 +189,5 @@ If you're adding webhooks to an existing integration:
 For questions or issues during upgrade:
 
 - Complete guide: [`WEBHOOK.md`](./WEBHOOK.md)
-- Architecture: [`docs/adr/0009-inbound-webhooks.md`](./docs/adr/0009-inbound-webhooks.md)
+- Architecture: [`docs/adr/0009-inbound-webhooks.md`](./adr/0009-inbound-webhooks.md)
 - GitHub discussions: [IntegrationEngine discussions](https://github.com/carlosgude/integrationengine/discussions)

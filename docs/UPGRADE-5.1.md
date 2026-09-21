@@ -251,6 +251,6 @@ echo "DLQ size: {$metrics['dlq_count']}";
 For questions or issues:
 
 - Complete guide: [`WEBHOOK.md`](./WEBHOOK.md)
-- Architecture decisions: [`docs/adr/`](./docs/adr/)
-- Performance tuning: [`docs/advanced/debugging.md`](./docs/advanced/debugging.md)
+- Architecture decisions: [`docs/adr/`](./adr/)
+- Performance tuning: [`docs/advanced/debugging.md`](./advanced/debugging.md)
 - GitHub discussions: [IntegrationEngine discussions](https://github.com/carlosgude/integrationengine/discussions)

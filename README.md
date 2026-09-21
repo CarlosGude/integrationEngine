@@ -4,7 +4,7 @@
 
 **Website:** [integrationengine.dev](https://integrationengine.dev)  
 **Status:** v7.0.2 Live — Per-integration middleware, request signing, connection resolver  
-**Roadmap:** [See public roadmap](./ROADMAP.md) — Now/Next/Later, no dates, transparent progress.
+**Roadmap:** [See public roadmap](./docs/ROADMAP.md) — Now/Next/Later, no dates, transparent progress.
 
 **✨ v7.0.0:**
 - ✅ **Per-integration client registration** — each integration auto-wires its own typed client instance, simpler configuration than v6's global clients
@@ -15,16 +15,16 @@
 - ✅ **FormEncodedClientAdapter** — for form-encoded request bodies
 - ✅ **PHP 8.4 compatibility** — uses readonly properties, passes PHPStan level=max
 - ✅ **100% mutation testing** — MSI 100% over 700+ mutants, contract tests across 8 PHP/Symfony combinations
-- 🔗 [Migration guide: MIGRATION-v7-client-registration.md](./MIGRATION-v7-client-registration.md)
-- 🔗 [Lifecycle events: LIFECYCLE.md](./LIFECYCLE.md)
-- 🔗 [Webhooks: WEBHOOK.md](./WEBHOOK.md)
+- 🔗 [Migration guide: MIGRATION-v7-client-registration.md](./docs/MIGRATION-v7-client-registration.md)
+- 🔗 [Lifecycle events: LIFECYCLE.md](./docs/LIFECYCLE.md)
+- 🔗 [Webhooks: WEBHOOK.md](./docs/WEBHOOK.md)
 
 **Inbound webhooks (since v5.1.0):**
 - ✅ **Inbound webhooks** on top of Symfony's Webhook component: a request parser verifies the signature, a consumer maps the payload, your listener receives a typed event — no controller to write
 - ✅ Signature verifiers for the three common schemes: hex HMAC behind a prefix, raw HMAC in base64, timestamped HMAC
 - ✅ Async processing via Symfony Messenger (Symfony's webhook controller hands events to the bus)
 - ✅ `WebhookIdempotencyService` with payload fingerprinting, backed by storage you provide
-- 🔗 [Guide: WEBHOOK.md](./WEBHOOK.md)
+- 🔗 [Guide: WEBHOOK.md](./docs/WEBHOOK.md)
 
 ---
 
@@ -262,7 +262,7 @@ API change means updating one Gateway class.
 failures independent. Real concurrency requires the client to implement
 `BatchClientInterface`: the default `rest` client does, `graphql` does not. For GraphQL
 or SOAP with real concurrency, use `client_service:` and implement `BatchClientInterface`
-yourself. See [DOCUMENTATION.md](DOCUMENTATION.md) → *Batch / Parallel Requests* for
+yourself. See [DOCUMENTATION.md](./docs/DOCUMENTATION.md) → *Batch / Parallel Requests* for
 the full API, failure-handling patterns, and concurrency details.
 
 ---
@@ -559,7 +559,7 @@ $engine->send('get_orders', connection: $tenantId);
 `$connection` is opaque to the engine — your resolver decides what it means. Every
 field on `ConnectionCredentials` is optional; set only what actually varies per
 connection. Dynamic-auth tokens are cached per connection too, so two tenants never
-share one. See [DOCUMENTATION.md](DOCUMENTATION.md) → *Runtime connection resolution*
+share one. See [DOCUMENTATION.md](./docs/DOCUMENTATION.md) → *Runtime connection resolution*
 for the token-cache discriminator details.
 
 ### Request middleware — full-request signing
@@ -618,14 +618,14 @@ It's purely additive: in `prod` the `TracingMiddleware` is not wired, so there i
 
 ## Further reading
 
-- [`DOCUMENTATION.md`](./DOCUMENTATION.md) — deeper guide: engine pipeline, all configuration
+- [`DOCUMENTATION.md`](./docs/DOCUMENTATION.md) — deeper guide: engine pipeline, all configuration
   options, and links to per-topic references.
-- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — design decisions: why actions are stateless,
+- [`ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — design decisions: why actions are stateless,
   the mapper invariant, cache behaviour under PHP-FPM, and the DTO/domain boundary.
 - [`docs/adr/`](./docs/adr/) — Architecture Decision Records (ADRs): detailed justifications for
   key design choices, with context, alternatives considered, and consequences.
-- [`TESTING.md`](./TESTING.md) — test philosophy, suite structure, and what each test protects.
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — setup, code quality tools, and how to run the test suite.
+- [`TESTING.md`](./docs/TESTING.md) — test philosophy, suite structure, and what each test protects.
+- [`CONTRIBUTING.md`](./docs/CONTRIBUTING.md) — setup, code quality tools, and how to run the test suite.
 - [`docs/`](./docs/) — per-topic references: actions, authorization, batch requests, clients,
   context and path resolution, mappers and responses.
 - [`integrationEngine-use-example`](https://github.com/CarlosGude/integrationEngine-use-example) —

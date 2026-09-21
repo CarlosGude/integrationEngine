@@ -281,7 +281,7 @@ $engine = new IntegrationEngine(
 
 Perfecto para logging personalizado, métricas Prometheus, tracking de errores (Sentry), auditoría y alertas.
 
-→ **[Guía de Eventos](../../LIFECYCLE.md)** — ejemplos para logging, métricas, alertas y error tracking.
+→ **[Guía de Eventos](../LIFECYCLE.md)** — ejemplos para logging, métricas, alertas y error tracking.
 
 ---
 
@@ -296,4 +296,4 @@ Webhook de Symfony. Proporciona:
 - **Idempotencia** — detección de duplicados por fingerprint del payload, sobre tu almacenamiento
 - **Procesamiento asíncrono** — Symfony entrega el evento a Messenger cuando lo quieras fuera de la petición
 
-→ **[Guía de Webhooks de Entrada](../../WEBHOOK.md)** — documentación completa para recibir y procesar webhooks de APIs externas.
+→ **[Guía de Webhooks de Entrada](../WEBHOOK.md)** — documentación completa para recibir y procesar webhooks de APIs externas.

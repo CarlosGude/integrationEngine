@@ -55,9 +55,9 @@ docs/
 
 - **[../README.md](../README.md)** — Project intro and quick reference
 - **[../CLAUDE.md](../CLAUDE.md)** — Developer workflow and standards
-- **[../ARCHITECTURE.md](../ARCHITECTURE.md)** — Design decisions and rationale
-- **[../TESTING.md](../TESTING.md)** — Test strategy and patterns
-- **[../CONTRIBUTING.md](../CONTRIBUTING.md)** — How to contribute
+- **[./ARCHITECTURE.md](./ARCHITECTURE.md)** — Design decisions and rationale
+- **[./TESTING.md](./TESTING.md)** — Test strategy and patterns
+- **[./CONTRIBUTING.md](./CONTRIBUTING.md)** — How to contribute
 
 ## 📖 Learning Paths
 
@@ -67,14 +67,14 @@ docs/
 3. See [getting-started/mappers-and-responses.md](./getting-started/mappers-and-responses.md) for response handling
 
 ### I want to understand the design
-1. Read [../ARCHITECTURE.md](../ARCHITECTURE.md)
+1. Read [./ARCHITECTURE.md](./ARCHITECTURE.md)
 2. Check [advanced/architecture/class-graph.md](./advanced/architecture/class-graph.md)
 3. Review [adr/](./adr/) for decisions
 
 ### I want to debug or optimize
 1. See [advanced/debugging.md](./advanced/debugging.md)
 2. Check [advanced/QUALITY.md](./advanced/QUALITY.md) for testing
-3. Review [../OBSERVABILITY.md](../OBSERVABILITY.md)
+3. Review [./OBSERVABILITY.md](./OBSERVABILITY.md)
 
 ### I'm using AI agents with this
 1. Read [advanced/AI-AGENT-USAGE.md](./advanced/AI-AGENT-USAGE.md)
@@ -82,5 +82,5 @@ docs/
 
 ---
 
-**Last updated:** 2026-09-18  
+**Last updated:** 2026-09-21  
 **Version:** See [../CHANGELOG.md](../CHANGELOG.md)

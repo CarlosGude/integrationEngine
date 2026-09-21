@@ -7,7 +7,7 @@ Public roadmap: what's live, what's next, and what stays out of scope.
 ## Recently shipped
 
 - **v7.0.0** — Per-integration client registration (simpler config), middleware pipeline via tagged services with priority, `RequestMiddlewareInterface` for request signing (OAuth 1.0a, AWS SigV4), connection resolver for multi-tenant support, path resolution from request body, FormEncodedClientAdapter, PHP 8.4 compatibility, 100% mutation testing.
-- **v6.0.0** — Webhooks pared back to what is provider-agnostic: three signature schemes, the parser and mapper contracts, the consumer trait, idempotency. The vendor integrations and the unused reliability scaffolding are gone ([ADR 0014](./docs/adr/0014-no-vendor-integrations-in-the-bundle.md)).
+- **v6.0.0** — Webhooks pared back to what is provider-agnostic: three signature schemes, the parser and mapper contracts, the consumer trait, idempotency. The vendor integrations and the unused reliability scaffolding are gone ([ADR 0014](./adr/0014-no-vendor-integrations-in-the-bundle.md)).
 - **v5.2.0–v5.4.0** — Lifecycle events with separate HTTP and mapping timings, observability helpers, Symfony Flex recipe.
 - **v5.1.0** — Inbound webhooks: signature verification and duplicate detection by payload fingerprint.
 - **v5.0.0** — Webhook framework foundation, signature verification (HMAC, timestamped), `AbstractWebhookMapper`, `IntegrationWebhookRequestParser`, YAML webhook config.
