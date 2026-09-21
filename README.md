@@ -3,18 +3,21 @@
 [![CI](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml/badge.svg)](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml)
 
 **Website:** [integrationengine.dev](https://integrationengine.dev)  
-**Status:** v6.0.0 Live — Webhooks: schemes and contracts, no vendor integrations  
+**Status:** v7.0.1 Live — Per-integration middleware, request signing, connection resolver  
 **Roadmap:** [See public roadmap](./ROADMAP.md) — Now/Next/Later, no dates, transparent progress.
 
-**✨ v6.0.0:**
-- ✅ **Lifecycle events** (ActionStarted, HttpResponseReceived, ResponseMapped, ActionCompleted, ActionFailed), delivered to `#[AsEventListener]` listeners in Symfony apps
-- ✅ HTTP latency and DTO mapping time reported separately, with the real HTTP status code
-- ✅ Built-in event dispatcher + Symfony EventDispatcher adapter
-- ✅ `ObservabilitySetup` helper for instant logging + metrics + alerting
-- ✅ Examples: custom logging, Prometheus metrics, Sentry integration, audit trails
-- ✅ Symfony Flex recipe
-- 🔗 [Quick setup: OBSERVABILITY.md](./OBSERVABILITY.md) (recommended)
-- 🔗 [Deep dive: LIFECYCLE.md](./LIFECYCLE.md)
+**✨ v7.0.0:**
+- ✅ **Per-integration client registration** — each integration auto-wires its own typed client instance, simpler configuration than v6's global clients
+- ✅ **Middleware pipeline** — tagged `integration_engine.middleware` services with priority ordering, replaces decorator chains
+- ✅ **Request middleware** — `RequestMiddlewareInterface` for request signing schemes (OAuth 1.0a, AWS SigV4, etc.) on the fully-built request
+- ✅ **Connection resolver** — `ConnectionResolverInterface` for multi-connection integrations (multi-tenant support with per-connection auth caching)
+- ✅ **Path resolution from request body** — placeholders like `{id}` resolve from the body first, then context; consumed keys are stripped from the payload
+- ✅ **FormEncodedClientAdapter** — for form-encoded request bodies
+- ✅ **PHP 8.4 compatibility** — uses readonly properties, passes PHPStan level=max
+- ✅ **100% mutation testing** — MSI 100% over 700+ mutants, contract tests across 8 PHP/Symfony combinations
+- 🔗 [Migration guide: MIGRATION-v7-client-registration.md](./MIGRATION-v7-client-registration.md)
+- 🔗 [Lifecycle events: LIFECYCLE.md](./LIFECYCLE.md)
+- 🔗 [Webhooks: WEBHOOK.md](./WEBHOOK.md)
 
 **Inbound webhooks (since v5.1.0):**
 - ✅ **Inbound webhooks** on top of Symfony's Webhook component: a request parser verifies the signature, a consumer maps the payload, your listener receives a typed event — no controller to write

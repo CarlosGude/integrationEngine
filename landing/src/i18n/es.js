@@ -159,7 +159,7 @@ export default {
     proofEyebrow: 'Construido para Producción',
     proofH2:      'Probado a escala.',
     proofItems: [
-        { stat: '620 tests',      desc: 'PHPStan level max, 100% de mutation score, todos los gates en verde en CI.' },
+        { stat: '601 tests',      desc: 'PHPStan level max, 100% de mutation score, todos los gates en verde en CI.' },
         { stat: 'REST · GraphQL', desc: 'Dos adapters de cliente incluidos, webhooks inbound, y un tag para el tuyo.' },
         { stat: '5–13x más rápido', desc: 'Ejecución paralela por defecto: el tiempo total es la llamada más lenta, no la suma de todas.' },
         { stat: 'Nacido de trabajo real', desc: 'Destilado de integraciones de viajes y e-commerce que el autor entregó y mantuvo.' },
@@ -167,17 +167,17 @@ export default {
 
     // Status section
     statusEyebrow:      'Estado',
-    statusH2:           'v6.0.0 en vivo — Esquemas y contratos, sin lastre de proveedor',
+    statusH2:           'v7.0.1 en vivo — Clientes por integración, pipeline de middleware, firma de requests',
     statusP:            'Integraciones salientes (Stripe, Shopify, etc.) + webhooks inbound (recibe eventos de plataformas externas). Verificación de firmas y eventos tipados incluidos; la detección de duplicados es un servicio sobre el almacenamiento que tú pongas. Sin promesas con fecha &mdash; solo software funcionando y transparencia en cada hito.',
-    statusNow:          '<strong>Ahora:</strong> v6.0.0 publicada. Webhooks reducidos a lo que sirve para cualquier proveedor: tres esquemas de firma, eventos tipados y un generador que escribe en tu app las clases que conocen al proveedor. Lifecycle events con los tiempos de HTTP y de mapeo por separado. 620 tests, 100% de mutation score.',
-    statusNext:         '<strong>Próximo:</strong> Fase 5: Calidad del diseño (extensiones PHPStan, protección SSRF).',
-    statusLater:        '<strong>Después:</strong> Comandos de consola para inspeccionar integraciones, exports de Prometheus, formación.',
-    statusRoadmapLink:  'Ver fases: descubrimiento, confiabilidad, generalización, release →',
+    statusNow:          '<strong>Ahora:</strong> v7.0.1 publicada. Registro de clientes por integración con pipeline de middleware vía servicios etiquetados, request middleware para esquemas de firma full-request (OAuth 1.0a, AWS SigV4), connection resolver para soporte multi-inquilino, resolución de path desde el body del request. 601 tests, 100% de mutation score, compatible con PHP 8.4.',
+    statusNext:         '<strong>Próximo:</strong> Fase 7: Admin experience (comandos de consola para inspeccionar integraciones, exports de Prometheus).',
+    statusLater:        '<strong>Después:</strong> Ecosistema de plugins open-source, patrones de migración legacy, materiales de formación certificada.',
+    statusRoadmapLink:  'Ver fases: ahora, próximo, después →',
 
     // Webhook showcase section
     webhookEyebrow: 'Webhooks Inbound',
     webhookH2:      'Recibe de cualquier plataforma.',
-    webhookSub:     '<strong>v6.0.0:</strong> El componente Webhook de Symfony, ya montado. Un parser verifica la firma y decodifica el payload; tu listener recibe un evento tipado, no un array crudo. `make:webhook` escribe el parser, el mapper, el DTO y el consumer en tu app: las clases que conocen a tu proveedor son tuyas, no del bundle.',
+    webhookSub:     '<strong>v7.0:</strong> El componente Webhook de Symfony, ya montado. Un parser verifica la firma y decodifica el payload; tu listener recibe un evento tipado, no un array crudo. `make:webhook` escribe el parser, el mapper, el DTO y el consumer en tu app: las clases que conocen a tu proveedor son tuyas, no del bundle.',
     webhookPlatforms: 'Shopify &nbsp;•&nbsp; WooCommerce &nbsp;•&nbsp; Stripe &nbsp;•&nbsp; Custom',
     webhookFeatures: [
         'Esquemas de firma cubiertos: HMAC hex tras prefijo, HMAC crudo en base64, HMAC con timestamp',

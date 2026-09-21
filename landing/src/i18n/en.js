@@ -159,7 +159,7 @@ export default {
     proofEyebrow: 'Built for Production',
     proofH2:      'Proven at scale.',
     proofItems: [
-        { stat: '620 tests',      desc: 'PHPStan level max, 100% mutation score, every gate green in CI.' },
+        { stat: '601 tests',      desc: 'PHPStan level max, 100% mutation score, every gate green in CI.' },
         { stat: 'REST · GraphQL', desc: 'Two client adapters built in, inbound webhooks, and a tag for your own.' },
         { stat: '5–13x faster',   desc: 'Parallel execution by default: total time is the slowest call, not the sum of all of them.' },
         { stat: 'Built from real work', desc: 'Distilled from travel and e-commerce integrations the author shipped and maintained.' },
@@ -167,17 +167,17 @@ export default {
 
     // Status section
     statusEyebrow:      'Status',
-    statusH2:           'v6.0.0 Live — Schemes and contracts, no vendor baggage',
+    statusH2:           'v7.0.1 Live — Per-integration clients, middleware pipeline, request signing',
     statusP:            'Outbound integrations (Stripe, Shopify, etc.) + inbound webhooks (receive events from external platforms). Signature verification and typed events built in; duplicate detection ships as a service over storage you provide. No promises with dates &mdash; just transparent, working software.',
-    statusNow:          '<strong>Now:</strong> v6.0.0 released. Webhooks pared back to what works for any provider: three signature schemes, typed events, scaffolding that writes the provider-specific classes into your app. Lifecycle events with separate HTTP and mapping timings. 620 tests, 100% mutation score.',
-    statusNext:         '<strong>Next:</strong> Phase 5: Quality of design (PHPStan rule extensions, SSRF protection).',
-    statusLater:        '<strong>Later:</strong> Console commands to inspect integrations, Prometheus exports, training material.',
-    statusRoadmapLink:  'See phases: discovery, reliability, generalization, release →',
+    statusNow:          '<strong>Now:</strong> v7.0.1 released. Per-integration client registration with middleware pipeline via tagged services, request middleware for full-request signing (OAuth 1.0a, AWS SigV4), connection resolver for multi-tenant support, path resolution from request body. 601 tests, 100% mutation score, PHP 8.4 compatible.',
+    statusNext:         '<strong>Next:</strong> Phase 7: Admin experience (console commands to inspect integrations, Prometheus exports).',
+    statusLater:        '<strong>Later:</strong> Open-source plugins ecosystem, legacy migration patterns, certified training materials.',
+    statusRoadmapLink:  'See phases: now, next, later →',
 
     // Webhook showcase section
     webhookEyebrow: 'Inbound Webhooks',
     webhookH2:      'Receive from any platform.',
-    webhookSub:     '<strong>v6.0.0:</strong> Symfony&rsquo;s Webhook component, wired. A parser verifies the signature and decodes the payload; your listener receives a typed event instead of a raw array. `make:webhook` writes the parser, the mapper, the DTO and the consumer into your app &mdash; the classes that know your provider belong to you, not to the bundle.',
+    webhookSub:     '<strong>v7.0:</strong> Symfony&rsquo;s Webhook component, wired. A parser verifies the signature and decodes the payload; your listener receives a typed event instead of a raw array. `make:webhook` writes the parser, the mapper, the DTO and the consumer into your app &mdash; the classes that know your provider belong to you, not to the bundle.',
     webhookPlatforms: 'Shopify &nbsp;•&nbsp; WooCommerce &nbsp;•&nbsp; Stripe &nbsp;•&nbsp; Custom',
     webhookFeatures: [
         'Signature schemes covered: hex HMAC behind a prefix, raw HMAC in base64, timestamped HMAC',
