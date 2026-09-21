@@ -121,5 +121,5 @@ class ProcessWebhookHandler
 ## References
 
 - [ADR 0008 · No Messenger bridge in the bundle](./0008-no-messenger-bridge-in-the-bundle.md) — Superseded principle (still valid; implementation evolved)
-- [WEBHOOK.md](../../WEBHOOK.md) — Async webhook processing guide
-- [OBSERVABILITY.md](../../OBSERVABILITY.md) — Event-driven observability
+- [WEBHOOK.md](../WEBHOOK.md) — Async webhook processing guide
+- [OBSERVABILITY.md](../OBSERVABILITY.md) — Event-driven observability

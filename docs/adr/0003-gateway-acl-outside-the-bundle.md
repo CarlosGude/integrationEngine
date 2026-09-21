@@ -52,5 +52,5 @@ The bundle **never** checks authorization or filters responses.
 ## References
 
 - [`ResponseInterface`](../../src/Core/Contract/Response/ResponseInterface.php) — marker for DTOs
-- [ARCHITECTURE.md](../../ARCHITECTURE.md) — gateway pattern section
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — gateway pattern section
 - [`tests/Infrastructure/SymfonyHttpClientAdapterBatchTest.php`](../../tests/Infrastructure/SymfonyHttpClientAdapterBatchTest.php) — DTO contract tests

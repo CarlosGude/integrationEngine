@@ -198,5 +198,5 @@ assert($idempotency->isDuplicate('charge.succeeded', $timestamp, $payload2));  /
 ## References
 
 - [ADR 0010 · Webhook Idempotency: Deduplication Strategy](./0010-webhook-idempotency.md) — Related (earlier version; this supersedes)
-- [WEBHOOK.md](../../WEBHOOK.md) — Webhook configuration and implementation
+- [WEBHOOK.md](../WEBHOOK.md) — Webhook configuration and implementation
 - [RFC 9110 · HTTP Semantics](https://tools.ietf.org/html/rfc9110) — At-least-once semantics

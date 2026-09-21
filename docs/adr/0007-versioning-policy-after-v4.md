@@ -54,6 +54,6 @@ Each major marked a shift in design or breaking API change. Going forward, we ne
 
 ## References
 
-- [`CONTRIBUTING.md`](../../CONTRIBUTING.md) — versioning policy details
+- [`CONTRIBUTING.md`](../CONTRIBUTING.md) — versioning policy details
 - [`CHANGELOG.md`](../../CHANGELOG.md) — version history with breaking changes documented
-- [`UPGRADE-4.0.md`](../../UPGRADE-4.0.md) — example of major-version migration guide
+- [`UPGRADE-4.0.md`](../UPGRADE-4.0.md) — example of major-version migration guide

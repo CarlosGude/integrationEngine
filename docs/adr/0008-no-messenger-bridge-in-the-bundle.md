@@ -51,5 +51,5 @@ This keeps the bundle focused on **what arrives** (integration mechanics), not *
 
 ## References
 
-- [ARCHITECTURE.md](../../ARCHITECTURE.md) — design philosophy
+- [ARCHITECTURE.md](../ARCHITECTURE.md) — design philosophy
 - Webhook support and its Messenger-agnostic event system added in v4.4
