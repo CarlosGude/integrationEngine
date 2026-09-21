@@ -201,6 +201,20 @@ export default {
     ],
     obsBtn:     'View observability guide →',
 
+    // Wiki section
+    wikiEyebrow:   'Learn & Reference',
+    wikiH2:        'Full wiki with guides and API reference.',
+    wikiSub:       'Complete documentation on configuration, patterns, testing, and troubleshooting. Architecture Decision Records (ADRs), upgrade guides, and real-world examples.',
+    wikiFeatures: [
+        'DOCUMENTATION.md — Configuration, all options, data flow',
+        'ARCHITECTURE.md — Design decisions and patterns',
+        'GitHub Wiki — Step-by-step guides and FAQs',
+        'ADRs — Why we built it this way (docs/adr/)',
+        'TESTING.md — Test strategy and suite structure',
+        'MIGRATION guides — v6→v7 and other upgrades',
+    ],
+    wikiBtn:     'Explore the wiki →',
+
     // Thanks section
     thanksEyebrow: 'Before you go',
     thanksH2:      'Thanks for reading.',

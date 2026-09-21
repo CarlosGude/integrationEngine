@@ -201,6 +201,20 @@ export default {
     ],
     obsBtn:     'Ver guía de observabilidad →',
 
+    // Wiki section
+    wikiEyebrow:   'Aprende y Consulta',
+    wikiH2:        'Wiki completa con guías y referencia de API.',
+    wikiSub:       'Documentación completa sobre configuración, patrones, testing y troubleshooting. Architecture Decision Records (ADRs), guías de migración y ejemplos del mundo real.',
+    wikiFeatures: [
+        'DOCUMENTATION.md — Configuración, todas las opciones, flujo de datos',
+        'ARCHITECTURE.md — Decisiones de diseño y patrones',
+        'GitHub Wiki — Guías paso a paso y FAQs',
+        'ADRs — Por qué lo construimos así (docs/adr/)',
+        'TESTING.md — Estrategia de tests y estructura de suite',
+        'Guías de MIGRATION — v6→v7 y otros upgrades',
+    ],
+    wikiBtn:     'Explorar la wiki →',
+
     // Thanks section
     thanksEyebrow: 'Antes de irte',
     thanksH2:      'Gracias por llegar hasta aquí.',
