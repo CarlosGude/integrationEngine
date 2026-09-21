@@ -31,12 +31,16 @@ jobs:
           extensions: pdo_sqlite, intl, zip
           coverage: none
 
-      # A high version keeps the demo's own constraint (^5.x) satisfied by
+      # Fetch tags to ensure Composer can resolve the correct version
+      - name: Fetch git tags
+        run: cd bundle && git fetch --tags
+
+      # A high version keeps the demo's own constraint (^6.0+) satisfied by
       # this checkout, so the demo's composer.json doesn't need to change.
       - name: Install the demo against this bundle checkout
         working-directory: demo
         run: |
-          composer config repositories.bundle '{"type": "path", "url": "../bundle", "options": {"symlink": false, "versions": {"carlosgude/integration-engine": "5.99.0"}}}'
+          composer config repositories.bundle '{"type": "path", "url": "../bundle", "options": {"symlink": false, "versions": {"carlosgude/integration-engine": "7.0.1"}}}'
           composer update --no-interaction --prefer-dist # NOSONAR: the demo has no lock file; this resolves it against this checkout on purpose
           composer show carlosgude/integration-engine | grep -E '^(versions|source|dist)'
 
