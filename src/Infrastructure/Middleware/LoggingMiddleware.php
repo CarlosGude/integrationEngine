@@ -61,11 +61,10 @@ final class LoggingMiddleware extends AbstractClientMiddleware
     /**
      * Log outgoing API request.
      */
-    private function logRequest(AbstractAction $action, ActionContextInterface $context): void
+    private function logRequest(AbstractAction $action, ?ActionContextInterface $context): void
     {
         $this->logger->info('API Request', [
-            'integration' => $action->getIntegrationName(),
-            'action' => $action->getName(),
+            'action' => $action::getName(),
             'method' => $action->getMethod(),
             'path' => $action->getPath($context),
         ]);
@@ -79,8 +78,7 @@ final class LoggingMiddleware extends AbstractClientMiddleware
     private function logResponse(AbstractAction $action, array $response, float $durationMs): void
     {
         $this->logger->info('API Response', [
-            'integration' => $action->getIntegrationName(),
-            'action' => $action->getName(),
+            'action' => $action::getName(),
             'status' => $response['statusCode'] ?? 'unknown',
             'duration_ms' => (int) $durationMs,
         ]);
@@ -92,8 +90,7 @@ final class LoggingMiddleware extends AbstractClientMiddleware
     private function logError(AbstractAction $action, Throwable $e, float $durationMs): void
     {
         $this->logger->error('API Failure', [
-            'integration' => $action->getIntegrationName(),
-            'action' => $action->getName(),
+            'action' => $action::getName(),
             'error' => $e->getMessage(),
             'type' => $e::class,
             'duration_ms' => (int) $durationMs,

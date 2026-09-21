@@ -35,16 +35,12 @@ final class CsvParser
 
         // Normalize encoding if needed
         if (null !== $options->encoding && 'UTF-8' !== $options->encoding) {
-            $csv = mb_convert_encoding($csv, 'UTF-8', $options->encoding);
+            $csv = (string) mb_convert_encoding($csv, 'UTF-8', $options->encoding);
         }
 
         // Split into lines
         $csv = trim($csv);
         $lines = explode("\n", $csv);
-
-        if (empty($lines)) {
-            return [];
-        }
 
         // Get header row
         if ($options->headerRow >= \count($lines)) {
