@@ -125,4 +125,18 @@ and renamed IntegrationEngine::send(). It was isolated in
 
 The positive architecture commit `7a57e84` passed both workflows. These negative
 results fulfill the requested B1.3/B2.2 evidence; the broken branch is never a
-release candidate. The quality follow-up must also pass CI on its own final commit.
+release candidate.
+
+## Quality closure: remote verification
+
+The implementation commit `d6c9fb4` in
+[PR #7](https://github.com/CarlosGude/integrationEngine/pull/7) passes
+[CI](https://github.com/CarlosGude/integrationEngine/actions/runs/35745075378)
+and the [demo contract](https://github.com/CarlosGude/integrationEngine/actions/runs/35745075551).
+All 14 compatibility matrix cells, the PHP 8.2 generator, style, static analysis,
+Deptrac, landing tests and mutation testing passed. SonarCloud and the Cloudflare
+Workers check also passed. Remote mutation counts match the local measurement:
+1,151 generated, 1,104 killed, one error, 31 escaped and 15 uncovered; MSI 96.00%
+and covered MSI 97.27%. These results close the quality review; merging the PR
+is a separate repository action. The follow-up documentation commit only records
+this evidence and is checked by the same workflows.

@@ -235,7 +235,11 @@ La tabla de auditoría anterior conserva el estado inicial. Cierre posterior:
 - [x] Pruebas negativas remotas B1.3/B2.2: lint PHP 8.2 rechaza constante tipada;
   la demo detecta send() ausente. PR temporal #6 cerrado sin fusionar.
 - [x] Convención de enlaces/backticks y guía canónica documentada en CONTRIBUTING.
-- [ ] Confirmar el CI del commit final del cierre de calidad antes de integrarlo.
+- [x] Cierre de calidad publicado en [PR #7](https://github.com/CarlosGude/integrationEngine/pull/7).
+  Implementación `d6c9fb4`: [CI completo](https://github.com/CarlosGude/integrationEngine/actions/runs/35745075378)
+  y [contrato demo](https://github.com/CarlosGude/integrationEngine/actions/runs/35745075551)
+  verdes; 14 celdas de compatibilidad, generador PHP 8.2, arquitectura y mutación.
+  Integración de la PR pendiente; revisión de calidad terminada.
 
 Evidencia, resultados y límites: [auditoría de calidad](quality-audit.md).
 
