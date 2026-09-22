@@ -63,11 +63,13 @@ final class MakeObservabilityCommand extends Command
         $this->filesystem->dumpFile($classFile, $classContent);
         $io->success("Generated: {$classFile}");
 
-        $this->updateServicesYaml($servicesFile, $integration, $className, $io);
+        $this->updateServicesYaml($servicesFile, $namespace, $integration, $className, $io);
 
         $io->section('Next Steps');
         $io->listing([
             "Customize {$className}ObservabilitySetup in {$classFile}",
+            "Inject the app.{$integration}.observability service into an application service that is instantiated before integration requests; defining a private service alone does not activate observers.",
+            'Use the same LifecycleEventDispatcher instance for this setup and the integration engine.',
             'Configure async logging in config/packages/monolog.yaml',
             'See OBSERVABILITY.md for performance options',
             "Test: php bin/console debug:autowiring {$className}ObservabilitySetup",
@@ -85,6 +87,7 @@ declare(strict_types=1);
 
 namespace {$namespace}\\Integration\\{$className};
 
+use IntegrationEngine\\Core\\Lifecycle\\ActionCompleted;
 use IntegrationEngine\\Core\\Lifecycle\\ActionFailed;
 use IntegrationEngine\\Core\\Lifecycle\\LifecycleEventDispatcher;
 use Psr\\Log\\LoggerInterface;
@@ -94,8 +97,8 @@ use Psr\\Log\\LoggerInterface;
  * Provides logging, metrics, and error tracking.
  *
  * Usage:
- *   \$dispatcher = new LifecycleEventDispatcher();
- *   \$setup = new {$className}ObservabilitySetup(\$logger, ...);
+ *   // Use the same dispatcher instance passed to the integration engine.
+ *   \$setup = new {$className}ObservabilitySetup(\$logger);
  *   \$setup->register(\$dispatcher);
  */
 class {$className}ObservabilitySetup
@@ -112,7 +115,6 @@ class {$className}ObservabilitySetup
      */
     public function register(LifecycleEventDispatcher \$dispatcher): void
     {
-
         \\IntegrationEngine\\Infrastructure\\Lifecycle\\ObservabilitySetup::register(
             \$dispatcher,
             \$this->logger,
@@ -120,26 +122,8 @@ class {$className}ObservabilitySetup
                 'logging' => true,
                 'log_level' => 'info',
                 'slow_request_threshold_ms' => 3000,
-                'integration_filter' => '{$integration}',
-            ]
-        );
-
-
-        \\IntegrationEngine\\Infrastructure\\Lifecycle\\ObservabilitySetup::register(
-            \$dispatcher,
-            \$this->logger,
-            [
-                'metrics_callback' => fn(\$event) => \$this->recordMetrics(\$event),
-                'integration_filter' => '{$integration}',
-            ]
-        );
-
-
-        \\IntegrationEngine\\Infrastructure\\Lifecycle\\ObservabilitySetup::register(
-            \$dispatcher,
-            \$this->logger,
-            [
-                'error_callback' => fn(\$event) => \$this->recordError(\$event),
+                'metrics_callback' => fn(ActionCompleted|ActionFailed \$event) => \$this->recordMetrics(\$event),
+                'error_callback' => fn(ActionFailed \$event) => \$this->recordError(\$event),
                 'integration_filter' => '{$integration}',
             ]
         );
@@ -149,10 +133,8 @@ class {$className}ObservabilitySetup
      * Record custom metrics (Prometheus, Datadog, etc.).
      * Called on ActionCompleted and ActionFailed.
      */
-    private function recordMetrics(\$event): void
+    private function recordMetrics(ActionCompleted|ActionFailed \$event): void
     {
-
-
         // \$this->prometheus->histogram(
         //     '{$integration}_api_duration_ms',
         //     \$event->durationMs(),
@@ -165,8 +147,6 @@ class {$className}ObservabilitySetup
      */
     private function recordError(ActionFailed \$event): void
     {
-
-
         // \\Sentry\\captureException(\$event->error(), [
         //     'tags' => [
         //         'integration' => '{$integration}',
@@ -179,11 +159,11 @@ class {$className}ObservabilitySetup
 PHP;
     }
 
-    private function updateServicesYaml(string $path, string $integration, string $className, SymfonyStyle $io): void
+    private function updateServicesYaml(string $path, string $namespace, string $integration, string $className, SymfonyStyle $io): void
     {
         if (!$this->filesystem->exists($path)) {
             $io->warning("services.yaml not found at {$path}. Add this manually:");
-            $this->printServicesYamlEntry($className, $integration, $io);
+            $this->printServicesYamlEntry($namespace, $className, $integration, $io);
 
             return;
         }
@@ -198,29 +178,42 @@ PHP;
         $entry = <<<YAML
 
   app.{$integration}.observability:
-    class: App\\Integration\\{$className}\\{$className}ObservabilitySetup
+    class: {$namespace}\\Integration\\{$className}\\{$className}ObservabilitySetup
+    arguments: ['@logger']
     calls:
-      - [register, ['@IntegrationEngine\\Core\\Lifecycle\\LifecycleEventDispatcher', '@logger']]
+      - [register, ['@IntegrationEngine\\Core\\Lifecycle\\LifecycleEventDispatcher']]
 YAML;
 
         if (false === strpos($content, "{$integration}.observability")) {
-            file_put_contents($path, $content."\n".$entry."\n");
+            $content = rtrim($content)."\n";
+            if (!preg_match('/^services:[ \t]*(?:#[^\r\n]*)?\r?\n((?:[ \t]+[^\r\n]*\r?\n|[ \t]*\r?\n|#[^\r\n]*\r?\n)*)/m', $content, $matches, PREG_OFFSET_CAPTURE)) {
+                $io->warning('Could not locate a services mapping. Add this manually:');
+                $this->printServicesYamlEntry($namespace, $className, $integration, $io);
+
+                return;
+            }
+
+            $indent = preg_match('/^( +)\S/m', $matches[1][0], $indentation) ? $indentation[1] : '    ';
+            $entry = str_replace("\n  ", "\n".$indent, $entry);
+            $offset = $matches[0][1] + \strlen($matches[0][0]);
+            $this->filesystem->dumpFile($path, substr($content, 0, $offset).$entry."\n".substr($content, $offset));
             $io->success("Updated: {$path}");
         } else {
             $io->note('Observability entry already in services.yaml');
         }
     }
 
-    private function printServicesYamlEntry(string $className, string $integration, SymfonyStyle $io): void
+    private function printServicesYamlEntry(string $namespace, string $className, string $integration, SymfonyStyle $io): void
     {
         $io->writeln(<<<YAML
 
 Add to config/services.yaml:
 
   app.{$integration}.observability:
-    class: App\\Integration\\{$className}\\{$className}ObservabilitySetup
+    class: {$namespace}\\Integration\\{$className}\\{$className}ObservabilitySetup
+    arguments: ['@logger']
     calls:
-      - [register, ['@IntegrationEngine\\Core\\Lifecycle\\LifecycleEventDispatcher', '@logger']]
+      - [register, ['@IntegrationEngine\\Core\\Lifecycle\\LifecycleEventDispatcher']]
 
 YAML);
     }

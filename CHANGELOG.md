@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `debug:integration` lists configured integrations; `debug:integration <name>`
+  inspects action names, methods, paths and classes without instantiating actions
+  or sending requests. Successful results also support `--format=json`.
+
+### Fixed
+
+- Register the form-encoded adapter as a built-in client so `client: form_encoded`
+  works without a manual service tag. Runtime base URL overrides now reach the
+  adapter, and successful responses include their HTTP status for observability.
+- `make:observability` registers each observer once, injects the logger through
+  the generated constructor, respects the application's Composer namespace and
+  inserts configuration inside the existing YAML services block. Its instructions
+  explain that the setup must be instantiated to activate its observers.
+- `ErrorClassifier` recognises the engine's `RequestResponseException` HTTP
+  statuses as well as Symfony HTTP exceptions. `ExponentialBackoffPolicy` allows
+  the documented number of retries (numbered from 1), rejects invalid retry
+  numbers and throws `OverflowException` instead of overflowing the delay.
+  These remain application-invoked utilities; no automatic retries were added.
+
+### Internal
+
+- Behavioral coverage for GraphQL batches and middleware fallback, form-encoded
+  requests, observability registration and generation, logging, and resilience.
+- Command and DI tests cover integration inspection and form-encoded registration.
+
 ## [7.0.2] - 2026-09-21
 
 ### Fixed
@@ -536,4 +563,3 @@ See WEBHOOK.md for step-by-step guide.
 - Dynamic authentication: token caching and 401 retry with fresh token.
 - Middleware system for cross-cutting concerns.
 - Comprehensive test suite and documentation.
-

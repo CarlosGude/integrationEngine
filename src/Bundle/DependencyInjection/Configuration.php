@@ -36,7 +36,7 @@ final class Configuration implements ConfigurationInterface
             ->end()
             ->scalarNode('client')
             ->defaultValue(SymfonyHttpClientAdapter::CLIENT_TYPE)
-            ->info('Client type to use: "rest" (default) or "graphql". Ignored when client_service is set.')
+            ->info('Client type to use: "rest" (default), "graphql", or "form_encoded". Ignored when client_service is set.')
             ->validate()
             ->ifTrue(static fn (mixed $v): bool => \is_scalar($v) && '' === trim((string) $v))
             ->thenInvalid('Client type cannot be empty.')

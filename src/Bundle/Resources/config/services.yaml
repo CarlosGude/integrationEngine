@@ -11,6 +11,7 @@ services:
             - '../../../Infrastructure/Adapter/YamlConfigAdapter.php'
             - '../../../Infrastructure/Http/SymfonyHttpClientAdapter.php'
             - '../../../Infrastructure/Http/GraphQLClientAdapter.php'
+            - '../../../Infrastructure/Adapter/FormEncodedClientAdapter.php'
             - '../../../Core/IntegrationEngine.php'
             # Implements symfony/http-kernel's DataCollectorInterface, which is
             # not a required dependency of this bundle. Autodiscovery requires
@@ -37,6 +38,14 @@ services:
     IntegrationEngine\Infrastructure\Http\GraphQLClientAdapter:
         tags:
             - { name: integration_engine.client_adapter }
+
+    IntegrationEngine\Infrastructure\Adapter\FormEncodedClientAdapter:
+        tags:
+            - { name: integration_engine.client_adapter }
+
+    IntegrationEngine\Bundle\Command\DebugIntegrationCommand:
+        arguments:
+            $integrations: '%integration_engine.integrations%'
 
     # Default cache adapter — wraps Symfony's cache.app (PSR-6) into CachePort.
     # Override per-integration with cache_service: my_cache_service in integration_engine.yaml.

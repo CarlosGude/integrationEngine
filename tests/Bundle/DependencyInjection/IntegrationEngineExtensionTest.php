@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Bundle\DependencyInjection;
 
+use IntegrationEngine\Bundle\Command\DebugIntegrationCommand;
 use IntegrationEngine\Bundle\DependencyInjection\Compiler\IntegrationCompilerPass;
 use IntegrationEngine\Bundle\DependencyInjection\IntegrationEngineExtension;
 use IntegrationEngine\Bundle\IntegrationEngineBundle;
+use IntegrationEngine\Infrastructure\Adapter\FormEncodedClientAdapter;
 use IntegrationEngine\Infrastructure\Http\ClientAdapterResolver;
 use IntegrationEngine\Infrastructure\Http\GraphQLClientAdapter;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 final class IntegrationEngineExtensionTest extends TestCase
@@ -42,7 +45,7 @@ final class IntegrationEngineExtensionTest extends TestCase
     {
         $container = $this->load(['integrations' => []]);
 
-        foreach ([SymfonyHttpClientAdapter::class, GraphQLClientAdapter::class] as $adapterClass) {
+        foreach ([SymfonyHttpClientAdapter::class, GraphQLClientAdapter::class, FormEncodedClientAdapter::class] as $adapterClass) {
             self::assertTrue($container->hasDefinition($adapterClass));
             self::assertTrue(
                 $container->getDefinition($adapterClass)->hasTag('integration_engine.client_adapter'),
@@ -58,6 +61,46 @@ final class IntegrationEngineExtensionTest extends TestCase
 
         self::assertTrue($container->hasDefinition(ClientAdapterResolver::class));
         self::assertTrue($container->hasDefinition('integration_engine.cache.default'));
+    }
+
+    #[Test]
+    public function inspectionCommandReceivesTheProcessedConfiguration(): void
+    {
+        $container = $this->load(['integrations' => [
+            'orders' => ['base_url' => 'https://example.com', 'config_path' => '/tmp/orders.yaml'],
+        ]]);
+        $container->setParameter('kernel.project_dir', sys_get_temp_dir());
+        $definition = $container->getDefinition(DebugIntegrationCommand::class);
+        $definition->setPublic(true);
+        $container->compile();
+
+        $command = $container->get(DebugIntegrationCommand::class);
+        self::assertInstanceOf(DebugIntegrationCommand::class, $command);
+        $tester = new CommandTester($command);
+        self::assertSame(0, $tester->execute(['--format' => 'json']));
+        self::assertSame(['integrations' => [
+            ['name' => 'orders', 'client' => 'rest', 'config_path' => '/tmp/orders.yaml'],
+        ]], json_decode($tester->getDisplay(), true, 512, JSON_THROW_ON_ERROR));
+    }
+
+    #[Test]
+    public function formEncodedClientIsWiredFromThePublicConfiguration(): void
+    {
+        $container = $this->load(['integrations' => [
+            'forms' => [
+                'client' => 'form_encoded',
+                'base_url' => 'https://example.com',
+                'config_path' => '/tmp/forms.yaml',
+                'headers' => ['X-Tenant' => 'acme'],
+            ],
+        ]]);
+
+        (new IntegrationCompilerPass())->process($container);
+
+        $client = $container->getDefinition('integration_engine.http_client.forms');
+        self::assertSame(FormEncodedClientAdapter::class, $client->getClass());
+        self::assertSame('https://example.com', $client->getArgument(1));
+        self::assertSame(['X-Tenant' => 'acme'], $client->getArgument(2));
     }
 
     #[Test]

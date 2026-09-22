@@ -18,6 +18,12 @@ Public roadmap: what's live, what's next, and what stays out of scope.
 
 ## Now
 
+Implemented locally for the next release:
+
+- Behavioral tests for GraphQL batches, form-encoded requests, observability,
+  logging and resilience utilities; fixes for bugs exposed by those tests.
+- Console inspection through `debug:integration [name]`, including JSON output.
+
 **Phase 5: Quality of design visible** — PHPStan rule extensions, SSRF protection, lifecycle events, observability.
 
 Making the design decisions visible as executable guarantees: no SSRF escapes, no untyped arrays leaking, observable lifecycle.
@@ -28,7 +34,7 @@ Making the design decisions visible as executable guarantees: no SSRF escapes, n
 
 **Phase 7: Admin experience** — CLI commands and a debugging surface for what the engine already records.
 
-- Inspecting configured integrations and actions from the console
+- Console inspection implemented in Unreleased (`debug:integration [name]`)
 - Metrics/observability (Prometheus exports)
 
 Webhook replay and dead letters are not on this list: Symfony's Messenger failure transport already does that, and 6.0 stopped pretending the bundle should.

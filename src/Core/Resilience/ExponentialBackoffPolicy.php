@@ -16,7 +16,8 @@ use IntegrationEngine\Core\Contract\Action\AbstractAction;
  * Attempt 4: wait 800ms
  * etc.
  *
- * Max 3 retries by default. After exhaustion, throws exception.
+ * Allows 3 retries by default, numbered from 1. This policy only makes
+ * decisions; the caller owns execution, waiting, and invoking the fallback.
  */
 final class ExponentialBackoffPolicy implements ResiliencePolicyInterface
 {
@@ -34,7 +35,9 @@ final class ExponentialBackoffPolicy implements ResiliencePolicyInterface
 
     public function shouldRetry(\Throwable $e, int $attempt): bool
     {
-        if ($attempt >= $this->maxAttempts) {
+        $this->validateAttempt($attempt);
+
+        if ($attempt > $this->maxAttempts) {
             return false; // Max attempts reached
         }
 
@@ -43,11 +46,22 @@ final class ExponentialBackoffPolicy implements ResiliencePolicyInterface
 
     public function getBackoffMs(int $attempt): int
     {
-        // Exponential: 100 * 2^(attempt-1)
-        // Attempt 1: 100ms
-        // Attempt 2: 200ms
-        // Attempt 3: 400ms
-        return $this->initialBackoffMs * (1 << ($attempt - 1));
+        $this->validateAttempt($attempt);
+
+        if (0 === $this->initialBackoffMs) {
+            return 0;
+        }
+
+        if ($attempt >= \PHP_INT_SIZE * 8) {
+            throw new \OverflowException('Backoff delay exceeds the integer range.');
+        }
+
+        $multiplier = 1 << ($attempt - 1);
+        if ($this->initialBackoffMs > intdiv(PHP_INT_MAX, $multiplier)) {
+            throw new \OverflowException('Backoff delay exceeds the integer range.');
+        }
+
+        return $this->initialBackoffMs * $multiplier;
     }
 
     public function getMaxAttempts(): int
@@ -64,5 +78,12 @@ final class ExponentialBackoffPolicy implements ResiliencePolicyInterface
     public function getName(): string
     {
         return 'exponential_backoff';
+    }
+
+    private function validateAttempt(int $attempt): void
+    {
+        if ($attempt < 1) {
+            throw new \InvalidArgumentException('attempt must be >= 1');
+        }
     }
 }

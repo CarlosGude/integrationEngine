@@ -1,5 +1,11 @@
 # Roadmap de fixes
 
+Actualización local, 2026-09-22 (sobre v7.0.2, cambios sin publicar): cubiertos los
+lotes GraphQL, `ObservabilitySetup` y `make:observability`. También se han añadido
+pruebas de formularios, logging y resiliencia. El resto de este documento conserva
+la revisión histórica de v5.4.0; sus cifras y referencias a código eliminado no
+describen el estado actual.
+
 Estado a 2026-09-19 (`main` = `3298279`, v5.4.0 publicada). Sale de una revisión completa del
 proyecto: PHPUnit, PHPStan, php-cs-fixer, Infection, cobertura clover (xdebug), GitHub Actions,
 SonarCloud y Packagist.
@@ -204,9 +210,9 @@ MSI. No he encontrado el motivo: no hay anotaciones `@infection-ignore` ni opcio
 
 Estas partes no tienen ningún test:
 
-- [ ] `src/Infrastructure/Http/GraphQLClientAdapter.php:91-136` (`sendMany()`) y `:257-270`
+- [x] `src/Infrastructure/Http/GraphQLClientAdapter.php:91-136` (`sendMany()`) y `:257-270`
   (`sendManySequentially()`): todo el camino de lotes de GraphQL.
-- [ ] `src/Infrastructure/Lifecycle/ObservabilitySetup.php`, casi entera. Es la configuración que
+- [x] `src/Infrastructure/Lifecycle/ObservabilitySetup.php`, casi entera. Es la configuración que
   recomienda OBSERVABILITY.md.
 - [ ] `src/Infrastructure/Webhook/WebhookEventDispatcher.php:38-44`: la excepción cuando el mapper
   no corresponde al evento.
@@ -218,7 +224,7 @@ Estas partes no tienen ningún test:
   es string.
 - [ ] `src/Bundle/DependencyInjection/Compiler/MiddlewareResolver.php:78-82`: un request middleware
   etiquetado con una clase que no existe.
-- [ ] `src/Bundle/Command/MakeWebhookCommand.php` y `MakeObservabilityCommand.php`, casi enteros.
+- [x] `src/Bundle/Command/MakeWebhookCommand.php` y `MakeObservabilityCommand.php`, casi enteros.
   `src/Bundle` está excluido de Infection, así que aquí solo lo detecta la cobertura.
 
 Menores: los getters de los eventos de `src/Core/Lifecycle/`, `WebhookPlatform::label()`, la rama

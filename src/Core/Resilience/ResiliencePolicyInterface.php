@@ -17,6 +17,8 @@ interface ResiliencePolicyInterface
     /**
      * Should this error be retried?
      *
+     * @param int $attempt the proposed retry number (1-indexed)
+     *
      * @return bool true if the error is transient and retryable
      */
     public function shouldRetry(\Throwable $e, int $attempt): bool;

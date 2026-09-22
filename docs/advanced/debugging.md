@@ -1,4 +1,28 @@
-# Debugging — Symfony Profiler
+# Debugging — Console and Symfony Profiler
+
+## Inspect configured integrations
+
+```bash
+php bin/console debug:integration
+php bin/console debug:integration my_api
+php bin/console debug:integration my_api --format=json
+```
+
+The list shows integration names, client types (or custom service IDs) and YAML
+config paths. Selecting an integration shows each action's name, configured HTTP
+method, path and class. Missing methods and paths use the same `POST` and `/`
+defaults as the YAML adapter. Webhooks are excluded from the action list.
+
+Inspection reads configuration without instantiating action or body classes,
+resolving path placeholders or sending HTTP requests. It omits base URLs,
+authorization and headers. It is a configuration overview, not a connectivity
+check or validation that the referenced classes exist.
+
+`--format=json` formats successful results for scripts. Unknown integrations and
+unreadable or invalid action files return exit code 1 with a text error;
+unsupported output formats return exit code 2.
+
+## Symfony Profiler
 
 In `dev`/`test`, every outgoing call made through any configured integration is recorded
 and shown in the Symfony Toolbar/Profiler — automatically, with zero configuration.

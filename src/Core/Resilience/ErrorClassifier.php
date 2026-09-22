@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core\Resilience;
 
+use IntegrationEngine\Core\Exception\RequestResponseException;
 use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
@@ -59,17 +60,7 @@ final class ErrorClassifier
      */
     public static function isPermanent(\Throwable $e): bool
     {
-        // HTTP 4xx errors are permanent (except 408, 429)
-        if (self::isClientError($e)) {
-            return true;
-        }
-
-        // Authentication errors are permanent
-        if (self::isAuthenticationError($e)) {
-            return true;
-        }
-
-        return false;
+        return self::isClientError($e);
     }
 
     /**
@@ -77,6 +68,10 @@ final class ErrorClassifier
      */
     public static function getStatusCode(\Throwable $e): ?int
     {
+        if ($e instanceof RequestResponseException) {
+            return $e->statusCode;
+        }
+
         if ($e instanceof HttpExceptionInterface) {
             return $e->getResponse()->getStatusCode();
         }
@@ -97,13 +92,9 @@ final class ErrorClassifier
      */
     private static function isServerError(\Throwable $e): bool
     {
-        if (!$e instanceof HttpExceptionInterface) {
-            return false;
-        }
+        $code = self::getStatusCode($e);
 
-        $code = $e->getResponse()->getStatusCode();
-
-        return $code >= 500 && $code < 600;
+        return null !== $code && $code >= 500 && $code < 600;
     }
 
     /**
@@ -111,11 +102,7 @@ final class ErrorClassifier
      */
     private static function isRateLimitError(\Throwable $e): bool
     {
-        if (!$e instanceof HttpExceptionInterface) {
-            return false;
-        }
-
-        return 429 === $e->getResponse()->getStatusCode();
+        return 429 === self::getStatusCode($e);
     }
 
     /**
@@ -123,11 +110,7 @@ final class ErrorClassifier
      */
     private static function isTimeoutError(\Throwable $e): bool
     {
-        if (!$e instanceof HttpExceptionInterface) {
-            return false;
-        }
-
-        return 408 === $e->getResponse()->getStatusCode();
+        return 408 === self::getStatusCode($e);
     }
 
     /**
@@ -135,29 +118,13 @@ final class ErrorClassifier
      */
     private static function isClientError(\Throwable $e): bool
     {
-        if (!$e instanceof HttpExceptionInterface) {
-            return false;
-        }
-
-        $code = $e->getResponse()->getStatusCode();
+        $code = self::getStatusCode($e);
 
         // 408 and 429 are handled elsewhere
         if (408 === $code || 429 === $code) {
             return false;
         }
 
-        return $code >= 400 && $code < 500;
-    }
-
-    /**
-     * HTTP 401 (unauthorized).
-     */
-    private static function isAuthenticationError(\Throwable $e): bool
-    {
-        if (!$e instanceof HttpExceptionInterface) {
-            return false;
-        }
-
-        return 401 === $e->getResponse()->getStatusCode();
+        return null !== $code && $code >= 400 && $code < 500;
     }
 }

@@ -6,55 +6,48 @@ Quick integration of logging, metrics, and alerting for your integrations using 
 
 ## Quick Start
 
-### 1. Register Observability in services.yaml
+### 1. Generate the setup
+
+```bash
+php bin/console make:observability shopify
+```
+
+The command creates an application-owned setup class and adds its service to
+`config/services.yaml`. The generated entry is equivalent to:
 
 ```yaml
 services:
-  # Event dispatcher
-  IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher:
-    class: IntegrationEngine\Infrastructure\Lifecycle\SymfonyEventDispatcherAdapter
-    arguments:
-      - '@event_dispatcher'
-
-  # Observability setup for Shopify
   app.shopify.observability:
-    class: IntegrationEngine\Infrastructure\Lifecycle\ObservabilitySetup
-    arguments:
-      - '@IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher'
-      - '@logger'
-      - integration: 'shopify'
-        logging: true
-        log_level: 'info'
-        slow_request_threshold_ms: 3000
+    class: App\Integration\Shopify\ShopifyObservabilitySetup
+    arguments: ['@logger']
     calls:
-      - [register, ['@IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher', '@logger', []]]
+      - [register, ['@IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher']]
 ```
 
-### 2. Use the engine with dispatcher
+The class calls `ObservabilitySetup::register($dispatcher, $logger, $config)` once,
+with `integration_filter: shopify`, logging, slow-request alerts and callback
+stubs for metrics and errors. Customize those callbacks in the generated class.
+The generator uses your Composer namespace when it differs from `App`.
 
-```php
-// In your integration service
-class ShopifyIntegrationService
-{
-    public function __construct(
-        private IntegrationEngine $engine,
-        private LifecycleEventDispatcher $dispatcher,
-    ) {
-        // Pass dispatcher to engine
-        // (already injected via DI in services.yaml)
-    }
+### 2. Instantiate the setup before sending requests
 
-    public function syncProduct(int $productId): void
-    {
-        // Events fire automatically
-        $product = $this->engine->send('GetProduct', 
-            context: new Context(['id' => $productId])
-        );
-        
-        // Logging, alerts, metrics all happen automatically ✓
-    }
-}
+A private service definition alone does not activate observers. Inject the setup
+into an application service that is instantiated before integration calls:
+
+```yaml
+services:
+  App\Service\ProductSync:
+    arguments:
+      $observability: '@app.shopify.observability'
 ```
+
+`ProductSync` must accept a `ShopifyObservabilitySetup $observability` constructor
+argument. Symfony constructs the setup and executes its configured `register`
+method call. Use the same `LifecycleEventDispatcher` service as the engine;
+creating a separate dispatcher will not observe the engine's events.
+
+Each setup should register once per dispatcher. Repeated calls accumulate
+listeners, including the default logging and slow-request observers.
 
 ---
 
@@ -74,8 +67,9 @@ services:
   # Shopify observability
   app.shopify.observability:
     class: App\Integration\Shopify\ShopifyObservabilitySetup
+    autowire: true
     calls:
-      - [register, ['@IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher', '@logger']]
+      - [register, ['@IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher']]
 ```
 
 ### Custom Observability Class
@@ -99,7 +93,6 @@ class ShopifyObservabilitySetup
 
     public function register(LifecycleEventDispatcher $dispatcher): void
     {
-        // Logging (built-in)
         \IntegrationEngine\Infrastructure\Lifecycle\ObservabilitySetup::register(
             $dispatcher,
             $this->logger,
@@ -107,25 +100,7 @@ class ShopifyObservabilitySetup
                 'logging' => true,
                 'log_level' => 'info',
                 'slow_request_threshold_ms' => 3000,
-                'integration_filter' => 'shopify',
-            ]
-        );
-
-        // Custom metrics (Prometheus)
-        \IntegrationEngine\Infrastructure\Lifecycle\ObservabilitySetup::register(
-            $dispatcher,
-            $this->logger,
-            [
                 'metrics_callback' => fn($event) => $this->recordMetrics($event),
-                'integration_filter' => 'shopify',
-            ]
-        );
-
-        // Custom error handling (Sentry)
-        \IntegrationEngine\Infrastructure\Lifecycle\ObservabilitySetup::register(
-            $dispatcher,
-            $this->logger,
-            [
                 'error_callback' => fn($event) => $this->recordError($event),
                 'integration_filter' => 'shopify',
             ]

@@ -7,6 +7,7 @@ namespace IntegrationEngine\Infrastructure\Adapter;
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
+use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use IntegrationEngine\Infrastructure\Http\ResolvesAuthHeaders;
@@ -25,7 +26,7 @@ use Symfony\Contracts\HttpClient\ResponseInterface as HttpResponseInterface;
  *
  * amount=2000&currency=usd&description=Widget
  */
-final class FormEncodedClientAdapter implements ClientAdapterInterface
+final class FormEncodedClientAdapter implements ClientAdapterInterface, DynamicBaseUrlClientInterface
 {
     use ResolvesAuthHeaders;
 
@@ -61,7 +62,7 @@ final class FormEncodedClientAdapter implements ClientAdapterInterface
     }
 
     /**
-     * @return array{body: array<mixed>, headers: array<string, list<string>>}
+     * @return array{body: array<mixed>, headers: array<string, list<string>>, statusCode: int}
      *
      * @throws RequestResponseException on HTTP 4xx/5xx or network errors
      */
@@ -113,7 +114,7 @@ final class FormEncodedClientAdapter implements ClientAdapterInterface
     /**
      * Consume HTTP response and convert to standard format.
      *
-     * @return array{body: array<mixed>, headers: array<string, list<string>>}
+     * @return array{body: array<mixed>, headers: array<string, list<string>>, statusCode: int}
      *
      * @throws RequestResponseException on HTTP 4xx/5xx
      */
@@ -137,7 +138,7 @@ final class FormEncodedClientAdapter implements ClientAdapterInterface
         $content = $response->getContent(throw: false);
         $body = (204 === $statusCode || '' === trim($content)) ? [] : $response->toArray();
 
-        return ['body' => $body, 'headers' => $response->getHeaders(throw: false)];
+        return ['body' => $body, 'headers' => $response->getHeaders(throw: false), 'statusCode' => $statusCode];
     }
 
     /**

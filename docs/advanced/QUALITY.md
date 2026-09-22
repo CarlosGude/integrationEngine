@@ -22,19 +22,28 @@ the single source of these numbers, and that its `source.excludes` and
 
 ## Current numbers
 
-As of 2026-09-21, measured locally on PHP 8.5:
+As of 2026-09-22, measured locally on PHP 8.5.6 (unreleased working tree):
 
-- **Covered Code MSI: 100%** — 795 mutants generated, every one killed.
+- **752 tests, 2,075 assertions**, style and PHPStan max passing.
+- **Line coverage: 96.78%** — 2,163 of 2,235 executable lines, measured with Xdebug.
+- **Covered Code MSI: 99.54%** — 1,081 mutants: 1,075 killed by tests,
+  1 errored, 5 escaped. Existing thresholds and exclusions are unchanged.
 
-The mutants that used to survive lived in the webhook dead-letter handler,
-which 6.0 removed along with the rest of the vendor-specific surface
-([ADR 0014](../adr/0014-no-vendor-integrations-in-the-bundle.md)).
+GraphQL batches, form-encoded requests, observability setup, logging and
+resilience utilities now have behavioral tests. Mutation coverage alone still
+cannot establish whether all code is exercised: check PHPUnit's per-class
+coverage report as well. `Bundle` remains excluded from mutation testing below.
 
-Infection also reports **Mutation Code Coverage: 100%** and no uncovered
-mutants. Don't read that as full coverage: it generates no mutants at all for
-lines no test executes, so code like `GraphQLClientAdapter::sendMany()` — which
-has no test — counts neither way. `vendor/bin/phpunit --coverage-clover` is what
-answers that question; it reports 88% of lines.
+### Surviving mutants retained without new exclusions
+
+- Four mutations change `LoggingMiddleware`'s milliseconds conversion factor
+  from 1,000 to 999 or 1,001, in the success and failure paths. Tests verify
+  integer millisecond durations and their order of magnitude with a delayed
+  response, but cannot reliably distinguish a 0.1% wall-clock variation.
+- Changing the bit-width guard in `ExponentialBackoffPolicy::getBackoffMs()`
+  from `>=` to `>` is equivalent: at that boundary the signed shift becomes
+  negative and the subsequent multiplication guard throws the same
+  `OverflowException`. Larger retry numbers still hit the first guard.
 
 ## `Bundle` exclusion from mutation testing
 

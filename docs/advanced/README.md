@@ -12,6 +12,7 @@ Deep dives into design, extensibility, and operational concerns.
 ## Operational Concerns
 
 - **[debugging.md](./debugging.md)** — Troubleshooting, profiler, tracing
+- **[resilience.md](./resilience.md)** — Retry policy utilities and integration limits
 - **[QUALITY.md](./QUALITY.md)** — Quality gates, test coverage, mutation testing
 - **[AI-AGENT-USAGE.md](./AI-AGENT-USAGE.md)** — Integrating with Claude and AI agents
 
