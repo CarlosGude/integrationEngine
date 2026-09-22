@@ -592,3 +592,5 @@ v8.0 **strengthens security, simplifies configuration, and reduces boilerplate**
 | Application-guessed idempotency | Explicit, application-owned dedup |
 
 Most integrations can be upgraded in **under 4 hours**. Start with observability, then webhooks, then retries.
+
+**Note:** The demo app (integrationEngine-demo repo) has been updated to v8.0 webhook architecture for reference.
