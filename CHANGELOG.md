@@ -40,10 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Internal
 
-- Add strict standalone Deptrac configuration; CI activation awaits a separate
-  fix for the two existing Core-to-Symfony dependencies in ErrorClassifier.
-- Remove three mutation ignores with timestamp and CSV regression tests, measure
-  the Bundle exclusion and document uncovered-code mutation behavior.
+- Enforce Deptrac in local and remote CI after separating Symfony resilience
+  classification from Core; legacy APIs remain available through compatibility facades.
+- Enable every default mutator, remove all mutation ignores and include uncovered
+  code in the standard 85/95 gate. Add regression tests for timestamps, CSV encoding,
+  fractional connection IDs and default backoff values.
 - Correct landing request constructors, documentation links and unsupported
   claims; add a bilingual roadmap, demo source links and a Node content-test CI job.
 - Documentation import failures now include the source line; update quality and

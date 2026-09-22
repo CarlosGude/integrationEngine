@@ -26,7 +26,7 @@ make test   # phpunit
 make stan   # phpstan level max
 make cs     # php-cs-fixer (dry-run)
 make qa     # cs + stan + test — run before each commit
-make ci     # qa + mutation — run before opening a PR
+make ci     # qa + deptrac + mutation — run before opening a PR
 ```
 
 ## Code quality
@@ -34,10 +34,10 @@ make ci     # qa + mutation — run before opening a PR
 Quality gates (style, static analysis, tests, mutation), their commands, and
 current MSI: see [`docs/advanced/QUALITY.md`](advanced/QUALITY.md).
 
-`make deptrac` checks architectural layers independently. It currently reports
-two existing Core-to-Symfony dependencies; activation as a CI gate awaits the
-separate architecture fix described in the [quality audit](quality-audit.md).
-Do not suppress these violations or relax Core's dependency rules.
+`make deptrac` enforces architectural layers locally and in CI, with no baseline
+and no uncovered dependencies. Core may depend only on PSR and its own classes;
+legacy resilience facades live in an explicit outer compatibility layer. See the
+[quality audit](quality-audit.md) and [ADR 0015](adr/0015-resilience-classification-boundary.md).
 
 The documentation tests run in the normal PHPUnit suite. Use Markdown links
 relative to the document containing them. Backtick path mentions are relative

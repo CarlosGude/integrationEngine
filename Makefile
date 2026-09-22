@@ -16,7 +16,7 @@ qa: cs stan test
 # -----------------------------
 # CI (before opening the PR)
 # -----------------------------
-ci: qa mutation
+ci: qa deptrac mutation
 
 # -----------------------------
 # PRE-COMMIT (alias of ci)
@@ -38,7 +38,6 @@ cs-fix:
 stan:
 	./vendor/bin/phpstan analyse --memory-limit=1G $(PATHS)
 
-# Standalone until the Core/ErrorClassifier architecture prerequisite is fixed.
 deptrac:
 	./vendor/bin/deptrac analyse --fail-on-uncovered --no-progress
 
@@ -55,7 +54,7 @@ test-coverage:
 # MUTATION TESTING
 # -----------------------------
 mutation:
-	./vendor/bin/infection --threads=max --show-mutations
+	./vendor/bin/infection --threads=max --show-mutations --with-uncovered
 
 # -----------------------------
 # LANDING

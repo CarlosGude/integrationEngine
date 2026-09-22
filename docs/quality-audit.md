@@ -5,42 +5,48 @@ The implementation baseline is `6f3107cd98daef8114d05dab9e56dd4979347c9d`;
 measurements below also include the local quality changes. They are not remote
 CI results for a new commit.
 
-## Architecture prerequisite
+## Architecture correction and activation
 
-Installed [deptrac/deptrac](https://packagist.org/packages/deptrac/deptrac) 4.7.2
-as a development dependency, with configuration in the repository root and
-`make deptrac` as a standalone command. The package supports PHP 8.2.
-The rules keep Core limited to PSR, explicitly classify Utils and PHPUnit,
-and fail on uncovered dependencies. No baseline or skipped violations is used.
+The initial run found two Symfony dependencies in Core/Resilience/ErrorClassifier.
+The separate [PR #5](https://github.com/CarlosGude/integrationEngine/pull/5) introduces
+Core-owned classification and backoff contracts, a Symfony Infrastructure adapter
+and explicitly classmapped legacy compatibility facades. Existing public methods,
+constructor arguments and service IDs remain callable; existing behavior tests
+pass unchanged. See [ADR 0015](adr/0015-resilience-classification-boundary.md).
 
-The first run reports **2 violations, 0 uncovered dependencies, 0 warnings**:
-
-| Source | Forbidden dependency | Line |
-|---|---|---|
-| Core/Resilience/ErrorClassifier | Symfony Contracts HttpExceptionInterface | 75 |
-| Core/Resilience/ErrorClassifier | Symfony Contracts TransportExceptionInterface | 87 |
-
-Both dependencies are exercised behavior: the current tests expect Symfony HTTP
-exceptions to preserve their status and transport errors to remain transient.
-Deleting those branches to make Deptrac pass would change the public behavior.
-
-**B1.6 is blocked on a separate architecture fix**, as required by the original
-task. Production code is unchanged in this quality patch. The prerequisite PR
-must define an infrastructure adapter for Symfony exceptions and a Core-owned
-classification contract, account for direct static ErrorClassifier callers and
-ExponentialBackoffPolicy, and explain any migration. Do not hide the dependency
-with string class names, reflection, a baseline or a broader Core rule.
-
-After that prerequisite passes compatibility tests and `make deptrac`, add the
-command to `make ci` and an enforcing PHP 8.4 job in the main workflow. This
-patch deliberately does not claim an active architecture CI gate or zero violations.
+The architecture PR passed [main CI](https://github.com/CarlosGude/integrationEngine/actions/runs/35743555351)
+and [demo contract](https://github.com/CarlosGude/integrationEngine/actions/runs/35743555349).
+Deptrac now reports zero violations and zero uncovered dependencies. The quality
+follow-up adds it to make ci and a dedicated PHP 8.4 workflow job, without a
+baseline or skipped violations. Core is still limited to PSR dependencies.
 
 An isolated negative fixture placing a Symfony HttpClientInterface dependency in
-Core exits **1**, with one forbidden-layer violation and no uncovered dependencies.
-This establishes that the rule detects a newly introduced dependency independently
-of the existing ErrorClassifier problem.
+Core exits 1 with a forbidden-layer violation. An unclassified dependency is also
+required to fail through --fail-on-uncovered. This is a real gate, not a report-only job.
 
-## Mutation measurements and decisions
+## Final review
+
+Local `make ci` passed: **796 tests, 2,238 assertions**, PHPStan max, style,
+Deptrac with zero violations/uncovered dependencies, and Infection with all default
+mutators. **1,151 mutations: 1,104 killed, 1 errored, 31 escaped, 15 uncovered**;
+MSI **96.00%**, covered MSI **97.27%**. Documentation counts reflect that execution.
+
+
+All default mutators are enabled and every ignore entry has been removed.
+The standard local/CI command now includes --with-uncovered, so uncovered code
+reduces MSI. Thresholds remain 85/95. The earlier experiments below are retained
+as history, not current totals.
+
+The new scalar-connection regression test covers the formerly suppressed CastString
+mutation. Core backoff defaults have their own behavioral test instead of relying
+only on callers that explicitly pass constructor arguments.
+
+The final Bundle/Resources-only experiment with all default mutators generated
+1,809 mutations: 1,651 killed, 2 errors, 1 syntax error, 121 escaped and 34 uncovered.
+Covered MSI was 93.18%; Bundle remains excluded as B1.1 explicitly permits.
+The compatibility layer is included in mutation testing.
+
+## Earlier mutation measurements and decisions
 
 All runs use Infection 0.33.2, PHP 8.5.6 with Xdebug, and thresholds **85/95**.
 The Bundle experiment used a temporary configuration, leaving the committed
@@ -82,8 +88,9 @@ The default `make ci` run passed style, static analysis, 783 tests with 2,163
 assertions, and mutation testing. Additional audit documentation is checked by
 the documentation suite after writing; its data-provider case count may increase.
 
-No production behavior or MSI threshold was changed. Other exclusions remain
-subject to the limitations documented in [QUALITY](advanced/QUALITY.md).
+That first pass changed no production behavior or MSI threshold. The subsequent
+architecture correction preserves the documented utility behavior; all mutator
+suppressions have now been removed. See [QUALITY](advanced/QUALITY.md).
 
 ## Negative checks and documentation
 
@@ -102,13 +109,20 @@ navigable Markdown links resolve from their document; backtick path mentions
 resolve from the repository root. The canonical agent guide remains CLAUDE.md.
 This is an explicit adaptation of B1.5, not a recreation of the obsolete agent folder.
 
-## Remaining evidence
+## Remote negative evidence
 
-- Separate ErrorClassifier architecture fix, then Deptrac activation in CI.
-- Remote CI and demo contract on the commit containing these quality changes.
-- The deliberately broken PHP 8.2 generator job and demo-contract job requested
-  by B1.3/B2.2. Local fixtures above do not substitute for those remote checks.
-- Full review of the remaining mutation exclusions, including globally disabled
-  UnwrapArrayMap/UnwrapArrayFilter and connection-key casting assumptions.
+Temporary commit `4e1fc03` changed the generator to emit a typed class constant
+and renamed IntegrationEngine::send(). It was isolated in
+[PR #6](https://github.com/CarlosGude/integrationEngine/pull/6), closed without merge.
 
-No release, deployment or remote deliberately failing branch was created by this audit.
+- [PHP 8.2 generator job](https://github.com/CarlosGude/integrationEngine/actions/runs/35743779152/job/106799963171):
+  installation and generation succeeded; the lint step failed in AcmeIntegration.php
+  line 11, with `unexpected identifier "NAME", expecting "="`. Exit code 124.
+- [Demo contract job](https://github.com/CarlosGude/integrationEngine/actions/runs/35743779469/job/106799970462):
+  dependency installation succeeded; demo tests failed with
+  `Call to undefined method IntegrationEngine\Core\IntegrationEngine::send()`
+  at MovieCatalogGateway.php line 67. This was an API regression, not a runner failure.
+
+The positive architecture commit `7a57e84` passed both workflows. These negative
+results fulfill the requested B1.3/B2.2 evidence; the broken branch is never a
+release candidate. The quality follow-up must also pass CI on its own final commit.

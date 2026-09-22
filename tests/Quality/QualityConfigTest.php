@@ -21,6 +21,21 @@ final class QualityConfigTest extends TestCase
     }
 
     #[Test]
+    public function mutationGatesIncludeUncoveredCodeAndDoNotSuppressDefaultMutators(): void
+    {
+        self::assertSame(['@default' => true], self::readInfectionConfig()['mutators']);
+
+        foreach (['Makefile', '.github/workflows/php.yml'] as $file) {
+            $contents = (string) file_get_contents(self::ROOT.'/'.$file);
+            preg_match_all('/^.*vendor\/bin\/infection.*$/m', $contents, $matches);
+            self::assertNotEmpty($matches[0], $file.' must run Infection.');
+            foreach ($matches[0] as $command) {
+                self::assertStringContainsString('--with-uncovered', $command, $file.' must include uncovered code in MSI.');
+            }
+        }
+    }
+
+    #[Test]
     public function infectionExcludedPathsExist(): void
     {
         $config = self::readInfectionConfig();
@@ -72,7 +87,7 @@ final class QualityConfigTest extends TestCase
     }
 
     /**
-     * @return array{minMsi: int, minCoveredMsi: int, excludes: list<string>}
+     * @return array{minMsi: int, minCoveredMsi: int, excludes: list<string>, mutators: array<mixed>}
      */
     private static function readInfectionConfig(): array
     {
@@ -90,6 +105,9 @@ final class QualityConfigTest extends TestCase
         self::assertArrayHasKey('minCoveredMsi', $decoded);
         self::assertIsInt($decoded['minCoveredMsi']);
 
+        self::assertArrayHasKey('mutators', $decoded);
+        self::assertIsArray($decoded['mutators']);
+
         self::assertArrayHasKey('source', $decoded);
         self::assertIsArray($decoded['source']);
         self::assertArrayHasKey('excludes', $decoded['source']);
@@ -105,6 +123,7 @@ final class QualityConfigTest extends TestCase
             'minMsi' => $decoded['minMsi'],
             'minCoveredMsi' => $decoded['minCoveredMsi'],
             'excludes' => $excludes,
+            'mutators' => $decoded['mutators'],
         ];
     }
 }

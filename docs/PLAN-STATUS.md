@@ -220,24 +220,24 @@ avanzar en paralelo respetando las restricciones de integración anteriores.
 
 ### Seguimiento del bloque 1A · Calidad
 
-La tabla de auditoría anterior conserva el estado inicial. Avances posteriores:
+La tabla de auditoría anterior conserva el estado inicial. Cierre posterior:
 
-- [x] `make ci` verde, umbrales 85/95 intactos; tres ignores retirados con tests.
-- [x] Exclusión Bundle revisada con datos: Bundle/Resources da 94,68 % cubierto;
-  mantener Bundle completo está justificado por la medición.
-- [x] Causa de omisión de código no cubierto identificada: comportamiento por
-  defecto de Infection. Medición adicional: MSI 98,20 %, cubierto 99,54 %.
-- [x] Pruebas negativas de los cuatro controles QualityConfigTest y del import
-  documental inexistente; mensajes con archivo, línea y clase.
+- [x] Corrección de arquitectura separada en PR #5, validada por matriz y demo,
+  con APIs antiguas preservadas en una capa explícita de compatibilidad (ADR 0015).
+- [x] Deptrac en make ci y CI, sin baseline: cero violaciones y dependencias sin clasificar.
+- [x] Todos los mutadores predeterminados habilitados y todos los ignores retirados.
+- [x] Código no cubierto incluido en la puerta habitual; umbrales 85/95 intactos.
+  Medición local: MSI 96,00 %, cubierto 97,27 %; 796 tests en make ci.
+- [x] Bundle revisado con todos los mutadores: excluyendo solo Resources da
+  93,18 % cubierto. Se mantiene la exclusión completa permitida por B1.1.
+- [x] Pruebas negativas de configuración, imports (archivo/línea/clase), capas
+  prohibidas y dependencias sin clasificar.
+- [x] Pruebas negativas remotas B1.3/B2.2: lint PHP 8.2 rechaza constante tipada;
+  la demo detecta send() ausente. PR temporal #6 cerrado sin fusionar.
 - [x] Convención de enlaces/backticks y guía canónica documentada en CONTRIBUTING.
-- [x] Deptrac 4.7.2, reglas estrictas, target y prueba negativa preparados.
-- [ ] B1.6 bloqueado por dos dependencias Core → Symfony en ErrorClassifier.
-  Corregir en PR separado antes de integrar la puerta en `make ci` y CI remoto.
-- [ ] Pruebas negativas remotas del generador PHP 8.2 y contrato demo, y CI del
-  commit con estos cambios. No se sustituyen por las pruebas locales.
-- [ ] Revisar el resto de exclusiones de mutación señaladas en la auditoría.
+- [ ] Confirmar el CI del commit final del cierre de calidad antes de integrarlo.
 
-Evidencia y resultados: [auditoría de calidad](quality-audit.md).
+Evidencia, resultados y límites: [auditoría de calidad](quality-audit.md).
 
 ### Seguimiento del bloque 1B · Landing
 

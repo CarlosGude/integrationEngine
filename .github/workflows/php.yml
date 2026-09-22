@@ -72,6 +72,18 @@ jobs:
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse --memory-limit=1G
 
+  deptrac:
+    name: Architectural layers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc
+        with:
+          php-version: '8.4'
+          coverage: none
+      - run: composer install --prefer-dist --no-progress
+      - run: make deptrac
+
   tests:
     name: Tests (PHP ${{ matrix.php }}, Symfony ${{ matrix.symfony }}, ${{ matrix.deps }})
     runs-on: ubuntu-latest
@@ -214,4 +226,4 @@ jobs:
         run: composer install --prefer-dist --no-progress
 
       - name: Run mutation testing
-        run: vendor/bin/infection --threads=max --show-mutations
+        run: vendor/bin/infection --threads=max --show-mutations --with-uncovered
