@@ -42,14 +42,19 @@ la revisión antigua y sus anotaciones se conservan en
 - [x] Confirmar que Infection omite código no cubierto por defecto. La medición
   con `--with-uncovered` muestra 15 mutantes sin cobertura y supera 85/95.
   Mantener la cobertura PHPUnit como medida independiente.
-- [ ] Corregir en un PR separado las dos dependencias de Symfony en
-  Core/Resilience/ErrorClassifier; después activar Deptrac en CI.
-  Configuración y `make deptrac` preparados, sin baseline ni reglas relajadas.
+- [x] Corregir las dependencias de Symfony mediante el PR de arquitectura #5,
+  con fachadas de compatibilidad y contrato propio de clasificación en Core.
+- [x] Activar Deptrac en make ci y en un job específico; cero violaciones y cero
+  dependencias sin clasificar, sin baseline ni reglas relajadas.
+- [x] Retirar todos los ignores y habilitar todos los mutadores predeterminados;
+  incluir código no cubierto en la puerta habitual. MSI 96,00 % / cubierto 97,27 %.
+- [x] Pruebas negativas remotas de generador PHP 8.2 y contrato demo completadas;
+  PR temporal #6 cerrado sin fusionar. Evidencia enlazada en la auditoría.
 
 Resultados, pruebas negativas y límites: [auditoría de calidad](quality-audit.md).
 
-Los cinco mutantes supervivientes anteriores están razonados en
-[QUALITY.md](./advanced/QUALITY.md). No requieren bajar umbrales ni añadir exclusiones.
+Los mutantes supervivientes permanecen visibles y cuentan contra los umbrales.
+La medición actual y el alcance están en [QUALITY.md](./advanced/QUALITY.md).
 Los componentes de proveedores, DLQ y state machine eliminados en v6 no son tareas
 pendientes del bundle.
 

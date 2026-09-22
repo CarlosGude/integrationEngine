@@ -7,7 +7,7 @@ you work against them.
 
 ---
 
-## Layer checks (CI activation pending)
+## Enforced layers
 
 Run `make deptrac` to check dependencies in src and tests. The configuration
 uses explicit layers and no baseline; uncovered dependencies fail the command.
@@ -17,15 +17,20 @@ uses explicit layers and no baseline; uncovered dependencies fail the command.
 | Core | Psr |
 | Infrastructure | Core, Psr, Symfony |
 | Bundle | Core, Infrastructure, Psr, Symfony |
+| Compatibility | Core, Infrastructure |
 | Utils | Its own layer and PHP built-ins |
-| Tests | Core, Infrastructure, Bundle, Utils, Psr, Symfony, PHPUnit |
+| Tests | Core, Infrastructure, Bundle, Compatibility, Utils, Psr, Symfony, PHPUnit |
 
 Dependencies inside the same layer are allowed. PHP built-ins are not external
-architecture layers. The initial run exposes two existing Core-to-Symfony
-dependencies in ErrorClassifier; Core's rule has not been relaxed to accept them.
-The separate prerequisite fix must preserve or explicitly migrate that public
-behavior before the check joins CI. See the [quality audit](quality-audit.md)
-for the violations and negative verification.
+architecture layers. Core cannot depend on Compatibility or Infrastructure.
+The two deprecated resilience facades retain their historic Core namespace but
+are explicit outer-layer classes under src/Compatibility, loaded by Composer's
+classmap. New Core code uses its classifier contract, while Symfony exception
+handling lives in Infrastructure. See [ADR 0015](adr/0015-resilience-classification-boundary.md).
+
+`make ci` and the dedicated PHP 8.4 architecture job enforce `make deptrac`.
+There are no skipped violations or baselines. See the [quality audit](quality-audit.md)
+for the separate prerequisite PR and negative verification.
 
 ## 1. Actions are stateless and immutable
 

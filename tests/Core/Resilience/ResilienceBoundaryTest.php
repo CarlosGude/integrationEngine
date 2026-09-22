@@ -16,6 +16,19 @@ use Symfony\Component\HttpClient\Exception\TransportException;
 
 final class ResilienceBoundaryTest extends TestCase
 {
+    public function testCorePolicyDefaultsToThreeRetriesStartingAtOneHundredMilliseconds(): void
+    {
+        $policy = new ExponentialBackoff();
+        $error = new RequestResponseException(503, 'unavailable');
+
+        self::assertSame(3, $policy->getMaxAttempts());
+        foreach ([1 => 100, 2 => 200, 3 => 400] as $attempt => $delay) {
+            self::assertTrue($policy->shouldRetry($error, $attempt));
+            self::assertSame($delay, $policy->getBackoffMs($attempt));
+        }
+        self::assertFalse($policy->shouldRetry($error, 4));
+    }
+
     public function testCoreClassifiesEngineErrorsWithoutAssumingNetworkFailure(): void
     {
         $classifier = new EngineErrorClassifier();
