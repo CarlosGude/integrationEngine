@@ -59,7 +59,7 @@ final class SafeLifecycleEventsTest extends TestCase
         ]);
         self::assertCount(2, $results);
         self::assertCount(4, $dispatcher->events);
-        $keys = array_map(static fn (object $e): mixed => $e instanceof ResponseMapped || $e instanceof RequestFailed ? $e->requestKey : null, $dispatcher->events);
+        $keys = array_map(static fn (object $e): mixed => property_exists($e, 'requestKey') ? $e->requestKey : null, $dispatcher->events);
         self::assertSame(['ok', 'bad', 'ok', 'bad'], $keys);
         self::assertInstanceOf(ResponseMapped::class, $dispatcher->events[2]);
         self::assertInstanceOf(RequestFailed::class, $dispatcher->events[3]);

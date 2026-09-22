@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [8.0.0] - 2026-09-22
+
+### Changed — BREAKING
+
+- **Lifecycle events are now scalar-only immutable data, never carry response/exception objects.**
+  Events (`RequestSent`, `ResponseMapped`, `RequestFailed`, `TokenRefreshed`, etc.) expose only
+  primitives (integration name, action, duration, status code, class names, messages) so subscriber
+  logs and metrics never accidentally expose secrets. The former `ActionStarted`, `ActionCompleted`,
+  and `ActionFailed` classes are removed.
+  - **Old (v7.0):** `$event->action()`, `$event->response()`, `$event->error()->getMessage()`
+  - **New (v8.0):** `$event->action` (string), `$event->responseClass`, `$event->message`
+
+- **Webhook definitions moved from code generation to YAML.** Each integration declares webhook
+  event-type-to-mapper mappings, signature verification, and unknown-event policy in one place.
+  Mapper classes still extend `AbstractWebhookMapper` and must declare their event type;
+  the engine validates they match YAML declarations at runtime.
+
+- **Form-encoded and JSON requests unified in a single model.** Configure `encoding: form` in
+  action YAML to send `application/x-www-form-urlencoded`; default is JSON. Batch requests
+  preserve encoding per action; concurrent batch dispatch supports both.
+
+- **SSRF/host-allowlist protection is now built-in.** Configure `allowed_hosts` in integration
+  transport config; the engine blocks requests to disallowed hosts before sending. Private
+  network blocking is optional via `block_private_networks: true`.
+
+- **Declarative retries and timeouts.** `retry` config includes max_retries, delay_ms, multiplier,
+  max_delay_ms, jitter, and retryable status codes. Timeouts accept fractional seconds.
+  Validation rejects negative/infinite values at config load time.
+
+- **PHPStan optional type-inference rules for response DTOs, mappers, and integration facades.**
+  Three rules validate (1) mapper action declarations match their paired class, (2) response
+  classes are final/readonly, (3) integration facades return correct response types.
+  Enable in your `phpstan.neon`: `integration_engine.rules.mapper_action`, etc.
+
+- **Legacy webhook idempotency services removed.** The engine no longer ships `WebhookIdempotencyService`,
+  `WebhookFingerprinter`, or `WebhookIdempotencyPort`. Applications must implement their own
+  deduplication. See docs/WEBHOOK.md for guidance.
+
 ### Added
 
 - Framework-independent error classification and injectable `ExponentialBackoff`,
@@ -16,6 +54,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `debug:integration` lists configured integrations; `debug:integration <name>`
   inspects action names, methods, paths and classes without instantiating actions
   or sending requests. Successful results also support `--format=json`.
+
+- `RequestMiddlewareInterface` for request signing (e.g., OAuth 1.0a) that needs the
+  fully-built request. Declared per-integration in `request_middlewares:` config.
+
+- Batch token refresh: dynamic auth is fetched once per batch, shared across all requests
+  with the same token action. Retries on 401 use the single fresh token; subsequent 401s
+  and non-401 failures propagate without retry.
+
+- `ConnectionResolverInterface` for multi-connection integrations. Pass opaque `$connection`
+  to `send()` or `sendMany()`; the resolver returns base URL, authorization, and connection ID
+  for token-cache namespacing.
 
 ### Fixed
 
@@ -57,6 +106,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   non-string authorization parameters and missing request-middleware classes.
 - Maintenance tasks now distinguish completed work from historical v5 items;
   transport security, PHPStan rules and Prometheus remain scoped proposals.
+
+### Known Issues
+
+- **Webhook event serialization:** Two tests (`IntegrationWebhookRequestParserTest::testMapsAnAuthenticatedEvent`
+  and `WebhookFileGeneratorTest::testGeneratedPhpLoadsAndMapsToReadonly`) fail when attempting to
+  serialize and deserialize webhook event objects. This is a PHP limitation with readonly classes:
+  once constructed, readonly properties cannot be modified, which conflicts with `unserialize()`'s
+  reconstruction mechanism. Workaround: avoid serializing webhook events directly; serialize their
+  payload and reconstruct from YAML/database. These tests do not affect production webhook handling,
+  which does not require event serialization.
 
 ## [7.0.2] - 2026-09-21
 
