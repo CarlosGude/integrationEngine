@@ -19,20 +19,20 @@ final class DocumentationImportsTest extends TestCase
 
     private const EXCLUDED_DIRECTORIES = ['vendor', 'var', 'node_modules', 'landing', 'memory'];
 
-    /** @param list<string> $imports */
+    /** @param list<array{class: string, line: int}> $imports */
     #[Test]
     #[DataProvider('provideEveryImportUsedInMarkdownResolvesCases')]
     public function everyImportUsedInMarkdownResolves(string $file, array $imports): void
     {
-        foreach ($imports as $fqcn) {
+        foreach ($imports as ['class' => $fqcn, 'line' => $line]) {
             self::assertTrue(
                 class_exists($fqcn) || interface_exists($fqcn) || trait_exists($fqcn) || enum_exists($fqcn),
-                \sprintf('%s: %s does not exist.', $file, $fqcn),
+                \sprintf('%s:%d: %s does not exist.', $file, $line, $fqcn),
             );
         }
     }
 
-    /** @return iterable<string, array{string, list<string>}> */
+    /** @return iterable<string, array{string, list<array{class: string, line: int}>}> */
     public static function provideEveryImportUsedInMarkdownResolvesCases(): iterable
     {
         foreach (self::markdownFiles() as $file) {
@@ -46,14 +46,19 @@ final class DocumentationImportsTest extends TestCase
         }
     }
 
-    /** @return list<string> */
+    /** @return list<array{class: string, line: int}> */
     private static function extractImports(string $file): array
     {
         $contents = (string) file_get_contents($file);
 
-        preg_match_all('/^use\s+(IntegrationEngine\\\[\w\\\]+)\s*;/m', $contents, $matches);
+        preg_match_all('/^use\s+(IntegrationEngine\\\[\w\\\]+)\s*;/m', $contents, $matches, PREG_OFFSET_CAPTURE);
 
-        return $matches[1];
+        $imports = [];
+        foreach ($matches[1] as [$class, $offset]) {
+            $imports[] = ['class' => $class, 'line' => substr_count(substr($contents, 0, $offset), "\n") + 1];
+        }
+
+        return $imports;
     }
 
     /** @return list<string> */

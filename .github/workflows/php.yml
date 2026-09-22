@@ -10,6 +10,18 @@ permissions:
   contents: read
 
 jobs:
+  landing:
+    name: Landing content and translations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check landing content and translations
+        working-directory: landing
+        run: node --test
+
   cs:
     name: Code Style
     runs-on: ubuntu-latest

@@ -12,8 +12,8 @@ export function getHTML(lang = 'en') {
 
     const isEs = lang === 'es';
     const docsHref = isEs
-        ? 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION_ES.md'
-        : 'https://github.com/CarlosGude/integrationEngine/blob/main/DOCUMENTATION.md';
+        ? 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/es/DOCUMENTATION.md'
+        : 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/DOCUMENTATION.md';
 
     const compareLeft  = t.compareItems.map(i => `
       <div class="compare-item"><span class="ci-icon">&#10007;</span>${i.without}</div>`).join('');
@@ -38,14 +38,14 @@ export function getHTML(lang = 'en') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IntegrationEngine &mdash; Symfony API Integration Bundle</title>
-<meta name="description" content="Build Stripe, SAP, Salesforce or any external API in Symfony without god classes. Automatic OAuth2, parallel requests and typed DTOs. One standard for every integration." />
+<meta name="description" content="${t.metaDescription}" />
 <meta property="og:type"        content="website" />
 <meta property="og:url"         content="https://integrationengine.dev/?lang=${lang}" />
 <meta property="og:title"       content="IntegrationEngine &mdash; Symfony API Integration Bundle" />
-<meta property="og:description" content="Build external API integrations in Symfony without god classes. Automatic OAuth2, parallel requests, typed DTOs." />
+<meta property="og:description" content="${t.metaDescription}" />
 <meta name="twitter:card"        content="summary_large_image" />
 <meta name="twitter:title"       content="IntegrationEngine &mdash; Symfony API Integration Bundle" />
-<meta name="twitter:description" content="Build external API integrations in Symfony without god classes. Automatic OAuth2, parallel requests, typed DTOs." />
+<meta name="twitter:description" content="${t.metaDescription}" />
 <link rel="canonical" href="https://integrationengine.dev/?lang=${lang}" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -58,11 +58,12 @@ export function getHTML(lang = 'en') {
   <a class="topnav-brand" href="?lang=${lang}">Integration<span>Engine</span></a>
   <div class="topnav-links">
     <a href="#problem">${t.navProblem}</a>
-    <a href="#example">${t.navExample}</a>
+    <a href="#roadmap">${t.navRoadmap}</a>
     <a href="#webhooks">${t.navWebhooks}</a>
     <a href="#pattern">${t.navPattern}</a>
   </div>
   <div class="topnav-actions">
+    <a href="https://github.com/CarlosGude/integrationEngine-demo" target="_blank" rel="noopener" class="nav-btn">${t.demoSource}</a>
     <a href="${docsHref}" target="_blank" rel="noopener" class="nav-btn">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
       Docs
@@ -90,10 +91,11 @@ export function getHTML(lang = 'en') {
 </nav>
 <div class="nav-mobile-menu" id="nav-mobile-menu">
   <a href="#problem" onclick="toggleNav()">${t.navProblem}</a>
-  <a href="#example" onclick="toggleNav()">${t.navExample}</a>
+  <a href="#roadmap" onclick="toggleNav()">${t.navRoadmap}</a>
   <a href="#webhooks" onclick="toggleNav()">${t.navWebhooks}</a>
   <a href="#pattern" onclick="toggleNav()">${t.navPattern}</a>
   <hr class="nav-mobile-sep">
+  <a href="https://github.com/CarlosGude/integrationEngine-demo" target="_blank" rel="noopener">${t.demoSource} ↗</a>
   <a href="${docsHref}" target="_blank" rel="noopener">Docs ↗</a>
   <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener">GitHub ↗</a>
 </div>
@@ -109,9 +111,11 @@ export function getHTML(lang = 'en') {
     composer require carlosgude/integration-engine
   </div>
   <div class="hero-actions">
-    <a href="#pattern" class="btn-primary">${t.heroBtn1}</a>
+    <a href="https://github.com/CarlosGude/integrationEngine-demo" target="_blank" rel="noopener" class="btn-primary">${t.demoSource}</a>
+    <a href="#pattern" class="btn-outline">${t.heroBtn1}</a>
     <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener noreferrer" class="btn-outline">${t.heroBtn2}</a>
   </div>
+  <p class="demo-status">${t.demoSoon}</p>
 </section>
 
 <!-- TRUST BAR -->
@@ -175,29 +179,17 @@ export function getHTML(lang = 'en') {
     <div class="eyebrow lt">${t.parallelEyebrow}</div>
     <h2 class="s-heading lt">${t.parallelH2}</h2>
     <p class="s-sub lt">${t.parallelSub}</p>
-    <div class="parallel-timing">
-      <div class="timing-block t-bad">
-        <div class="timing-label">${t.parallelBefore}</div>
-        <div class="timing-number">${t.parallelBeforeTime}</div>
-        <div class="timing-detail">${t.parallelBeforeDetail}</div>
-      </div>
-      <div class="timing-block t-good">
-        <div class="timing-label">${t.parallelAfter}</div>
-        <div class="timing-number">${t.parallelAfterTime}</div>
-        <div class="timing-detail">${t.parallelAfterDetail}</div>
-      </div>
-    </div>
     <div class="struct-panel">
       <div class="struct-header">PHP</div>
       <pre><span class="var">$requests</span> = [];
-<span class="kw">foreach</span> (<span class="var">$stationIds</span> <span class="kw">as</span> <span class="var">$key</span> =&gt; <span class="var">$params</span>) {
-    <span class="var">$requests</span>[<span class="var">$key</span>] = <span class="cls">EngineRequest</span>::<span class="fn">create</span>(
-        <span class="key">actionName</span>: <span class="cls">GetStationByIdAction</span>::<span class="fn">getName</span>(),
+<span class="kw">foreach</span> (<span class="var">$movieParams</span> <span class="kw">as</span> <span class="var">$key</span> =&gt; <span class="var">$params</span>) {
+    <span class="var">$requests</span>[<span class="var">$key</span>] = <span class="kw">new</span> <span class="cls">EngineRequest</span>(
+        <span class="key">actionName</span>: <span class="cls">GetMovieAction</span>::<span class="fn">getName</span>(),
         <span class="key">context</span>:    <span class="cls">DefaultActionContext</span>::<span class="fn">create</span>(<span class="var">$params</span>),
     );
 }
 
-<span class="cm">// All dispatched concurrently &mdash; total time &asymp; slowest request</span>
+<span class="cm">${t.parallelComment}</span>
 <span class="var">$results</span> = <span class="var">$this</span>-&gt;<span class="var">engine</span>-&gt;<span class="hl">sendManyOrFail</span>(<span class="var">$requests</span>);</pre>
     </div>
   </div>
@@ -245,74 +237,6 @@ MyApi/
 <span class="cm">$ php bin/console make:integration MyApi CreateOrder</span>
 <span class="cm">${t.startGenIncrementalNote}</span></pre>
       <a href="${docsHref}" target="_blank" rel="noopener" class="btn-primary gen-docs-link">${t.startGenDocsLink}</a>
-    </div>
-  </div>
-</section>
-
-<!-- STRIPE EXAMPLE -->
-<section id="example" class="s-white">
-  <div class="container">
-    <div class="eyebrow">${t.stripeEyebrow}</div>
-    <h2 class="s-heading">${t.stripeH2}</h2>
-    <p class="s-sub">${t.stripeSub}</p>
-    <div class="example-panels">
-
-      <!-- YAML -->
-      <div class="struct-panel">
-        <div class="struct-header">STRIPE.YAML</div>
-        <pre><span class="key">GetToken</span>:
-    <span class="val">action</span>: App\...\<span class="hl">GetTokenAction</span>
-    <span class="val">method</span>: POST
-    <span class="val">path</span>:   /v1/oauth/token
-
-<span class="key">CreatePaymentIntent</span>:
-    <span class="val">action</span>: App\...\<span class="hl">CreatePaymentIntentAction</span>
-    <span class="val">method</span>: POST
-    <span class="val">path</span>:   /v1/payment_intents
-    <span class="val">authorization</span>:
-        <span class="val">type</span>:         <span class="hl">dynamic</span>
-        <span class="val">action</span>:       <span class="hl">GetToken</span>
-        <span class="val">token_field</span>:  access_token
-        <span class="val">ttl</span>:          3600</pre>
-      </div>
-
-      <!-- MAPPER -->
-      <div class="example-code-panel">
-        <div class="file-label">CreatePaymentIntentMapper.php</div>
-        <div class="code-block"><span class="kw">final class</span> <span class="cls">CreatePaymentIntentMapper</span> <span class="kw">extends</span> <span class="cls">AbstractMapper</span>
-{
-    <span class="kw">public static function</span> <span class="fn">getAction</span>(): <span class="cls">string</span>
-    {
-        <span class="kw">return</span> <span class="cls">CreatePaymentIntentAction</span>::<span class="kw">class</span>;
-    }
-
-    <span class="kw">protected static function</span> <span class="fn">transform</span>(
-        <span class="cls">AbstractAction</span> <span class="var">$a</span>, <span class="cls">array</span> <span class="var">$r</span>
-    ): <span class="cls">ResponseInterface</span> {
-        <span class="kw">return new</span> <span class="cls">CreatePaymentIntentResponse</span>(
-            <span class="key">id</span>:     <span class="var">$r</span>[<span class="str">'id'</span>],
-            <span class="key">secret</span>: <span class="var">$r</span>[<span class="str">'client_secret'</span>],
-            <span class="key">status</span>: <span class="var">$r</span>[<span class="str">'status'</span>],
-        );
-    }
-}</div>
-      </div>
-
-      <!-- USAGE (full width) -->
-      <div class="example-code-panel example-panel-full">
-        <div class="file-label">PaymentService.php &mdash; OAuth2 token is fetched, cached and refreshed automatically</div>
-        <div class="code-block"><span class="var">$intent</span> = <span class="var">$this</span>-&gt;<span class="var">stripe</span>-&gt;<span class="fn">createPaymentIntent</span>(<span class="key">amount</span>: 2000, <span class="key">currency</span>: <span class="str">'eur'</span>);
-
-<span class="fn">assert</span>(<span class="var">$intent</span> <span class="kw">instanceof</span> <span class="cls">CreatePaymentIntentResponse</span>);
-
-<span class="kw">echo</span> <span class="var">$intent</span>-&gt;<span class="var">id</span>;     <span class="cm">// pi_3OqfK8LnFoNEqOv0abc123</span>
-<span class="kw">echo</span> <span class="var">$intent</span>-&gt;<span class="var">secret</span>; <span class="cm">// pi_3OqfK8..._secret_XYZ</span>
-<span class="kw">echo</span> <span class="var">$intent</span>-&gt;<span class="var">status</span>; <span class="cm">// requires_payment_method</span></div>
-      </div>
-
-    </div>
-    <div class="example-cta">
-      <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener" class="btn-primary">${t.stripeBtn}</a>
     </div>
   </div>
 </section>
@@ -471,7 +395,7 @@ MyApi/
       </div>
     </div>
     <div class="example-cta">
-      <a href="https://github.com/CarlosGude/integrationEngine/blob/main/WEBHOOK.md" target="_blank" rel="noopener" class="btn-primary">${t.webhookBtn}</a>
+      <a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/WEBHOOK.md" target="_blank" rel="noopener" class="btn-primary">${t.webhookBtn}</a>
     </div>
   </div>
 </section>
@@ -593,7 +517,7 @@ MyApi/
 
     </div>
     <div class="example-cta">
-      <a href="https://github.com/CarlosGude/integrationEngine/blob/main/OBSERVABILITY.md" target="_blank" rel="noopener" class="btn-primary">${t.obsBtn}</a>
+      <a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/OBSERVABILITY.md" target="_blank" rel="noopener" class="btn-primary">${t.obsBtn}</a>
     </div>
   </div>
 </section>
@@ -619,31 +543,6 @@ MyApi/
     </div>
   </div>
 </div>
-
-<!-- PROJECT STATUS -->
-<section id="status" class="s-light">
-  <div class="container">
-    <div class="eyebrow">${t.statusEyebrow}</div>
-    <h2 class="s-heading">${t.statusH2}</h2>
-    <p class="s-sub">${t.statusP}</p>
-    <div class="status-grid">
-      <div class="status-card">
-        <p>${t.statusNow}</p>
-      </div>
-      <div class="status-card">
-        <p>${t.statusNext}</p>
-      </div>
-      <div class="status-card">
-        <p>${t.statusLater}</p>
-      </div>
-    </div>
-    <div class="status-footer">
-      <a href="https://github.com/CarlosGude/integrationEngine/blob/main/ROADMAP.md" target="_blank" rel="noopener" class="btn-outline">
-        ${t.statusRoadmapLink}
-      </a>
-    </div>
-  </div>
-</section>
 
 <!-- THE PATTERN -->
 <section id="pattern" class="s-white">
@@ -988,7 +887,7 @@ MyApi/
 {
     <span class="var">$requests</span> = [];
     <span class="kw">foreach</span> (<span class="var">$stations</span> <span class="kw">as</span> <span class="var">$key</span> =&gt; <span class="var">$params</span>) {
-        <span class="var">$requests</span>[<span class="var">$key</span>] = <span class="cls">EngineRequest</span>::<span class="fn">create</span>(
+        <span class="var">$requests</span>[<span class="var">$key</span>] = <span class="kw">new</span> <span class="cls">EngineRequest</span>(
             <span class="key">actionName</span>: <span class="cls">GetStationByIdAction</span>::<span class="fn">getName</span>(),
             <span class="key">context</span>:    <span class="cls">DefaultActionContext</span>::<span class="fn">create</span>([
                 <span class="str">'country'</span>   =&gt; <span class="var">$params</span>[<span class="str">'country'</span>],
@@ -1032,6 +931,19 @@ MyApi/
     <div class="eyebrow">${t.thanksEyebrow}</div>
     <h2 class="s-heading">${t.thanksH2}</h2>
     <p class="thanks-p">${t.thanksP}</p>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section id="roadmap" class="s-light">
+  <div class="container">
+    <div class="eyebrow">${t.navRoadmap}</div>
+    <h2 class="s-heading">${t.statusH2}</h2>
+    <p class="s-sub">${t.roadmapSub}</p>
+    <div class="status-grid">
+      ${t.roadmapColumns.map(column => `<article class="status-card"><h3>${column.title}</h3><ul>${column.items.map(item => `<li>${item}</li>`).join('')}</ul></article>`).join('')}
+    </div>
+    <div class="status-footer"><a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/ROADMAP.md" target="_blank" rel="noopener" class="btn-outline">${t.roadmapLink}</a></div>
   </div>
 </section>
 

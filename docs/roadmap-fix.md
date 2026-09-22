@@ -17,23 +17,36 @@ la revisión antigua y sus anotaciones se conservan en
 - [x] Autorización estática: rechazo de parámetros no string antes del transporte.
 - [x] DI: error explícito si no existe la clase de un request middleware etiquetado.
 - [x] Configurar PCOV en el contrato con la demo, cuyo `make test` solicita cobertura.
-  La ejecución remota del workflow modificado todavía está pendiente.
+- [x] Confirmar el CI principal y el contrato con la demo en
+  `6f3107cd98daef8114d05dab9e56dd4979347c9d`: ambos completados con éxito.
+  Evidencia: [CI](https://github.com/CarlosGude/integrationEngine/actions/runs/35735588854)
+  y [contrato demo](https://github.com/CarlosGude/integrationEngine/actions/runs/35735588893).
 - [x] Corregir los comandos de `CLAUDE.md` y retirar las contradicciones del roadmap.
+- [x] Medir exclusión Bundle/Resources: MSI cubierto 94,68 %, inferior al 95 %;
+  se conserva Bundle excluido con evidencia, sin bajar umbrales.
+- [x] Retirar tres ignores de mutación con pruebas de timestamp y codificación CSV.
+- [x] Añadir línea a los errores de imports documentales y verificar fallos
+  deliberados de configuración/imports en copias aisladas.
 
 ## Pendientes reales
 
-- [ ] Confirmar el CI principal y el contrato con la demo sobre el commit que
-  incluya estos últimos cambios; no basta con el resultado del commit anterior.
-- [ ] Publicar la siguiente versión cuando pase esa validación.
+- [ ] Validar el commit final de release si incorpora cambios posteriores al
+  commit comprobado; el CI verde anterior no valida esos cambios.
+- [ ] Publicar la siguiente versión tras cerrar la preparación de release.
   Véase [la preparación de v7.1.0](./release-7.1.md).
 - [ ] Conservar la causa original de `RequestResponseException` para distinguir
   errores de transporte de preparación local con estado 0, antes de ampliar retries.
 - [ ] Revisar los huecos menores de cobertura que siguen siendo comportamientos
   públicos: validación/opciones CSV, errores del generador y getters de lifecycle.
   No perseguir 100 % de líneas añadiendo pruebas de implementación.
-- [ ] Investigar y documentar por qué Infection omite determinadas líneas no
-  cubiertas en esta configuración. Mantener la cobertura PHPUnit como medida
-  independiente; un MSI alto no resuelve esta pregunta.
+- [x] Confirmar que Infection omite código no cubierto por defecto. La medición
+  con `--with-uncovered` muestra 15 mutantes sin cobertura y supera 85/95.
+  Mantener la cobertura PHPUnit como medida independiente.
+- [ ] Corregir en un PR separado las dos dependencias de Symfony en
+  Core/Resilience/ErrorClassifier; después activar Deptrac en CI.
+  Configuración y `make deptrac` preparados, sin baseline ni reglas relajadas.
+
+Resultados, pruebas negativas y límites: [auditoría de calidad](quality-audit.md).
 
 Los cinco mutantes supervivientes anteriores están razonados en
 [QUALITY.md](./advanced/QUALITY.md). No requieren bajar umbrales ni añadir exclusiones.

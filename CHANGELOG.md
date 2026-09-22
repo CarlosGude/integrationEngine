@@ -36,6 +36,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Internal
 
+- Add strict standalone Deptrac configuration; CI activation awaits a separate
+  fix for the two existing Core-to-Symfony dependencies in ErrorClassifier.
+- Remove three mutation ignores with timestamp and CSV regression tests, measure
+  the Bundle exclusion and document uncovered-code mutation behavior.
+- Correct landing request constructors, documentation links and unsupported
+  claims; add a bilingual roadmap, demo source links and a Node content-test CI job.
+- Documentation import failures now include the source line; update quality and
+  release status with commit-specific CI evidence.
+
 - Behavioral coverage for GraphQL batches and middleware fallback, form-encoded
   requests, observability registration and generation, logging, and resilience.
 - Command and DI tests cover integration inspection and form-encoded registration.
@@ -86,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - **New (v7.0):** `client: graphql` with per-integration auto-wiring
   - **Why:** Simpler configuration, consistent middleware chains per integration, better isolation between integrations
   - **Migration:** See [MIGRATION-v7-client-registration.md](./docs/MIGRATION-v7-client-registration.md) for detailed upgrade instructions
-- PHP 8.4 is now the minimum target (though bundle works on 8.2+)
+- PHP minimum remains 8.2; PHP 8.4 is used for the dedicated quality jobs.
 - Middleware pipeline refactored: decorators replaced with tagged service middleware via `integration_engine.middleware` priority system
 - Request middleware interface: new `RequestMiddlewareInterface` for request signing schemes (OAuth 1.0a, etc.) requiring fully-built request
 

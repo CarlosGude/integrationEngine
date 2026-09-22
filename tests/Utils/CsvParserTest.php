@@ -11,6 +11,19 @@ use PHPUnit\Framework\TestCase;
 
 final class CsvParserTest extends TestCase
 {
+    #[Test]
+    public function unspecifiedEncodingPreservesBytesRegardlessOfInternalEncoding(): void
+    {
+        $previousEncoding = mb_internal_encoding();
+        mb_internal_encoding('ISO-8859-1');
+
+        try {
+            self::assertSame([['name' => 'café']], CsvParser::parse("name\ncafé", new CsvParseOptions(encoding: null)));
+        } finally {
+            mb_internal_encoding($previousEncoding);
+        }
+    }
+
     // ── escaping ─────────────────────────────────────────────────────────────
     //
     // The parser pins str_getcsv's $escape to ''. PHP's own default is "\\",

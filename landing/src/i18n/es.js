@@ -1,15 +1,46 @@
 export default {
+    roadmapColumns: [
+        {
+            "title": "Ahora",
+            "items": [
+                "Preparar v7.1.0: inspección de integraciones y mantenimiento.",
+                "Reforzar las comprobaciones de arquitectura y la documentación."
+            ]
+        },
+        {
+            "title": "Próximo",
+            "items": [
+                "Elegir transporte HTTP por integración, con protección opcional frente a redes privadas.",
+                "Añadir una regla PHPStan opcional para la pareja acción/mapper.",
+                "Definir métricas de operación y eventos de lotes."
+            ]
+        },
+        {
+            "title": "Después",
+            "items": [
+                "Ejemplos de migración legacy según necesidades de aplicaciones.",
+                "Ejemplos de adaptadores y materiales de talleres de diseño."
+            ]
+        }
+    ],
+    roadmapLink: "Ver la hoja de ruta completa →",
+    roadmapSub: "Publicada: v7.0.2. Preparando v7.1.0 con inspección de integraciones y correcciones de mantenimiento. Los próximos pasos son propuestas, todavía no están publicados.",
+    statusH2: "Hoja de ruta",
+    parallelComment: "// Concurrente con el adaptador REST incluido; con middleware de petición es secuencial",
+    demoSoon: "Demo online · próximamente",
+    demoSource: "Código de la demo",
+    navRoadmap: "Hoja de ruta",
+    metaDescription: "Conecta APIs externas con Symfony mediante acciones declarativas, respuestas tipadas y peticiones concurrentes. Explora el código, la arquitectura y los ejemplos.",
     lang: 'es',
 
     // Nav
     navProblem: 'El Problema',
     navPattern:  'El Patrón',
-    navExample:  'Ejemplo',
     navWebhooks: 'Webhooks',
 
     // Hero
     heroH1:  'Deja de escribir código de integración dos veces.',
-    heroP:   'Cada integración que entrega tu equipo sigue el mismo estándar predecible. Envía requests a APIs externas o recibe webhooks de ellas &mdash; ambas con la autenticación por token resuelta, ejecución en paralelo y DTOs tipados. Los desarrolladores nuevos entienden cualquier API en minutos &mdash; no en días. Un solo bundle de Symfony &mdash; destilado de experiencia en producción a escala.',
+    heroP: "Una estructura predecible para tus integraciones con APIs externas: acciones declarativas, mappers de respuestas y DTOs tipados. Un bundle de Symfony destilado de integraciones en producción en logística y viajes.",
     heroBenefits: [
         '&#10003;&nbsp;Auth por token, Bearer y API Key',
         '&#10003;&nbsp;Peticiones en paralelo',
@@ -26,7 +57,7 @@ export default {
     bizEyebrow: 'Por qué importa',
     bizH2:      'El coste de no tener un estándar se acumula.',
     bizItems: [
-        { stat: 'Días &rarr; Horas',  desc: 'Tiempo desde cero hasta una integración funcionando y testeada &mdash; con la auth, las llamadas en paralelo y las respuestas tipadas incluidas.' },
+        { stat: 'Menos código repetitivo', desc: 'Genera una estructura consistente para acciones, mappers y respuestas tipadas.' },
         { stat: '1 comando',          desc: 'Genera la action, el mapper y la respuesta para cualquier endpoint. Todo el equipo genera la misma estructura, siempre.' },
         { stat: 'Sin reescrituras',   desc: 'Se instala junto al código existente. Los nuevos endpoints siguen el estándar; las integraciones legacy migran a tu ritmo.' },
     ],
@@ -58,19 +89,8 @@ export default {
     // Parallel section
     parallelEyebrow:      'Peticiones en paralelo',
     parallelH2:           'Deja de esperar a las APIs una a una.',
-    parallelSub:          '<code>sendManyOrFail()</code> despacha todas las peticiones en paralelo. El tiempo total &asymp; la petición más lenta &mdash; independientemente de cuántas envíes. Una búsqueda de disponibilidad en un marketplace de viajes son 4 consultas en paralelo para una ciudad pequeña y 17 para una grande &mdash; por cliente. Esto lo gestiona.',
-    parallelBefore:       'Secuencial (foreach)',
-    parallelAfter:        'En paralelo (sendManyOrFail)',
-    parallelBeforeTime:   '4,2s',
-    parallelAfterTime:    '0,8s',
-    parallelBeforeDetail: '10 peticiones &times; 420ms cada una',
-    parallelAfterDetail:  '10 peticiones, ejecución concurrente',
+    parallelSub: "El adaptador REST incluido inicia las peticiones del lote antes de leer sus respuestas. Las peticiones pueden solaparse en vez de esperar una a una. La duración depende del proveedor, los límites de conexión y los middlewares; con middleware de petición la ejecución es secuencial.",
 
-    // Stripe example section
-    stripeEyebrow: 'Ejemplo real',
-    stripeH2:      'Una integración con Stripe en menos de 30 líneas.',
-    stripeSub:     'Un entry en YAML. Un mapper. Una respuesta tipada. El token se pide, se cachea y se vuelve a pedir ante un 401 &mdash; declarado en YAML, no escrito en tu aplicación.',
-    stripeBtn:     'Ver código en GitHub',
 
     // Mid-page CTA
     midCtaText: '¿Listo para añadir el patrón a tu próximo proyecto?',
@@ -103,7 +123,7 @@ export default {
     patternH2:         'Cinco antipatrones que el engine resuelve',
     patternExpandLabel:   'Ver los 5 antipatrones en detalle',
     patternCollapseLabel: 'Ocultar detalle',
-    patternSub:           'Los mismos endpoints, dos implementaciones. Cada sección muestra las clases reales del proyecto.',
+    patternSub: "Ejemplos ilustrativos de los mismos problemas de integración, con y sin el patrón.",
     withoutPattern: 'Sin patrón',
     enginePattern:  'Engine pattern',
 
@@ -148,37 +168,41 @@ export default {
     // Pattern 5
     p5Title:        'Batch de peticiones',
     p5Anti:         '&#10007; El <code>foreach</code> secuencial bloquea: cada petición espera a que termine la anterior. El tiempo total escala linealmente.',
-    p5Sol:          '&#10003; <code>sendManyOrFail()</code> despacha todas en paralelo. El tiempo total &asymp; la petición más lenta, independientemente del número de items.',
+    p5Sol: "&#10003; <code>sendManyOrFail()</code> agrupa peticiones mediante un cliente con soporte de lotes. El adaptador REST incluido utiliza respuestas HTTP lazy para la concurrencia.",
     p5CmBlocked:    '// petición HTTP &mdash; las demás esperan aquí bloqueadas',
-    p5CmBatchBad:   '//  3 estaciones &times; 250ms = ~750ms\n// 10 estaciones &times; 250ms = ~2500ms  &larr; escala linealmente',
-    p5CmAllSame:    '// todas salen al mismo tiempo &mdash; tiempo total &asymp; la más lenta',
-    p5CmBatchGood:  '//  3 estaciones &rarr; ~250ms   (la más lenta, no la suma)\n// 10 estaciones &rarr; ~250ms   (no escala)',
+    p5CmBatchBad: "// Cada petición espera la respuesta anterior.",
+    p5CmAllSame: "// Concurrente cuando el adaptador y la cadena de middleware admiten lotes",
+    p5CmBatchGood: "// Inspecciona cada resultado con sendMany(), o propaga el fallo al terminar con sendManyOrFail().",
     p5Insight:      '<strong>Por qué importa:</strong> los fallos individuales nunca abortan el batch &mdash; cada clave se resuelve de forma independiente. <code>sendMany()</code> devuelve un <code>BatchResultCollection</code> donde inspeccionas cada resultado; <code>sendManyOrFail()</code> lanza en el primer fallo después de que todo el batch haya ejecutado. El cliente REST por defecto ya implementa <code>BatchClientInterface</code> mediante las lazy responses de Symfony HttpClient &mdash; cero configuración adicional.',
 
     // Social Proof section
-    proofEyebrow: 'Construido para Producción',
-    proofH2:      'Probado a escala.',
+    proofEyebrow: "Evidencia técnica",
+    proofH2: "Calidad que puedes comprobar.",
     proofItems: [
-        { stat: '646 tests',      desc: 'PHPStan level max, 100% de mutation score, todos los gates en verde en CI.' },
-        { stat: 'REST · GraphQL', desc: 'Dos adapters de cliente incluidos, webhooks inbound, y un tag para el tuyo.' },
-        { stat: '5–13x más rápido', desc: 'Ejecución paralela por defecto: el tiempo total es la llamada más lenta, no la suma de todas.' },
-        { stat: 'Nacido de trabajo real', desc: 'Destilado de integraciones de viajes y e-commerce que el autor entregó y mantuvo.' },
+        {
+            "stat": "Puertas de calidad",
+            "desc": "PHPStan al máximo nivel, tests unitarios y tests de mutación. Consulta los resultados en el repositorio."
+        },
+        {
+            "stat": "REST · GraphQL · Form",
+            "desc": "Adaptadores incluidos, configurados por integración, con soporte para tus propios clientes."
+        },
+        {
+            "stat": "Peticiones concurrentes",
+            "desc": "Los clientes con soporte de lotes pueden solapar llamadas HTTP. El middleware de petición usa ejecución secuencial."
+        },
+        {
+            "stat": "Experiencia en producción",
+            "desc": "Destilado de integraciones en logística y viajes."
+        }
     ],
 
-    // Status section
-    statusEyebrow:      'Estado',
-    statusH2:           'v7.0.2 en vivo — Clientes por integración, pipeline de middleware, firma de requests',
-    statusP:            'Integraciones salientes (Stripe, Shopify, etc.) + webhooks inbound (recibe eventos de plataformas externas). Verificación de firmas y eventos tipados incluidos; la detección de duplicados es un servicio sobre el almacenamiento que tú pongas. Sin promesas con fecha &mdash; solo software funcionando y transparencia en cada hito.',
-    statusNow:          '<strong>Ahora:</strong> v7.0.2 publicada.<br/>• Clientes por integración con middleware flexible<br/>• Firma de requests para OAuth 1.0a, AWS SigV4<br/>• Soporte multi-inquilino vía connection resolver<br/>• 646 tests, 100% de mutation score<br/>• Compatible con PHP 8.4<br/>• <a href="https://github.com/CarlosGude/integrationEngine/wiki" target="_blank">Wiki completa</a> y guías de migración incluidas',
-    statusNext:         '<strong>Próximo:</strong> Fase 7: Admin experience (comandos de consola para inspeccionar integraciones, exports de Prometheus).',
-    statusLater:        '<strong>Después:</strong> Ecosistema de plugins open-source, patrones de migración legacy, materiales de formación certificada.',
-    statusRoadmapLink:  'Ver fases: ahora, próximo, después →',
 
     // Webhook showcase section
     webhookEyebrow: 'Webhooks Inbound',
     webhookH2:      'Recibe de cualquier plataforma.',
     webhookSub:     '<strong>v7.0:</strong> El componente Webhook de Symfony, ya montado. Un parser verifica la firma y decodifica el payload; tu listener recibe un evento tipado, no un array crudo. `make:webhook` escribe el parser, el mapper, el DTO y el consumer en tu app: las clases que conocen a tu proveedor son tuyas, no del bundle.',
-    webhookPlatforms: 'Shopify &nbsp;•&nbsp; WooCommerce &nbsp;•&nbsp; Stripe &nbsp;•&nbsp; Custom',
+    webhookPlatforms: "HMAC hexadecimal &nbsp;•&nbsp; HMAC base64 &nbsp;•&nbsp; HMAC con timestamp",
     webhookFeatures: [
         'Esquemas de firma cubiertos: HMAC hex tras prefijo, HMAC crudo en base64, HMAC con timestamp',
         'Eventos tipados en tus listeners, nunca un array crudo',
@@ -191,13 +215,13 @@ export default {
     // Observability section
     obsEyebrow: 'Observabilidad',
     obsH2:      'Monitoreo de producción incluido.',
-    obsSub:     '<strong>v5.3.0+:</strong> Lifecycle events (ActionStarted, HttpResponseReceived, ResponseMapped, ActionCompleted, ActionFailed) se disparan en cada etapa. Trackea latencia HTTP vs. transformación a DTO por separado. Un comando para wire logging, métricas Prometheus, error tracking Sentry, o audit trails custom. Cero overhead en producción (0.06ms por llamada, imperceptible).',
+    obsSub: "Los eventos de ciclo de vida exponen tiempos de llamadas individuales a send(). Conecta logging, callbacks de métricas o seguimiento de errores con el helper de observabilidad. La aplicación aporta almacenamiento y exportadores de métricas; la semántica del ciclo de vida de lotes está pendiente de definición.",
     obsFeatures: [
         'Timing detallado: duración HTTP call + duración DTO mapping',
         'Lifecycle events con metadata (action, integration, duration, status)',
         'LifecycleEventDispatcher para suscripción directa',
         'Adaptador SymfonyEventDispatcher (#[AsEventListener])',
-        'ObservabilitySetup helper (logging + Prometheus + Sentry)',
+        'ObservabilitySetup helper (logging + metrics callbacks + error tracking)',
     ],
     obsBtn:     'Ver guía de observabilidad →',
 
@@ -218,13 +242,13 @@ export default {
     // Thanks section
     thanksEyebrow: 'Antes de irte',
     thanksH2:      'Gracias por llegar hasta aquí.',
-    thanksP:       'Este patrón salió de años integrando APIs de viajes y hosting &mdash; búsquedas de disponibilidad que se abren en 17 consultas paralelas por cliente, flujos de reserva, facturación. Una versión anterior de este engine aguantaba esa carga. Este bundle es lo que ese trabajo me enseñó: hecho explícito, testeado y abierto.',
+    thanksP: "Este bundle está destilado de integraciones en producción en logística y viajes. Hice el patrón explícito, lo probé y abrí el código para que otros equipos puedan utilizarlo y mejorarlo.",
 
     // CTA
     ctaEyebrow:   'Contacto',
     ctaH2:        'Empieza a construir tu próxima integración hoy.',
-    ctaSub:       'Escríbenos directamente, abre una GitHub Discussion, o instálalo y pruébalo.',
-    ctaEmailLabel:'Envíanos un email',
+    ctaSub: "Escríbeme, abre una GitHub Discussion o instala el bundle y pruébalo.",
+    ctaEmailLabel: "Envíame un email",
     ctaEmail:     'hola@integrationengine.dev',
     ctaEmailHref: 'mailto:hola@integrationengine.dev',
     ctaDiscuss:   'Unirse a Discussions',

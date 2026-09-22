@@ -34,7 +34,7 @@ function getAllKeys(obj, prefix = '') {
   for (const [key, value] of Object.entries(obj)) {
     const fullKey = prefix ? `${prefix}.${key}` : key;
 
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    if (typeof value === 'object' && value !== null) {
       // Recurse into nested objects
       keys.push(...getAllKeys(value, fullKey));
     } else {

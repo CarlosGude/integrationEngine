@@ -80,15 +80,6 @@
                 "IntegrationEngine\\Utils\\CsvParser::parse"
             ]
         },
-        "LogicalAnd": {
-            "ignore": [
-                // Swapping "&&" for "||" only widens the guard to the two
-                // cases it excludes — encoding 'UTF-8', and null, which makes
-                // mb_convert_encoding() fall back to the UTF-8 internal
-                // encoding. Both transcode UTF-8 to UTF-8, i.e. identity.
-                "IntegrationEngine\\Utils\\CsvParser::parse"
-            ]
-        },
         "LogicalNot": {
             "ignore": [
                 // $this->subscribers[$eventClass][] = … creates the array by
@@ -105,23 +96,8 @@
                 "IntegrationEngine\\Core\\Webhook\\HmacSha256SignatureVerifier::verify"
             ]
         },
-        "LogicalOr": {
-            "ignore": [
-                // With no provided hashes the loop below returns false anyway,
-                // and a non-numeric timestamp casts to 0, which is outside any
-                // sane tolerance — so "||" and "&&" agree on every input this
-                // verifier can be called with. Scoped to the method because
-                // both operators sit on the same line.
-                "IntegrationEngine\\Core\\Webhook\\TimestampedHmacSignatureVerifier::verify"
-            ]
-        },
         "CastInt": {
             "ignore": [
-                // Only a non-canonical numeric timestamp ("1700000000.0",
-                // " 1700000000") signs a different string with and without the
-                // cast, and no provider sends one. Pinned to the line so the
-                // cast feeding isWithinTolerance() stays mutated.
-                "IntegrationEngine\\Core\\Webhook\\TimestampedHmacSignatureVerifier::verify::49",
                 // format('U') is a numeric string: subtracting it yields the
                 // same int with or without the cast.
                 "IntegrationEngine\\Core\\Webhook\\TimestampedHmacSignatureVerifier::isWithinTolerance"

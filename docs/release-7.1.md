@@ -36,24 +36,33 @@ sequential batch failures and invalid authorization/middleware configuration.
   delay throws `OverflowException`. The engine does not enable automatic retries.
 - Generated observability services must be instantiated by the application to
   register their observers. Existing generated classes are not rewritten.
-- PHP and Symfony dependency ranges are unchanged. The SSRF, PHPStan and Prometheus
+- PHP >=8.2 and Symfony ^6.4|^7.0|^8.0 dependency ranges are unchanged.
+  PHP 8.4 is used for the dedicated quality and demo contract jobs; it is not
+  the bundle's minimum PHP requirement. The SSRF, PHPStan and Prometheus
   proposals are not part of this release.
 
 ## Validation and publication
 
 Local quality results are recorded in [QUALITY.md](./advanced/QUALITY.md).
-The contract workflow now enables PCOV, matching the demo's coverage-requesting
-test command. YAML validation is complete; remote execution of that workflow
-change has not yet been verified.
+Remote validation checked on 2026-09-22 for commit
+`6f3107cd98daef8114d05dab9e56dd4979347c9d`:
+
+- [Main CI passed](https://github.com/CarlosGude/integrationEngine/actions/runs/35735588854),
+  including the compatibility matrix, PHP 8.2 generator and mutation gate.
+- [Demo contract passed](https://github.com/CarlosGude/integrationEngine/actions/runs/35735588893),
+  including tests with PCOV and static analysis against the bundle checkout.
+
+These results validate that commit. Later documentation and release changes
+still need validation on the final candidate.
 
 Before publishing:
 
-1. Commit the remaining fixes and check the main CI matrix and demo contract on
-   that exact commit. A successful earlier run is not sufficient.
+1. Commit the final release preparation and check the main CI matrix and demo
+   contract on that exact commit. A successful earlier run is not sufficient.
 2. Confirm that the compatibility notes above cover consuming applications.
 3. Move Unreleased entries to `7.1.0` with the actual release date.
 4. Create the version tag and release using the repository's release process;
    verify Packagist receives it.
 
-This document prepares that work. It does not create a tag, publish a release or
-claim that the modified remote workflows have passed.
+The implementation commit has passed remote validation. Tagging, release
+publication and Packagist verification remain pending.

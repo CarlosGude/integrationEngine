@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { getHTML } from '../src/html.js';
 
@@ -37,76 +37,60 @@ function getAllJsFiles(dir) {
   return files;
 }
 
-test('content: no "integration.dev" without "engine"', () => {
-  const violations = findLineViolations(
-    // Match "integration.dev" but ensure it's followed by "engine"
-    (line) => line.includes('integration.dev') && !line.includes('integrationengine.dev'),
-  );
+const forbidden = [
+  ['incorrect email domain', /integration\.dev/],
+  ['nonexistent request factory', /EngineRequest\s*::\s*create/],
+  ['outdated Symfony minimum', /Symfony 7\+/],
+  ['unsupported experience claim', /three years|tres años/i],
+  ['unverified provider example', /stripe/i],
+  ['unmeasured benchmark', /0[.,]8s|4[.,]2s|5[–-]13x|0[.,]06ms/],
+  ['plural contact copy', /Drop us a line|Send us an email|Escríbenos|Envíanos/],
+  ['company-name claim', /SAP, Salesforce/],
+  ['old demo repository', /integrationEngine-use-example/],
+  ['outdated quality claim', /100% mutation|100% de mutation|646 tests/],
+];
 
-  assert.deepStrictEqual(
-    violations,
-    [],
-    'Found "integration.dev" without "engine". Correct domain is "integrationengine.dev".',
-  );
-});
+for (const [name, pattern] of forbidden) {
+  test(`content: no ${name}`, () => {
+    // Strip syntax-highlighting tags too: HTML spans cannot hide invalid PHP.
+    assert.doesNotMatch(readAllSrcContent().replace(/<[^>]*>/g, ''), pattern);
+  });
+}
 
-test('content: no raw EngineRequest::create outside HTML tags', () => {
-  // Check for raw unescaped code snippets (not in proper HTML span tags)
-  // Valid: <span class="cls">EngineRequest</span>::<span class="fn">create</span>
-  // Invalid: bare EngineRequest::create in text content
-  const violations = findLineViolations(
-    (line) =>
-      // Lines inside proper HTML code blocks with span tags use correct syntax
-      !line.includes('<span class="cls">EngineRequest</span>') &&
-      line.includes('EngineRequest::create') &&
-      !line.includes('<span'),
-  );
+for (const [lang, address] of [['en', 'hi@integrationengine.dev'], ['es', 'hola@integrationengine.dev']]) {
+  test(`rendered html (${lang}): contact address and mailto agree`, () => {
+    const html = getHTML(lang);
+    assert.ok(html.includes(`href="mailto:${address}"`));
+    assert.ok(html.includes(`>${address}</span>`));
+  });
 
-  assert.deepStrictEqual(
-    violations,
-    [],
-    'Found raw "EngineRequest::create" without HTML tags. Code examples must use proper syntax highlighting.',
-  );
-});
+  test(`rendered html (${lang}): roadmap, demo source and valid internal anchors`, () => {
+    const html = getHTML(lang);
+    assert.ok(html.includes('id="roadmap"'));
+    assert.ok(html.indexOf('id="roadmap"') < html.indexOf('id="contact"'));
+    assert.ok(html.includes('https://github.com/CarlosGude/integrationEngine-demo'));
+    assert.ok(html.includes('https://github.com/CarlosGude/integrationEngine/blob/main/docs/ROADMAP.md'));
+    const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]));
+    for (const [, anchor] of html.matchAll(/href="#([^"]+)"/g)) {
+      assert.ok(ids.has(anchor), `Missing section #${anchor}`);
+    }
+    assert.doesNotMatch(html, /\bundefined\b/);
+  });
 
-test('content: no outdated "Symfony 7+" claims', () => {
-  const content = readAllSrcContent();
+  test(`rendered html (${lang}): batch examples use the real constructor`, () => {
+    const code = getHTML(lang).replace(/<[^>]*>/g, '');
+    assert.equal([...code.matchAll(/new EngineRequest\(/g)].length, 2);
+    assert.ok(code.includes('GetMovieAction::getName()'));
+    assert.doesNotMatch(code, /EngineRequest\s*::\s*create/);
+  });
 
-  assert.doesNotMatch(
-    content,
-    /Symfony 7\+/,
-    'Found "Symfony 7+" in content. Should reference actual supported versions (6.4+).',
-  );
-});
-
-test('content: no "three years" or "tres años" (outdated claims)', () => {
-  const content = readAllSrcContent();
-
-  assert.doesNotMatch(content, /three years/, 'Found outdated "three years" claim. Update to reflect current timeline.');
-  assert.doesNotMatch(content, /tres años/, 'Found outdated "tres años" claim. Update to reflect current timeline.');
-});
-
-test('content: no Stripe benchmark or benchmark claims', () => {
-  const content = readAllSrcContent();
-
-  // Watch for benchmark-related claims
-  assert.doesNotMatch(
-    content,
-    /Stripe.*benchmark/i,
-    'Found Stripe-related benchmark claim. Benchmarks should be measured, not claimed.',
-  );
-  assert.doesNotMatch(
-    content,
-    /benchmark.*Stripe/i,
-    'Found Stripe-related benchmark claim. Benchmarks should be measured, not claimed.',
-  );
-
-  // Also catch if benchmark examples exist without measurement
-  assert.ok(
-    !(content.includes('Stripe integration') && content.includes('benchmark')),
-    'Found potentially false benchmark claim tied to Stripe.',
-  );
-});
+  test(`rendered html (${lang}): repository documentation links exist`, () => {
+    const html = getHTML(lang);
+    for (const [, path] of html.matchAll(/https:\/\/github\.com\/CarlosGude\/integrationEngine\/blob\/main\/([^"#?]+)/g)) {
+      assert.ok(existsSync(join(SRC_DIR, '..', '..', path)), `Missing repository file: ${path}`);
+    }
+  });
+}
 
 for (const lang of ['en', 'es']) {
   test(`rendered html (${lang}): PHP namespaces keep their backslashes`, () => {
@@ -126,24 +110,6 @@ for (const lang of ['en', 'es']) {
 
     assert.deepStrictEqual(found, [], 'Found <span> tags missing their closing ">"; their text is not rendered.');
   });
-}
-
-/**
- * Returns "file:line: text" for every source line matching the predicate.
- */
-function findLineViolations(isViolation) {
-  const violations = [];
-
-  for (const file of getAllJsFiles(SRC_DIR)) {
-    const lines = readFileSync(join(SRC_DIR, file), 'utf8').split('\n');
-    lines.forEach((line, index) => {
-      if (isViolation(line)) {
-        violations.push(`${file}:${index + 1}: ${line.trim()}`);
-      }
-    });
-  }
-
-  return violations;
 }
 
 function readAllSrcContent() {

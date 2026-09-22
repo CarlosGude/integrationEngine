@@ -24,10 +24,22 @@ the single source of these numbers, and that its `source.excludes` and
 
 As of 2026-09-22, measured locally on PHP 8.5.6 (unreleased working tree):
 
-- **778 tests, 2,155 assertions**, style and PHPStan max passing.
+- **786 tests, 2,169 assertions** in the full suite after adding the audit
+  documentation. The preceding `make ci` passed with 783 tests and 2,163 assertions,
+  including style and PHPStan max. Documentation data-provider counts change
+  when documents or links are added.
 - **Line coverage: 98.03%** — 2,188 of 2,232 executable lines, measured with Xdebug.
-- **Covered Code MSI: 99.54%** — 1,093 mutants: 1,087 killed by tests,
-  1 errored, 5 escaped. Existing thresholds and exclusions are unchanged.
+- **Default covered-only run: 99.54% covered MSI** — 1,098 mutants: 1,092 killed
+  by tests, 1 errored, 5 escaped. Three per-mutator ignores were removed;
+  thresholds and source exclusions are unchanged.
+- **With uncovered code: MSI 98.20%, covered MSI 99.54%** — 1,113 mutants,
+  including the same 1,092 killed, 1 errored and 5 escaped, plus 15 uncovered.
+
+The initial plan audit ran `make qa` and the landing's `node --test` (10 tests).
+The subsequent quality work ran `make ci` and a separate `--with-uncovered`
+measurement successfully. Line coverage above remains the earlier measurement;
+it was not regenerated for these test additions. See the [audit](../quality-audit.md)
+for the separate Bundle-exclusion experiment and negative checks.
 
 GraphQL batches, form-encoded requests, observability setup, logging and
 resilience utilities now have behavioral tests. Mutation coverage alone still
@@ -36,8 +48,13 @@ coverage report as well. `Bundle` remains excluded from mutation testing below.
 
 Webhook parsing/dispatch, the REST adapter, authorization-header resolution and
 the middleware resolver also have full line coverage after the maintenance follow-up.
-The demo contract workflow now enables PCOV; its modified remote run remains to
-be verified. These local results do not stand in for that consuming-app check.
+Remote validation was checked on 2026-09-22 for commit
+`6f3107cd98daef8114d05dab9e56dd4979347c9d`:
+[main CI passed](https://github.com/CarlosGude/integrationEngine/actions/runs/35735588854)
+and [demo contract passed](https://github.com/CarlosGude/integrationEngine/actions/runs/35735588893).
+The latter includes the PCOV configuration and validates consuming-app tests and
+static analysis. These results apply to that commit; a later release candidate
+must pass its own checks.
 
 ### Surviving mutants retained without new exclusions
 
@@ -52,23 +69,24 @@ be verified. These local results do not stand in for that consuming-app check.
 
 ## `Bundle` exclusion from mutation testing
 
-`infection.json5`'s `source.excludes` still excludes all of `Bundle` (DI
-extension, compiler pass, generator, profiler templates) rather than only
-`Bundle/Resources`. Symfony DI wiring and code generation are exercised by
-`tests/Bundle/*` through container assertions and generated-file checks, not
-through mutation-sensitive business logic — running mutation testing over
-service-definition builders produces mostly noise (e.g. mutating a
-`Reference('foo')` string literal) rather than signal. Revisiting this
-(narrowing the exclusion to `Bundle/Resources` once there's a concrete need)
-is future work, not something silently dropped.
+The Bundle/Resources-only experiment generated 1,728 mutants, with 92 escaping;
+covered MSI was **94.68%**, below the unchanged 95% gate. Bundle therefore remains
+excluded under the fallback explicitly allowed by B1.1. This decision is based
+on the measured failure, not a presumption that wiring or generator mutants are
+harmless. Improve behavioral tests before narrowing the exclusion.
 
-## Equivalent mutants
+See the [quality audit](../quality-audit.md) for the experiment, the uncovered-code
+diagnostic, removed ignores and architecture prerequisite. `make deptrac` is
+available separately but currently reports two Core-to-Symfony violations; it is
+not yet an enforcing CI gate.
 
-A handful of mutants are intentionally excluded via per-mutator `ignore`
-entries in `infection.json5` — not because the code is untested, but because
-no observable behaviour distinguishes the mutant from the original given how
-the surrounding code is actually used. Each is scoped to the exact class or
-method, never to a whole mutator globally.
+## Existing mutation exclusions
+
+The table records retained per-mutator exclusions and their assumptions. They
+are not all unconditional equivalences: restricted inputs and wall-clock precision
+remain review limitations. UnwrapArrayMap and UnwrapArrayFilter are also disabled
+globally in the current configuration; their justification still needs review.
+No new exclusions were added in the quality audit.
 
 | Mutator | Location | Why it's equivalent |
 |---|---|---|
@@ -78,12 +96,9 @@ method, never to a whole mutator globally.
 | `ReturnRemoval` | `BatchDispatcher::dispatch`, line 36 | `dispatch([])`'s early `return []` and its fallthrough path (three loops over an empty array) produce the identical `[]` result. Pinned to the line so the method's real `return` stays mutated. |
 | `CastString` | `ConnectionResolver::resolve` | The missing cast is only observable for a fractional-float `$connection` — not the documented tenant-id shape — via PHP's own float-to-int array-key truncation. |
 | `CastString` | `CsvParser::parse` | `mb_convert_encoding()` is declared `string\|false` but only returns `false` for an invalid encoding name, which throws a `ValueError` first on PHP 8. The cast is there for PHPStan, not for runtime. |
-| `LogicalAnd` | `CsvParser::parse` | Turning `&&` into `\|\|` only widens the transcoding guard to the two cases it excludes: encoding `'UTF-8'`, and `null`, which makes `mb_convert_encoding()` fall back to the UTF-8 internal encoding. Both transcode UTF-8 to UTF-8, i.e. identity. |
 | `Throw_` | `ResponseBuilder::applyMapper`, line 41 | `AbstractMapper::map()` is `final` and repeats this same mapper/action check, throwing the same exception with the same arguments, so removing this `throw` changes nothing observable. Pinned to the line: the `NotMappedActionException` above it stays mutated. |
 | `LogicalNot` | `LifecycleEventDispatcher::subscribe` | `$this->subscribers[$eventClass][] = …` creates the array by itself, so negating the `isset()` guard it sits behind cannot change the resulting state. |
 | `LessThanOrEqualTo` | `HmacSha256SignatureVerifier::verify` | A signature exactly as long as its prefix leaves an empty hash, which `hash_equals()` rejects anyway: `<` and `<=` both end in `return false`. |
-| `LogicalOr` | `TimestampedHmacSignatureVerifier::verify` | With no provided hashes the loop below returns `false` anyway, and a non-numeric timestamp casts to `0`, outside any sane tolerance — so `\|\|` and `&&` agree on every input this verifier can be called with. Both operators sit on one line, so this entry is scoped to the method and also covers the second `\|\|`, which tests do kill: the only one in this table that gives something up. |
-| `CastInt` | `TimestampedHmacSignatureVerifier::verify`, line 49 | Only a non-canonical numeric timestamp (`"1700000000.0"`, `" 1700000000"`) signs a different string with and without the cast, and no provider sends one. Pinned to the line so the cast feeding `isWithinTolerance()` stays mutated. |
 | `CastInt` | `TimestampedHmacSignatureVerifier::isWithinTolerance` | `format('U')` returns a numeric string; subtracting it yields the same int with or without the cast. |
 | `IncrementInteger`, `DecrementInteger` | `TracingMiddleware::process`, `::processMany` | The `* 1000` seconds-to-milliseconds conversion would need an injectable clock to assert sub-1% precision deterministically; `TracingMiddlewareTest` instead asserts the correct order of magnitude (catches the operator itself being swapped, e.g. `-`↔`+`, `*`↔`/`). Worth revisiting once the engine has an injectable clock elsewhere. |
 | `IncrementInteger`, `DecrementInteger` | `IntegrationEngine::send`, lines 111, 123, 125, 137, 148 | The same `* 1000` conversion, here for the durations carried by the lifecycle events. Pinned to those lines so the rest of the method stays mutated. |

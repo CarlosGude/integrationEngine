@@ -42,11 +42,33 @@ Requiere autenticación local con `npx wrangler login`.
 
 ### CI/CD
 
-El workflow `.github/workflows/deploy-landing.yml` despliega automáticamente en cada push a `main` que modifique archivos en `landing/**`.
+El despliegue automático está configurado externamente en Cloudflare a partir
+de los pushes al repositorio. Este checkout no contiene un workflow de GitHub
+Actions de despliegue.
 
-Requiere dos secrets en el repositorio de GitHub:
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
+El job `landing` del CI principal ejecuta `node --test` con Node 22, sin instalar
+dependencias. Para ejecutar las mismas comprobaciones localmente:
+
+```bash
+cd landing
+npm test
+```
+
+Los tests comprueban paridad EN/ES (incluidas estructuras dentro de arrays),
+contenido prohibido, constructores de los ejemplos PHP, anclas y rutas de
+documentación dentro del repositorio.
+
+### Estado de la demo y el correo
+
+Revisado el 2026-09-22: el dominio previsto de la demo no resuelve por DNS;
+la landing enlaza al código fuente y muestra la demo online como próxima.
+Cambiar ese estado solo tras comprobar su URL pública. El roadmap no presenta
+funcionalidades propuestas como ya publicadas.
+
+Los MX de integrationengine.dev apuntan a Cloudflare. Eso no confirma las reglas
+individuales de hi/hola ni la entrega al destinatario: falta comprobar Email
+Routing y recibir correos de prueba. La sesión local de Wrangler estaba caducada
+durante esta revisión; el despliegue se delega al flujo automático del repositorio.
 
 ## Modificar contenido
 

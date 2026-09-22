@@ -1,0 +1,25 @@
+deptrac:
+  paths: [./src, ./tests]
+  layers:
+    - name: Core
+      collectors: [{ type: directory, value: src/Core/.* }]
+    - name: Infrastructure
+      collectors: [{ type: directory, value: src/Infrastructure/.* }]
+    - name: Bundle
+      collectors: [{ type: directory, value: src/Bundle/.* }]
+    - name: Utils
+      collectors: [{ type: directory, value: src/Utils/.* }]
+    - name: Tests
+      collectors: [{ type: directory, value: tests/.* }]
+    - name: Psr
+      collectors: [{ type: classNameRegex, value: '#^Psr\\#' }]
+    - name: Symfony
+      collectors: [{ type: classNameRegex, value: '#^Symfony\\#' }]
+    - name: PHPUnit
+      collectors: [{ type: classNameRegex, value: '#^PHPUnit\\#' }]
+  ruleset:
+    Core: [Psr]
+    Infrastructure: [Core, Psr, Symfony]
+    Bundle: [Core, Infrastructure, Psr, Symfony]
+    Utils: []
+    Tests: [Core, Infrastructure, Bundle, Utils, Psr, Symfony, PHPUnit]

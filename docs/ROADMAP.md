@@ -2,6 +2,9 @@
 
 What is released, what is implemented for the next release, and what still needs work.
 
+Detailed task audit, remaining acceptance criteria and execution dependencies:
+[bundle execution plan](./PLAN-STATUS.md) (reviewed 2026-09-22).
+
 ## Recently shipped
 
 - **v7.0.2** — CSV zero-row and escaping fixes, with parser regression tests.
@@ -21,7 +24,13 @@ Implemented in Unreleased, preparing **v7.1.0**:
 - Webhook validation that verifies signatures before decoding and requires a JSON
   object; regression tests for mapper mismatch and malformed input.
 - Tests for sequential REST failure isolation, authorization validation and middleware DI.
-- PCOV enabled in the demo contract workflow; its next remote execution must confirm the fix.
+- PCOV enabled in the demo contract workflow, with a successful remote run.
+
+Validation checked on 2026-09-22 for commit `6f3107cd98daef8114d05dab9e56dd4979347c9d`:
+[CI passed](https://github.com/CarlosGude/integrationEngine/actions/runs/35735588854)
+and [demo contract passed](https://github.com/CarlosGude/integrationEngine/actions/runs/35735588893).
+Release publication remains pending; subsequent changes require validation on
+the final release commit.
 
 Release details and compatibility notes: [v7.1 preparation](./release-7.1.md).
 Current maintenance tasks: [maintenance backlog](./roadmap-fix.md).

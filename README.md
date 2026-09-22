@@ -13,8 +13,8 @@
 - ✅ **Connection resolver** — `ConnectionResolverInterface` for multi-connection integrations (multi-tenant support with per-connection auth caching)
 - ✅ **Path resolution from request body** — placeholders like `{id}` resolve from the body first, then context; consumed keys are stripped from the payload
 - ✅ **FormEncodedClientAdapter** — for form-encoded request bodies
-- ✅ **PHP 8.4 compatibility** — uses readonly properties, passes PHPStan level=max
-- ✅ **100% mutation testing** — MSI 100% over 700+ mutants, contract tests across 8 PHP/Symfony combinations
+- ✅ **PHP 8.2+ compatibility** — CI tests PHP 8.2, 8.3 and 8.4 with compatible Symfony versions and lowest/stable dependencies
+- ✅ **Quality gates** — PHPStan level=max, mutation testing and a demo contract job; [measured results and CI evidence](./docs/advanced/QUALITY.md)
 - 🔗 [Migration guide: MIGRATION-v7-client-registration.md](./docs/MIGRATION-v7-client-registration.md)
 - 🔗 [Lifecycle events: LIFECYCLE.md](./docs/LIFECYCLE.md)
 - 🔗 [Webhooks: WEBHOOK.md](./docs/WEBHOOK.md)
@@ -631,7 +631,7 @@ It's purely additive: in `prod` the `TracingMiddleware` is not wired, so there i
 - [`CONTRIBUTING.md`](./docs/CONTRIBUTING.md) — setup, code quality tools, and how to run the test suite.
 - [`docs/`](./docs/) — per-topic references: actions, authorization, batch requests, clients,
   context and path resolution, mappers and responses.
-- [`integrationEngine-use-example`](https://github.com/CarlosGude/integrationEngine-use-example) —
+- [`integrationEngine-demo`](https://github.com/CarlosGude/integrationEngine-demo) —
   full working demo app showing the bundle wired into a real Symfony project.
 
 ---

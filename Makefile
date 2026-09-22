@@ -1,6 +1,6 @@
 PHP=php
 COMPOSER=composer
-.PHONY: install test qa ci cs cs-fix stan mutation pre-commit deploy-landing
+.PHONY: install test qa ci cs cs-fix stan deptrac mutation pre-commit deploy-landing
 # -----------------------------
 # SETUP
 # -----------------------------
@@ -37,6 +37,10 @@ cs-fix:
 # -----------------------------
 stan:
 	./vendor/bin/phpstan analyse --memory-limit=1G $(PATHS)
+
+# Standalone until the Core/ErrorClassifier architecture prerequisite is fixed.
+deptrac:
+	./vendor/bin/deptrac analyse --fail-on-uncovered --no-progress
 
 # -----------------------------
 # TESTS

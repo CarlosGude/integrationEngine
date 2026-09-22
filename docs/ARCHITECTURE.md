@@ -7,6 +7,26 @@ you work against them.
 
 ---
 
+## Layer checks (CI activation pending)
+
+Run `make deptrac` to check dependencies in src and tests. The configuration
+uses explicit layers and no baseline; uncovered dependencies fail the command.
+
+| Layer | May depend on |
+|---|---|
+| Core | Psr |
+| Infrastructure | Core, Psr, Symfony |
+| Bundle | Core, Infrastructure, Psr, Symfony |
+| Utils | Its own layer and PHP built-ins |
+| Tests | Core, Infrastructure, Bundle, Utils, Psr, Symfony, PHPUnit |
+
+Dependencies inside the same layer are allowed. PHP built-ins are not external
+architecture layers. The initial run exposes two existing Core-to-Symfony
+dependencies in ErrorClassifier; Core's rule has not been relaxed to accept them.
+The separate prerequisite fix must preserve or explicitly migrate that public
+behavior before the check joins CI. See the [quality audit](quality-audit.md)
+for the violations and negative verification.
+
 ## 1. Actions are stateless and immutable
 
 `AbstractAction` is `final readonly` on all its properties. Once the engine instantiates

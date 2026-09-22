@@ -213,6 +213,24 @@ final class TimestampedHmacSignatureVerifierTest extends TestCase
 
         self::assertFalse($verifier->verify($modifiedBody, $signature, self::SECRET));
     }
+
+    public function testMissingTimestampIsRejectedEvenNearUnixEpoch(): void
+    {
+        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, new FakeClock(0));
+        $body = 'test body';
+        $signature = 'v1='.hash_hmac('sha256', '0.'.$body, self::SECRET);
+
+        self::assertFalse($verifier->verify($body, $signature, self::SECRET));
+    }
+
+    public function testNumericTimestampIsNormalisedBeforeSignatureVerification(): void
+    {
+        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, new FakeClock(1000));
+        $body = 'test body';
+        $signature = 't=1e3,v1='.hash_hmac('sha256', '1000.'.$body, self::SECRET);
+
+        self::assertTrue($verifier->verify($body, $signature, self::SECRET));
+    }
 }
 
 /**
