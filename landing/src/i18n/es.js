@@ -1,30 +1,30 @@
 export default {
     roadmapColumns: [
         {
-            "title": "Ahora",
+            "title": "Publicada",
             "items": [
-                "Preparar v7.1.0: inspección de integraciones y mantenimiento.",
-                "Reforzar las comprobaciones de arquitectura y la documentación."
+                "v8.0.0: Eventos solo escalares, definiciones de webhooks en YAML, soporte form-encoded, protección SSRF.",
+                "Reintentos y timeouts declarativos, reglas PHPStan opcionales, middleware de solicitud para firmas."
             ]
         },
         {
             "title": "Próximo",
             "items": [
-                "Elegir transporte HTTP por integración, con protección opcional frente a redes privadas.",
-                "Añadir una regla PHPStan opcional para la pareja acción/mapper.",
-                "Definir métricas de operación y eventos de lotes."
+                "v8.1.0: Observabilidad mejorada con recolección de métricas personalizada.",
+                "Estrategias avanzadas de reintentos y patrones circuit-breaker.",
+                "Mejoras en el resolvedor de múltiples conexiones."
             ]
         },
         {
             "title": "Después",
             "items": [
-                "Ejemplos de migración legacy según necesidades de aplicaciones.",
-                "Ejemplos de adaptadores y materiales de talleres de diseño."
+                "Guías de migración legacy para adopción de v7 → v8.",
+                "Materiales de taller de diseño de integraciones y casos de estudio."
             ]
         }
     ],
     roadmapLink: "Ver la hoja de ruta completa →",
-    roadmapSub: "Publicada: v7.0.2. Preparando v7.1.0 con inspección de integraciones y correcciones de mantenimiento. Los próximos pasos son propuestas, todavía no están publicados.",
+    roadmapSub: "Última versión: v8.0.0 con seguridad mejorada, configuración simplificada y seguridad de tipos. Ver UPGRADE-8.0.md para la guía de migración.",
     statusH2: "Hoja de ruta",
     parallelComment: "// Concurrente con el adaptador REST incluido; con middleware de petición es secuencial",
     demoSoon: "Demo online · próximamente",

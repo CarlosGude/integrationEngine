@@ -1,30 +1,30 @@
 export default {
     roadmapColumns: [
         {
-            "title": "Now",
+            "title": "Released",
             "items": [
-                "Prepare v7.1.0: integration inspection and maintenance fixes.",
-                "Strengthen architecture checks and documentation."
+                "v8.0.0: Scalar-only lifecycle events, YAML webhook definitions, form-encoded support, SSRF protection.",
+                "Declarative retries & timeouts, optional PHPStan rules, request middleware for signing."
             ]
         },
         {
             "title": "Next",
             "items": [
-                "Select an HTTP transport per integration, including opt-in private-network protection.",
-                "Add an optional PHPStan mapper-pairing rule.",
-                "Define operation metrics and batch event semantics."
+                "v8.1.0: Enhanced observability with custom metric collection.",
+                "Advanced retry strategies and circuit-breaker patterns.",
+                "Multi-connection resolver improvements."
             ]
         },
         {
             "title": "Later",
             "items": [
-                "Legacy migration examples driven by application needs.",
-                "Adapter examples and design workshop materials."
+                "Legacy migration guides for v7 → v8 adoption.",
+                "Integration design workshop materials and case studies."
             ]
         }
     ],
     roadmapLink: "Read the full roadmap →",
-    roadmapSub: "Released: v7.0.2. Preparing v7.1.0 with integration inspection and maintenance fixes. The next steps below are proposals, not shipped features.",
+    roadmapSub: "Latest: v8.0.0 with improved security, simplified configuration, and type safety. See UPGRADE-8.0.md for migration guide.",
     statusH2: "Roadmap",
     parallelComment: "// Concurrent with the built-in REST adapter; request middleware runs sequentially",
     demoSoon: "Live demo · coming soon",
