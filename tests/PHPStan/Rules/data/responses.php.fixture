@@ -1,0 +1,12 @@
+<?php
+namespace QualityFixtures\Responses;
+use IntegrationEngine\Core\Contract\Response\ResponseInterface;
+use IntegrationEngine\Core\Contract\Webhook\WebhookEventInterface;
+final readonly class Valid implements ResponseInterface { public function toArray(): array { return []; } }
+final readonly class ValidEvent implements WebhookEventInterface {}
+abstract class Base implements ResponseInterface { public function toArray(): array { return []; } }
+readonly class MissingFinal implements ResponseInterface { public function toArray(): array { return []; } }
+final class MissingReadonly implements ResponseInterface { public function toArray(): array { return []; } }
+class InvalidEvent implements WebhookEventInterface {}
+$anonymous = new class implements ResponseInterface { public function toArray(): array { return []; } };
+class Unrelated {}

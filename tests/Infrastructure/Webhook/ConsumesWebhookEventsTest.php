@@ -122,12 +122,12 @@ final class ConsumedTestEvent implements WebhookEventInterface
  */
 final class ConsumedTestMapper extends AbstractWebhookMapper
 {
-    public function getDefinition(): string
+    public static function eventType(): string
     {
         return 'products/update';
     }
 
-    public function map(array $payload, array $headers): WebhookEventInterface
+    protected static function transform(array $payload, array $headers): WebhookEventInterface
     {
         $id = $payload['id'] ?? '';
 
@@ -155,6 +155,6 @@ final class TopicConsumer extends BaseTopicConsumer
 {
     protected function handles(RemoteEvent $event, AbstractWebhookMapper $mapper): bool
     {
-        return ($event->getPayload()['topic'] ?? null) === $mapper->getDefinition();
+        return ($event->getPayload()['topic'] ?? null) === $mapper::eventType();
     }
 }

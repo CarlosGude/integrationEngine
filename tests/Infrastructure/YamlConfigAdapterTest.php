@@ -556,6 +556,35 @@ final class YamlConfigAdapterTest extends TestCase
         self::assertSame(60, $action->getCacheTtl());
     }
 
+    #[Test]
+    public function actionTimeoutIsOptionalAndPreservesFractionalSeconds(): void
+    {
+        $adapter = $this->buildAdapter("get_employee:\n    action: '%s'\n    timeout: 0.25\n");
+        self::assertSame(0.25, $adapter->getAction('get_employee')->getTimeout());
+        $default = $this->buildAdapter("get_employee:\n    action: '%s'\n");
+        self::assertNull($default->getAction('get_employee')->getTimeout());
+        $zero = $this->buildAdapter("get_employee:\n    action: '%s'\n    timeout: 0\n");
+        self::assertSame(0.0, $zero->getAction('get_employee')->getTimeout());
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function invalidActionTimeouts(): iterable
+    {
+        yield 'negative' => ['-1'];
+        yield 'string' => ["'fast'"];
+        yield 'boolean' => ['true'];
+        yield 'infinity' => ['.Inf'];
+        yield 'nan' => ['.NaN'];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('invalidActionTimeouts')]
+    public function testInvalidActionTimeoutIsRejected(string $value): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('timeout must be a finite non-negative number');
+        $this->buildAdapter("get_employee:\n    action: '%s'\n    timeout: ".$value."\n");
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     /** Builds an adapter from a YAML template whose %s is replaced by the fake action FQCN. */

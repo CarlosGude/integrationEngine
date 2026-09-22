@@ -1,0 +1,30 @@
+<?php
+namespace QualityFixtures\Facades;
+use IntegrationEngine\Core\Registry\IntegrationName;
+final class Dto {}
+class Facade implements IntegrationName {
+    public function __construct() {}
+    public function one(): Dto { return new Dto(); }
+    /** @return list<Dto> */
+    public function many(): array { return []; }
+    /** @return array<string, Dto> */
+    public function keyed(): array { return []; }
+    public function raw(): array { return []; }
+    /** @return array<string, mixed> */
+    public function mixedValues(): array { return []; }
+    public function anything(): mixed { return null; }
+    public function unknown() { return null; }
+    public function iterable(): iterable { return []; }
+    private function privateRaw(): array { return []; }
+    protected function protectedMixed(): mixed { return null; }
+    /** @return iterable<Dto> */
+    public function typedIterable(): iterable { return []; }
+}
+class Ordinary { public function raw(): array { return []; } }
+class UnionFacade implements IntegrationName {
+    public function union(): array|string { return []; }
+    /** @return list<Dto> */
+    public function docOnly() { return []; }
+    /** @return list<Dto>|null */
+    public function optional(): ?array { return null; }
+}

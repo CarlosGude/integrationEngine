@@ -22,15 +22,15 @@ use IntegrationEngine\Core\Dispatch\AuthenticationHandler;
 use IntegrationEngine\Core\Dispatch\BatchDispatcher;
 use IntegrationEngine\Core\Dispatch\ConnectionResolver;
 use IntegrationEngine\Core\Dispatch\ResponseBuilder;
-use IntegrationEngine\Core\Lifecycle\ActionCompleted;
-use IntegrationEngine\Core\Lifecycle\ActionFailed;
-use IntegrationEngine\Core\Lifecycle\ActionStarted;
-use IntegrationEngine\Core\Lifecycle\HttpResponseReceived;
-use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
-use IntegrationEngine\Core\Lifecycle\ResponseMapped;
+use IntegrationEngine\Core\Event\RequestSent;
+use IntegrationEngine\Core\Event\RequestFailed;
+use IntegrationEngine\Core\Event\ResponseMapped;
+use IntegrationEngine\Core\Exception\RequestResponseException;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
 use Psr\Log\LoggerInterface;
+use IntegrationEngine\Core\Security\HostPolicy;
 
 final readonly class IntegrationEngine
 {
@@ -47,9 +47,11 @@ final readonly class IntegrationEngine
         ?LoggerInterface $logger = null,
         ?AuthenticationHandler $authHandler = null,
         ?ConnectionResolverInterface $connectionResolver = null,
-        private ?LifecycleEventDispatcher $eventDispatcher = null,
+        private ?EventDispatcherInterface $eventDispatcher = null,
+        private ?HostPolicy $hostPolicy = null,
+        private ?string $baseUrl = null,
     ) {
-        $this->authHandler = $authHandler ?? new AuthenticationHandler($config, $client, $cache, $integrationName, $logger);
+        $this->authHandler = $authHandler ?? new AuthenticationHandler($config, $client, $cache, $integrationName, $logger, $eventDispatcher);
         $this->dispatchConnectionResolver = new ConnectionResolver($integrationName, $connectionResolver);
         $this->responseBuilder = new ResponseBuilder();
         $this->batchDispatcher = new BatchDispatcher($client, $integrationName, $logger);
@@ -79,83 +81,49 @@ final readonly class IntegrationEngine
         mixed $connection = null,
     ): ResponseInterface {
         $startTime = microtime(true);
-        $action = $this->config->getAction($actionName, $body);
-        $resolved = $this->dispatchConnectionResolver->resolveForDispatch($action, $connection, $baseUrl);
-        $action = $resolved['action'];
-        $resolvedBaseUrl = $resolved['baseUrl'];
-        $cacheDiscriminator = $resolved['cacheDiscriminator'];
-        $client = $this->resolveClient($resolvedBaseUrl);
-
-        $this->eventDispatcher?->dispatch(new ActionStarted(
-            action: $action,
-            integrationName: $this->integrationName,
-            timestamp: $startTime,
-        ));
-
+        $started = false;
         try {
+            $action = $this->config->getAction($actionName, $body);
+            $resolved = $this->dispatchConnectionResolver->resolveForDispatch($action, $connection, $baseUrl);
+            $action = $resolved['action'];
+            $resolvedBaseUrl = $resolved['baseUrl'] ?? $this->baseUrl;
+            $this->emitStarted($actionName, $action, $startTime, $resolved['connectionId']);
+            $started = true;
+            $this->hostPolicy?->assertAllowed(($resolvedBaseUrl ?? '').$action->getPath($context));
+            $cacheDiscriminator = $resolved['cacheDiscriminator'];
+            $client = $this->resolveClient($resolvedBaseUrl);
             $auth = $action->getAuthorization();
-
+            $statusCode = 0;
             if ($auth instanceof DynamicAuthorizationConfig) {
                 $response = $this->authHandler->handle(
                     action: $action,
                     auth: $auth,
                     context: $context,
                     headers: $headers,
-                    buildResponse: fn (AbstractAction $a, array $respBody, array $respHeaders): ResponseInterface => $this->responseBuilder->build($a, $respBody, $respHeaders),
+                    buildResponse: function (AbstractAction $a, array $respBody, array $respHeaders, int $status = 0) use (&$statusCode): ResponseInterface {
+                        $statusCode = $status;
+
+                        return $this->responseBuilder->build($a, $respBody, $respHeaders);
+                    },
                     client: $client,
                     cacheDiscriminator: $cacheDiscriminator,
                 );
             } else {
-                $httpStart = microtime(true);
                 $rawResponse = $client->send($action, $context, $headers);
-                $httpDuration = (microtime(true) - $httpStart) * 1000;
-
-                $this->eventDispatcher?->dispatch(new HttpResponseReceived(
-                    action: $action,
-                    integrationName: $this->integrationName,
-                    timestamp: $startTime,
-                    statusCode: $rawResponse['statusCode'] ?? 0,
-                    durationMs: $httpDuration,
-                ));
-
-                $mappingStart = microtime(true);
+                $statusCode = $rawResponse['statusCode'] ?? 0;
                 $response = $this->responseBuilder->build($action, $rawResponse['body'], $rawResponse['headers']);
-                $mappingDuration = (microtime(true) - $mappingStart) * 1000;
-
-                $totalDuration = (microtime(true) - $startTime) * 1000;
-                $this->eventDispatcher?->dispatch(new ResponseMapped(
-                    action: $action,
-                    integrationName: $this->integrationName,
-                    timestamp: $startTime,
-                    response: $response,
-                    httpDurationMs: $httpDuration,
-                    mappingDurationMs: $mappingDuration,
-                    totalDurationMs: $totalDuration,
-                ));
             }
-
-            $duration = (microtime(true) - $startTime) * 1000;
-            $this->eventDispatcher?->dispatch(new ActionCompleted(
-                action: $action,
-                integrationName: $this->integrationName,
-                timestamp: $startTime,
-                response: $response,
-                durationMs: $duration,
-            ));
-
-            return $response;
         } catch (\Throwable $e) {
-            $duration = (microtime(true) - $startTime) * 1000;
-            $this->eventDispatcher?->dispatch(new ActionFailed(
-                action: $action,
-                integrationName: $this->integrationName,
-                timestamp: $startTime,
-                error: $e,
-                durationMs: $duration,
-            ));
-
+            if (!$started) {
+                $this->emitStarted($actionName, null, $startTime);
+            }
+            $this->emitFailed($actionName, $e, $startTime);
             throw $e;
         }
+
+        $this->emitMapped($actionName, $response, $statusCode, $startTime);
+
+        return $response;
     }
 
     /**
@@ -174,13 +142,19 @@ final readonly class IntegrationEngine
         $prepared = [];
         $tokenRetry = new BatchTokenRetry($this->cache, $this->integrationName);
         $connectionCache = [];
+        $startedAt = [];
 
         foreach ($requests as $key => $request) {
+            $startedAt[$key] = microtime(true);
+            $started = false;
             try {
                 $action = $this->config->getAction($request->actionName, $request->body);
                 $resolved = $this->dispatchConnectionResolver->resolveForDispatch($action, $request->connection, $request->baseUrl, $connectionCache);
                 $action = $resolved['action'];
-                $baseUrl = $resolved['baseUrl'];
+                $baseUrl = $resolved['baseUrl'] ?? $this->baseUrl;
+                $this->emitStarted($request->actionName, $action, $startedAt[$key], $resolved['connectionId'], $key);
+                $started = true;
+                $this->hostPolicy?->assertAllowed(($baseUrl ?? '').$action->getPath($request->context));
                 $cacheDiscriminator = $resolved['cacheDiscriminator'];
                 $client = $this->resolveClient($baseUrl);
 
@@ -191,12 +165,15 @@ final readonly class IntegrationEngine
                         $key,
                         $auth,
                         $cacheDiscriminator,
-                        fn (): AbstractAction => $this->authHandler->withStaticToken($action, $auth, client: $client, cacheDiscriminator: $cacheDiscriminator),
+                        fn (): AbstractAction => $this->authHandler->withStaticToken($action, $auth, client: $client, cacheDiscriminator: $cacheDiscriminator, requestKey: $key),
                     );
                 }
 
                 $prepared[$key] = new PreparedRequest($action, $request->context, $request->headers, $baseUrl, $cacheDiscriminator);
             } catch (\Throwable $e) {
+                if (!$started) {
+                    $this->emitStarted($request->actionName, null, $startedAt[$key], requestKey: $key);
+                }
                 $failures[$key] = $e;
             }
         }
@@ -206,7 +183,7 @@ final readonly class IntegrationEngine
             $raw,
             $tokenRetry->plan($raw),
             fn (int|string $key, PreparedRequest $original, DynamicAuthorizationConfig $auth): PreparedRequest => new PreparedRequest(
-                $this->authHandler->withStaticToken($original->action, $auth, client: $this->resolveClient($original->baseUrl), cacheDiscriminator: $original->cacheDiscriminator),
+                $this->authHandler->withStaticToken($original->action, $auth, client: $this->resolveClient($original->baseUrl), cacheDiscriminator: $original->cacheDiscriminator, refreshReason: 'rejected_401', requestKey: $key),
                 $original->context,
                 $original->headers,
                 $original->baseUrl,
@@ -219,6 +196,7 @@ final readonly class IntegrationEngine
 
         foreach ($requests as $key => $request) {
             if (isset($failures[$key])) {
+                $this->emitFailed($request->actionName, $failures[$key], $startedAt[$key], $key);
                 $results[$key] = BatchResult::failure($failures[$key]);
 
                 continue;
@@ -229,14 +207,18 @@ final readonly class IntegrationEngine
             );
 
             if ($rawResult instanceof \Throwable) {
+                $this->emitFailed($request->actionName, $rawResult, $startedAt[$key], $key);
                 $results[$key] = BatchResult::failure($rawResult);
 
                 continue;
             }
 
             try {
-                $results[$key] = BatchResult::success($this->responseBuilder->build($prepared[$key]->action, $rawResult['body'], $rawResult['headers']));
+                $response = $this->responseBuilder->build($prepared[$key]->action, $rawResult['body'], $rawResult['headers']);
+                $results[$key] = BatchResult::success($response);
+                $this->emitMapped($request->actionName, $response, $rawResult['statusCode'] ?? 0, $startedAt[$key], $key);
             } catch (\Throwable $e) {
+                $this->emitFailed($request->actionName, $e, $startedAt[$key], $key);
                 $results[$key] = BatchResult::failure($e);
             }
         }
@@ -270,6 +252,23 @@ final readonly class IntegrationEngine
         }
 
         return $responses;
+    }
+
+    private function emitStarted(string $actionName, ?AbstractAction $action, float $start, ?string $connectionId = null, int|string|null $requestKey = null): void
+    {
+        $this->eventDispatcher?->dispatch(new RequestSent($this->integrationName, $actionName, $action?->getMethod() ?? '', $action?->getRawPath() ?? '', $start, $connectionId, $requestKey));
+    }
+
+    private function emitMapped(string $actionName, ResponseInterface $response, int $statusCode, float $start, int|string|null $requestKey = null): void
+    {
+        $this->eventDispatcher?->dispatch(new ResponseMapped($this->integrationName, $actionName, (microtime(true) - $start) * 1000, $statusCode, $response::class, microtime(true), $requestKey));
+    }
+
+    private function emitFailed(string $actionName, \Throwable $error, float $start, int|string|null $requestKey = null): void
+    {
+        $statusCode = $error instanceof RequestResponseException ? $error->statusCode : 0;
+        $message = $statusCode > 0 ? 'Upstream request failed.' : 'Integration request failed.';
+        $this->eventDispatcher?->dispatch(new RequestFailed($this->integrationName, $actionName, (microtime(true) - $start) * 1000, $statusCode, $error::class, $message, microtime(true), $requestKey));
     }
 
     private function resolveClient(?string $baseUrl): ClientInterface

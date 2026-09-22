@@ -14,6 +14,8 @@ use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
 use Psr\Log\LoggerInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
+use IntegrationEngine\Core\Event\TokenRefreshed;
 
 final class AuthenticationHandler
 {
@@ -25,12 +27,13 @@ final class AuthenticationHandler
         CachePort $cache,
         string $integrationName,
         ?LoggerInterface $logger = null,
+        ?EventDispatcherInterface $eventDispatcher = null,
     ) {
-        $this->dynamicAuthHandler = new DynamicAuthHandler($config, $client, $cache, $integrationName, $logger);
+        $this->dynamicAuthHandler = new DynamicAuthHandler($config, $client, $cache, $integrationName, $logger, $eventDispatcher);
     }
 
     /**
-     * @param \Closure(AbstractAction, array<mixed>, array<string, list<string>>): ResponseInterface $buildResponse
+     * @param \Closure(AbstractAction, array<mixed>, array<string, list<string>>, int): ResponseInterface $buildResponse
      */
     public function handle(
         AbstractAction $action,
@@ -58,6 +61,8 @@ final class AuthenticationHandler
         mixed $preloadedCache = null,
         ?ClientInterface $client = null,
         ?string $cacheDiscriminator = null,
+        string $refreshReason = 'cache_miss',
+        int|string|null $requestKey = null,
     ): AbstractAction {
         return $this->dynamicAuthHandler->withStaticToken(
             action: $action,
@@ -65,6 +70,8 @@ final class AuthenticationHandler
             preloadedCache: $preloadedCache,
             client: $client,
             cacheDiscriminator: $cacheDiscriminator,
+            refreshReason: $refreshReason,
+            requestKey: $requestKey,
         );
     }
 }

@@ -4,49 +4,26 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core\Webhook;
 
+use IntegrationEngine\Core\Contract\Webhook\SignatureConfig;
 use IntegrationEngine\Core\Contract\Webhook\SignatureVerifierInterface;
+use IntegrationEngine\Core\Exception\WebhookRejectionReason;
+use IntegrationEngine\Core\Exception\WebhookSignatureException;
 
-/**
- * HMAC-SHA256 signature verifier for webhook requests.
- *
- * Verifies signatures in the format: `{prefix}{hash}`
- * where prefix is configurable (e.g., "sha256=") and hash is the HMAC-SHA256
- * of the raw body computed with the shared secret.
- *
- * @author Carlos Gude
- */
 final readonly class HmacSha256SignatureVerifier implements SignatureVerifierInterface
 {
-    public function __construct(
-        private string $headerName,
-        private string $signaturePrefix,
-    ) {}
-
-    public function verify(string $body, string $signature, string $secret): bool
+    public function verify(string $rawBody, array $headers, SignatureConfig $config): void
     {
-        if ('' === $this->signaturePrefix) {
-            $expectedPrefix = 'sha256=';
-        } else {
-            $expectedPrefix = $this->signaturePrefix;
+        $signature = SignatureHeader::read($headers, $config);
+        $prefix = $config->prefix ?? '';
+        if (!str_starts_with($signature, $prefix)) {
+            throw new WebhookSignatureException(WebhookRejectionReason::HeaderMalformed);
         }
-
-        if (!str_starts_with($signature, $expectedPrefix)) {
-            return false;
+        $hash = substr($signature, \strlen($prefix));
+        if (1 !== preg_match('/^[a-fA-F0-9]{64}$/D', $hash)) {
+            throw new WebhookSignatureException(WebhookRejectionReason::HeaderMalformed);
         }
-
-        $prefixLen = \strlen($expectedPrefix);
-        if (\strlen($signature) <= $prefixLen) {
-            return false;
+        if (!hash_equals(hash_hmac('sha256', $rawBody, $config->secret), strtolower($hash))) {
+            throw new WebhookSignatureException(WebhookRejectionReason::SignatureInvalid);
         }
-
-        $hash = substr($signature, $prefixLen);
-        $expectedHash = hash_hmac('sha256', $body, $secret);
-
-        return hash_equals($expectedHash, $hash);
-    }
-
-    public function getHeaderName(): string
-    {
-        return $this->headerName;
     }
 }

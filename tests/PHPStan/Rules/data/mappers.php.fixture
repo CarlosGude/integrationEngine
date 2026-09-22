@@ -1,0 +1,28 @@
+<?php
+namespace QualityFixtures\Mappers;
+use IntegrationEngine\Core\Contract\Action\AbstractAction;
+use IntegrationEngine\Core\Contract\Mapper\AbstractMapper;
+use IntegrationEngine\Core\Contract\Response\ResponseInterface;
+abstract class MapperBase extends AbstractMapper {
+    protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface { throw new \LogicException(); }
+}
+class GoodAction extends AbstractAction {
+    public static function getName(): string { return 'good'; } public static function hasResponse(): bool { return true; }
+    public static function mapper(): ?string { return GoodMapper::class; }
+}
+class OtherAction extends AbstractAction {
+    public static function getName(): string { return 'other'; } public static function hasResponse(): bool { return true; }
+    public static function mapper(): ?string { return GoodMapper::class; }
+}
+class GoodMapper extends MapperBase {
+    public static function getAction(): string { return GoodAction::class; }
+}
+class InvalidActionMapper extends MapperBase { public static function getAction(): string { return \stdClass::class; } }
+class WrongMapper extends MapperBase {
+
+    public static function getAction(): string { return OtherAction::class; }
+}
+class DynamicMapper extends MapperBase {
+
+    public static function getAction(): string { return getenv('ACTION') ?: GoodAction::class; }
+}

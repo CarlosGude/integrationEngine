@@ -4,48 +4,30 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core\Lifecycle;
 
-/**
- * Minimal dispatcher for integration engine lifecycle events.
- * Applications can plug in Symfony EventDispatcher or any PSR-14 dispatcher.
- * Extendable for adapter implementations (e.g. SymfonyEventDispatcherAdapter).
- *
- * Usage:
- *   $dispatcher = new LifecycleEventDispatcher();
- *   $dispatcher->subscribe(ActionCompleted::class, function(ActionCompleted $event) {
- *       \Psr\Log\LogLevel::info("Action completed: {$event->action()->getName()}");
- *   });
- */
-class LifecycleEventDispatcher
+use Psr\EventDispatcher\EventDispatcherInterface;
+use Psr\EventDispatcher\StoppableEventInterface;
+
+/** Small PSR-14 dispatcher for applications without an event framework. */
+class LifecycleEventDispatcher implements EventDispatcherInterface
 {
     /** @var array<class-string, list<callable>> */
     private array $subscribers = [];
 
-    /**
-     * Subscribe to an event type.
-     * $callable receives the event as its only argument.
-     *
-     * @param class-string $eventClass
-     */
+    /** @param class-string $eventClass */
     public function subscribe(string $eventClass, callable $callable): void
     {
-        if (!isset($this->subscribers[$eventClass])) {
-            $this->subscribers[$eventClass] = [];
-        }
         $this->subscribers[$eventClass][] = $callable;
     }
 
-    /**
-     * Dispatch an event to all subscribers.
-     */
-    public function dispatch(IntegrationEngineEvent $event): void
+    public function dispatch(object $event): object
     {
-        $eventClass = $event::class;
-        if (!isset($this->subscribers[$eventClass])) {
-            return;
-        }
-
-        foreach ($this->subscribers[$eventClass] as $callable) {
+        foreach ($this->subscribers[$event::class] ?? [] as $callable) {
+            if ($event instanceof StoppableEventInterface && $event->isPropagationStopped()) {
+                break;
+            }
             $callable($event);
         }
+
+        return $event;
     }
 }

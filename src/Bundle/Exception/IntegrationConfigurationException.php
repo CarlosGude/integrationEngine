@@ -11,6 +11,11 @@ namespace IntegrationEngine\Bundle\Exception;
  */
 final class IntegrationConfigurationException extends \LogicException
 {
+    public static function webhooksRequireSymfonyWebhook(string $name): self
+    {
+        return new self(sprintf('Webhooks for integration "%s" require composer require symfony/webhook symfony/remote-event.', $name));
+    }
+
     public static function missingConfigPath(string $integrationName): self
     {
         return new self(\sprintf(

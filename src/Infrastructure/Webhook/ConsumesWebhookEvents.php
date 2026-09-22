@@ -67,6 +67,6 @@ trait ConsumesWebhookEvents
     {
         $type = $event->getPayload()['type'] ?? null;
 
-        return null === $type || $type === $mapper->getDefinition();
+        return null === $type || $type === $mapper::eventType();
     }
 }

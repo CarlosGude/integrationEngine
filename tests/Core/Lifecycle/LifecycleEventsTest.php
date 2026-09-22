@@ -9,12 +9,9 @@ use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Client\ClientInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 use IntegrationEngine\Core\IntegrationEngine;
-use IntegrationEngine\Core\Lifecycle\ActionCompleted;
-use IntegrationEngine\Core\Lifecycle\ActionStarted;
-use IntegrationEngine\Core\Lifecycle\HttpResponseReceived;
-use IntegrationEngine\Core\Lifecycle\IntegrationEngineEvent;
+use IntegrationEngine\Core\Event\RequestSent;
 use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
-use IntegrationEngine\Core\Lifecycle\ResponseMapped;
+use IntegrationEngine\Core\Event\ResponseMapped;
 use IntegrationEngine\Tests\Fake\FakeCache;
 use IntegrationEngine\Tests\Fake\FakeClient;
 use IntegrationEngine\Tests\Fake\FakeConfigPort;
@@ -24,7 +21,7 @@ use PHPUnit\Framework\TestCase;
 
 final class LifecycleEventsTest extends TestCase
 {
-    /** @var list<IntegrationEngineEvent> */
+    /** @var list<object> */
     private array $events = [];
 
     #[Test]
@@ -33,13 +30,13 @@ final class LifecycleEventsTest extends TestCase
         $this->engine(new FakeClient())->send(FakeTokenAction::getName());
 
         self::assertSame(
-            [ActionStarted::class, HttpResponseReceived::class, ResponseMapped::class, ActionCompleted::class],
-            array_map(static fn (IntegrationEngineEvent $event): string => $event::class, $this->events),
+            [RequestSent::class, ResponseMapped::class],
+            array_map(static fn (object $event): string => $event::class, $this->events),
         );
     }
 
     #[Test]
-    public function httpResponseReceivedCarriesTheStatusCodeReportedByTheClient(): void
+    public function responseMappedCarriesTheStatusCodeReportedByTheClient(): void
     {
         $client = new class implements ClientInterface {
             public function send(AbstractAction $action, ?ActionContextInterface $context = null, ?RequestHeadersInterface $headers = null): array
@@ -50,15 +47,15 @@ final class LifecycleEventsTest extends TestCase
 
         $this->engine($client)->send(FakeTokenAction::getName());
 
-        self::assertSame(201, $this->httpResponseReceived()->statusCode());
+        self::assertSame(201, $this->responseMapped()->statusCode);
     }
 
     #[Test]
-    public function httpResponseReceivedReportsZeroWhenTheClientReportsNoStatusCode(): void
+    public function responseMappedReportsZeroWhenTheClientReportsNoStatusCode(): void
     {
         $this->engine(new FakeClient())->send(FakeTokenAction::getName());
 
-        self::assertSame(0, $this->httpResponseReceived()->statusCode());
+        self::assertSame(0, $this->responseMapped()->statusCode);
     }
 
     private function engine(ClientInterface $client): IntegrationEngine
@@ -67,8 +64,8 @@ final class LifecycleEventsTest extends TestCase
         $config->register(FakeTokenAction::getName(), FakeTokenAction::create('GET', '/token'));
 
         $dispatcher = new LifecycleEventDispatcher();
-        foreach ([ActionStarted::class, HttpResponseReceived::class, ResponseMapped::class, ActionCompleted::class] as $eventClass) {
-            $dispatcher->subscribe($eventClass, function (IntegrationEngineEvent $event): void {
+        foreach ([RequestSent::class, ResponseMapped::class] as $eventClass) {
+            $dispatcher->subscribe($eventClass, function (object $event): void {
                 $this->events[] = $event;
             });
         }
@@ -82,11 +79,11 @@ final class LifecycleEventsTest extends TestCase
         );
     }
 
-    private function httpResponseReceived(): HttpResponseReceived
+    private function responseMapped(): ResponseMapped
     {
         $matches = array_values(array_filter(
             $this->events,
-            static fn (IntegrationEngineEvent $event): bool => $event instanceof HttpResponseReceived,
+            static fn (object $event): bool => $event instanceof ResponseMapped,
         ));
         self::assertCount(1, $matches);
 

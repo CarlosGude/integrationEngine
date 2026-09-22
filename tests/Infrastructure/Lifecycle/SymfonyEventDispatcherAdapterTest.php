@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Infrastructure\Lifecycle;
 
-use IntegrationEngine\Core\Lifecycle\ActionStarted;
+use IntegrationEngine\Core\Event\RequestSent;
 use IntegrationEngine\Infrastructure\Lifecycle\SymfonyEventDispatcherAdapter;
 use IntegrationEngine\Tests\Fake\FakeTokenAction;
 use PHPUnit\Framework\Attributes\Test;
@@ -18,18 +18,18 @@ final class SymfonyEventDispatcherAdapterTest extends TestCase
     {
         $symfony = new EventDispatcher();
         $viaSymfony = [];
-        $symfony->addListener(ActionStarted::class, static function (ActionStarted $event) use (&$viaSymfony): void {
+        $symfony->addListener(RequestSent::class, static function (RequestSent $event) use (&$viaSymfony): void {
             $viaSymfony[] = $event;
         });
 
         // Constructing it used to fail: "Cannot call constructor".
         $adapter = new SymfonyEventDispatcherAdapter($symfony);
         $viaSubscribe = [];
-        $adapter->subscribe(ActionStarted::class, static function (ActionStarted $event) use (&$viaSubscribe): void {
+        $adapter->subscribe(RequestSent::class, static function (RequestSent $event) use (&$viaSubscribe): void {
             $viaSubscribe[] = $event;
         });
 
-        $event = new ActionStarted(FakeTokenAction::create('GET', '/token'), 'test_integration', microtime(true));
+        $event = new RequestSent('test_integration', FakeTokenAction::getName(), 'GET', '/token', microtime(true));
         $adapter->dispatch($event);
 
         self::assertSame([$event], $viaSymfony);

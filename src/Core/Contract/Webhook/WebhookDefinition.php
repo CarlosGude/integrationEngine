@@ -4,41 +4,34 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Core\Contract\Webhook;
 
-/**
- * Immutable definition of an inbound webhook event type and its handler.
- *
- * @author Carlos Gude
- */
 final readonly class WebhookDefinition
 {
-    /**
-     * @param string          $eventType   Event type from provider (e.g., 'charge.succeeded')
-     * @param class-string    $mapperClass Mapper class that handles this event
-     * @param SignatureConfig $signature   Signature verification config
-     */
+    /** @param array<string, class-string<AbstractWebhookMapper>> $mappers */
     public function __construct(
-        private readonly string $eventType,
-        private readonly string $mapperClass,
-        private readonly SignatureConfig $signature,
-    ) {}
-
-    public function getEventType(): string
-    {
-        return $this->eventType;
+        public string $typeField,
+        public string $idField,
+        public SignatureConfig $signature,
+        public UnknownEventPolicy $unknownEvents,
+        public array $mappers,
+    ) {
+        foreach ([$typeField, $idField] as $path) {
+            if (1 !== preg_match('/^[^.\s]+(?:\.[^.\s]+)*$/D', $path)) {
+                throw new \InvalidArgumentException('Webhook field paths must contain non-empty dot-separated keys.');
+            }
+        }
+        foreach ($mappers as $eventType => $mapper) {
+            if ('' === $eventType || !is_subclass_of($mapper, AbstractWebhookMapper::class)) {
+                throw new \InvalidArgumentException('Webhook mapper must extend AbstractWebhookMapper.');
+            }
+            if ($mapper::eventType() !== $eventType) {
+                throw new \InvalidArgumentException('Webhook event key must match mapper eventType().');
+            }
+        }
     }
 
-    /**
-     * Mapper class that handles this event.
-     *
-     * @return class-string
-     */
-    public function getMapperClass(): string
+    /** @return class-string<AbstractWebhookMapper>|null */
+    public function mapperFor(string $eventType): ?string
     {
-        return $this->mapperClass;
-    }
-
-    public function getSignature(): SignatureConfig
-    {
-        return $this->signature;
+        return $this->mappers[$eventType] ?? null;
     }
 }

@@ -15,17 +15,16 @@ final class FakeConfigPort implements ConfigPort
     /** @var array<string, AbstractAction> */
     private array $actions = [];
 
-    /** @var array<string, WebhookDefinition> */
-    private array $webhooks = [];
+    private ?WebhookDefinition $webhook = null;
 
     public function register(string $name, AbstractAction $action): void
     {
         $this->actions[$name] = $action;
     }
 
-    public function registerWebhook(string $eventType, WebhookDefinition $definition): void
+    public function registerWebhook(WebhookDefinition $definition): void
     {
-        $this->webhooks[$eventType] = $definition;
+        $this->webhook = $definition;
     }
 
     public function getAction(string $name, ?ActionBodyInterface $bodyData = null): AbstractAction
@@ -37,12 +36,8 @@ final class FakeConfigPort implements ConfigPort
         return $this->actions[$name];
     }
 
-    public function getWebhookDefinition(string $eventType): WebhookDefinition
+    public function getWebhookDefinition(): ?WebhookDefinition
     {
-        if (!isset($this->webhooks[$eventType])) {
-            throw new \InvalidArgumentException(\sprintf('Webhook event type "%s" not defined.', $eventType));
-        }
-
-        return $this->webhooks[$eventType];
+        return $this->webhook;
     }
 }

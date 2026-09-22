@@ -1,98 +1,39 @@
 <?php
 
 declare(strict_types=1);
-
 namespace IntegrationEngine\Tests\Bundle\Command;
-
 use IntegrationEngine\Bundle\Command\MakeWebhookCommand;
 use IntegrationEngine\Bundle\Generator\WebhookFileGenerator;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Application;
-use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Tester\CommandTester;
 
 final class MakeWebhookCommandTest extends TestCase
 {
-    private string $projectDir;
-
-    protected function setUp(): void
+    public function testNonInteractiveGenerationMergesEventsAndPreservesFiles(): void
     {
-        $this->projectDir = sys_get_temp_dir().'/ie-make-webhook-'.bin2hex(random_bytes(4));
-        mkdir($this->projectDir);
-    }
-
-    protected function tearDown(): void
-    {
-        $this->removeDirectory($this->projectDir);
-    }
-
-    public function testMakeWebhookCommandIsRegistered(): void
-    {
-        self::assertTrue(class_exists(MakeWebhookCommand::class));
-    }
-
-    public function testCommandHasCorrectName(): void
-    {
-        $reflection = new \ReflectionClass(MakeWebhookCommand::class);
-        $attributes = $reflection->getAttributes(AsCommand::class);
-
-        self::assertNotEmpty($attributes, 'MakeWebhookCommand should have #[AsCommand] attribute');
-    }
-
-    public function testItWritesTheFourFilesAndPrintsTheRoutingEntry(): void
-    {
-        $tester = $this->generate(['stripe', 'charge.succeeded'], ['hmac_sha256', 'X-Webhook-Signature']);
-
-        $tester->assertCommandIsSuccessful();
-        foreach (['ChargeSucceededEvent', 'ChargeSucceededEventMapper', 'ChargeSucceededRequestParser', 'ChargeSucceededConsumer'] as $class) {
-            self::assertFileExists($this->projectDir.'/src/Webhooks/Stripe/'.$class.'.php');
-        }
-
-        $output = $tester->getDisplay();
-        self::assertStringContainsString('stripe_charge_succeeded:', $output);
-        self::assertStringContainsString('service: App\Webhooks\Stripe\ChargeSucceededRequestParser', $output);
-    }
-
-    public function testTheBase64SchemeGetsItsOwnVerifier(): void
-    {
-        // The other common shape: the raw digest, base64-encoded, sent whole.
-        $tester = $this->generate(['storefront', 'products/update'], ['hmac_base64', 'X-Storefront-Signature']);
-
-        $tester->assertCommandIsSuccessful();
-
-        $parser = (string) file_get_contents($this->projectDir.'/src/Webhooks/Storefront/ProductsUpdateRequestParser.php');
-        self::assertStringContainsString("new Base64HmacSignatureVerifier('X-Storefront-Signature')", $parser);
-        self::assertStringNotContainsString('__construct', $parser);
-    }
-
-    private function removeDirectory(string $dir): void
-    {
-        foreach (scandir($dir) ?: [] as $entry) {
-            if ('.' === $entry || '..' === $entry) {
-                continue;
-            }
-
-            $path = $dir.'/'.$entry;
-            is_dir($path) ? $this->removeDirectory($path) : unlink($path);
-        }
-
-        rmdir($dir);
-    }
-
-    /**
-     * @param list<string> $arguments
-     * @param list<string> $answers
-     */
-    private function generate(array $arguments, array $answers): CommandTester
-    {
-        $command = new MakeWebhookCommand($this->projectDir, new WebhookFileGenerator());
-        $application = new Application();
-        $application->addCommands([$command]);
-
+        $dir = sys_get_temp_dir().'/webhook-v8-'.bin2hex(random_bytes(4));
+        $command = new MakeWebhookCommand($dir, new WebhookFileGenerator());
+        (new Application())->addCommands([$command]);
         $tester = new CommandTester($command);
-        $tester->setInputs($answers);
-        $tester->execute(['integration' => $arguments[0], 'event' => $arguments[1]]);
-
-        return $tester;
+        try {
+            $tester->execute(['integration'=>'Stripe','event'=>'charge.succeeded'], ['interactive'=>false]);
+            $tester->assertCommandIsSuccessful();
+            $event = $dir.'/src/Webhooks/Stripe/ChargeSucceededEvent.php';
+            self::assertFileExists($event);
+            file_put_contents($event, 'preserved');
+            $tester->execute(['integration'=>'Stripe','event'=>'charge.succeeded'], ['interactive'=>false]);
+            self::assertSame('preserved', file_get_contents($event));
+            $tester->execute(['integration'=>'Stripe','event'=>'charge.failed'], ['interactive'=>false]);
+            $yaml = file_get_contents($dir.'/src/Webhooks/Stripe/Stripe.yaml');
+            self::assertIsString($yaml);
+            self::assertStringContainsString('charge.succeeded:', $yaml);
+            self::assertStringContainsString('charge.failed:', $yaml);
+            $tester->execute(['integration'=>'Stripe','event'=>'charge.succeeded','--force'=>true], ['interactive'=>false]);
+            self::assertStringContainsString('final readonly class', (string) file_get_contents($event));
+        } finally {
+            foreach (glob($dir.'/src/Webhooks/Stripe/*') ?: [] as $file) { unlink($file); }
+            foreach (['/src/Webhooks/Stripe','/src/Webhooks','/src',''] as $path) { if (is_dir($dir.$path)) { rmdir($dir.$path); } }
+        }
     }
 }

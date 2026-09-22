@@ -8,7 +8,12 @@ use IntegrationEngine\Bundle\Exception\IntegrationConfigurationException;
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 use IntegrationEngine\Core\Dispatch\AuthenticationHandler;
 use IntegrationEngine\Core\IntegrationEngine;
-use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
+use IntegrationEngine\Core\Security\HostPolicy;
+use IntegrationEngine\Infrastructure\Http\HostPolicyHttpClient;
+use IntegrationEngine\Infrastructure\Http\RetryStrategyFactory;
+use IntegrationEngine\Infrastructure\Adapter\FormEncodedClientAdapter;
+use Symfony\Component\HttpClient\NoPrivateNetworkHttpClient;
+use Symfony\Component\HttpClient\RetryableHttpClient;
 use IntegrationEngine\Core\Registry\IntegrationRegistry;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
 use IntegrationEngine\Infrastructure\Cache\CachingMiddleware;
@@ -35,10 +40,18 @@ use Symfony\Component\HttpKernel\DataCollector\DataCollectorInterface;
  *     middlewares: list<string>,
  *     request_middlewares: list<string>,
  *     headers: array<string, string>,
+ *     timeout?: ?float,
+ *     max_duration?: ?float,
+ *     allowed_hosts?: list<string>,
+ *     block_private_networks?: bool,
+ *     retry?: array{max_retries: int, delay_ms: int, multiplier: float, max_delay_ms: int, jitter: float, status_codes: list<int>, retry_non_idempotent: bool},
  * }
  */
 final class IntegrationCompilerPass implements CompilerPassInterface
 {
+    /** @param \Closure(string): bool|null $classExists */
+    public function __construct(private readonly ?\Closure $classExists = null) {}
+
     public function process(ContainerBuilder $container): void
     {
         if (!$container->hasParameter('integration_engine.integrations')) {
@@ -84,6 +97,8 @@ final class IntegrationCompilerPass implements CompilerPassInterface
             [$config['config_path']],
         ));
 
+        (new WebhookWiring($this->classExists ?? class_exists(...)))->register($container, $name, $config['config_path'], $configId);
+
         $cacheRef = new Reference(
             $config['cache_service'] ?? 'integration_engine.cache.default',
         );
@@ -98,7 +113,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         $authHandlerId = "integration_engine.auth_handler.{$name}";
         $container->setDefinition($authHandlerId, new Definition(
             AuthenticationHandler::class,
-            [new Reference($configId), $clientRef, $cacheRef, $name, $loggerRef],
+            [new Reference($configId), $clientRef, $cacheRef, $name, $loggerRef, new Reference('event_dispatcher', ContainerInterface::NULL_ON_INVALID_REFERENCE)],
         ));
 
         $connectionResolverRef = $config['connection_resolver'] ? new Reference($config['connection_resolver']) : null;
@@ -114,9 +129,9 @@ final class IntegrationCompilerPass implements CompilerPassInterface
                 $loggerRef,
                 new Reference($authHandlerId),
                 $connectionResolverRef,
-                // Swap this service for SymfonyEventDispatcherAdapter to receive
-                // lifecycle events through #[AsEventListener].
-                new Reference(LifecycleEventDispatcher::class, ContainerInterface::IGNORE_ON_INVALID_REFERENCE),
+                new Reference('event_dispatcher', ContainerInterface::NULL_ON_INVALID_REFERENCE),
+                new Definition(HostPolicy::class, [$config['allowed_hosts'] ?? []]),
+                $config['base_url'],
             ],
         ));
 
@@ -135,7 +150,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
      * such an adapter owns its own request construction and would need to
      * support RequestMiddlewareInterface itself.
      *
-     * @param array{config_path: null|string, client_service: null|string, client: string, base_url: null|string, cache_service: null|string, headers: array<string, string>} $config
+     * @param IntegrationConfig $config
      * @param array<string, class-string<ClientAdapterInterface>>                                                                                                             $adapterMap
      * @param list<string>                                                                                                                                                    $requestMiddlewares
      */
@@ -162,18 +177,53 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         $httpClientId = "integration_engine.http_client.{$name}";
 
         $args = [
-            new Reference('http_client'),
+            $this->buildTransport($container, $name, $config),
             $config['base_url'],
             $config['headers'],
         ];
 
-        if ([] !== $requestMiddlewares && \in_array($adapterClass, [SymfonyHttpClientAdapter::class, GraphQLClientAdapter::class], true)) {
+        if ([] !== $requestMiddlewares && \in_array($adapterClass, [SymfonyHttpClientAdapter::class, GraphQLClientAdapter::class, FormEncodedClientAdapter::class], true)) {
             $args[] = array_map(static fn (string $id): Reference => new Reference($id), $requestMiddlewares);
         }
 
         $container->setDefinition($httpClientId, new Definition($adapterClass, $args));
 
         return new Reference($httpClientId);
+    }
+
+    /** @param IntegrationConfig $config */
+    private function buildTransport(ContainerBuilder $container, string $name, array $config): Reference
+    {
+        $ref = new Reference('http_client');
+        $options = [];
+        foreach (['timeout', 'max_duration'] as $option) {
+            if (isset($config[$option])) {
+                $options[$option] = $config[$option];
+            }
+        }
+        if ([] !== $options) {
+            $id = "integration_engine.transport.{$name}.base";
+            $container->setDefinition($id, (new Definition())->setFactory([$ref, 'withOptions'])->setArguments([$options]));
+            $ref = new Reference($id);
+        }
+        if ($config['block_private_networks'] ?? false) {
+            $id = "integration_engine.transport.{$name}.private_networks";
+            $container->setDefinition($id, new Definition(NoPrivateNetworkHttpClient::class, [$ref]));
+            $ref = new Reference($id);
+        }
+        if ([] !== ($config['allowed_hosts'] ?? [])) {
+            $id = "integration_engine.transport.{$name}.hosts";
+            $container->setDefinition($id, new Definition(HostPolicyHttpClient::class, [$ref, new Definition(HostPolicy::class, [$config['allowed_hosts']])]));
+            $ref = new Reference($id);
+        }
+        if (isset($config['retry'])) {
+            $strategy = (new Definition())->setFactory([RetryStrategyFactory::class, 'create'])->setArguments([$config['retry']]);
+            $id = "integration_engine.transport.{$name}";
+            $container->setDefinition($id, new Definition(RetryableHttpClient::class, [$ref, $strategy, $config['retry']['max_retries']]));
+            $ref = new Reference($id);
+        }
+
+        return $ref;
     }
 
     // ── Middleware client ──────────────────────────────────────────────────────

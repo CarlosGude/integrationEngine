@@ -10,6 +10,9 @@ services:
         exclude:
             # Legacy public namespaces are explicitly classmapped, not PSR-4 services.
             - '../../../Compatibility/'
+            - '../../../PHPStan/'
+            - '../../../Infrastructure/Webhook/'
+            - '../../../Infrastructure/Http/HostPolicyHttpClient.php'
             - '../../../Infrastructure/Adapter/YamlConfigAdapter.php'
             - '../../../Infrastructure/Http/SymfonyHttpClientAdapter.php'
             - '../../../Infrastructure/Http/GraphQLClientAdapter.php'

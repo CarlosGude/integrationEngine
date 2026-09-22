@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Bundle\Command;
 
 use IntegrationEngine\Bundle\Command\MakeObservabilityCommand;
-use IntegrationEngine\Core\Lifecycle\ActionCompleted;
-use IntegrationEngine\Core\Lifecycle\ActionFailed;
-use IntegrationEngine\Core\Lifecycle\ActionStarted;
+use IntegrationEngine\Core\Event\ResponseMapped;
+use IntegrationEngine\Core\Event\RequestFailed;
+use IntegrationEngine\Core\Event\RequestSent;
 use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
 use IntegrationEngine\Tests\Fake\FakeLogger;
 use IntegrationEngine\Tests\Fake\FakePathAction;
@@ -61,9 +61,9 @@ final class MakeObservabilityCommandTest extends TestCase
         self::assertSame($namespace.'\Integration\MyApi\MyApiObservabilitySetup', $service::class);
         $action = FakePathAction::create('GET', '/orders');
         foreach (['other', 'my_api'] as $integration) {
-            $dispatcher->dispatch(new ActionStarted($action, $integration, 1.0));
-            $dispatcher->dispatch(new ActionCompleted($action, $integration, 1.0, new FakeTokenResponse([]), 6000.0));
-            $dispatcher->dispatch(new ActionFailed($action, $integration, 1.0, new \RuntimeException('offline'), 100.0));
+            $dispatcher->dispatch(new RequestSent($integration, $action::getName(), 'GET', '/orders', 1.0));
+            $dispatcher->dispatch(new ResponseMapped($integration, $action::getName(), 6000.0, 200, FakeTokenResponse::class, 1.0));
+            $dispatcher->dispatch(new RequestFailed($integration, $action::getName(), 100.0, 0, \RuntimeException::class, 'Integration request failed.', 1.0));
         }
         self::assertSame(['Integration action started', 'Integration action completed', 'Slow integration request detected', 'Integration action failed'], array_column($logger->all(), 'message'));
     }

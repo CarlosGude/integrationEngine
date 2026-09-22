@@ -23,10 +23,12 @@ final readonly class Request
         public string $url,
         public array $headers,
         public ?array $body = null,
+        public BodyEncoding $bodyEncoding = BodyEncoding::Json,
+        public ?float $timeout = null,
     ) {}
 
     public function withHeader(string $name, string $value): self
     {
-        return new self($this->method, $this->url, [...$this->headers, $name => $value], $this->body);
+        return new self($this->method, $this->url, [...$this->headers, $name => $value], $this->body, $this->bodyEncoding, $this->timeout);
     }
 }

@@ -1,0 +1,6 @@
+parameters:
+    fileExtensions: [php, fixture]
+    scanFiles:
+        - data/mappers.php.fixture
+        - data/facades.php.fixture
+        - data/responses.php.fixture

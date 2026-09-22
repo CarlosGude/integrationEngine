@@ -21,6 +21,7 @@ final class WebhookEventDispatcherTest extends TestCase
             $received[] = $event;
         });
         $mapper = new DispatcherTestMapper();
+        DispatcherTestMapper::$calls = 0;
         $dispatcher = new WebhookEventDispatcher($events);
 
         try {
@@ -30,7 +31,7 @@ final class WebhookEventDispatcherTest extends TestCase
             self::assertSame('Mapper declaration "payment.completed" does not match event type "orders.created"', $e->getMessage());
         }
 
-        self::assertSame(0, $mapper->calls);
+        self::assertSame(0, DispatcherTestMapper::$calls);
         self::assertSame([], $received);
     }
 
@@ -42,12 +43,13 @@ final class WebhookEventDispatcherTest extends TestCase
             $received[] = $event;
         });
         $mapper = new DispatcherTestMapper();
+        DispatcherTestMapper::$calls = 0;
         $payload = ['id' => 123, 'amount' => 42];
-        $headers = ['x-provider' => 'payments'];
+        $headers = ['x-provider' => ['payments']];
 
         (new WebhookEventDispatcher($events))->dispatch(new RemoteEvent('payment.completed', 'evt_1', $payload), $mapper, $headers);
 
-        self::assertSame(1, $mapper->calls);
+        self::assertSame(1, DispatcherTestMapper::$calls);
         self::assertCount(1, $received);
         self::assertSame($payload, $received[0]->payload);
         self::assertSame($headers, $received[0]->headers);
@@ -56,16 +58,16 @@ final class WebhookEventDispatcherTest extends TestCase
 
 final class DispatcherTestMapper extends AbstractWebhookMapper
 {
-    public int $calls = 0;
+    public static int $calls = 0;
 
-    public function getDefinition(): string
+    public static function eventType(): string
     {
         return 'payment.completed';
     }
 
-    public function map(array $payload, array $headers): WebhookEventInterface
+    protected static function transform(array $payload, array $headers): WebhookEventInterface
     {
-        ++$this->calls;
+        ++self::$calls;
 
         return new DispatcherTestEvent($payload, $headers);
     }
@@ -74,7 +76,7 @@ final class DispatcherTestMapper extends AbstractWebhookMapper
 final class DispatcherTestEvent implements WebhookEventInterface
 {
     /**
-     * @param array<string, mixed> $payload
+     * @param array<mixed> $payload
      * @param array<string, mixed> $headers
      */
     public function __construct(

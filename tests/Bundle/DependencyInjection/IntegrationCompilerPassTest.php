@@ -462,9 +462,49 @@ final class IntegrationCompilerPassTest extends TestCase
         // Without it the engine gets no dispatcher and lifecycle listeners
         // (e.g. via SymfonyEventDispatcherAdapter) never receive anything.
         $dispatcher = $container->getDefinition('integration_engine.integration.my_api')->getArgument(7);
-        self::assertSame(LifecycleEventDispatcher::class, $this->referencedServiceId($dispatcher));
+        self::assertSame('event_dispatcher', $this->referencedServiceId($dispatcher));
         self::assertInstanceOf(Reference::class, $dispatcher);
-        self::assertSame(ContainerInterface::IGNORE_ON_INVALID_REFERENCE, $dispatcher->getInvalidBehavior());
+        self::assertSame(ContainerInterface::NULL_ON_INVALID_REFERENCE, $dispatcher->getInvalidBehavior());
+    }
+
+    #[Test]
+    public function transportOptionsAndDecoratorsAreWiredInOrder(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig([
+            'timeout' => 2.0, 'max_duration' => 10.0,
+            'allowed_hosts' => ['api.example.com'], 'block_private_networks' => true,
+            'retry' => ['max_retries' => 3, 'delay_ms' => 200, 'multiplier' => 2.0, 'max_delay_ms' => 2000, 'jitter' => 0.1, 'status_codes' => [503], 'retry_non_idempotent' => false],
+        ])]);
+        (new IntegrationCompilerPass())->process($container);
+        $base = $container->getDefinition('integration_engine.transport.my_api.base');
+        self::assertSame(['timeout' => 2.0, 'max_duration' => 10.0], $base->getArgument(0));
+        $factory = $base->getFactory();
+        self::assertIsArray($factory);
+        self::assertSame('http_client', $this->referencedServiceId($factory[0]));
+        self::assertSame('withOptions', $factory[1]);
+        $private = $container->getDefinition('integration_engine.transport.my_api.private_networks');
+        self::assertSame(\Symfony\Component\HttpClient\NoPrivateNetworkHttpClient::class, $private->getClass());
+        self::assertSame('integration_engine.transport.my_api.base', $this->referencedServiceId($private->getArgument(0)));
+        $hosts = $container->getDefinition('integration_engine.transport.my_api.hosts');
+        self::assertSame('integration_engine.transport.my_api.private_networks', $this->referencedServiceId($hosts->getArgument(0)));
+        $retry = $container->getDefinition('integration_engine.transport.my_api');
+        self::assertSame(\Symfony\Component\HttpClient\RetryableHttpClient::class, $retry->getClass());
+        self::assertSame('integration_engine.transport.my_api.hosts', $this->referencedServiceId($retry->getArgument(0)));
+        self::assertSame(3, $retry->getArgument(2));
+        self::assertSame('integration_engine.transport.my_api', $this->referencedServiceId($container->getDefinition('integration_engine.http_client.my_api')->getArgument(0)));
+    }
+
+    #[Test]
+    public function plainTransportAndCustomClientAreNotDecorated(): void
+    {
+        $container = $this->containerWithCoreServices([
+            'plain' => $this->integrationConfig(),
+            'custom' => $this->integrationConfig(['client_service' => 'custom.client']),
+        ]);
+        (new IntegrationCompilerPass())->process($container);
+        self::assertSame('http_client', $this->referencedServiceId($container->getDefinition('integration_engine.http_client.plain')->getArgument(0)));
+        self::assertFalse($container->hasDefinition('integration_engine.transport.plain'));
+        self::assertFalse($container->hasDefinition('integration_engine.http_client.custom'));
     }
 
     private function referencedServiceId(mixed $argument): string

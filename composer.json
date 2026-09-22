@@ -9,7 +9,15 @@
       "homepage": "https://github.com/CarlosGude"
     }
   ],
-  "keywords": ["symfony", "bundle", "integration", "api", "hexagonal", "adapter", "engine"],
+  "keywords": [
+    "symfony",
+    "bundle",
+    "integration",
+    "api",
+    "hexagonal",
+    "adapter",
+    "engine"
+  ],
   "homepage": "https://github.com/CarlosGude/integrationEngine",
   "support": {
     "issues": "https://github.com/CarlosGude/integrationEngine/issues",
@@ -21,7 +29,10 @@
     "symfony/console": "^6.4|^7.0|^8.0",
     "symfony/dependency-injection": "^6.4|^7.0|^8.0",
     "symfony/http-client": "^6.4|^7.0|^8.0",
-    "symfony/yaml": "^6.4|^7.0|^8.0"
+    "symfony/yaml": "^6.4|^7.0|^8.0",
+    "psr/clock": "^1.0",
+    "psr/event-dispatcher": "^1.0",
+    "symfony/http-foundation": "^6.4|^7.0|^8.0"
   },
   "require-dev": {
     "deptrac/deptrac": "^4.7",
@@ -33,10 +44,13 @@
     "phpunit/phpunit": "^11.0",
     "symfony/framework-bundle": "^6.4|^7.0|^8.0",
     "symfony/http-kernel": "^6.4|^7.0|^8.0",
-    "symfony/webhook": "^6.4|^7.0|^8.0"
+    "symfony/webhook": "^6.4|^7.0|^8.0",
+    "symfony/remote-event": "^6.4|^7.0|^8.0"
   },
   "autoload": {
-    "classmap": ["src/Compatibility/"],
+    "classmap": [
+      "src/Compatibility/"
+    ],
     "psr-4": {
       "IntegrationEngine\\": "src/"
     }
@@ -56,8 +70,20 @@
     "symfony": {
       "require": ">=6.4",
       "bundles": {
-        "IntegrationEngine\\Bundle\\IntegrationEngineBundle": ["all"]
+        "IntegrationEngine\\Bundle\\IntegrationEngineBundle": [
+          "all"
+        ]
       }
+    },
+    "phpstan": {
+      "includes": [
+        "extension.neon"
+      ]
     }
+  },
+  "suggest": {
+    "symfony/webhook": "Inbound webhook parsing and Symfony endpoint integration.",
+    "symfony/remote-event": "Typed inbound remote events.",
+    "symfony/messenger": "Dispatch remote events through the webhook endpoint."
   }
 }

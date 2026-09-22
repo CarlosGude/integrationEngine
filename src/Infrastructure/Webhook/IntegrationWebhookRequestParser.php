@@ -4,140 +4,96 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Infrastructure\Webhook;
 
-use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;
 use IntegrationEngine\Core\Contract\Webhook\SignatureVerifierInterface;
+use IntegrationEngine\Core\Contract\Webhook\UnknownEventPolicy;
+use IntegrationEngine\Core\Contract\Webhook\WebhookDefinition;
+use IntegrationEngine\Core\Exception\WebhookRejectionReason;
+use IntegrationEngine\Core\Exception\WebhookSignatureException;
+use IntegrationEngine\Core\Event\WebhookReceived;
+use IntegrationEngine\Core\Event\WebhookRejected;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestMatcher\MethodRequestMatcher;
 use Symfony\Component\HttpFoundation\RequestMatcherInterface;
 use Symfony\Component\RemoteEvent\RemoteEvent;
 use Symfony\Component\Webhook\Client\AbstractRequestParser;
 use Symfony\Component\Webhook\Exception\RejectWebhookException;
 
-/**
- * Base class for webhook request parsers that verify signatures and decode payloads.
- *
- * Extends Symfony's AbstractRequestParser to provide signature verification
- * via our webhook infrastructure. Mapping the payload to a typed event is the
- * consumer's job, through WebhookEventDispatcher.
- *
- * Subclasses must:
- * 1. Implement getDefinition() — return the webhook event type name
- * 2. Implement getMapper() — return the AbstractWebhookMapper the consumer maps with
- * 3. Implement getSignatureVerifier() — return the configured signature verifier
- * 4. Implement getSignatureSecret() — return the secret for signature verification
- *
- * @author Carlos Gude
- */
-abstract class IntegrationWebhookRequestParser extends AbstractRequestParser
+/** Verifies raw bytes before decoding and mapping the authenticated event. */
+final class IntegrationWebhookRequestParser extends AbstractRequestParser
 {
-    /**
-     * Get the webhook definition this parser handles.
-     *
-     * @return string Event type (e.g., 'charge.succeeded')
-     */
-    abstract public function getDefinition(): string;
+    public function __construct(
+        private readonly WebhookDefinition $definition,
+        private readonly SignatureVerifierInterface $verifier,
+        private readonly string $integrationName,
+        private readonly ?EventDispatcherInterface $eventDispatcher = null,
+    ) {}
 
-    /**
-     * Get the mapper for this webhook type.
-     */
-    abstract public function getMapper(): AbstractWebhookMapper;
-
-    /**
-     * Get the signature verifier for this webhook.
-     */
-    abstract protected function getSignatureVerifier(): SignatureVerifierInterface;
-
-    /**
-     * Get the signature secret (shared key with provider).
-     */
-    abstract protected function getSignatureSecret(): string;
-
-    /**
-     * Get the request matcher for validating incoming webhook requests.
-     *
-     * Override to add custom validation (e.g., specific headers, Content-Type).
-     */
     protected function getRequestMatcher(): RequestMatcherInterface
     {
-        // Decode JSON only after verifying the signature in doParse().
-        return new MethodRequestMatcher('POST');
+        return new class implements RequestMatcherInterface {
+            public function matches(Request $request): bool
+            {
+                $contentType = strtolower(trim(explode(';', $request->headers->get('Content-Type', ''))[0]));
+
+                return $request->isMethod('POST') && ('application/json' === $contentType || 1 === preg_match('~^application/[a-z0-9.!#$&^_+-]+\+json$~', $contentType));
+            }
+        };
     }
 
-    /**
-     * Parse and verify a webhook request.
-     *
-     * Verifies the request signature using the configured verifier,
-     * then decodes the payload into a RemoteEvent.
-     *
-     * @param Request $request The incoming webhook request
-     *
-     * @return null|RemoteEvent The parsed event, or null to silently ignore
-     *
-     * @throws RejectWebhookException If signature verification fails or payload is malformed
-     */
+    protected function validate(Request $request): void
+    {
+        if (!$this->getRequestMatcher()->matches($request)) {
+            $this->reject(WebhookRejectionReason::PayloadInvalid);
+        }
+    }
+
     protected function doParse(Request $request, #[\SensitiveParameter] string $secret): ?RemoteEvent
     {
-        // Symfony passes framework.webhook.routing.<type>.secret, which may be
-        // left empty: fall back to the parser's own secret, and never verify
-        // with an empty key — anyone can compute an HMAC with it.
-        if ('' === $secret) {
-            $secret = $this->getSignatureSecret();
+        // YAML is the single signing-secret source. Symfony's routing secret is
+        // intentionally unused; applications leave it empty in framework config.
+        $raw = $request->getContent();
+        $headers = [];
+        foreach ($request->headers->all() as $name => $values) {
+            $headers[$name] = array_map(static fn (?string $value): string => $value ?? '', $values);
         }
-
-        if ('' === $secret) {
-            throw new RejectWebhookException(
-                statusCode: 406,
-                message: 'No webhook signing secret configured',
-            );
-        }
-
-        $body = $request->getContent();
-        $verifier = $this->getSignatureVerifier();
-        $signatureHeader = $verifier->getHeaderName();
-        $signature = $request->headers->get($signatureHeader);
-
-        if (null === $signature) {
-            throw new RejectWebhookException(
-                statusCode: 406,
-                message: "Missing signature header: {$signatureHeader}",
-            );
-        }
-
-        if (!$verifier->verify($body, $signature, $secret)) {
-            throw new RejectWebhookException(
-                statusCode: 406,
-                message: 'Signature verification failed',
-            );
+        try {
+            $this->verifier->verify($raw, $headers, $this->definition->signature);
+        } catch (WebhookSignatureException $error) {
+            $this->reject($error->reason());
         }
 
         try {
-            $payload = json_decode($body, true, flags: JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            throw new RejectWebhookException(
-                statusCode: 406,
-                message: "Malformed JSON payload: {$e->getMessage()}",
-            );
+            $payload = json_decode($raw, true, flags: JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            $this->reject(WebhookRejectionReason::PayloadInvalid);
+        }
+        if (!\is_array($payload) || !str_starts_with(ltrim($raw), '{')) {
+            $this->reject(WebhookRejectionReason::PayloadInvalid);
         }
 
-        // Associative decoding turns both {} and [] into arrays, so retain
-        // the root type from the authenticated JSON document.
-        if (!\is_array($payload) || !str_starts_with(ltrim($body), '{')) {
-            throw new RejectWebhookException(
-                statusCode: 406,
-                message: 'Payload must be a JSON object',
-            );
+        $type = DotPath::get($payload, $this->definition->typeField);
+        $id = DotPath::get($payload, $this->definition->idField);
+        if (!\is_string($type) || '' === $type || (!\is_string($id) && !\is_int($id)) || '' === $id) {
+            $this->reject(WebhookRejectionReason::PayloadInvalid);
+        }
+        $mapper = $this->definition->mapperFor($type);
+        if (null === $mapper) {
+            if (UnknownEventPolicy::Ignore === $this->definition->unknownEvents) {
+                return null;
+            }
+            $this->reject(WebhookRejectionReason::UnknownEvent);
         }
 
-        /** @var array<string, mixed> $payload */
-        $id = '';
-        if (isset($payload['id']) && (\is_string($payload['id']) || \is_int($payload['id']))) {
-            $id = (string) $payload['id'];
-        }
+        $event = new MappedRemoteEvent($type, (string) $id, $payload, $mapper::map($type, $payload, $headers));
+        $this->eventDispatcher?->dispatch(new WebhookReceived($this->integrationName, $type, (string) $id, microtime(true)));
 
-        return new RemoteEvent(
-            name: $this->getDefinition(),
-            id: $id,
-            payload: $payload,
-        );
+        return $event;
+    }
+
+    private function reject(WebhookRejectionReason $reason): never
+    {
+        $this->eventDispatcher?->dispatch(new WebhookRejected($this->integrationName, $reason->value, microtime(true)));
+        $previous = new WebhookRejectedException($reason);
+        throw new RejectWebhookException(406, $previous->getMessage(), $previous);
     }
 }

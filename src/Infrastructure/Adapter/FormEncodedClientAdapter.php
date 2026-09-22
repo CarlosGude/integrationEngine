@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Infrastructure\Adapter;
 
+use IntegrationEngine\Core\Batch\PreparedRequest;
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
+use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
+use IntegrationEngine\Core\Contract\Client\BodyEncoding;
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
-use IntegrationEngine\Core\Exception\RequestResponseException;
-use IntegrationEngine\Infrastructure\Http\ResolvesAuthHeaders;
+use IntegrationEngine\Core\Contract\Client\RequestMiddlewareInterface;
+use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\Contracts\HttpClient\ResponseInterface as HttpResponseInterface;
 
 /**
  * HTTP client adapter for form-encoded requests.
@@ -26,10 +28,8 @@ use Symfony\Contracts\HttpClient\ResponseInterface as HttpResponseInterface;
  *
  * amount=2000&currency=usd&description=Widget
  */
-final class FormEncodedClientAdapter implements ClientAdapterInterface, DynamicBaseUrlClientInterface
+final class FormEncodedClientAdapter implements ClientAdapterInterface, DynamicBaseUrlClientInterface, BatchClientInterface
 {
-    use ResolvesAuthHeaders;
-
     public const CLIENT_TYPE = 'form_encoded';
 
     /**
@@ -39,11 +39,13 @@ final class FormEncodedClientAdapter implements ClientAdapterInterface, DynamicB
         private readonly HttpClientInterface $httpClient,
         private readonly string $baseUrl,
         private readonly array $defaultHeaders = [],
+        /** @var list<RequestMiddlewareInterface> */
+        private readonly array $requestMiddlewares = [],
     ) {}
 
     public function withBaseUrl(string $baseUrl): static
     {
-        return new self($this->httpClient, $baseUrl, $this->defaultHeaders);
+        return new self($this->httpClient, $baseUrl, $this->defaultHeaders, $this->requestMiddlewares);
     }
 
     public static function getClientType(): string
@@ -61,99 +63,24 @@ final class FormEncodedClientAdapter implements ClientAdapterInterface, DynamicB
         return true;
     }
 
-    /**
-     * @return array{body: array<mixed>, headers: array<string, list<string>>, statusCode: int}
-     *
-     * @throws RequestResponseException on HTTP 4xx/5xx or network errors
-     */
-    public function send(
-        AbstractAction $action,
-        ?ActionContextInterface $context = null,
-        ?RequestHeadersInterface $headers = null,
-    ): array {
-        $path = $action->getPath($context);
-        $method = $action->getMethod();
-        $options = $this->buildOptions($action, $headers);
-
-        try {
-            $response = $this->httpClient->request($method, $this->baseUrl.$path, $options);
-
-            return $this->consume($response, $method, $path);
-        } catch (RequestResponseException $e) {
-            throw $e;
-        } catch (\Throwable $e) {
-            throw $this->networkError($method, $path, $e);
-        }
+    /** @return array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int} */
+    public function send(AbstractAction $action, ?ActionContextInterface $context = null, ?RequestHeadersInterface $headers = null): array
+    {
+        return $this->transport()->send($action, $context, $headers);
     }
 
     /**
-     * Build request options with form-encoded body.
+     * @param array<array-key, PreparedRequest> $requests
      *
-     * @return array{headers: array<string, string>, body?: string}
+     * @return array<array-key, array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}|\Throwable>
      */
-    private function buildOptions(AbstractAction $action, ?RequestHeadersInterface $headers): array
+    public function sendMany(array $requests): array
     {
-        $options = [
-            'headers' => array_merge(
-                $this->defaultAuthHeaders(),
-                $this->defaultHeaders,
-                $this->resolveHeaders($action),
-                $headers?->toArray() ?? [],
-            ),
-        ];
-
-        $body = $action->getBody();
-        if (null !== $body && \in_array($action->getMethod(), ['POST', 'PUT', 'PATCH'], strict: true)) {
-            $options['headers']['Content-Type'] = 'application/x-www-form-urlencoded';
-            $options['body'] = http_build_query($body->toArray());
-        }
-
-        return $options;
+        return $this->transport()->sendMany($requests);
     }
 
-    /**
-     * Consume HTTP response and convert to standard format.
-     *
-     * @return array{body: array<mixed>, headers: array<string, list<string>>, statusCode: int}
-     *
-     * @throws RequestResponseException on HTTP 4xx/5xx
-     */
-    private function consume(HttpResponseInterface $response, string $method, string $path): array
+    private function transport(): SymfonyHttpClientAdapter
     {
-        $statusCode = $response->getStatusCode();
-
-        if ($statusCode >= 400) {
-            throw new RequestResponseException(
-                statusCode: $statusCode,
-                context: \sprintf(
-                    '%s %s returned HTTP %d: %s',
-                    $method,
-                    $path,
-                    $statusCode,
-                    $response->getContent(throw: false)
-                )
-            );
-        }
-
-        $content = $response->getContent(throw: false);
-        $body = (204 === $statusCode || '' === trim($content)) ? [] : $response->toArray();
-
-        return ['body' => $body, 'headers' => $response->getHeaders(throw: false), 'statusCode' => $statusCode];
-    }
-
-    /**
-     * Wrap network error as RequestResponseException.
-     */
-    private function networkError(string $method, string $path, \Throwable $e): RequestResponseException
-    {
-        return new RequestResponseException(
-            statusCode: 0,
-            context: \sprintf(
-                'Network error on %s %s: %s',
-                $method,
-                $path,
-                $e->getMessage(),
-            ),
-        );
+        return new SymfonyHttpClientAdapter($this->httpClient, $this->baseUrl, $this->defaultHeaders, $this->requestMiddlewares, BodyEncoding::Form);
     }
 }

@@ -87,8 +87,8 @@ declare(strict_types=1);
 
 namespace {$namespace}\\Integration\\{$className};
 
-use IntegrationEngine\\Core\\Lifecycle\\ActionCompleted;
-use IntegrationEngine\\Core\\Lifecycle\\ActionFailed;
+use IntegrationEngine\\Core\\Event\\ResponseMapped;
+use IntegrationEngine\\Core\\Event\\RequestFailed;
 use IntegrationEngine\\Core\\Lifecycle\\LifecycleEventDispatcher;
 use Psr\\Log\\LoggerInterface;
 
@@ -122,8 +122,8 @@ class {$className}ObservabilitySetup
                 'logging' => true,
                 'log_level' => 'info',
                 'slow_request_threshold_ms' => 3000,
-                'metrics_callback' => fn(ActionCompleted|ActionFailed \$event) => \$this->recordMetrics(\$event),
-                'error_callback' => fn(ActionFailed \$event) => \$this->recordError(\$event),
+                'metrics_callback' => fn(ResponseMapped|RequestFailed \$event) => \$this->recordMetrics(\$event),
+                'error_callback' => fn(RequestFailed \$event) => \$this->recordError(\$event),
                 'integration_filter' => '{$integration}',
             ]
         );
@@ -131,28 +131,28 @@ class {$className}ObservabilitySetup
 
     /**
      * Record custom metrics (Prometheus, Datadog, etc.).
-     * Called on ActionCompleted and ActionFailed.
+     * Called on ResponseMapped and RequestFailed.
      */
-    private function recordMetrics(ActionCompleted|ActionFailed \$event): void
+    private function recordMetrics(ResponseMapped|RequestFailed \$event): void
     {
         // \$this->prometheus->histogram(
         //     '{$integration}_api_duration_ms',
-        //     \$event->durationMs(),
-        //     ['action' => \$event->action()->getName()]
+        //     \$event->durationMs,
+        //     ['action' => \$event->action]
         // );
     }
 
     /**
      * Handle errors (send to Sentry, alert on critical failures).
      */
-    private function recordError(ActionFailed \$event): void
+    private function recordError(RequestFailed \$event): void
     {
         // \\Sentry\\captureException(\$event->error(), [
         //     'tags' => [
         //         'integration' => '{$integration}',
-        //         'action' => \$event->action()->getName(),
+        //         'action' => \$event->action,
         //     ],
-        //     'extra' => ['duration_ms' => \$event->durationMs()],
+        //     'extra' => ['duration_ms' => \$event->durationMs],
         // ]);
     }
 }

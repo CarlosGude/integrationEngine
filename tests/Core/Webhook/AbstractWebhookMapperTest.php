@@ -10,6 +10,12 @@ use PHPUnit\Framework\TestCase;
 
 final class AbstractWebhookMapperTest extends TestCase
 {
+    public function testRejectsEventTypeMismatch(): void
+    {
+        $this->expectException(\IntegrationEngine\Core\Exception\WebhookMapperMismatchException::class);
+        TestWebhookMapper::map('other.event', [], []);
+    }
+
     public function testMapperMapsPayloadToEvent(): void
     {
         $mapper = new TestWebhookMapper();
@@ -21,9 +27,9 @@ final class AbstractWebhookMapperTest extends TestCase
                 'currency' => 'usd',
             ],
         ];
-        $headers = ['content-type' => 'application/json'];
+        $headers = ['content-type' => ['application/json']];
 
-        $event = $mapper->map($payload, $headers);
+        $event = $mapper::map('charge.succeeded', $payload, $headers);
 
         self::assertInstanceOf(TestWebhookEvent::class, $event);
 
@@ -36,7 +42,7 @@ final class AbstractWebhookMapperTest extends TestCase
     {
         $mapper = new TestWebhookMapper();
 
-        self::assertSame('charge.succeeded', $mapper->getDefinition());
+        self::assertSame('charge.succeeded', $mapper::eventType());
     }
 
     public function testEventIsSerializable(): void
@@ -48,7 +54,7 @@ final class AbstractWebhookMapperTest extends TestCase
             'data' => ['amount' => 2000],
         ];
 
-        $event = $mapper->map($payload, []);
+        $event = $mapper::map('charge.succeeded', $payload, []);
 
         // Serialize and unserialize
         $serialized = serialize($event);
@@ -77,7 +83,7 @@ final class AbstractWebhookMapperTest extends TestCase
             ],
         ];
 
-        $event = $mapper->map($payload, []);
+        $event = $mapper::map('charge.succeeded', $payload, []);
 
         self::assertInstanceOf(TestWebhookEvent::class, $event);
 
@@ -91,7 +97,7 @@ final class AbstractWebhookMapperTest extends TestCase
 /**
  * Test webhook event implementation.
  */
-final class TestWebhookEvent implements WebhookEventInterface
+final readonly class TestWebhookEvent implements WebhookEventInterface
 {
     public function __construct(
         public readonly string $eventId,
@@ -106,12 +112,12 @@ final class TestWebhookEvent implements WebhookEventInterface
  */
 final class TestWebhookMapper extends AbstractWebhookMapper
 {
-    public function getDefinition(): string
+    public static function eventType(): string
     {
         return 'charge.succeeded';
     }
 
-    public function map(array $payload, array $headers): WebhookEventInterface
+    protected static function transform(array $payload, array $headers): WebhookEventInterface
     {
         /** @var array{id: string, type: string, data: array{amount?: int, currency?: string}} $payload */
         return new TestWebhookEvent(

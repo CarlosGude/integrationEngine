@@ -17,6 +17,12 @@ deptrac:
       collectors: [{ type: classNameRegex, value: '#^Psr\\#' }]
     - name: Symfony
       collectors: [{ type: classNameRegex, value: '#^Symfony\\#' }]
+    - name: Extension
+      collectors: [{ type: directory, value: src/PHPStan/.* }]
+    - name: PHPStan
+      collectors: [{ type: classNameRegex, value: '#^PHPStan\\#' }]
+    - name: PhpParser
+      collectors: [{ type: classNameRegex, value: '#^PhpParser\\#' }]
     - name: PHPUnit
       collectors: [{ type: classNameRegex, value: '#^PHPUnit\\#' }]
   ruleset:
@@ -25,4 +31,5 @@ deptrac:
     Bundle: [Core, Infrastructure, Psr, Symfony]
     Compatibility: [Core, Infrastructure]
     Utils: []
-    Tests: [Compatibility, Core, Infrastructure, Bundle, Utils, Psr, Symfony, PHPUnit]
+    Extension: [Core, PHPStan, PhpParser]
+    Tests: [Extension, PHPStan, PhpParser, Compatibility, Core, Infrastructure, Bundle, Utils, Psr, Symfony, PHPUnit]

@@ -28,17 +28,17 @@ final class WebhookEventDispatcher
      *
      * @param RemoteEvent           $remoteEvent The parsed webhook event
      * @param AbstractWebhookMapper $mapper      Mapper for the specific event type
-     * @param array<string, mixed>  $headers     Request headers
+     * @param array<string, list<string>> $headers     Request headers
      *
      * @throws \InvalidArgumentException If mapper declaration doesn't match event type
      */
     public function dispatch(RemoteEvent $remoteEvent, AbstractWebhookMapper $mapper, array $headers): void
     {
-        if ($mapper->getDefinition() !== $remoteEvent->getName()) {
+        if ($mapper::eventType() !== $remoteEvent->getName()) {
             throw new \InvalidArgumentException(
                 \sprintf(
                     'Mapper declaration "%s" does not match event type "%s"',
-                    $mapper->getDefinition(),
+                    $mapper::eventType(),
                     $remoteEvent->getName(),
                 ),
             );
@@ -46,7 +46,7 @@ final class WebhookEventDispatcher
 
         /** @var array<string, mixed> $payload */
         $payload = $remoteEvent->getPayload();
-        $event = $mapper->map($payload, $headers);
+        $event = $mapper::map($remoteEvent->getName(), $payload, $headers);
 
         $this->dispatcher->dispatch($event);
     }

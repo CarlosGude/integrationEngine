@@ -16,6 +16,7 @@ abstract class AbstractAction
         private readonly ?ActionBodyInterface $body,
         private readonly ?AuthorizationConfig $authorization,
         private readonly ?int $cacheTtl = null,
+        private readonly ?float $timeout = null,
     ) {}
 
     final public static function create(
@@ -24,8 +25,9 @@ abstract class AbstractAction
         ?ActionBodyInterface $body = null,
         ?AuthorizationConfig $authorization = null,
         ?int $cacheTtl = null,
+        ?float $timeout = null,
     ): static {
-        return new static($method, $path, $body, $authorization, $cacheTtl);
+        return new static($method, $path, $body, $authorization, $cacheTtl, $timeout);
     }
 
     final public function getMethod(): string
@@ -67,6 +69,11 @@ abstract class AbstractAction
     final public function getCacheTtl(): ?int
     {
         return $this->cacheTtl;
+    }
+
+    final public function getTimeout(): ?float
+    {
+        return $this->timeout;
     }
 
     abstract public static function getName(): string;

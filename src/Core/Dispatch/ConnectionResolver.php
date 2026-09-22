@@ -29,7 +29,7 @@ final class ConnectionResolver
      *
      * @param array<string, ?ConnectionCredentials> $connectionCache
      *
-     * @return array{action: AbstractAction, baseUrl: ?string, cacheDiscriminator: ?string}
+     * @return array{action: AbstractAction, baseUrl: ?string, cacheDiscriminator: ?string, connectionId: ?string}
      */
     public function resolveForDispatch(
         AbstractAction $action,
@@ -49,6 +49,7 @@ final class ConnectionResolver
             'action' => $action,
             'baseUrl' => $resolvedBaseUrl,
             'cacheDiscriminator' => $cacheDiscriminator,
+            'connectionId' => $credentials?->connectionId,
         ];
     }
 
@@ -95,6 +96,7 @@ final class ConnectionResolver
             body: $action->getBody(),
             authorization: $credentials->authorization,
             cacheTtl: $action->getCacheTtl(),
+            timeout: $action->getTimeout(),
         );
     }
 }

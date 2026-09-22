@@ -7,7 +7,9 @@ namespace IntegrationEngine\Infrastructure\Http;
 use IntegrationEngine\Core\Batch\PreparedRequest;
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
+use IntegrationEngine\Core\Contract\Action\FormEncodedBodyInterface;
 use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
+use IntegrationEngine\Core\Contract\Client\BodyEncoding;
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
 use IntegrationEngine\Core\Contract\Client\Request;
@@ -31,11 +33,12 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
         private array $defaultHeaders = [],
         /** @var list<RequestMiddlewareInterface> */
         private array $requestMiddlewares = [],
+        private BodyEncoding $defaultBodyEncoding = BodyEncoding::Json,
     ) {}
 
     public function withBaseUrl(string $baseUrl): static
     {
-        return new self($this->httpClient, $baseUrl, $this->defaultHeaders, $this->requestMiddlewares);
+        return new self($this->httpClient, $baseUrl, $this->defaultHeaders, $this->requestMiddlewares, $this->defaultBodyEncoding);
     }
 
     public static function getClientType(): string
@@ -67,7 +70,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
         $method = $action->getMethod();
         $options = $this->buildOptions($action, $headers);
 
-        $request = new Request($method, $this->baseUrl.$path, $options['headers'], $options['json'] ?? null);
+        $request = new Request($method, $this->baseUrl.$path, $options['headers'], $options['json'] ?? $options['body'] ?? null, isset($options['body']) ? BodyEncoding::Form : BodyEncoding::Json, $action->getTimeout());
 
         return $this->dispatchThroughRequestMiddlewares(
             $request,
@@ -157,7 +160,11 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
         try {
             $options = ['headers' => $request->headers];
             if (null !== $request->body) {
-                $options['json'] = $request->body;
+                $options[BodyEncoding::Form === $request->bodyEncoding ? 'body' : 'json'] = $request->body;
+            }
+
+            if (null !== $request->timeout) {
+                $options['timeout'] = $request->timeout;
             }
 
             $response = $this->httpClient->request($request->method, $request->url, $options);
@@ -170,7 +177,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
         }
     }
 
-    /** @return array{headers: array<string, string>, json?: array<string, mixed>} */
+    /** @return array{headers: array<string, string>, json?: array<string, mixed>, body?: array<string, mixed>, timeout?: float} */
     private function buildOptions(AbstractAction $action, ?RequestHeadersInterface $headers): array
     {
         $options = [
@@ -184,7 +191,11 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
 
         $body = $action->getBody();
         if (null !== $body && \in_array($action->getMethod(), ['POST', 'PUT', 'PATCH'], strict: true)) {
-            $options['json'] = $body->toArray();
+            $options[$body instanceof FormEncodedBodyInterface || BodyEncoding::Form === $this->defaultBodyEncoding ? 'body' : 'json'] = $body->toArray();
+        }
+
+        if (null !== $action->getTimeout()) {
+            $options['timeout'] = $action->getTimeout();
         }
 
         return $options;

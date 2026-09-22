@@ -4,27 +4,22 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Infrastructure\Lifecycle;
 
-use IntegrationEngine\Core\Lifecycle\IntegrationEngineEvent;
 use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
+use Psr\EventDispatcher\StoppableEventInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
-/**
- * Adapter: dispatch IntegrationEngine events via Symfony EventDispatcher.
- * Use this if your app already uses Symfony events.
- *
- * Usage in services.yaml:
- *   IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher:
- *     class: IntegrationEngine\Infrastructure\Lifecycle\SymfonyEventDispatcherAdapter
- *     arguments:
- *       - '@event_dispatcher'
- */
+/** Bridges local subscriptions and an application's Symfony dispatcher. */
 final class SymfonyEventDispatcherAdapter extends LifecycleEventDispatcher
 {
     public function __construct(private EventDispatcherInterface $dispatcher) {}
 
-    public function dispatch(IntegrationEngineEvent $event): void
+    public function dispatch(object $event): object
     {
         parent::dispatch($event);
-        $this->dispatcher->dispatch($event, $event::class);
+        if (!$event instanceof StoppableEventInterface || !$event->isPropagationStopped()) {
+            $this->dispatcher->dispatch($event);
+        }
+
+        return $event;
     }
 }

@@ -1,0 +1,12 @@
+services:
+    -
+        class: IntegrationEngine\PHPStan\Rules\MapperActionRule
+        arguments:
+            parser: @currentPhpVersionRichParser
+        tags: [phpstan.rules.rule]
+    -
+        class: IntegrationEngine\PHPStan\Rules\IntegrationFacadeReturnTypeRule
+        tags: [phpstan.rules.rule]
+    -
+        class: IntegrationEngine\PHPStan\Rules\ResponseClassModifiersRule
+        tags: [phpstan.rules.rule]

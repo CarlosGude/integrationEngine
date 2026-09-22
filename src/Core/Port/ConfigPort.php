@@ -12,5 +12,5 @@ interface ConfigPort
 {
     public function getAction(string $name, ?ActionBodyInterface $bodyData): AbstractAction;
 
-    public function getWebhookDefinition(string $eventType): WebhookDefinition;
+    public function getWebhookDefinition(): ?WebhookDefinition;
 }

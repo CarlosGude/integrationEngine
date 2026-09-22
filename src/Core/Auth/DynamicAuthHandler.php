@@ -16,6 +16,8 @@ use IntegrationEngine\Core\Exception\RequestResponseException;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
 use Psr\Log\LoggerInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
+use IntegrationEngine\Core\Event\TokenRefreshed;
 
 final readonly class DynamicAuthHandler
 {
@@ -25,10 +27,11 @@ final readonly class DynamicAuthHandler
         private CachePort $cache,
         private string $integrationName,
         private ?LoggerInterface $logger = null,
+        private ?EventDispatcherInterface $eventDispatcher = null,
     ) {}
 
     /**
-     * @param \Closure(AbstractAction, array<mixed>, array<string, list<string>>): ResponseInterface $buildResponse
+     * @param \Closure(AbstractAction, array<mixed>, array<string, list<string>>, int): ResponseInterface $buildResponse
      */
     public function handle(
         AbstractAction $action,
@@ -58,11 +61,11 @@ final readonly class DynamicAuthHandler
             ]);
 
             $this->cache->delete($this->cacheKey($auth, $cacheDiscriminator));
-            $authorized = $this->withStaticToken($action, $auth, client: $client, cacheDiscriminator: $cacheDiscriminator);
+            $authorized = $this->withStaticToken($action, $auth, client: $client, cacheDiscriminator: $cacheDiscriminator, refreshReason: 'rejected_401');
             $rawResponse = $client->send($authorized, $context, $headers);
         }
 
-        return ($buildResponse)($authorized, $rawResponse['body'], $rawResponse['headers']);
+        return ($buildResponse)($authorized, $rawResponse['body'], $rawResponse['headers'], $rawResponse['statusCode'] ?? 0);
     }
 
     public function withStaticToken(
@@ -71,8 +74,10 @@ final readonly class DynamicAuthHandler
         mixed $preloadedCache = null,
         ?ClientInterface $client = null,
         ?string $cacheDiscriminator = null,
+        string $refreshReason = 'cache_miss',
+        int|string|null $requestKey = null,
     ): AbstractAction {
-        $token = $this->resolveToken($auth, $preloadedCache, $client, $cacheDiscriminator);
+        $token = $this->resolveToken($auth, $preloadedCache, $client, $cacheDiscriminator, $refreshReason, $requestKey);
 
         return $action::create(
             method: $action->getMethod(),
@@ -80,6 +85,7 @@ final readonly class DynamicAuthHandler
             body: $action->getBody(),
             authorization: $auth->toStaticConfig($token),
             cacheTtl: $action->getCacheTtl(),
+            timeout: $action->getTimeout(),
         );
     }
 
@@ -114,6 +120,8 @@ final readonly class DynamicAuthHandler
         mixed $preloadedCache = null,
         ?ClientInterface $client = null,
         ?string $cacheDiscriminator = null,
+        string $refreshReason = 'cache_miss',
+        int|string|null $requestKey = null,
     ): string {
         $cacheKey = $this->cacheKey($authConfig, $cacheDiscriminator);
         $cached = \is_string($preloadedCache) ? $preloadedCache : $this->cache->get($cacheKey);
@@ -147,6 +155,7 @@ final readonly class DynamicAuthHandler
 
         $token = (string) $tokenValue;
         $this->cache->set($cacheKey, $token, $authConfig->ttl);
+        $this->eventDispatcher?->dispatch(new TokenRefreshed($this->integrationName, $authConfig->action, $refreshReason, microtime(true), $requestKey));
 
         return $token;
     }

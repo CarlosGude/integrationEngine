@@ -17,7 +17,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'make:webhook',
-    description: 'Generates a new webhook parser, event DTO, and request handler'
+    description: 'Generates a webhook event, mapper, and integration YAML'
 )]
 final class MakeWebhookCommand extends Command
 {
@@ -36,6 +36,8 @@ final class MakeWebhookCommand extends Command
             ->addOption('namespace', null, InputOption::VALUE_REQUIRED, 'Base namespace', 'App\Webhooks')
             ->addOption('path', null, InputOption::VALUE_REQUIRED, 'Base path', 'src/Webhooks')
             ->addOption('force', null, InputOption::VALUE_NONE)
+            ->addOption('signature-type', null, InputOption::VALUE_REQUIRED, 'Signature scheme', 'hmac_sha256')
+            ->addOption('signature-header', null, InputOption::VALUE_REQUIRED, 'Signature header', 'X-Webhook-Signature')
         ;
     }
 
@@ -60,26 +62,12 @@ final class MakeWebhookCommand extends Command
         $baseNamespace = rtrim($namespaceOpt, '\\');
         $basePath = rtrim($pathOpt, '/');
 
-        $verifierTypeChoice = $io->choice(
-            'Signature verification type',
-            ['hmac_sha256', 'hmac_base64', 'timestamped_hmac'],
-            'hmac_sha256'
-        );
-        $verifierType = \is_string($verifierTypeChoice) ? $verifierTypeChoice : 'hmac_sha256';
-
-        $headerNameInput = $io->ask(
-            'Signature header name (e.g., X-Webhook-Signature)',
-            'X-Webhook-Signature',
-            static function (mixed $value): string {
-                $trimmed = \is_string($value) ? trim($value) : '';
-                if ('' === $trimmed) {
-                    throw new \InvalidArgumentException('Header name cannot be empty.');
-                }
-
-                return $trimmed;
-            }
-        );
-        $headerName = \is_string($headerNameInput) ? $headerNameInput : 'X-Webhook-Signature';
+        $verifierType = $input->getOption('signature-type');
+        $headerName = $input->getOption('signature-header');
+        if (!\is_string($verifierType) || !\in_array($verifierType, ['hmac_sha256', 'hmac_base64', 'timestamped_hmac'], true) || !\is_string($headerName) || '' === trim($headerName)) {
+            $io->error('Invalid signature type or header.');
+            return Command::INVALID;
+        }
 
         return $this->generate($io, $integration, $event, $verifierType, $headerName, $baseNamespace, $basePath, $force);
     }
@@ -109,20 +97,13 @@ final class MakeWebhookCommand extends Command
             GeneratedFileWriter::write($file, $content, $io, $force);
         }
 
-        $io->success('Done.');
-
-        $io->writeln([
-            'Route it, so the webhook reaches the parser:',
-            '',
-            '    # config/packages/framework.yaml',
-            '    framework:',
-            '        webhook:',
-            '            routing:',
-            \sprintf('                %s:                # POST /webhook/%s', $ctx->routingKey(), $ctx->routingKey()),
-            \sprintf('                    service: %s', $ctx->parserClassFqn()),
-            "                    secret: '%env(WEBHOOK_SECRET)%'",
-            '',
-        ]);
+        $yamlPath = $ctx->generationPath().'/'.ucfirst($ctx->integration).'.yaml';
+        $existing = is_file($yamlPath) ? file_get_contents($yamlPath) : '';
+        if (false === $existing) {
+            throw new \RuntimeException('Cannot read integration YAML.');
+        }
+        GeneratedFileWriter::write($yamlPath, $this->generator->mergeYaml($ctx, $existing, $force), $io, true);
+        $io->success('Done. Configure config_path with the generated YAML and route to integration_engine.webhook_parser.'.strtolower($ctx->integration).'.');
 
         return Command::SUCCESS;
     }

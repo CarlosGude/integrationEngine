@@ -8,6 +8,8 @@ use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionBodyInterface;
 use IntegrationEngine\Core\Contract\Auth\AuthorizationConfig;
 use IntegrationEngine\Core\Contract\Webhook\SignatureConfig;
+use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;
+use IntegrationEngine\Core\Contract\Webhook\UnknownEventPolicy;
 use IntegrationEngine\Core\Contract\Webhook\WebhookDefinition;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\Exception\PathResolutionException;
@@ -16,13 +18,13 @@ use Symfony\Component\Yaml\Yaml;
 
 final class YamlConfigAdapter implements ConfigPort
 {
-    /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>, cache_ttl?: int}> */
+    /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>, cache_ttl?: int, timeout?: float}> */
     private array $config;
 
-    /** @var array<string, array<string, mixed>> */
+    /** @var array<string, mixed> */
     private array $webhooks;
 
-    public function __construct(string $configPath)
+    public function __construct(string $configPath, private readonly ?string $webhookSecret = null)
     {
         if (!file_exists($configPath)) {
             throw new \InvalidArgumentException(\sprintf('Integration config file not found: %s', $configPath));
@@ -54,14 +56,14 @@ final class YamlConfigAdapter implements ConfigPort
             }
         }
 
-        /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>, cache_ttl?: int}> $actions */
+        /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>, cache_ttl?: int, timeout?: float}> $actions */
         $this->config = $actions;
 
         if (!\is_array($webhooks)) {
             throw new \InvalidArgumentException('Webhooks section in config must be an array.');
         }
 
-        /** @var array<string, array{mapper: string, signature: array<string, mixed>}> $webhooks */
+        /** @var array<string, mixed> $webhooks */
         $this->webhooks = $webhooks;
     }
 
@@ -90,43 +92,39 @@ final class YamlConfigAdapter implements ConfigPort
             body: $body,
             authorization: $authorization,
             cacheTtl: isset($actionConfig['cache_ttl']) ? (int) $actionConfig['cache_ttl'] : null,
+            timeout: $actionConfig['timeout'] ?? null,
         );
     }
 
-    public function getWebhookDefinition(string $eventType): WebhookDefinition
+    public function getWebhookDefinition(): ?WebhookDefinition
     {
-        if (!isset($this->webhooks[$eventType])) {
-            throw new \InvalidArgumentException(\sprintf('Webhook event type "%s" not defined in config.', $eventType));
+        if ([] === $this->webhooks) {
+            return null;
         }
-
-        $webhookConfig = $this->webhooks[$eventType];
-
-        if (!isset($webhookConfig['mapper']) || !\is_string($webhookConfig['mapper'])) {
-            throw new \InvalidArgumentException(\sprintf(
-                'Webhook event type "%s" must define a string "mapper" class.',
-                $eventType,
-            ));
+        $signature = $this->webhooks['signature'] ?? null;
+        $events = $this->webhooks['events'] ?? null;
+        $typeField = $this->webhooks['type_field'] ?? null;
+        $idField = $this->webhooks['id_field'] ?? null;
+        $policy = $this->webhooks['unknown_events'] ?? 'ignore';
+        if (!\is_array($signature) || !\is_array($events) || !\is_string($typeField) || !\is_string($idField) || !\is_string($policy)) {
+            throw new \InvalidArgumentException('Webhooks require signature, events, type_field and id_field.');
         }
-
-        if (!isset($webhookConfig['signature']) || !\is_array($webhookConfig['signature'])) {
-            throw new \InvalidArgumentException(\sprintf(
-                'Webhook event type "%s" must define a "signature" config (array).',
-                $eventType,
-            ));
+        if (null !== $this->webhookSecret) {
+            $signature['secret'] = $this->webhookSecret;
         }
-
-        /** @var array<string, mixed> $signatureConfig */
-        $signatureConfig = $webhookConfig['signature'];
-        $signature = SignatureConfig::fromArray($signatureConfig);
-
-        /** @var class-string $mapperClass */
-        $mapperClass = $webhookConfig['mapper'];
-
-        return new WebhookDefinition(
-            eventType: $eventType,
-            mapperClass: $mapperClass,
-            signature: $signature,
-        );
+        $mappers = [];
+        foreach ($events as $eventType => $event) {
+            if (!\is_string($eventType) || !\is_array($event) || !isset($event['mapper']) || !\is_string($event['mapper']) || !is_subclass_of($event['mapper'], AbstractWebhookMapper::class)) {
+                throw new \InvalidArgumentException('Each webhook event must declare a mapper extending AbstractWebhookMapper.');
+            }
+            $mappers[$eventType] = $event['mapper'];
+        }
+        $unknownEvents = UnknownEventPolicy::tryFrom($policy);
+        if (null === $unknownEvents) {
+            throw new \InvalidArgumentException('unknown_events must be ignore or reject.');
+        }
+        /** @var array<string, mixed> $signature */
+        return new WebhookDefinition($typeField, $idField, SignatureConfig::fromArray($signature), $unknownEvents, $mappers);
     }
 
     /**

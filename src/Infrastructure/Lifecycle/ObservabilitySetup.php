@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Infrastructure\Lifecycle;
 
-use IntegrationEngine\Core\Lifecycle\ActionCompleted;
-use IntegrationEngine\Core\Lifecycle\ActionFailed;
-use IntegrationEngine\Core\Lifecycle\ActionStarted;
+use IntegrationEngine\Core\Event\ResponseMapped;
+use IntegrationEngine\Core\Event\RequestFailed;
+use IntegrationEngine\Core\Event\RequestSent;
 use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
@@ -80,39 +80,39 @@ final class ObservabilitySetup
         string $logLevel,
         ?string $filter,
     ): void {
-        $dispatcher->subscribe(ActionStarted::class, static function (ActionStarted $e) use ($logger, $logLevel, $filter): void {
-            if (null !== $filter && $e->integrationName() !== $filter) {
+        $dispatcher->subscribe(RequestSent::class, static function (RequestSent $e) use ($logger, $logLevel, $filter): void {
+            if (null !== $filter && $e->integrationName !== $filter) {
                 return;
             }
             $logger->log($logLevel, 'Integration action started', [
-                'integration' => $e->integrationName(),
-                'action' => $e->action()->getName(),
-                'timestamp' => $e->timestamp(),
+                'integration' => $e->integrationName,
+                'action' => $e->action,
+                'timestamp' => $e->timestamp,
             ]);
         });
 
-        $dispatcher->subscribe(ActionCompleted::class, static function (ActionCompleted $e) use ($logger, $logLevel, $filter): void {
-            if (null !== $filter && $e->integrationName() !== $filter) {
+        $dispatcher->subscribe(ResponseMapped::class, static function (ResponseMapped $e) use ($logger, $logLevel, $filter): void {
+            if (null !== $filter && $e->integrationName !== $filter) {
                 return;
             }
             $logger->log($logLevel, 'Integration action completed', [
-                'integration' => $e->integrationName(),
-                'action' => $e->action()->getName(),
-                'duration_ms' => $e->durationMs(),
-                'response_type' => $e->response()::class,
+                'integration' => $e->integrationName,
+                'action' => $e->action,
+                'duration_ms' => $e->durationMs,
+                'response_type' => $e->responseClass,
             ]);
         });
 
-        $dispatcher->subscribe(ActionFailed::class, static function (ActionFailed $e) use ($logger, $filter): void {
-            if (null !== $filter && $e->integrationName() !== $filter) {
+        $dispatcher->subscribe(RequestFailed::class, static function (RequestFailed $e) use ($logger, $filter): void {
+            if (null !== $filter && $e->integrationName !== $filter) {
                 return;
             }
             $logger->error('Integration action failed', [
-                'integration' => $e->integrationName(),
-                'action' => $e->action()->getName(),
-                'duration_ms' => $e->durationMs(),
-                'error' => $e->error()->getMessage(),
-                'error_class' => $e->error()::class,
+                'integration' => $e->integrationName,
+                'action' => $e->action,
+                'duration_ms' => $e->durationMs,
+                'error' => $e->message,
+                'error_class' => $e->exceptionClass,
             ]);
         });
     }
@@ -126,18 +126,18 @@ final class ObservabilitySetup
         float $threshold,
         ?string $filter,
     ): void {
-        $dispatcher->subscribe(ActionCompleted::class, static function (ActionCompleted $e) use ($alertLogger, $threshold, $filter): void {
-            if (null !== $filter && $e->integrationName() !== $filter) {
+        $dispatcher->subscribe(ResponseMapped::class, static function (ResponseMapped $e) use ($alertLogger, $threshold, $filter): void {
+            if (null !== $filter && $e->integrationName !== $filter) {
                 return;
             }
 
-            if ($e->durationMs() > $threshold) {
+            if ($e->durationMs > $threshold) {
                 $alertLogger->warning('Slow integration request detected', [
-                    'integration' => $e->integrationName(),
-                    'action' => $e->action()->getName(),
-                    'duration_ms' => $e->durationMs(),
+                    'integration' => $e->integrationName,
+                    'action' => $e->action,
+                    'duration_ms' => $e->durationMs,
                     'threshold_ms' => $threshold,
-                    'overage_ms' => $e->durationMs() - $threshold,
+                    'overage_ms' => $e->durationMs - $threshold,
                 ]);
             }
         });
@@ -145,22 +145,22 @@ final class ObservabilitySetup
 
     /**
      * Register custom metrics callback.
-     * Callback signature: function(ActionCompleted|ActionFailed $event): void.
+     * Callback signature: function(ResponseMapped|RequestFailed $event): void.
      */
     private static function registerMetrics(
         LifecycleEventDispatcher $dispatcher,
         callable $metricsCallback,
         ?string $filter,
     ): void {
-        $dispatcher->subscribe(ActionCompleted::class, static function (ActionCompleted $e) use ($metricsCallback, $filter): void {
-            if (null !== $filter && $e->integrationName() !== $filter) {
+        $dispatcher->subscribe(ResponseMapped::class, static function (ResponseMapped $e) use ($metricsCallback, $filter): void {
+            if (null !== $filter && $e->integrationName !== $filter) {
                 return;
             }
             $metricsCallback($e);
         });
 
-        $dispatcher->subscribe(ActionFailed::class, static function (ActionFailed $e) use ($metricsCallback, $filter): void {
-            if (null !== $filter && $e->integrationName() !== $filter) {
+        $dispatcher->subscribe(RequestFailed::class, static function (RequestFailed $e) use ($metricsCallback, $filter): void {
+            if (null !== $filter && $e->integrationName !== $filter) {
                 return;
             }
             $metricsCallback($e);
@@ -169,15 +169,15 @@ final class ObservabilitySetup
 
     /**
      * Register custom error callback.
-     * Callback signature: function(ActionFailed $event): void.
+     * Callback signature: function(RequestFailed $event): void.
      */
     private static function registerErrorHandling(
         LifecycleEventDispatcher $dispatcher,
         callable $errorCallback,
         ?string $filter,
     ): void {
-        $dispatcher->subscribe(ActionFailed::class, static function (ActionFailed $e) use ($errorCallback, $filter): void {
-            if (null !== $filter && $e->integrationName() !== $filter) {
+        $dispatcher->subscribe(RequestFailed::class, static function (RequestFailed $e) use ($errorCallback, $filter): void {
+            if (null !== $filter && $e->integrationName !== $filter) {
                 return;
             }
             $errorCallback($e);

@@ -1,247 +1,58 @@
 <?php
 
 declare(strict_types=1);
-
 namespace IntegrationEngine\Tests\Core\Webhook;
 
+use IntegrationEngine\Core\Contract\Webhook\SignatureConfig;
+use IntegrationEngine\Core\Contract\Webhook\SignatureType;
+use IntegrationEngine\Core\Exception\WebhookRejectionReason;
+use IntegrationEngine\Core\Exception\WebhookSignatureException;
 use IntegrationEngine\Core\Webhook\TimestampedHmacSignatureVerifier;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 
 final class TimestampedHmacSignatureVerifierTest extends TestCase
 {
-    private const SECRET = 'test_secret_key_12345';
-    private const TOLERANCE = 300; // 5 minutes
-
-    public function testVerifyValidSignatureWithinTolerance(): void
+    private function verifier(): TimestampedHmacSignatureVerifier
     {
-        $clock = new FakeClock(1000);
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
-
-        $timestamp = 1000;
-        $body = 'test body';
-        $hash = hash_hmac('sha256', "{$timestamp}.{$body}", self::SECRET);
-        $signature = "t={$timestamp},v1={$hash}";
-
-        self::assertTrue($verifier->verify($body, $signature, self::SECRET));
+        return new TimestampedHmacSignatureVerifier(new class implements ClockInterface {
+            public function now(): \DateTimeImmutable { return new \DateTimeImmutable('@1000'); }
+        });
     }
-
-    public function testRejectSignatureTooOld(): void
+    private function config(): SignatureConfig
     {
-        $clock = new FakeClock(2000);
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
-
-        $timestamp = 1000;
-        $body = 'test body';
-        $hash = hash_hmac('sha256', "{$timestamp}.{$body}", self::SECRET);
-        $signature = "t={$timestamp},v1={$hash}";
-
-        // Current time 2000, timestamp 1000, difference 1000 > tolerance 300
-        self::assertFalse($verifier->verify($body, $signature, self::SECRET));
+        return new SignatureConfig(SignatureType::TimestampedHmac, 'Stripe-Signature', 'SECRET', 300);
     }
-
-    public function testRejectSignatureInTheFuture(): void
+    #[DataProvider('acceptedTimes')]
+    public function testAcceptsExactlyAtToleranceBoundary(int $timestamp): void
     {
-        $clock = new FakeClock(1000);
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
-
-        $timestamp = 2000;
-        $body = 'test body';
-        $hash = hash_hmac('sha256', "{$timestamp}.{$body}", self::SECRET);
-        $signature = "t={$timestamp},v1={$hash}";
-
-        // Timestamp in future
-        self::assertFalse($verifier->verify($body, $signature, self::SECRET));
+        $body = '{ "id": 2, "name": "raw" }';
+        $hash = hash_hmac('sha256', $timestamp.'.'.$body, 'SECRET');
+        $this->verifier()->verify($body, ['stripe-signature' => ['t='.$timestamp.',v1=wrong,v0=ignored,v1='.$hash]], $this->config());
+        self::addToAssertionCount(1);
     }
-
-    public function testVerifyWithMultipleVersions(): void
+    /** @return iterable<array{int}> */
+    public static function acceptedTimes(): iterable { yield [700]; yield [1000]; yield [1300]; }
+    #[DataProvider('badSignatures')]
+    public function testRejectsMalformedExpiredAndInvalidSignatures(string $signature, WebhookRejectionReason $reason): void
     {
-        $clock = new FakeClock(1000);
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
-
-        $timestamp = 1000;
-        $body = 'test body';
-
-        // Multiple v1 hashes (key rotation)
-        $hash1 = hash_hmac('sha256', "{$timestamp}.{$body}", 'old_secret');
-        $hash2 = hash_hmac('sha256', "{$timestamp}.{$body}", self::SECRET);
-        $signature = "t={$timestamp},v1={$hash1},v1={$hash2}";
-
-        // Should succeed because one of the v1 values matches
-        self::assertTrue($verifier->verify($body, $signature, self::SECRET));
+        try {
+            $this->verifier()->verify('body', ['stripe-signature' => [$signature]], $this->config());
+            self::fail('Signature was accepted');
+        } catch (WebhookSignatureException $error) {
+            self::assertSame($reason, $error->reason());
+            self::assertStringNotContainsString('SECRET', $error->getMessage());
+            self::assertStringNotContainsString($signature, $error->getMessage());
+        }
     }
-
-    public function testRejectWhenNoValidVersionsMatch(): void
+    /** @return iterable<string, array{string, WebhookRejectionReason}> */
+    public static function badSignatures(): iterable
     {
-        $clock = new FakeClock(1000);
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
-
-        $timestamp = 1000;
-        $body = 'test body';
-
-        $hash1 = hash_hmac('sha256', "{$timestamp}.{$body}", 'wrong_secret_1');
-        $hash2 = hash_hmac('sha256', "{$timestamp}.{$body}", 'wrong_secret_2');
-        $signature = "t={$timestamp},v1={$hash1},v1={$hash2}";
-
-        self::assertFalse($verifier->verify($body, $signature, self::SECRET));
-    }
-
-    public function testIgnoreV0Versions(): void
-    {
-        $clock = new FakeClock(1000);
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
-
-        $timestamp = 1000;
-        $body = 'test body';
-
-        // v0 should be ignored
-        $v0Hash = hash_hmac('sha1', "{$timestamp}.{$body}", self::SECRET);
-        $v1Hash = hash_hmac('sha256', "{$timestamp}.{$body}", self::SECRET);
-        $signature = "t={$timestamp},v0={$v0Hash},v1={$v1Hash}";
-
-        self::assertTrue($verifier->verify($body, $signature, self::SECRET));
-    }
-
-    public function testRejectMalformedSignatureMissingTimestamp(): void
-    {
-        $clock = new FakeClock(1000);
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
-
-        $body = 'test body';
-        $hash = hash_hmac('sha256', '1000.'.$body, self::SECRET);
-        $signature = "v1={$hash}"; // Missing t=
-
-        self::assertFalse($verifier->verify($body, $signature, self::SECRET));
-    }
-
-    public function testRejectMalformedSignatureMissingVersions(): void
-    {
-        $clock = new FakeClock(1000);
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
-
-        $timestamp = 1000;
-        $body = 'test body';
-        $signature = "t={$timestamp}"; // Missing v1=
-
-        self::assertFalse($verifier->verify($body, $signature, self::SECRET));
-    }
-
-    public function testRejectMultiPartSignatureMissingTimestamp(): void
-    {
-        $clock = new FakeClock(1000);
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
-
-        $body = 'test body';
-        $hash = hash_hmac('sha256', '1000.'.$body, self::SECRET);
-        $signature = "v0=ignored,v1={$hash}";
-
-        self::assertFalse($verifier->verify($body, $signature, self::SECRET));
-    }
-
-    public function testRejectMultiPartSignatureWithOnlyV0Versions(): void
-    {
-        $clock = new FakeClock(1000);
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
-
-        $timestamp = 1000;
-        $body = 'test body';
-        // A valid hash under v0 must not count.
-        $hash = hash_hmac('sha256', "{$timestamp}.{$body}", self::SECRET);
-        $signature = "t={$timestamp},v0={$hash}";
-
-        self::assertFalse($verifier->verify($body, $signature, self::SECRET));
-    }
-
-    public function testAcceptSignatureExactlyAtToleranceBoundary(): void
-    {
-        $clock = new FakeClock(1000 + self::TOLERANCE);
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
-
-        $timestamp = 1000;
-        $body = 'test body';
-        $hash = hash_hmac('sha256', "{$timestamp}.{$body}", self::SECRET);
-        $signature = "t={$timestamp},v1={$hash}";
-
-        self::assertTrue($verifier->verify($body, $signature, self::SECRET));
-    }
-
-    public function testRejectSignatureOneSecondPastTolerance(): void
-    {
-        $clock = new FakeClock(1000 + self::TOLERANCE + 1);
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
-
-        $timestamp = 1000;
-        $body = 'test body';
-        $hash = hash_hmac('sha256', "{$timestamp}.{$body}", self::SECRET);
-        $signature = "t={$timestamp},v1={$hash}";
-
-        self::assertFalse($verifier->verify($body, $signature, self::SECRET));
-    }
-
-    public function testRejectInvalidTimestampFormat(): void
-    {
-        $clock = new FakeClock(1000);
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
-
-        $body = 'test body';
-        $hash = hash_hmac('sha256', 'not_a_timestamp.'.$body, self::SECRET);
-        $signature = "t=not_a_timestamp,v1={$hash}";
-
-        self::assertFalse($verifier->verify($body, $signature, self::SECRET));
-    }
-
-    public function testGetHeaderName(): void
-    {
-        $clock = new FakeClock(1000);
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
-
-        self::assertSame('Stripe-Signature', $verifier->getHeaderName());
-    }
-
-    public function testRejectModifiedBody(): void
-    {
-        $clock = new FakeClock(1000);
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, $clock);
-
-        $timestamp = 1000;
-        $body = 'test body';
-        $hash = hash_hmac('sha256', "{$timestamp}.{$body}", self::SECRET);
-        $signature = "t={$timestamp},v1={$hash}";
-
-        // Modify body
-        $modifiedBody = 'modified test body';
-
-        self::assertFalse($verifier->verify($modifiedBody, $signature, self::SECRET));
-    }
-
-    public function testMissingTimestampIsRejectedEvenNearUnixEpoch(): void
-    {
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, new FakeClock(0));
-        $body = 'test body';
-        $signature = 'v1='.hash_hmac('sha256', '0.'.$body, self::SECRET);
-
-        self::assertFalse($verifier->verify($body, $signature, self::SECRET));
-    }
-
-    public function testNumericTimestampIsNormalisedBeforeSignatureVerification(): void
-    {
-        $verifier = new TimestampedHmacSignatureVerifier('Stripe-Signature', self::TOLERANCE, new FakeClock(1000));
-        $body = 'test body';
-        $signature = 't=1e3,v1='.hash_hmac('sha256', '1000.'.$body, self::SECRET);
-
-        self::assertTrue($verifier->verify($body, $signature, self::SECRET));
-    }
-}
-
-/**
- * Fake clock for testing with specific times.
- */
-final class FakeClock implements ClockInterface
-{
-    public function __construct(private int $currentTime) {}
-
-    public function now(): \DateTimeImmutable
-    {
-        return new \DateTimeImmutable("@{$this->currentTime}");
+        foreach (['missing'=>'v1=abc', 'nonnumeric'=>'t=oops,v1=abc', 'decimal'=>'t=1.0,v1=abc', 'duplicate'=>'t=1000,t=1000,v1=abc', 'overflow'=>'t=9999999999999999999999,v1=abc'] as $key=>$value) { yield $key => [$value, WebhookRejectionReason::HeaderMalformed]; }
+        foreach ([699,1301] as $time) { yield 'expired '.$time => ['t='.$time.',v1='.hash_hmac('sha256',$time.'.body','SECRET'), WebhookRejectionReason::TimestampOutOfTolerance]; }
+        yield 'invalid' => ['t=1000,v1=wrong,v1=also-wrong', WebhookRejectionReason::SignatureInvalid];
+        yield 'v0 ignored' => ['t=1000,v0='.hash_hmac('sha256','1000.body','SECRET'), WebhookRejectionReason::SignatureInvalid];
+        yield 'tampered raw body' => ['t=1000,v1='.hash_hmac('sha256','1000.other','SECRET'), WebhookRejectionReason::SignatureInvalid];
     }
 }

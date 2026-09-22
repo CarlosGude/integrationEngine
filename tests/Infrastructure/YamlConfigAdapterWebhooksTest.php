@@ -4,194 +4,100 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Infrastructure;
 
-use IntegrationEngine\Core\Contract\Webhook\SignatureConfig;
-use IntegrationEngine\Core\Contract\Webhook\WebhookDefinition;
+use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;
+use IntegrationEngine\Core\Contract\Webhook\SignatureType;
+use IntegrationEngine\Core\Contract\Webhook\WebhookEventInterface;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
+use IntegrationEngine\Tests\Fake\FakePathAction;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Yaml\Yaml;
 
 final class YamlConfigAdapterWebhooksTest extends TestCase
 {
-    public function testParseWebhookDefinitionWithHmacSignature(): void
+    /** @var list<string> */
+    private array $paths = [];
+
+    protected function tearDown(): void
     {
-        $configPath = $this->createTempYaml([
-            'webhooks' => [
-                'charge.succeeded' => [
-                    'mapper' => 'App\Payments\Infrastructure\Stripe\ChargeSucceededMapper',
-                    'signature' => [
-                        'type' => 'hmac_sha256',
-                        'header' => 'X-Stripe-Signature',
-                    ],
-                ],
-            ],
-        ]);
-
-        $adapter = new YamlConfigAdapter($configPath);
-        $definition = $adapter->getWebhookDefinition('charge.succeeded');
-
-        /** @phpstan-ignore staticMethod.alreadyNarrowedType */
-        self::assertInstanceOf(WebhookDefinition::class, $definition);
-        self::assertSame('charge.succeeded', $definition->getEventType());
-
-        /** @phpstan-ignore staticMethod.impossibleType */
-        self::assertSame('App\Payments\Infrastructure\Stripe\ChargeSucceededMapper', $definition->getMapperClass());
-
-        $signature = $definition->getSignature();
-
-        /** @phpstan-ignore staticMethod.alreadyNarrowedType */
-        self::assertInstanceOf(SignatureConfig::class, $signature);
-        self::assertSame('hmac_sha256', $signature->getType());
-        self::assertSame('X-Stripe-Signature', $signature->getHeader());
+        foreach ($this->paths as $path) {
+            unlink($path);
+        }
     }
 
-    public function testParseWebhookDefinitionWithTimestampedHmacSignature(): void
+    public function testParsesDefinitionAndReservesWebhooksKey(): void
     {
-        $configPath = $this->createTempYaml([
-            'webhooks' => [
-                'payment_intent.succeeded' => [
-                    'mapper' => 'App\Payments\Infrastructure\Stripe\PaymentIntentSucceededMapper',
-                    'signature' => [
-                        'type' => 'timestamped_hmac',
-                        'header' => 'Stripe-Signature',
-                        'timestamp_tolerance' => 300,
-                    ],
-                ],
-            ],
-        ]);
-
-        $adapter = new YamlConfigAdapter($configPath);
-        $definition = $adapter->getWebhookDefinition('payment_intent.succeeded');
-
-        $signature = $definition->getSignature();
-        self::assertSame('timestamped_hmac', $signature->getType());
-        self::assertSame('Stripe-Signature', $signature->getHeader());
-        self::assertSame(300, $signature->getTimestampTolerance());
+        $adapter = $this->adapter($this->definition());
+        $definition = $adapter->getWebhookDefinition();
+        self::assertNotNull($definition);
+        self::assertSame('data.type', $definition->typeField);
+        self::assertSame('id', $definition->idField);
+        self::assertSame(YamlWebhookMapper::class, $definition->mapperFor('created'));
+        self::assertSame(SignatureType::HmacSha256, $definition->signature->type);
+        self::assertSame('GET', $adapter->getAction('test')->getMethod());
     }
 
-    public function testThrowOnUnknownSignatureType(): void
+    public function testReturnsNullWithoutWebhookSection(): void
     {
-        $configPath = $this->createTempYaml([
-            'webhooks' => [
-                'unknown.event' => [
-                    'mapper' => 'App\SomeMapper',
-                    'signature' => [
-                        'type' => 'unknown_signature_type',
-                        'header' => 'X-Signature',
-                    ],
-                ],
-            ],
-        ]);
+        self::assertNull($this->adapter(null)->getWebhookDefinition());
+    }
 
-        $adapter = new YamlConfigAdapter($configPath);
+    public function testContainerResolvedSecretOverridesYamlPlaceholder(): void
+    {
+        $definition = $this->definition();
+        $definition['signature'] = ['type' => 'hmac_sha256', 'header' => 'X-Signature', 'secret' => '%env(TEST_SECRET)%'];
+        $adapter = $this->adapter($definition, 'resolved-secret');
+        self::assertSame('resolved-secret', $adapter->getWebhookDefinition()?->signature->secret);
+    }
 
+    /** @param array<string, mixed> $override */
+    #[DataProvider('invalidDefinitions')]
+    public function testRejectsInvalidDefinition(array $override): void
+    {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('unknown_signature_type');
-
-        $adapter->getWebhookDefinition('unknown.event');
+        $this->adapter(array_replace($this->definition(), $override))->getWebhookDefinition();
     }
 
-    public function testThrowOnMissingMapperClass(): void
+    /** @return iterable<string, array{array<string, mixed>}> */
+    public static function invalidDefinitions(): iterable
     {
-        $configPath = $this->createTempYaml([
-            'webhooks' => [
-                'invalid.event' => [
-                    // Missing 'mapper' key
-                    'signature' => [
-                        'type' => 'hmac_sha256',
-                        'header' => 'X-Signature',
-                    ],
-                ],
-            ],
-        ]);
-
-        $adapter = new YamlConfigAdapter($configPath);
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('mapper');
-        $this->expectExceptionMessage('invalid.event');
-
-        $adapter->getWebhookDefinition('invalid.event');
+        yield 'missing mapper' => [['events' => ['created' => []]]];
+        yield 'missing class' => [['events' => ['created' => ['mapper' => 'NotExistingMapper']]]];
+        yield 'wrong parent' => [['events' => ['created' => ['mapper' => \stdClass::class]]]];
+        yield 'wrong event type' => [['events' => ['other' => ['mapper' => YamlWebhookMapper::class]]]];
+        yield 'empty path' => [['type_field' => '']];
+        yield 'invalid path' => [['id_field' => 'data..id']];
+        yield 'unknown policy' => [['unknown_events' => 'discard']];
+        yield 'unknown signature' => [['signature' => ['type' => 'unknown', 'header' => 'X', 'secret' => 's']]];
+        yield 'timestamp requires tolerance' => [['signature' => ['type' => 'timestamped_hmac', 'header' => 'X', 'secret' => 's']]];
+        yield 'hmac rejects tolerance' => [['signature' => ['type' => 'hmac_sha256', 'header' => 'X', 'secret' => 's', 'tolerance' => 300]]];
     }
 
-    public function testWebhookConfigWithMultipleEvents(): void
+    /** @return array<string, mixed> */
+    private function definition(): array
     {
-        $configPath = $this->createTempYaml([
-            'webhooks' => [
-                'event1' => [
-                    'mapper' => 'App\Mapper1',
-                    'signature' => ['type' => 'hmac_sha256', 'header' => 'X-Sig'],
-                ],
-                'event2' => [
-                    'mapper' => 'App\Mapper2',
-                    'signature' => ['type' => 'hmac_sha256', 'header' => 'X-Sig'],
-                ],
-            ],
-        ]);
-
-        $adapter = new YamlConfigAdapter($configPath);
-
-        $def1 = $adapter->getWebhookDefinition('event1');
-
-        /** @phpstan-ignore staticMethod.impossibleType */
-        self::assertSame('App\Mapper1', $def1->getMapperClass());
-
-        $def2 = $adapter->getWebhookDefinition('event2');
-
-        /** @phpstan-ignore staticMethod.impossibleType */
-        self::assertSame('App\Mapper2', $def2->getMapperClass());
+        return ['type_field' => 'data.type', 'id_field' => 'id', 'signature' => ['type' => 'hmac_sha256', 'header' => 'X-Signature', 'secret' => 'test-secret'], 'events' => ['created' => ['mapper' => YamlWebhookMapper::class]]];
     }
 
-    public function testThrowOnMissingSignatureConfig(): void
+    /** @param array<string, mixed>|null $webhooks */
+    private function adapter(?array $webhooks, ?string $secret = null): YamlConfigAdapter
     {
-        $configPath = $this->createTempYaml([
-            'webhooks' => [
-                'no.signature' => [
-                    'mapper' => 'App\Mapper',
-                    // Missing 'signature' key
-                ],
-            ],
-        ]);
+        $path = tempnam(sys_get_temp_dir(), 'v8-webhook-');
+        self::assertNotFalse($path);
+        $this->paths[] = $path;
+        $config = ['test' => ['action' => FakePathAction::class, 'method' => 'GET', 'path' => '/']];
+        if (null !== $webhooks) {
+            $config['webhooks'] = $webhooks;
+        }
+        file_put_contents($path, Yaml::dump($config, 8));
 
-        $adapter = new YamlConfigAdapter($configPath);
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('signature');
-        $this->expectExceptionMessage('no.signature');
-
-        $adapter->getWebhookDefinition('no.signature');
-    }
-
-    public function testGetWebhookDefinitionThrowsOnUnknownEvent(): void
-    {
-        $configPath = $this->createTempYaml([
-            'webhooks' => [
-                'known.event' => [
-                    'mapper' => 'App\Mapper',
-                    'signature' => ['type' => 'hmac_sha256', 'header' => 'X-Sig'],
-                ],
-            ],
-        ]);
-
-        $adapter = new YamlConfigAdapter($configPath);
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('unknown.event');
-
-        $adapter->getWebhookDefinition('unknown.event');
-    }
-
-    /**
-     * Helper to create a temp YAML file and return its path.
-     *
-     * @param array<string, mixed> $webhooks
-     */
-    private function createTempYaml(array $webhooks): string
-    {
-        $yaml = Yaml::dump($webhooks);
-        $path = sys_get_temp_dir().'/'.uniqid('webhook_test_', true).'.yaml';
-        file_put_contents($path, $yaml);
-        $this->addToAssertionCount(0); // Don't count file write as assertion
-
-        return $path;
+        return new YamlConfigAdapter($path, $secret);
     }
 }
+
+final class YamlWebhookMapper extends AbstractWebhookMapper
+{
+    public static function eventType(): string { return 'created'; }
+    protected static function transform(array $payload, array $headers): WebhookEventInterface { return new YamlWebhookEvent(); }
+}
+final readonly class YamlWebhookEvent implements WebhookEventInterface {}

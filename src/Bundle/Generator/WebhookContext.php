@@ -18,7 +18,11 @@ final readonly class WebhookContext
         public string $headerName,
         public string $baseNamespace,
         public string $basePath,
-    ) {}
+    ) {
+        if (1 !== preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/D', $integration) || 1 !== preg_match('/^[a-zA-Z0-9_]+(?:[.\/-][a-zA-Z0-9_]+)*$/D', $event)) {
+            throw new \InvalidArgumentException('Integration and event must be valid identifiers.');
+        }
+    }
 
     /**
      * Get the webhook event class name (e.g., ChargeSucceededEvent).

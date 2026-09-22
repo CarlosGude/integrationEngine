@@ -9,12 +9,9 @@ use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Client\ClientInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 use IntegrationEngine\Core\IntegrationEngine;
-use IntegrationEngine\Core\Lifecycle\ActionCompleted;
-use IntegrationEngine\Core\Lifecycle\ActionFailed;
-use IntegrationEngine\Core\Lifecycle\HttpResponseReceived;
-use IntegrationEngine\Core\Lifecycle\IntegrationEngineEvent;
+use IntegrationEngine\Core\Event\RequestFailed;
 use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
-use IntegrationEngine\Core\Lifecycle\ResponseMapped;
+use IntegrationEngine\Core\Event\ResponseMapped;
 use IntegrationEngine\Tests\Fake\FakeCache;
 use IntegrationEngine\Tests\Fake\FakeConfigPort;
 use IntegrationEngine\Tests\Fake\FakeSlowAction;
@@ -37,63 +34,36 @@ final class LifecycleDurationsTest extends TestCase
     /** …and nothing here takes a minute. */
     private const MAX_MS = 60_000.0;
 
-    /** @var list<IntegrationEngineEvent> */
+    /** @var list<object> */
     private array $events = [];
 
     #[Test]
-    public function httpResponseReceivedMeasuresTheClientCallInMilliseconds(): void
+    public function responseMappedMeasuresTheWholeRequestInMilliseconds(): void
     {
         $this->engine($this->slowClient())->send(FakeSlowAction::getName());
-
-        $event = $this->event(HttpResponseReceived::class);
-        self::assertInstanceOf(HttpResponseReceived::class, $event);
-        self::assertGreaterThan(self::MIN_MS, $event->durationMs());
-        self::assertLessThan(self::MAX_MS, $event->durationMs());
-    }
-
-    #[Test]
-    public function responseMappedMeasuresHttpMappingAndTotalInMilliseconds(): void
-    {
-        $this->engine($this->slowClient())->send(FakeSlowAction::getName());
-
         $event = $this->event(ResponseMapped::class);
         self::assertInstanceOf(ResponseMapped::class, $event);
-
-        foreach ([$event->httpDurationMs(), $event->mappingDurationMs(), $event->totalDurationMs()] as $duration) {
-            self::assertGreaterThan(self::MIN_MS, $duration);
-            self::assertLessThan(self::MAX_MS, $duration);
-        }
+        self::assertGreaterThan(self::MIN_MS, $event->durationMs);
+        self::assertLessThan(self::MAX_MS, $event->durationMs);
     }
 
     #[Test]
-    public function actionCompletedMeasuresTheWholeSendInMilliseconds(): void
+    public function requestFailedReportsSafeClassAndDuration(): void
     {
-        $this->engine($this->slowClient())->send(FakeSlowAction::getName());
-
-        $event = $this->event(ActionCompleted::class);
-        self::assertInstanceOf(ActionCompleted::class, $event);
-        self::assertGreaterThan(self::MIN_MS, $event->durationMs());
-        self::assertLessThan(self::MAX_MS, $event->durationMs());
-    }
-
-    #[Test]
-    public function actionFailedIsDispatchedWithTheErrorAndItsDuration(): void
-    {
-        $failure = new \RuntimeException('upstream is down');
-
+        $failure = new \RuntimeException('upstream contains SECRET_TOKEN');
         try {
             $this->engine($this->slowClient($failure))->send(FakeSlowAction::getName());
             self::fail('The engine must rethrow the client failure.');
         } catch (\RuntimeException $caught) {
             self::assertSame($failure, $caught);
         }
-
-        $event = $this->event(ActionFailed::class);
-        self::assertInstanceOf(ActionFailed::class, $event);
-        self::assertSame($failure, $event->error());
-        self::assertSame('test_integration', $event->integrationName());
-        self::assertGreaterThan(self::MIN_MS, $event->durationMs());
-        self::assertLessThan(self::MAX_MS, $event->durationMs());
+        $event = $this->event(RequestFailed::class);
+        self::assertInstanceOf(RequestFailed::class, $event);
+        self::assertSame(\RuntimeException::class, $event->exceptionClass);
+        self::assertSame('test_integration', $event->integrationName);
+        self::assertGreaterThan(self::MIN_MS, $event->durationMs);
+        self::assertLessThan(self::MAX_MS, $event->durationMs);
+        self::assertStringNotContainsString('SECRET_TOKEN', var_export($event, true));
     }
 
     /**
@@ -127,8 +97,8 @@ final class LifecycleDurationsTest extends TestCase
         $config->register(FakeSlowAction::getName(), FakeSlowAction::create('GET', '/slow'));
 
         $dispatcher = new LifecycleEventDispatcher();
-        foreach ([HttpResponseReceived::class, ResponseMapped::class, ActionCompleted::class, ActionFailed::class] as $eventClass) {
-            $dispatcher->subscribe($eventClass, function (IntegrationEngineEvent $event): void {
+        foreach ([ResponseMapped::class, RequestFailed::class] as $eventClass) {
+            $dispatcher->subscribe($eventClass, function (object $event): void {
                 $this->events[] = $event;
             });
         }
@@ -142,12 +112,12 @@ final class LifecycleDurationsTest extends TestCase
         );
     }
 
-    /** @param class-string<IntegrationEngineEvent> $eventClass */
-    private function event(string $eventClass): IntegrationEngineEvent
+    /** @param class-string<object> $eventClass */
+    private function event(string $eventClass): object
     {
         $matches = array_values(array_filter(
             $this->events,
-            static fn (IntegrationEngineEvent $event): bool => $event::class === $eventClass,
+            static fn (object $event): bool => $event::class === $eventClass,
         ));
         self::assertCount(1, $matches, \sprintf('Expected exactly one %s.', $eventClass));
 
