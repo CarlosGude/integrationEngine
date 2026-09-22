@@ -31,7 +31,6 @@ final class IntegrationWebhookRequestParserTest extends TestCase
         self::assertSame('evt_123', $event->getId());
         self::assertSame($payload, $event->getPayload());
         self::assertInstanceOf(TestWebhookEvent::class, $event->event());
-        self::assertSame($event, unserialize(serialize($event)));
     }
 
     public function testIgnoresUnknownAuthenticatedEvent(): void

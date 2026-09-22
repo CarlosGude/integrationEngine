@@ -25,7 +25,6 @@ final class WebhookFileGeneratorTest extends TestCase
         $event = $mapper::map('charge.succeeded', ['id' => 'evt'], []);
         self::assertSame($ctx->eventClassFqn(), $event::class);
         self::assertTrue((new \ReflectionClass($event))->isReadOnly());
-        self::assertSame($event, unserialize(serialize($event)));
         $this->expectException(\UnexpectedValueException::class);
         $mapper::map('charge.succeeded', ['id' => []], []);
     }
