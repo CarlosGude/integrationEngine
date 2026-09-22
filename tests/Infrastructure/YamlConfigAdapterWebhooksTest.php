@@ -51,7 +51,7 @@ final class YamlConfigAdapterWebhooksTest extends TestCase
     }
 
     /** @param array<string, mixed> $override */
-    #[DataProvider('invalidDefinitions')]
+    #[DataProvider('provideRejectsInvalidDefinitionCases')]
     public function testRejectsInvalidDefinition(array $override): void
     {
         $this->expectException(\InvalidArgumentException::class);
@@ -59,17 +59,26 @@ final class YamlConfigAdapterWebhooksTest extends TestCase
     }
 
     /** @return iterable<string, array{array<string, mixed>}> */
-    public static function invalidDefinitions(): iterable
+    public static function provideRejectsInvalidDefinitionCases(): iterable
     {
         yield 'missing mapper' => [['events' => ['created' => []]]];
+
         yield 'missing class' => [['events' => ['created' => ['mapper' => 'NotExistingMapper']]]];
+
         yield 'wrong parent' => [['events' => ['created' => ['mapper' => \stdClass::class]]]];
+
         yield 'wrong event type' => [['events' => ['other' => ['mapper' => YamlWebhookMapper::class]]]];
+
         yield 'empty path' => [['type_field' => '']];
+
         yield 'invalid path' => [['id_field' => 'data..id']];
+
         yield 'unknown policy' => [['unknown_events' => 'discard']];
+
         yield 'unknown signature' => [['signature' => ['type' => 'unknown', 'header' => 'X', 'secret' => 's']]];
+
         yield 'timestamp requires tolerance' => [['signature' => ['type' => 'timestamped_hmac', 'header' => 'X', 'secret' => 's']]];
+
         yield 'hmac rejects tolerance' => [['signature' => ['type' => 'hmac_sha256', 'header' => 'X', 'secret' => 's', 'tolerance' => 300]]];
     }
 
@@ -79,7 +88,7 @@ final class YamlConfigAdapterWebhooksTest extends TestCase
         return ['type_field' => 'data.type', 'id_field' => 'id', 'signature' => ['type' => 'hmac_sha256', 'header' => 'X-Signature', 'secret' => 'test-secret'], 'events' => ['created' => ['mapper' => YamlWebhookMapper::class]]];
     }
 
-    /** @param array<string, mixed>|null $webhooks */
+    /** @param null|array<string, mixed> $webhooks */
     private function adapter(?array $webhooks, ?string $secret = null): YamlConfigAdapter
     {
         $path = tempnam(sys_get_temp_dir(), 'v8-webhook-');
@@ -97,7 +106,14 @@ final class YamlConfigAdapterWebhooksTest extends TestCase
 
 final class YamlWebhookMapper extends AbstractWebhookMapper
 {
-    public static function eventType(): string { return 'created'; }
-    protected static function transform(array $payload, array $headers): WebhookEventInterface { return new YamlWebhookEvent(); }
+    public static function eventType(): string
+    {
+        return 'created';
+    }
+
+    protected static function transform(array $payload, array $headers): WebhookEventInterface
+    {
+        return new YamlWebhookEvent();
+    }
 }
 final readonly class YamlWebhookEvent implements WebhookEventInterface {}

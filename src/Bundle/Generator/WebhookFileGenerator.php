@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 namespace IntegrationEngine\Bundle\Generator;
 
 use Symfony\Component\Yaml\Yaml;
@@ -24,7 +25,7 @@ final class WebhookFileGenerator
 declare(strict_types=1);
 namespace {$namespace};
 
-use IntegrationEngine\Core\Contract\Webhook\WebhookEventInterface;
+use IntegrationEngine\\Core\\Contract\\Webhook\\WebhookEventInterface;
 
 final readonly class {$event} implements WebhookEventInterface
 {
@@ -37,7 +38,7 @@ PHPFILE,
 declare(strict_types=1);
 namespace {$namespace};
 
-use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;
+use IntegrationEngine\\Core\\Contract\\Webhook\\AbstractWebhookMapper;
 
 final class {$mapper} extends AbstractWebhookMapper
 {
@@ -49,8 +50,8 @@ final class {$mapper} extends AbstractWebhookMapper
     protected static function transform(array \$payload, array \$headers): {$event}
     {
         \$id = \$payload['id'] ?? null;
-        if (!\is_string(\$id) && !\is_int(\$id)) {
-            throw new \UnexpectedValueException('Webhook event id must be a string or integer.');
+        if (!\\is_string(\$id) && !\\is_int(\$id)) {
+            throw new \\UnexpectedValueException('Webhook event id must be a string or integer.');
         }
 
         return new {$event}((string) \$id);

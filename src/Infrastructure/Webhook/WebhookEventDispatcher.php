@@ -26,8 +26,8 @@ final class WebhookEventDispatcher
     /**
      * Parse a RemoteEvent and dispatch the typed domain event.
      *
-     * @param RemoteEvent           $remoteEvent The parsed webhook event
-     * @param AbstractWebhookMapper $mapper      Mapper for the specific event type
+     * @param RemoteEvent                 $remoteEvent The parsed webhook event
+     * @param AbstractWebhookMapper       $mapper      Mapper for the specific event type
      * @param array<string, list<string>> $headers     Request headers
      *
      * @throws \InvalidArgumentException If mapper declaration doesn't match event type

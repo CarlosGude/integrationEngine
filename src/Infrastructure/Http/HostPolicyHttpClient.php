@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Infrastructure\Http;
 
+use IntegrationEngine\Core\Exception\DisallowedHostException;
 use IntegrationEngine\Core\Security\HostPolicy;
 use Symfony\Component\HttpClient\DecoratorTrait;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -19,6 +20,11 @@ final class HostPolicyHttpClient implements HttpClientInterface
         $this->client = $client;
     }
 
+    /**
+     * @param array<string, mixed> $options
+     *
+     * @throws DisallowedHostException
+     */
     public function request(string $method, string $url, array $options = []): ResponseInterface
     {
         $this->policy->assertAllowed($url);

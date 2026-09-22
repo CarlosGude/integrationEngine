@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Infrastructure\Lifecycle;
 
-use IntegrationEngine\Core\Event\ResponseMapped;
 use IntegrationEngine\Core\Event\RequestFailed;
 use IntegrationEngine\Core\Event\RequestSent;
+use IntegrationEngine\Core\Event\ResponseMapped;
 use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;

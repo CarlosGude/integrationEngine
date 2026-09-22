@@ -7,7 +7,6 @@ namespace IntegrationEngine\Tests\Bundle\DependencyInjection;
 use IntegrationEngine\Bundle\DependencyInjection\Compiler\IntegrationCompilerPass;
 use IntegrationEngine\Bundle\Exception\IntegrationConfigurationException;
 use IntegrationEngine\Core\IntegrationEngine;
-use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
 use IntegrationEngine\Core\Registry\IntegrationRegistry;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
 use IntegrationEngine\Infrastructure\Cache\CachingMiddleware;
@@ -23,6 +22,8 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
+use Symfony\Component\HttpClient\NoPrivateNetworkHttpClient;
+use Symfony\Component\HttpClient\RetryableHttpClient;
 
 final class IntegrationCompilerPassTest extends TestCase
 {
@@ -483,12 +484,12 @@ final class IntegrationCompilerPassTest extends TestCase
         self::assertSame('http_client', $this->referencedServiceId($factory[0]));
         self::assertSame('withOptions', $factory[1]);
         $private = $container->getDefinition('integration_engine.transport.my_api.private_networks');
-        self::assertSame(\Symfony\Component\HttpClient\NoPrivateNetworkHttpClient::class, $private->getClass());
+        self::assertSame(NoPrivateNetworkHttpClient::class, $private->getClass());
         self::assertSame('integration_engine.transport.my_api.base', $this->referencedServiceId($private->getArgument(0)));
         $hosts = $container->getDefinition('integration_engine.transport.my_api.hosts');
         self::assertSame('integration_engine.transport.my_api.private_networks', $this->referencedServiceId($hosts->getArgument(0)));
         $retry = $container->getDefinition('integration_engine.transport.my_api');
-        self::assertSame(\Symfony\Component\HttpClient\RetryableHttpClient::class, $retry->getClass());
+        self::assertSame(RetryableHttpClient::class, $retry->getClass());
         self::assertSame('integration_engine.transport.my_api.hosts', $this->referencedServiceId($retry->getArgument(0)));
         self::assertSame(3, $retry->getArgument(2));
         self::assertSame('integration_engine.transport.my_api', $this->referencedServiceId($container->getDefinition('integration_engine.http_client.my_api')->getArgument(0)));

@@ -33,14 +33,15 @@ final readonly class WebhookWiring
         if (null === $definition) {
             return;
         }
-        if (!(($this->classExists)(AbstractRequestParser::class))) {
+        if (!($this->classExists)(AbstractRequestParser::class)) {
             throw IntegrationConfigurationException::webhooksRequireSymfonyWebhook($name);
         }
         // DI resolves %env()% at runtime rather than reading deployment secrets
         // while compiling or asking the domain/YAML parser to read the environment.
         $container->getDefinition($configId)->setArgument(1, $definition->signature->secret);
         $runtimeDefinition = (new Definition(WebhookDefinition::class))
-            ->setFactory([new Reference($configId), 'getWebhookDefinition']);
+            ->setFactory([new Reference($configId), 'getWebhookDefinition'])
+        ;
         $verifier = match ($definition->signature->type) {
             SignatureType::HmacSha256 => new Definition(HmacSha256SignatureVerifier::class),
             SignatureType::Base64Hmac => new Definition(Base64HmacSignatureVerifier::class),

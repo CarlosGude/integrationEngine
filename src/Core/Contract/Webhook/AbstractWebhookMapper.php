@@ -11,7 +11,7 @@ abstract class AbstractWebhookMapper
     abstract public static function eventType(): string;
 
     /**
-     * @param array<mixed> $payload
+     * @param array<mixed>                $payload
      * @param array<string, list<string>> $headers
      */
     final public static function map(string $eventType, array $payload, array $headers): WebhookEventInterface
@@ -24,7 +24,7 @@ abstract class AbstractWebhookMapper
     }
 
     /**
-     * @param array<mixed> $payload
+     * @param array<mixed>                $payload
      * @param array<string, list<string>> $headers
      */
     abstract protected static function transform(array $payload, array $headers): WebhookEventInterface;

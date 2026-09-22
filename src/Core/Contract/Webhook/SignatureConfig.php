@@ -9,7 +9,8 @@ final readonly class SignatureConfig
     public function __construct(
         public SignatureType $type,
         public string $header,
-        #[\SensitiveParameter] public string $secret,
+        #[\SensitiveParameter]
+        public string $secret,
         public ?int $tolerance = null,
         public ?string $prefix = null,
     ) {

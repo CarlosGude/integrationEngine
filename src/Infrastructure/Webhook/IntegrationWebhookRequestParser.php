@@ -7,10 +7,10 @@ namespace IntegrationEngine\Infrastructure\Webhook;
 use IntegrationEngine\Core\Contract\Webhook\SignatureVerifierInterface;
 use IntegrationEngine\Core\Contract\Webhook\UnknownEventPolicy;
 use IntegrationEngine\Core\Contract\Webhook\WebhookDefinition;
-use IntegrationEngine\Core\Exception\WebhookRejectionReason;
-use IntegrationEngine\Core\Exception\WebhookSignatureException;
 use IntegrationEngine\Core\Event\WebhookReceived;
 use IntegrationEngine\Core\Event\WebhookRejected;
+use IntegrationEngine\Core\Exception\WebhookRejectionReason;
+use IntegrationEngine\Core\Exception\WebhookSignatureException;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestMatcherInterface;
@@ -56,6 +56,7 @@ final class IntegrationWebhookRequestParser extends AbstractRequestParser
         foreach ($request->headers->all() as $name => $values) {
             $headers[$name] = array_map(static fn (?string $value): string => $value ?? '', $values);
         }
+
         try {
             $this->verifier->verify($raw, $headers, $this->definition->signature);
         } catch (WebhookSignatureException $error) {
@@ -94,6 +95,7 @@ final class IntegrationWebhookRequestParser extends AbstractRequestParser
     {
         $this->eventDispatcher?->dispatch(new WebhookRejected($this->integrationName, $reason->value, microtime(true)));
         $previous = new WebhookRejectedException($reason);
+
         throw new RejectWebhookException(406, $previous->getMessage(), $previous);
     }
 }

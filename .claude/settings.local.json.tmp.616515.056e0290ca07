@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make test *)",
+      "Bash(make install *)",
+      "Bash(composer update *)",
+      "Bash(./vendor/bin/phpunit --filter=\"timeout\" -v)",
+      "Bash(./vendor/bin/phpunit *)",
+      "Bash(make cs *)",
+      "Bash(make cs-fix *)",
+      "Bash(./vendor/bin/php-cs-fixer fix *)",
+      "Bash(make stan *)",
+      "Bash(./vendor/bin/phpstan analyse *)",
+      "Bash(make deptrac *)",
+      "Bash(make qa *)",
+      "Bash(git stash *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}

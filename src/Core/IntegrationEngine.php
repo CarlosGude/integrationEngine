@@ -22,15 +22,15 @@ use IntegrationEngine\Core\Dispatch\AuthenticationHandler;
 use IntegrationEngine\Core\Dispatch\BatchDispatcher;
 use IntegrationEngine\Core\Dispatch\ConnectionResolver;
 use IntegrationEngine\Core\Dispatch\ResponseBuilder;
-use IntegrationEngine\Core\Event\RequestSent;
 use IntegrationEngine\Core\Event\RequestFailed;
+use IntegrationEngine\Core\Event\RequestSent;
 use IntegrationEngine\Core\Event\ResponseMapped;
 use IntegrationEngine\Core\Exception\RequestResponseException;
-use Psr\EventDispatcher\EventDispatcherInterface;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
-use Psr\Log\LoggerInterface;
 use IntegrationEngine\Core\Security\HostPolicy;
+use Psr\EventDispatcher\EventDispatcherInterface;
+use Psr\Log\LoggerInterface;
 
 final readonly class IntegrationEngine
 {
@@ -82,6 +82,7 @@ final readonly class IntegrationEngine
     ): ResponseInterface {
         $startTime = microtime(true);
         $started = false;
+
         try {
             $action = $this->config->getAction($actionName, $body);
             $resolved = $this->dispatchConnectionResolver->resolveForDispatch($action, $connection, $baseUrl);
@@ -118,6 +119,7 @@ final readonly class IntegrationEngine
                 $this->emitStarted($actionName, null, $startTime);
             }
             $this->emitFailed($actionName, $e, $startTime);
+
             throw $e;
         }
 
@@ -147,6 +149,7 @@ final readonly class IntegrationEngine
         foreach ($requests as $key => $request) {
             $startedAt[$key] = microtime(true);
             $started = false;
+
             try {
                 $action = $this->config->getAction($request->actionName, $request->body);
                 $resolved = $this->dispatchConnectionResolver->resolveForDispatch($action, $request->connection, $request->baseUrl, $connectionCache);

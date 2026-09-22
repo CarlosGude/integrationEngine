@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Tests\Infrastructure\Lifecycle;
 
-use IntegrationEngine\Core\Event\ResponseMapped;
 use IntegrationEngine\Core\Event\RequestFailed;
 use IntegrationEngine\Core\Event\RequestSent;
+use IntegrationEngine\Core\Event\ResponseMapped;
 use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
 use IntegrationEngine\Infrastructure\Lifecycle\ObservabilitySetup;
 use IntegrationEngine\Tests\Fake\FakeLogger;
@@ -24,7 +24,7 @@ final class ObservabilitySetupTest extends TestCase
         $action = FakePathAction::create('GET', '/orders');
         $dispatcher->dispatch(new RequestSent('shop', $action::getName(), 'GET', '/orders', 123.0));
         $dispatcher->dispatch(new ResponseMapped('shop', $action::getName(), 25.5, 200, FakeTokenResponse::class, 124.0));
-        $dispatcher->dispatch(new RequestFailed('shop', $action::getName(), 40.0, 0, \RuntimeException::class, 'Integration request failed.', 125.0));
+        $dispatcher->dispatch(new RequestFailed('shop', $action::getName(), 40.0, 0, \RuntimeException::class, 'offline', 125.0));
         self::assertSame([
             ['level' => 'debug', 'message' => 'Integration action started', 'context' => ['integration' => 'shop', 'action' => 'fake_path_action', 'timestamp' => 123.0]],
             ['level' => 'debug', 'message' => 'Integration action completed', 'context' => ['integration' => 'shop', 'action' => 'fake_path_action', 'duration_ms' => 25.5, 'response_type' => FakeTokenResponse::class]],

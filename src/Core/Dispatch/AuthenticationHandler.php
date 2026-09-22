@@ -13,9 +13,8 @@ use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
-use Psr\Log\LoggerInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
-use IntegrationEngine\Core\Event\TokenRefreshed;
+use Psr\Log\LoggerInterface;
 
 final class AuthenticationHandler
 {

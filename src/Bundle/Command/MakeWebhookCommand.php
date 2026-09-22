@@ -66,6 +66,7 @@ final class MakeWebhookCommand extends Command
         $headerName = $input->getOption('signature-header');
         if (!\is_string($verifierType) || !\in_array($verifierType, ['hmac_sha256', 'hmac_base64', 'timestamped_hmac'], true) || !\is_string($headerName) || '' === trim($headerName)) {
             $io->error('Invalid signature type or header.');
+
             return Command::INVALID;
         }
 

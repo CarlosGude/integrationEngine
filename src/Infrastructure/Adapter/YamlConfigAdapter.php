@@ -7,8 +7,8 @@ namespace IntegrationEngine\Infrastructure\Adapter;
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionBodyInterface;
 use IntegrationEngine\Core\Contract\Auth\AuthorizationConfig;
-use IntegrationEngine\Core\Contract\Webhook\SignatureConfig;
 use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;
+use IntegrationEngine\Core\Contract\Webhook\SignatureConfig;
 use IntegrationEngine\Core\Contract\Webhook\UnknownEventPolicy;
 use IntegrationEngine\Core\Contract\Webhook\WebhookDefinition;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
@@ -53,6 +53,15 @@ final class YamlConfigAdapter implements ConfigPort
                 throw new \InvalidArgumentException(
                     \sprintf('Action "%s" must define a string "action" class in the integration YAML.', $actionName)
                 );
+            }
+            if (isset($actionConfig['timeout'])) {
+                $timeout = $actionConfig['timeout'];
+                if (!\is_int($timeout) && !\is_float($timeout)) {
+                    throw new \InvalidArgumentException('timeout must be a finite non-negative number');
+                }
+                if ($timeout < 0 || is_infinite($timeout) || is_nan($timeout)) {
+                    throw new \InvalidArgumentException('timeout must be a finite non-negative number');
+                }
             }
         }
 
@@ -123,6 +132,7 @@ final class YamlConfigAdapter implements ConfigPort
         if (null === $unknownEvents) {
             throw new \InvalidArgumentException('unknown_events must be ignore or reject.');
         }
+
         /** @var array<string, mixed> $signature */
         return new WebhookDefinition($typeField, $idField, SignatureConfig::fromArray($signature), $unknownEvents, $mappers);
     }

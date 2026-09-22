@@ -78,7 +78,7 @@ services:
 // src/Integration/Shopify/ShopifyObservabilitySetup.php
 namespace App\Integration\Shopify;
 
-use IntegrationEngine\Core\Lifecycle\ActionFailed;
+use IntegrationEngine\Core\Event\RequestFailed;
 use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
 use Psr\Log\LoggerInterface;
 use Sentry;
@@ -109,40 +109,47 @@ class ShopifyObservabilitySetup
 
     private function recordMetrics($event): void
     {
+        use IntegrationEngine\Core\Event\ResponseMapped;
+        use IntegrationEngine\Core\Event\RequestFailed;
+        
+        $status = $event instanceof RequestFailed ? 'failed' : 'success';
+        
         // Prometheus histogram: duration by action
         $this->prometheus->histogram(
             'shopify_api_duration_ms',
-            $event->durationMs(),
+            $event->durationMs,
             [
-                'action' => $event->action()->getName(),
-                'status' => $event instanceof ActionFailed ? 'failed' : 'success',
+                'action' => $event->action,
+                'status' => $status,
             ]
         );
 
         // Alert Slack if slow
-        if ($event->durationMs() > 3000) {
+        if ($event->durationMs > 3000) {
             $this->slack->alert(
-                "🐢 Shopify {$event->action()->getName()} was slow: {$event->durationMs()}ms"
+                "🐢 Shopify {$event->action} was slow: {$event->durationMs}ms"
             );
         }
     }
 
-    private function recordError(ActionFailed $event): void
+    private function recordError(RequestFailed $event): void
     {
         // Send to Sentry with context
-        Sentry\captureException($event->error(), [
+        Sentry\captureMessage($event->message, 'error', [
             'tags' => [
                 'integration' => 'shopify',
-                'action' => $event->action()->getName(),
+                'action' => $event->action,
+                'exception' => $event->exceptionClass,
             ],
             'extra' => [
-                'duration_ms' => $event->durationMs(),
+                'duration_ms' => $event->durationMs,
+                'status_code' => $event->statusCode,
             ],
         ]);
 
         // Slack critical alert
         $this->slack->critical(
-            "❌ Shopify {$event->action()->getName()} failed: {$event->error()->getMessage()}"
+            "❌ Shopify {$event->action} failed: {$event->message}"
         );
     }
 }
@@ -239,11 +246,11 @@ ObservabilitySetup::register($dispatcher, $logger, [
     // Custom metrics
     'metrics_callback' => function($event) {
         // Record custom metrics (Prometheus, etc.)
-        // $event is ActionCompleted or ActionFailed
+        // $event is ResponseMapped or RequestFailed
     },
     
     // Custom error handling
-    'error_callback' => function(ActionFailed $event) {
+    'error_callback' => function(RequestFailed $event) {
         // Send to Sentry, PagerDuty, etc.
     },
     
@@ -314,6 +321,8 @@ ObservabilitySetup::register($dispatcher, $logger, [
 Log only a percentage of requests:
 
 ```php
+use IntegrationEngine\Core\Event\ResponseMapped;
+
 ObservabilitySetup::register($dispatcher, $logger, [
     'logging' => true,
     'slow_request_threshold_ms' => 3000,
@@ -323,10 +332,10 @@ ObservabilitySetup::register($dispatcher, $logger, [
         $this->prometheus->record($e);
         
         // Log only 10% of successful requests
-        if ($e instanceof ActionCompleted && random_int(1, 100) <= 10) {
+        if ($e instanceof ResponseMapped && random_int(1, 100) <= 10) {
             $this->logger->info('Sampled log', [
-                'action' => $e->action()->getName(),
-                'duration_ms' => $e->durationMs(),
+                'action' => $e->action,
+                'duration_ms' => $e->durationMs,
             ]);
         }
     },
@@ -386,12 +395,15 @@ Pick Option 1 (async logging) for Shopify/POF. The overhead is unmeasurable at s
 ## Without Observability Setup (Manual)
 
 ```php
-$dispatcher->subscribe(ActionCompleted::class, function(ActionCompleted $e) {
-    $logger->info('Done', ['action' => $e->action()->getName()]);
+use IntegrationEngine\Core\Event\ResponseMapped;
+use IntegrationEngine\Core\Event\RequestFailed;
+
+$dispatcher->subscribe(ResponseMapped::class, function(ResponseMapped $e) {
+    $logger->info('Done', ['action' => $e->action]);
 });
 
-$dispatcher->subscribe(ActionFailed::class, function(ActionFailed $e) {
-    \Sentry\captureException($e->error());
+$dispatcher->subscribe(RequestFailed::class, function(RequestFailed $e) {
+    \Sentry\captureMessage($e->message);
 });
 
 // More boilerplate per integration...
@@ -404,7 +416,7 @@ ObservabilitySetup::register($dispatcher, $logger, [
     'logging' => true,
     'slow_request_threshold_ms' => 3000,
     'metrics_callback' => fn($e) => $prometheus->record($e),
-    'error_callback' => fn($e) => Sentry\captureException($e->error()),
+    'error_callback' => fn($e) => Sentry\captureMessage($e->message),
     'integration_filter' => 'shopify',
 ]);
 
@@ -415,59 +427,19 @@ ObservabilitySetup::register($dispatcher, $logger, [
 
 ---
 
-## Detailed Timing: HTTP vs. Mapping
+## Event Timeline
 
-When you need to identify performance bottlenecks precisely, subscribe to intermediate timing events.
+Subscribe to track request lifecycle with full duration data:
 
-### The Events
-
-**ActionStarted** → (HTTP call) → **HttpResponseReceived** → (DTO mapping) → **ResponseMapped** → (final checks) → **ActionCompleted**
-
-- **ActionStarted:** before anything (baseline t=0)
-- **HttpResponseReceived:** after raw HTTP response arrives
-  - `statusCode()` — HTTP status (`0` when the client doesn't report one: a custom `ClientInterface` or a response short-circuited by a middleware)
-  - `durationMs()` — time spent in network + API processing
-- **ResponseMapped:** after DTO mapping is complete
-  - `httpDurationMs()` — same as HttpResponseReceived duration
-  - `mappingDurationMs()` — time spent transforming response to DTO
-  - `totalDurationMs()` — time since ActionStarted
-
-### Example: Tracking Bottlenecks
-
-```php
-#[AsEventListener(event: ResponseMapped::class)]
-public function onResponseMapped(ResponseMapped $event): void
-{
-    $httpTime = $event->httpDurationMs();       // External API latency
-    $mappingTime = $event->mappingDurationMs();  // Transformation cost
-    $overhead = $event->totalDurationMs() - $httpTime - $mappingTime;
-    
-    // Track each separately
-    $this->prometheus->gauge('shopify.http_ms', $httpTime);
-    $this->prometheus->gauge('shopify.mapping_ms', $mappingTime);
-    $this->prometheus->gauge('shopify.overhead_ms', $overhead);
-    
-    // Or alert on specific bottlenecks
-    if ($mappingTime > 100) {
-        $this->logger->warning('Slow DTO mapping', [
-            'action' => $event->action()->getName(),
-            'mapping_ms' => $mappingTime,
-        ]);
-    }
-}
+```
+RequestSent → (HTTP + mapping) → ResponseMapped (or RequestFailed)
 ```
 
-### Use Cases
+- **RequestSent:** before HTTP call
+- **ResponseMapped:** after DTO mapping (includes HTTP + mapping time)
+- **RequestFailed:** on error (HTTP or mapping)
 
-| Metric | Slow When | Action |
-|--------|-----------|--------|
-| `http_ms` high | External API is slow | Check API provider, optimize query |
-| `mapping_ms` high | Transformation is expensive | Cache parsed results, profile mapper |
-| `overhead_ms` high | Auth/config/middleware is expensive | Optimize middleware chain, cache auth tokens |
-
-### Note
-
-Intermediate timing events are only fired for **direct HTTP calls** (non-dynamic-auth requests where we control the full flow). When using dynamic authentication, the token fetch overhead is included in `ActionCompleted::durationMs()` but not broken down.
+All events include `durationMs` — total time from request to response/error.
 
 ---
 

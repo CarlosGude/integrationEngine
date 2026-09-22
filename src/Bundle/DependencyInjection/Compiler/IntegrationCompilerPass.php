@@ -8,25 +8,25 @@ use IntegrationEngine\Bundle\Exception\IntegrationConfigurationException;
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 use IntegrationEngine\Core\Dispatch\AuthenticationHandler;
 use IntegrationEngine\Core\IntegrationEngine;
-use IntegrationEngine\Core\Security\HostPolicy;
-use IntegrationEngine\Infrastructure\Http\HostPolicyHttpClient;
-use IntegrationEngine\Infrastructure\Http\RetryStrategyFactory;
-use IntegrationEngine\Infrastructure\Adapter\FormEncodedClientAdapter;
-use Symfony\Component\HttpClient\NoPrivateNetworkHttpClient;
-use Symfony\Component\HttpClient\RetryableHttpClient;
 use IntegrationEngine\Core\Registry\IntegrationRegistry;
+use IntegrationEngine\Core\Security\HostPolicy;
+use IntegrationEngine\Infrastructure\Adapter\FormEncodedClientAdapter;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
 use IntegrationEngine\Infrastructure\Cache\CachingMiddleware;
 use IntegrationEngine\Infrastructure\Client\MiddlewareClient;
 use IntegrationEngine\Infrastructure\Debug\IntegrationEngineDataCollector;
 use IntegrationEngine\Infrastructure\Debug\TracingMiddleware;
 use IntegrationEngine\Infrastructure\Http\GraphQLClientAdapter;
+use IntegrationEngine\Infrastructure\Http\HostPolicyHttpClient;
+use IntegrationEngine\Infrastructure\Http\RetryStrategyFactory;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
+use Symfony\Component\HttpClient\NoPrivateNetworkHttpClient;
+use Symfony\Component\HttpClient\RetryableHttpClient;
 use Symfony\Component\HttpKernel\DataCollector\DataCollectorInterface;
 
 /**
@@ -49,7 +49,7 @@ use Symfony\Component\HttpKernel\DataCollector\DataCollectorInterface;
  */
 final class IntegrationCompilerPass implements CompilerPassInterface
 {
-    /** @param \Closure(string): bool|null $classExists */
+    /** @param null|\Closure(string): bool $classExists */
     public function __construct(private readonly ?\Closure $classExists = null) {}
 
     public function process(ContainerBuilder $container): void
@@ -150,9 +150,9 @@ final class IntegrationCompilerPass implements CompilerPassInterface
      * such an adapter owns its own request construction and would need to
      * support RequestMiddlewareInterface itself.
      *
-     * @param IntegrationConfig $config
-     * @param array<string, class-string<ClientAdapterInterface>>                                                                                                             $adapterMap
-     * @param list<string>                                                                                                                                                    $requestMiddlewares
+     * @param IntegrationConfig                                   $config
+     * @param array<string, class-string<ClientAdapterInterface>> $adapterMap
+     * @param list<string>                                        $requestMiddlewares
      */
     private function resolveHttpClientRef(
         ContainerBuilder $container,

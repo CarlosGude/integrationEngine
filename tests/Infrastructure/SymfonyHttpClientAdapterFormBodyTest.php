@@ -9,6 +9,7 @@ use IntegrationEngine\Core\Contract\Action\ActionBodyInterface;
 use IntegrationEngine\Core\Contract\Client\BodyEncoding;
 use IntegrationEngine\Core\Contract\Client\Request;
 use IntegrationEngine\Core\Contract\Client\RequestMiddlewareInterface;
+use IntegrationEngine\Infrastructure\Adapter\FormEncodedClientAdapter;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use IntegrationEngine\Tests\Fake\FakeFormBody;
 use IntegrationEngine\Tests\Fake\FakePathAction;
@@ -63,10 +64,11 @@ final class SymfonyHttpClientAdapterFormBodyTest extends TestCase
             public function handle(Request $request, callable $next): array
             {
                 TestCase::assertSame(BodyEncoding::Form, $request->bodyEncoding);
+
                 return $next($request->withHeader('X-Form', 'yes'));
             }
         };
-        $adapter = new \IntegrationEngine\Infrastructure\Adapter\FormEncodedClientAdapter(new MockHttpClient($response), 'https://original.example', ['X-Default' => 'kept'], [$middleware]);
+        $adapter = new FormEncodedClientAdapter(new MockHttpClient($response), 'https://original.example', ['X-Default' => 'kept'], [$middleware]);
         $adapter->withBaseUrl('https://rebased.example')->sendMany([
             new PreparedRequest(FakePathAction::create('POST', '/', FakeFormBody::create(['amount' => 2000])), null, null),
         ]);

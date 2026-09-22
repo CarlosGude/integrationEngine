@@ -8,10 +8,10 @@ use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Action\ActionContextInterface;
 use IntegrationEngine\Core\Contract\Client\ClientInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
-use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Event\RequestFailed;
-use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
 use IntegrationEngine\Core\Event\ResponseMapped;
+use IntegrationEngine\Core\IntegrationEngine;
+use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
 use IntegrationEngine\Tests\Fake\FakeCache;
 use IntegrationEngine\Tests\Fake\FakeConfigPort;
 use IntegrationEngine\Tests\Fake\FakeSlowAction;
@@ -51,6 +51,7 @@ final class LifecycleDurationsTest extends TestCase
     public function requestFailedReportsSafeClassAndDuration(): void
     {
         $failure = new \RuntimeException('upstream contains SECRET_TOKEN');
+
         try {
             $this->engine($this->slowClient($failure))->send(FakeSlowAction::getName());
             self::fail('The engine must rethrow the client failure.');

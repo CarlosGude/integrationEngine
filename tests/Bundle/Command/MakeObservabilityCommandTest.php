@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Bundle\Command;
 
 use IntegrationEngine\Bundle\Command\MakeObservabilityCommand;
-use IntegrationEngine\Core\Event\ResponseMapped;
 use IntegrationEngine\Core\Event\RequestFailed;
 use IntegrationEngine\Core\Event\RequestSent;
+use IntegrationEngine\Core\Event\ResponseMapped;
 use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
 use IntegrationEngine\Tests\Fake\FakeLogger;
 use IntegrationEngine\Tests\Fake\FakePathAction;

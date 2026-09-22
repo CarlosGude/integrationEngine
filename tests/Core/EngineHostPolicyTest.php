@@ -17,6 +17,7 @@ final class EngineHostPolicyTest extends IntegrationEngineTestCase
     public function testOverrideIsRejectedBeforeAnyRequest(): void
     {
         $this->configure();
+
         try {
             $this->engine->send(FakePathAction::getName(), baseUrl: 'https://evil.example');
             self::fail('Expected rejected destination.');
@@ -43,7 +44,10 @@ final class EngineHostPolicyTest extends IntegrationEngineTestCase
     {
         $this->config->register(FakePathAction::getName(), FakePathAction::create('GET', '/items'));
         $this->engine = new IntegrationEngine(
-            $this->config, $this->client, $this->cache, 'test',
+            $this->config,
+            $this->client,
+            $this->cache,
+            'test',
             connectionResolver: $resolver,
             hostPolicy: new HostPolicy(['partner.example']),
             baseUrl: 'https://partner.example',

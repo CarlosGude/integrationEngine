@@ -26,6 +26,9 @@ return (new Config())
 
         // Mantener consistencia en tests sin ruido
         'php_unit_method_casing' => true,
+
+        // No simplificar asignación a return cuando hay PHPDoc
+        'return_assignment' => false,
     ])
     ->setFinder(
         (new Finder())

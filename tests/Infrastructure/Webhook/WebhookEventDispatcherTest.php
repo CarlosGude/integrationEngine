@@ -76,7 +76,7 @@ final class DispatcherTestMapper extends AbstractWebhookMapper
 final class DispatcherTestEvent implements WebhookEventInterface
 {
     /**
-     * @param array<mixed> $payload
+     * @param array<mixed>         $payload
      * @param array<string, mixed> $headers
      */
     public function __construct(

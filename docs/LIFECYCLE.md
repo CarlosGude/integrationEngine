@@ -12,13 +12,16 @@ Tap into integration lifecycle events for logging, metrics, debugging, and obser
 
 ## Events
 
-The engine fires three events at key points:
+The engine fires events at key points:
 
 | Event | When | Data |
 |-------|------|------|
-| `ActionStarted` | Before HTTP call | action, integration name, timestamp |
-| `ActionCompleted` | After successful mapping | action, response DTO, duration, timestamp |
-| `ActionFailed` | On error (HTTP or mapping) | action, exception, duration, timestamp |
+| `RequestSent` | Before HTTP call | integration name, action, method, path, timestamp |
+| `ResponseMapped` | After successful mapping | integration name, action, duration, status code, response class, timestamp |
+| `RequestFailed` | On error (HTTP or mapping) | integration name, action, duration, status code, exception class, message, timestamp |
+| `TokenRefreshed` | After dynamic auth refresh | integration name, action, timestamp |
+| `WebhookReceived` | Webhook signature verified | integration name, event type, timestamp |
+| `WebhookRejected` | Webhook rejected | integration name, event type, reason, timestamp |
 
 ---
 
@@ -28,13 +31,13 @@ The engine fires three events at key points:
 
 ```php
 use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
-use IntegrationEngine\Core\Lifecycle\ActionCompleted;
+use IntegrationEngine\Core\Event\ResponseMapped;
 
 $dispatcher = new LifecycleEventDispatcher();
 
 // Subscribe to an event
-$dispatcher->subscribe(ActionCompleted::class, function(ActionCompleted $event) {
-    echo "Action {$event->action()->getName()} completed in {$event->durationMs()}ms\n";
+$dispatcher->subscribe(ResponseMapped::class, function(ResponseMapped $event) {
+    echo "Action {$event->action} completed in {$event->durationMs}ms\n";
 });
 
 // Pass dispatcher to engine
@@ -63,13 +66,13 @@ services:
 Then use `#[AsEventListener]` or `services.yaml` to listen:
 
 ```php
-use IntegrationEngine\Core\Lifecycle\ActionCompleted;
+use IntegrationEngine\Core\Event\ResponseMapped;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
-#[AsEventListener(event: ActionCompleted::class)]
-public function onActionCompleted(ActionCompleted $event): void
+#[AsEventListener(event: ResponseMapped::class)]
+public function onResponseMapped(ResponseMapped $event): void
 {
-    echo "Completed: {$event->action()->getName()}\n";
+    echo "Completed: {$event->action}\n";
 }
 ```
 
@@ -82,21 +85,24 @@ public function onActionCompleted(ActionCompleted $event): void
 Log each action with domain context:
 
 ```php
-$dispatcher->subscribe(ActionCompleted::class, function(ActionCompleted $event) {
+use IntegrationEngine\Core\Event\ResponseMapped;
+use IntegrationEngine\Core\Event\RequestFailed;
+
+$dispatcher->subscribe(ResponseMapped::class, function(ResponseMapped $event) {
     $this->logger->info('Integration action succeeded', [
-        'integration' => $event->integrationName(),
-        'action' => $event->action()->getName(),
-        'duration_ms' => $event->durationMs(),
-        'response_type' => $event->response()::class,
+        'integration' => $event->integrationName,
+        'action' => $event->action,
+        'duration_ms' => $event->durationMs,
+        'response_type' => $event->responseClass,
     ]);
 });
 
-$dispatcher->subscribe(ActionFailed::class, function(ActionFailed $event) {
+$dispatcher->subscribe(RequestFailed::class, function(RequestFailed $event) {
     $this->logger->error('Integration action failed', [
-        'integration' => $event->integrationName(),
-        'action' => $event->action()->getName(),
-        'duration_ms' => $event->durationMs(),
-        'error' => $event->error()->getMessage(),
+        'integration' => $event->integrationName,
+        'action' => $event->action,
+        'duration_ms' => $event->durationMs,
+        'error' => $event->message,
     ]);
 });
 ```
@@ -107,6 +113,8 @@ Export timing and error counters:
 
 ```php
 use Prometheus\CollectorRegistry;
+use IntegrationEngine\Core\Event\ResponseMapped;
+use IntegrationEngine\Core\Event\RequestFailed;
 
 $registry = new CollectorRegistry();
 $histogram = $registry->registerHistogram(
@@ -116,16 +124,16 @@ $histogram = $registry->registerHistogram(
     ['integration', 'action', 'status']
 );
 
-$dispatcher->subscribe(ActionCompleted::class, function(ActionCompleted $event) use ($histogram) {
+$dispatcher->subscribe(ResponseMapped::class, function(ResponseMapped $event) use ($histogram) {
     $histogram
-        ->labels($event->integrationName(), $event->action()->getName(), 'success')
-        ->observe($event->durationMs());
+        ->labels($event->integrationName, $event->action, 'success')
+        ->observe($event->durationMs);
 });
 
-$dispatcher->subscribe(ActionFailed::class, function(ActionFailed $event) use ($histogram) {
+$dispatcher->subscribe(RequestFailed::class, function(RequestFailed $event) use ($histogram) {
     $histogram
-        ->labels($event->integrationName(), $event->action()->getName(), 'failure')
-        ->observe($event->durationMs());
+        ->labels($event->integrationName, $event->action, 'failure')
+        ->observe($event->durationMs);
 });
 ```
 
@@ -134,12 +142,14 @@ $dispatcher->subscribe(ActionFailed::class, function(ActionFailed $event) use ($
 Notify ops if an integration is slow:
 
 ```php
-$dispatcher->subscribe(ActionCompleted::class, function(ActionCompleted $event) {
-    if ($event->durationMs() > 5000) {
+use IntegrationEngine\Core\Event\ResponseMapped;
+
+$dispatcher->subscribe(ResponseMapped::class, function(ResponseMapped $event) {
+    if ($event->durationMs > 5000) {
         $this->slack->notify([
             'channel' => '#alerts',
-            'text' => "⚠️ Slow integration: {$event->integrationName()} "
-                . "{$event->action()->getName()} took {$event->durationMs()}ms",
+            'text' => "⚠️ Slow integration: {$event->integrationName} "
+                . "{$event->action} took {$event->durationMs}ms",
         ]);
     }
 });
@@ -150,16 +160,19 @@ $dispatcher->subscribe(ActionCompleted::class, function(ActionCompleted $event) 
 Send errors to your error tracker:
 
 ```php
-use Sentry\captureException;
+use Sentry\captureMessage;
+use IntegrationEngine\Core\Event\RequestFailed;
 
-$dispatcher->subscribe(ActionFailed::class, function(ActionFailed $event) {
-    captureException($event->error(), [
+$dispatcher->subscribe(RequestFailed::class, function(RequestFailed $event) {
+    captureMessage($event->message, 'error', [
         'tags' => [
-            'integration' => $event->integrationName(),
-            'action' => $event->action()->getName(),
+            'integration' => $event->integrationName,
+            'action' => $event->action,
+            'exception' => $event->exceptionClass,
         ],
         'extra' => [
-            'duration_ms' => $event->durationMs(),
+            'duration_ms' => $event->durationMs,
+            'status_code' => $event->statusCode,
         ],
     ]);
 });
@@ -170,13 +183,15 @@ $dispatcher->subscribe(ActionFailed::class, function(ActionFailed $event) {
 Log all integrations to a database for compliance:
 
 ```php
-$dispatcher->subscribe(ActionCompleted::class, function(ActionCompleted $event) {
+use IntegrationEngine\Core\Event\ResponseMapped;
+
+$dispatcher->subscribe(ResponseMapped::class, function(ResponseMapped $event) {
     $this->db->insert('integration_audit_log', [
-        'integration' => $event->integrationName(),
-        'action' => $event->action()->getName(),
+        'integration' => $event->integrationName,
+        'action' => $event->action,
         'status' => 'success',
-        'duration_ms' => $event->durationMs(),
-        'timestamp' => date('Y-m-d H:i:s', $event->timestamp()),
+        'duration_ms' => $event->durationMs,
+        'timestamp' => date('Y-m-d H:i:s', $event->timestamp),
     ]);
 });
 ```
@@ -185,32 +200,58 @@ $dispatcher->subscribe(ActionCompleted::class, function(ActionCompleted $event) 
 
 ## Event Structure
 
-### ActionStarted
+### RequestSent
 
 ```php
-$event->action(): AbstractAction
-$event->integrationName(): string    // e.g., 'shopify'
-$event->timestamp(): float           // microtime(true)
+$event->integrationName: string    // e.g., 'shopify'
+$event->action: string             // Action name
+$event->method: string             // HTTP method
+$event->path: string               // Resolved path
+$event->timestamp: float           // microtime(true)
+$event->connectionId: ?string      // Optional connection identifier
+$event->requestKey: int|string|null // Batch request key, if applicable
 ```
 
-### ActionCompleted
+### ResponseMapped
 
 ```php
-$event->action(): AbstractAction
-$event->integrationName(): string
-$event->timestamp(): float
-$event->response(): ResponseInterface  // Your typed DTO
-$event->durationMs(): float
+$event->integrationName: string
+$event->action: string
+$event->durationMs: float          // Milliseconds elapsed
+$event->statusCode: int            // HTTP status code
+$event->responseClass: string      // FQN of response DTO
+$event->timestamp: float
+$event->requestKey: int|string|null
 ```
 
-### ActionFailed
+### RequestFailed
 
 ```php
-$event->action(): AbstractAction
-$event->integrationName(): string
-$event->timestamp(): float
-$event->error(): \Throwable           // The exception
-$event->durationMs(): float
+$event->integrationName: string
+$event->action: string
+$event->durationMs: float
+$event->statusCode: int            // HTTP status, or 0 if no response
+$event->exceptionClass: string     // FQN of exception thrown
+$event->message: string            // Exception message
+$event->timestamp: float
+$event->requestKey: int|string|null
+```
+
+### TokenRefreshed
+
+```php
+$event->integrationName: string
+$event->action: string             // Token action name
+$event->timestamp: float
+```
+
+### WebhookReceived / WebhookRejected
+
+```php
+$event->integrationName: string
+$event->eventType: string          // Webhook event type
+$event->timestamp: float
+$event->reason: ?string            // Rejection reason (WebhookRejected only)
 ```
 
 ---
@@ -218,9 +259,10 @@ $event->durationMs(): float
 ## Best Practices
 
 - **Keep subscribers fast.** They run in the critical path.
-- **Use ActionStarted sparingly.** For correlation IDs, not heavy logging.
+- **Use RequestSent sparingly.** For correlation IDs, tracing spans, or request counting — not heavy logging.
 - **Catch exceptions in subscribers.** If a subscriber throws, the engine doesn't catch it; make sure your listeners are defensive.
-- **Batch logging.** If you log every action, buffer and flush to avoid I/O overhead.
+- **Batch logging.** If you log every request, buffer and flush to avoid I/O overhead.
+- **Never assume response/exception access.** Events carry only metadata (status codes, class names, messages), not the objects themselves — design your observability around primitives.
 
 ---
 

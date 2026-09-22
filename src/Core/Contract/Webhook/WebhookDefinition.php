@@ -29,7 +29,7 @@ final readonly class WebhookDefinition
         }
     }
 
-    /** @return class-string<AbstractWebhookMapper>|null */
+    /** @return null|class-string<AbstractWebhookMapper> */
     public function mapperFor(string $eventType): ?string
     {
         return $this->mappers[$eventType] ?? null;

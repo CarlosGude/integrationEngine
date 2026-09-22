@@ -6,13 +6,14 @@ namespace IntegrationEngine\Tests\Core\Webhook;
 
 use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;
 use IntegrationEngine\Core\Contract\Webhook\WebhookEventInterface;
+use IntegrationEngine\Core\Exception\WebhookMapperMismatchException;
 use PHPUnit\Framework\TestCase;
 
 final class AbstractWebhookMapperTest extends TestCase
 {
     public function testRejectsEventTypeMismatch(): void
     {
-        $this->expectException(\IntegrationEngine\Core\Exception\WebhookMapperMismatchException::class);
+        $this->expectException(WebhookMapperMismatchException::class);
         TestWebhookMapper::map('other.event', [], []);
     }
 

@@ -17,6 +17,7 @@ final class HostPolicyHttpClientTest extends TestCase
     {
         $inner = new MockHttpClient();
         $client = new HostPolicyHttpClient($inner, new HostPolicy(['partner.example']));
+
         try {
             $client->request('GET', 'https://evil.example');
             self::fail('Destination was not rejected.');

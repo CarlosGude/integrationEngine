@@ -11,6 +11,9 @@ final readonly class HostPolicy
     /** @param list<string> $allowedHosts */
     public function __construct(private array $allowedHosts = []) {}
 
+    /**
+     * @throws DisallowedHostException
+     */
     public function assertAllowed(string $url): void
     {
         if ([] === $this->allowedHosts) {

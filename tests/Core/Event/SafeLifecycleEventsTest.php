@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Core\Event;
 
 use IntegrationEngine\Core\Batch\EngineRequest;
-use IntegrationEngine\Core\Event\RequestSent;
 use IntegrationEngine\Core\Event\RequestFailed;
+use IntegrationEngine\Core\Event\RequestSent;
 use IntegrationEngine\Core\Event\ResponseMapped;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Tests\Fake\FakeCache;
@@ -38,6 +38,7 @@ final class SafeLifecycleEventsTest extends TestCase
         $client = new FakeClient();
         $failure = new \RuntimeException('Bearer SECRET_TOKEN_123 CONFIDENTIAL_789');
         $client->queueException(FakeTokenAction::getName(), $failure);
+
         try {
             $this->engine($client, $dispatcher)->send(FakeTokenAction::getName());
             self::fail('Expected request failure.');
@@ -58,7 +59,8 @@ final class SafeLifecycleEventsTest extends TestCase
         ]);
         self::assertCount(2, $results);
         self::assertCount(4, $dispatcher->events);
-        self::assertSame(['ok', 'bad', 'ok', 'bad'], array_map(static fn (object $e): mixed => $e->requestKey, $dispatcher->events));
+        $keys = array_map(static fn (object $e): mixed => $e instanceof ResponseMapped || $e instanceof RequestFailed ? $e->requestKey : null, $dispatcher->events);
+        self::assertSame(['ok', 'bad', 'ok', 'bad'], $keys);
         self::assertInstanceOf(ResponseMapped::class, $dispatcher->events[2]);
         self::assertInstanceOf(RequestFailed::class, $dispatcher->events[3]);
     }

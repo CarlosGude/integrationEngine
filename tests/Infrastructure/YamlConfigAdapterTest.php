@@ -12,6 +12,7 @@ use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Core\Exception\PathResolutionException;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
 use IntegrationEngine\Tests\Fake\FakePathAction;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -567,22 +568,26 @@ final class YamlConfigAdapterTest extends TestCase
         self::assertSame(0.0, $zero->getAction('get_employee')->getTimeout());
     }
 
-    /** @return iterable<string, array{string}> */
-    public static function invalidActionTimeouts(): iterable
-    {
-        yield 'negative' => ['-1'];
-        yield 'string' => ["'fast'"];
-        yield 'boolean' => ['true'];
-        yield 'infinity' => ['.Inf'];
-        yield 'nan' => ['.NaN'];
-    }
-
-    #[\PHPUnit\Framework\Attributes\DataProvider('invalidActionTimeouts')]
+    #[DataProvider('provideInvalidActionTimeoutIsRejectedCases')]
     public function testInvalidActionTimeoutIsRejected(string $value): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('timeout must be a finite non-negative number');
         $this->buildAdapter("get_employee:\n    action: '%s'\n    timeout: ".$value."\n");
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function provideInvalidActionTimeoutIsRejectedCases(): iterable
+    {
+        yield 'negative' => ['-1'];
+
+        yield 'string' => ["'fast'"];
+
+        yield 'boolean' => ['true'];
+
+        yield 'infinity' => ['.Inf'];
+
+        yield 'nan' => ['.NaN'];
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
