@@ -70,7 +70,7 @@ final readonly class IntegrationEngine
      * it (a non-scalar $connection and no connectionId/baseUrl) two such
      * connections would share one cache entry.
      */
-    public function send(
+    public function sendQualityNegativeProbe(
         string $actionName,
         ?ActionContextInterface $context = null,
         ?ActionBodyInterface $body = null,
