@@ -177,7 +177,7 @@ integration_engine:
 
 ## Lifecycle Events
 
-Tap into integration lifecycle for observability. See **[LIFECYCLE.md](./LIFECYCLE.md)** for:
+Tap into integration lifecycle for observability. See **[LIFECYCLE.md](./docs/LIFECYCLE.md)** for:
 
 - `ActionStarted`, `ActionCompleted`, `ActionFailed` events
 - Examples: logging, Prometheus metrics, error tracking (Sentry), audit trails
@@ -187,7 +187,7 @@ Tap into integration lifecycle for observability. See **[LIFECYCLE.md](./LIFECYC
 
 ## Inbound Webhooks
 
-For **receiving** webhooks from external platforms, see **[WEBHOOK.md](./WEBHOOK.md)**. It covers:
+For **receiving** webhooks from external platforms, see **[WEBHOOK.md](./docs/WEBHOOK.md)**. It covers:
 
 - How the bundle plugs into Symfony's Webhook component: `IntegrationWebhookRequestParser` → `#[AsRemoteEventConsumer]` → `WebhookEventDispatcher` → typed event listeners
 - Signature verifiers for the three common schemes (hex HMAC behind a prefix, raw HMAC in base64, timestamped HMAC) and payload mapping

@@ -66,7 +66,7 @@ GetEmployee:
     path:   /employees/{id}
 ```
 
-→ [Actions in depth](docs/getting-started/actions.md) — all YAML options, `hasResponse: false`, the
+→ [Actions in depth](getting-started/actions.md) — all YAML options, `hasResponse: false`, the
 stateless invariant.
 
 ---
@@ -86,7 +86,7 @@ $engine->send('UpdateEmployee', body: UpdateEmployeeBody::create(['id' => 42, 'n
 DefaultActionContext::create(['id' => 42]) // → /employees/42
 ```
 
-→ [Context and path resolution](docs/getting-started/context-and-path.md) — body-sourced placeholders,
+→ [Context and path resolution](getting-started/context-and-path.md) — body-sourced placeholders,
 required vs. optional params, custom context with validation, decision table.
 
 ---
@@ -116,7 +116,7 @@ final readonly class GetEmployeeResponse implements ResponseInterface
 }
 ```
 
-→ [Mappers and responses](docs/getting-started/mappers-and-responses.md) — type mapping table, nested
+→ [Mappers and responses](getting-started/mappers-and-responses.md) — type mapping table, nested
 DTOs, shared mapper logic, the `toArray()` contract.
 
 ---
@@ -145,7 +145,7 @@ GetOrders:
         ttl:         3600
 ```
 
-→ [Authorization](docs/getting-started/authorization.md) — all static types (bearer, basic, api\_key),
+→ [Authorization](getting-started/authorization.md) — all static types (bearer, basic, api\_key),
 dynamic auth config, token action setup, caching (including per-connection isolation
 for multi-connection integrations), 401 retry, Redis backend.
 
@@ -170,7 +170,7 @@ $results['alice']->error();      // \Throwable|null
 Real concurrency is independent of the protocol — it depends on whether the client
 implements `BatchClientInterface`. The default REST client does.
 
-→ [Batch / Parallel Requests](docs/getting-started/batch-requests.md) — failure strategies,
+→ [Batch / Parallel Requests](getting-started/batch-requests.md) — failure strategies,
 `sendManyOrFail()`, concurrency per client type, `AbstractBatchMapper` for homogeneous
 batches, mixed-action batches.
 
@@ -188,7 +188,7 @@ my_api:
     client_service: 'App\Infrastructure\Http\RetryingHttpClient'
 ```
 
-→ [HTTP Clients](docs/advanced/architecture/clients.md) — GraphQL body interface, `client:` vs
+→ [HTTP Clients](advanced/architecture/clients.md) — GraphQL body interface, `client:` vs
 `client_service:`, custom protocol adapters, `BatchClientInterface` for concurrency.
 
 ---
@@ -208,7 +208,7 @@ my_api:
 $engine->send('get_orders', connection: $tenantId);
 ```
 
-→ [HTTP Clients — runtime connection resolution](docs/advanced/architecture/clients.md#runtime-connection-resolution--connectionresolverinterface) —
+→ [HTTP Clients — runtime connection resolution](advanced/architecture/clients.md#runtime-connection-resolution--connectionresolverinterface) —
 `ConnectionResolverInterface`, `ConnectionCredentials`, the dynamic-auth token cache
 discriminator for connections sharing one `base_url`.
 
@@ -226,7 +226,7 @@ my_api:
         - App\Infrastructure\Integrations\MyApi\OAuth1SigningMiddleware
 ```
 
-→ [HTTP Clients — request middleware](docs/advanced/architecture/clients.md#request-middleware--full-request-signing) —
+→ [HTTP Clients — request middleware](advanced/architecture/clients.md#request-middleware--full-request-signing) —
 the `Request` value object, chain semantics, why `sendMany()` degrades to sequential
 dispatch when configured.
 
@@ -238,7 +238,7 @@ In `dev`/`test`, every outgoing call made through any configured integration sho
 in the Symfony Toolbar/Profiler automatically — no configuration needed. In `prod`, the
 real client is used unwrapped: zero overhead.
 
-→ [Debugging](docs/advanced/debugging.md) — what the panel shows, why it's a decorator and not
+→ [Debugging](advanced/debugging.md) — what the panel shows, why it's a decorator and not
 engine instrumentation, how it relates to the optional `LoggerInterface` logging.
 
 ---

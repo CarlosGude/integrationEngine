@@ -39,8 +39,6 @@ final class NoTypedConstantsInDocsTest extends TestCase
     {
         $files = [
             self::ROOT.'/README.md',
-            self::ROOT.'/DOCUMENTATION.md',
-            self::ROOT.'/UPGRADE-4.0.md',
             ...self::markdownFilesUnder(self::ROOT.'/docs'),
         ];
 

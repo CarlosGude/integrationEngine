@@ -32,7 +32,7 @@ make ci     # qa + mutation — run before opening a PR
 ## Code quality
 
 Quality gates (style, static analysis, tests, mutation), their commands, and
-current MSI: see [`docs/advanced/QUALITY.md`](docs/advanced/QUALITY.md).
+current MSI: see [`docs/advanced/QUALITY.md`](advanced/QUALITY.md).
 
 ## Versioning Policy
 
@@ -106,5 +106,5 @@ Skip PRs only for trivial documentation (typos in README examples, comment fixes
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — design decisions: why actions are stateless,
   how path resolution works, the mapper invariant, cache behaviour, and the
   DTO/domain boundary.
-- [`CLAUDE.md`](./CLAUDE.md) — the engine's contracts and conventions in agent-readable
+- [`CLAUDE.md`](../CLAUDE.md) — the engine's contracts and conventions in agent-readable
   form; also the context for AI-assisted integration generation.

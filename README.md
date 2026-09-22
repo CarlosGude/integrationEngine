@@ -75,19 +75,22 @@ No HTTP clients. No request builders. No mappers. Just integrations.
 
 ---
 
-## Live Demo
+## Demo
 
 **Want to see it in action?**
 
-→ **[View the live demo](https://integrationengine-demo.example.com)** (Symfony app with TMDB integration)  
-→ **[Demo source code](https://github.com/CarlosGude/integrationEngine-use-example)** (GitHub repository)
+→ **[integrationEngine-demo](https://github.com/CarlosGude/integrationEngine-demo)** — a Symfony app wiring the bundle into a bilingual, guided tour. No hosted instance yet; clone and run it with `docker compose up -d`.
 
 The demo shows:
-- REST integration (TMDB Movie API)
-- Parallel batch requests
-- Typed Response DTOs
-- Mapper pattern in action
+- REST (TMDB), CSV, GraphQL, and form-urlencoded (Stripe) integrations
+- Parallel batch requests (`sendMany()`)
+- Typed Response DTOs and the Gateway/ACL pattern
+- Inbound Stripe webhooks
+- Resilience patterns (retry, circuit breaker, fallback)
 - Real-world Symfony wiring
+
+`integrationEngine-use-example` is an older, superseded demo repository — use
+`integrationEngine-demo` above instead.
 
 ---
 

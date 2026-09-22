@@ -8,14 +8,14 @@ use PHPUnit\Framework\TestCase;
 
 final class RoadmapAndStatusTest extends TestCase
 {
-    private const ROADMAP_PATH = __DIR__.'/../../ROADMAP.md';
+    private const ROADMAP_PATH = __DIR__.'/../../docs/ROADMAP.md';
     private const README_PATH = __DIR__.'/../../README.md';
 
     public function testRoadmapFileExists(): void
     {
         self::assertFileExists(
             self::ROADMAP_PATH,
-            'ROADMAP.md must exist at the repository root'
+            'docs/ROADMAP.md must exist'
         );
     }
 

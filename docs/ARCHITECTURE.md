@@ -96,7 +96,7 @@ This is where optional query string logic lives — in the context, not in the a
 ```php
 final readonly class FilterCharactersContext implements PathResolvableContextInterface
 {
-    private const array ALLOWED = ['name', 'status', 'species', 'gender', 'page'];
+    private const ALLOWED = ['name', 'status', 'species', 'gender', 'page'];
 
     private function __construct(private array $filters) {}
 
@@ -547,18 +547,18 @@ signing — without the engine needing an opinion on how.
 
 ## Decisions at a Glance
 
-The decisions above are also documented in the [`docs/adr/`](docs/adr/) directory as Architecture Decision Records (ADRs), one page each, with context, alternatives considered, and consequences.
+The decisions above are also documented in the [`docs/adr/`](adr/) directory as Architecture Decision Records (ADRs), one page each, with context, alternatives considered, and consequences.
 
-- [ADR 0001](docs/adr/0001-stateless-actions-and-declarative-yaml.md) — Stateless actions and declarative YAML configuration
-- [ADR 0002](docs/adr/0002-mapper-invariant.md) — Mapper invariant: single mapper per action
-- [ADR 0003](docs/adr/0003-gateway-acl-outside-the-bundle.md) — Gateway and access control belong to the application
-- [ADR 0004](docs/adr/0004-concurrency-with-lazy-http-responses.md) — Concurrency with lazy HTTP responses
-- [ADR 0005](docs/adr/0005-token-cache-per-connection-and-single-retry-on-401.md) — Token cache per connection and single retry on 401
-- [ADR 0006](docs/adr/0006-profiler-never-records-secrets.md) — Profiler never records secrets
-- [ADR 0007](docs/adr/0007-versioning-policy-after-v4.md) — Versioning policy after v4
-- [ADR 0008](docs/adr/0008-no-messenger-bridge-in-the-bundle.md) — No Messenger bridge in the bundle
+- [ADR 0001](adr/0001-stateless-actions-and-declarative-yaml.md) — Stateless actions and declarative YAML configuration
+- [ADR 0002](adr/0002-mapper-invariant.md) — Mapper invariant: single mapper per action
+- [ADR 0003](adr/0003-gateway-acl-outside-the-bundle.md) — Gateway and access control belong to the application
+- [ADR 0004](adr/0004-concurrency-with-lazy-http-responses.md) — Concurrency with lazy HTTP responses
+- [ADR 0005](adr/0005-token-cache-per-connection-and-single-retry-on-401.md) — Token cache per connection and single retry on 401
+- [ADR 0006](adr/0006-profiler-never-records-secrets.md) — Profiler never records secrets
+- [ADR 0007](adr/0007-versioning-policy-after-v4.md) — Versioning policy after v4
+- [ADR 0008](adr/0008-no-messenger-bridge-in-the-bundle.md) — No Messenger bridge in the bundle
 
-See [`docs/adr/README.md`](docs/adr/README.md) for a full index and guidance on reading ADRs.
+See [`docs/adr/README.md`](adr/README.md) for a full index and guidance on reading ADRs.
 
 ---
 
