@@ -17,7 +17,7 @@ composer require symfony/webhook   # pulls symfony/remote-event and symfony/mess
 POST /webhook/{type}                         Symfony's WebhookController (framework.webhook.routing)
   → YourParser::parse()                      extends IntegrationWebhookRequestParser
       verify signature (SignatureVerifierInterface)   → 406 on failure
-      decode JSON → RemoteEvent(name: getDefinition(), id: payload.id, payload)
+      decode JSON object → RemoteEvent(name: getDefinition(), id: payload.id, payload)
   → Messenger (sync by default; async if you route ConsumeRemoteEventMessage to a transport)
   → YourConsumer::consume(RemoteEvent)       #[AsRemoteEventConsumer('{type}')]
       WebhookEventDispatcher::dispatch($event, $mapper, $headers)
@@ -127,6 +127,12 @@ final class PaymentIntentSucceededRequestParser extends IntegrationWebhookReques
 > The parser verifies with the secret Symfony passes in from `framework.webhook.routing.<type>.secret`, and falls back to `getSignatureSecret()` when that one is empty. If both are empty the request is rejected (`406`): an empty key would accept HMACs anyone can compute.
 
 The parser class must not be `readonly`: Symfony's `AbstractRequestParser` isn't, and a readonly class can't extend a non-readonly one.
+
+The base parser accepts POST requests and verifies the signature before decoding
+the body. Malformed JSON and a root value that is not an object return `406`;
+lists such as `[]` or `[{"id": 1}]` are rejected. Empty objects, objects with
+numeric keys and nested lists are supported. `Content-Type` restrictions can be
+added by overriding the request matcher; they are not imposed by the base parser.
 
 ### 4. Route It
 

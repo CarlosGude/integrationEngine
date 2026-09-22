@@ -10,6 +10,7 @@ use IntegrationEngine\Core\Exception\RequestResponseException;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use IntegrationEngine\Tests\Fake\FakeContext;
 use IntegrationEngine\Tests\Fake\FakePathAction;
+use IntegrationEngine\Tests\Fake\FakeRequestMiddleware;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -18,6 +19,33 @@ use Symfony\Contracts\HttpClient\ResponseStreamInterface;
 
 final class SymfonyHttpClientAdapterBatchTest extends TestCase
 {
+    #[Test]
+    public function sequentialBatchWithRequestMiddlewareIsolatesHttpFailures(): void
+    {
+        $spy = new BatchSpyHttpClient([
+            ['status' => 503, 'content' => 'temporarily unavailable'],
+            ['content' => '{"ok":true}'],
+        ]);
+        $adapter = new SymfonyHttpClientAdapter(
+            httpClient: $spy,
+            baseUrl: 'https://api.example.com',
+            requestMiddlewares: [new FakeRequestMiddleware()],
+        );
+
+        $results = $adapter->sendMany([
+            'broken' => new PreparedRequest(FakePathAction::create('GET', '/broken'), null, null),
+            7 => new PreparedRequest(FakePathAction::create('GET', '/healthy'), null, null),
+        ]);
+
+        self::assertSame(['broken', 7], array_keys($results));
+        $error = $results['broken'];
+        self::assertInstanceOf(RequestResponseException::class, $error);
+        self::assertSame(503, $error->statusCode);
+        self::assertStringContainsString('GET /broken returned HTTP 503: temporarily unavailable', $error->getMessage());
+        self::assertSame(['body' => ['ok' => true], 'headers' => [], 'statusCode' => 200], $results[7]);
+        self::assertSame(['request /broken', 'consume /broken', 'request /healthy', 'consume /healthy'], $spy->log);
+    }
+
     #[Test]
     public function sendManyDispatchesAllRequestsBeforeConsumingAnyResponse(): void
     {

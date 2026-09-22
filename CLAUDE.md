@@ -14,9 +14,9 @@ make test           # run all tests via phpunit
 make cs             # check code style (dry-run)
 make cs-fix         # fix code style in-place
 make stan           # phpstan level max analysis
-make qa             # cs + test
+make qa             # cs + stan + test
 make ci             # cs + stan + test + mutation
-make pre-commit     # cs-fix + stan + test + mutation
+make pre-commit     # alias of ci: cs (dry-run) + stan + test + mutation
 ```
 
 **Run a single test file:**

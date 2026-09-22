@@ -8,6 +8,7 @@ use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;
 use IntegrationEngine\Core\Contract\Webhook\WebhookEventInterface;
 use IntegrationEngine\Core\Webhook\HmacSha256SignatureVerifier;
 use IntegrationEngine\Infrastructure\Webhook\IntegrationWebhookRequestParser;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\RemoteEvent\RemoteEvent;
@@ -140,27 +141,87 @@ final class IntegrationWebhookRequestParserTest extends TestCase
 
     public function testRejectWebhookWithMalformedJson(): void
     {
-        $hash = hash_hmac('sha256', 'invalid json', self::SECRET);
-        $signature = "sha256={$hash}";
-
-        $request = Request::create(
-            uri: '/webhook',
-            method: 'POST',
-            server: ['HTTP_X_WEBHOOK_SIGNATURE' => $signature],
-            content: 'invalid json',
-        );
-
-        $parser = new TestWebhookRequestParser(
-            new HmacSha256SignatureVerifier(self::SIGNATURE_HEADER, 'sha256='),
-            self::SECRET,
-        );
-
         try {
-            $parser->parse($request, self::SECRET);
+            $this->parse($this->signedBody('invalid json'));
             self::fail('Expected RejectWebhookException');
         } catch (RejectWebhookException $e) {
             self::assertSame(406, $e->getStatusCode());
+            self::assertStringStartsWith('Malformed JSON payload:', $e->getMessage());
         }
+    }
+
+    public function testVerifiesSignatureBeforeDecodingMalformedJson(): void
+    {
+        $request = $this->signedBody('invalid json');
+        $request->headers->set(self::SIGNATURE_HEADER, 'sha256=invalid');
+
+        try {
+            $this->parse($request);
+            self::fail('Expected RejectWebhookException');
+        } catch (RejectWebhookException $e) {
+            self::assertSame(406, $e->getStatusCode());
+            self::assertSame('Signature verification failed', $e->getMessage());
+        }
+    }
+
+    #[DataProvider('provideRejectsSignedJsonThatIsNotAnObjectCases')]
+    public function testRejectsSignedJsonThatIsNotAnObject(string $body): void
+    {
+        try {
+            $this->parse($this->signedBody($body));
+            self::fail('Expected RejectWebhookException');
+        } catch (RejectWebhookException $e) {
+            self::assertSame(406, $e->getStatusCode());
+            self::assertSame('Payload must be a JSON object', $e->getMessage());
+        }
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function provideRejectsSignedJsonThatIsNotAnObjectCases(): iterable
+    {
+        yield 'empty list' => ['[]'];
+
+        yield 'object list' => ['[{"id":"evt_123"}]'];
+
+        yield 'string' => ['"payload"'];
+
+        yield 'integer' => ['123'];
+
+        yield 'float' => ['1.5'];
+
+        yield 'boolean' => ['true'];
+
+        yield 'null' => ['null'];
+    }
+
+    public function testAcceptsAnEmptyObject(): void
+    {
+        $event = $this->parse($this->signedBody(" \t\r\n{}"));
+
+        self::assertInstanceOf(RemoteEvent::class, $event);
+        self::assertSame('payment.completed', $event->getName());
+        self::assertSame('', $event->getId());
+        self::assertSame([], $event->getPayload());
+    }
+
+    public function testPreservesNestedObjectsAsAssociativeArraysAndLists(): void
+    {
+        $event = $this->parse($this->signedBody('{"id":0,"data":{"items":[{"name":"item"}],"metadata":{}}}'));
+
+        self::assertInstanceOf(RemoteEvent::class, $event);
+        self::assertSame('0', $event->getId());
+        self::assertSame([
+            'id' => 0,
+            'data' => ['items' => [['name' => 'item']], 'metadata' => []],
+        ], $event->getPayload());
+    }
+
+    public function testAcceptsAnObjectWithNumericKeys(): void
+    {
+        $event = $this->parse($this->signedBody('{"0":"value"}'));
+
+        self::assertInstanceOf(RemoteEvent::class, $event);
+        self::assertSame([0 => 'value'], $event->getPayload());
     }
 
     public function testRejectWebhookSentWithAnotherMethodThanPost(): void
@@ -196,6 +257,19 @@ final class IntegrationWebhookRequestParserTest extends TestCase
 
         self::assertInstanceOf(RemoteEvent::class, $remoteEvent);
         self::assertSame('', $remoteEvent->getId());
+    }
+
+    private function signedBody(string $body): Request
+    {
+        return Request::create(
+            uri: '/webhook',
+            method: 'POST',
+            server: [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_WEBHOOK_SIGNATURE' => 'sha256='.hash_hmac('sha256', $body, self::SECRET),
+            ],
+            content: $body,
+        );
     }
 
     /** @param array<string, mixed> $payload */

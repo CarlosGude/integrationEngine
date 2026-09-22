@@ -341,6 +341,20 @@ final class IntegrationCompilerPassTest extends TestCase
     }
 
     #[Test]
+    public function throwsWhenTaggedRequestMiddlewareClassDoesNotExist(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig([
+            'request_middlewares' => ['app.missing_signer'],
+        ])]);
+        $this->tagRequestMiddleware($container, 'app.missing_signer', 'App\MissingRequestSigner');
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Service "app.missing_signer" is tagged as "integration_engine.request_middleware" but its class "App\MissingRequestSigner" does not exist.');
+
+        (new IntegrationCompilerPass())->process($container);
+    }
+
+    #[Test]
     public function requestMiddlewaresAreIgnoredWhenUsingACustomClientService(): void
     {
         $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig([

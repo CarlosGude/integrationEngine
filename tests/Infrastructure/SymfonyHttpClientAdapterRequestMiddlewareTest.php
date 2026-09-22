@@ -222,6 +222,44 @@ final class SymfonyHttpClientAdapterRequestMiddlewareTest extends TestCase
 
         self::assertSame(2, $spy->callCount());
     }
+
+    #[Test]
+    public function sendManyPreservesMiddlewareFailureAndContinuesWithLaterItems(): void
+    {
+        $spy = new RequestMiddlewareSpyHttpClient();
+        $failure = new \RuntimeException('signing credentials unavailable');
+        $seen = [];
+        $middleware = new RecordingRequestMiddleware(static function (Request $request) use (&$seen, $failure): void {
+            $seen[] = $request->url;
+            if ('https://api.example.com/rejected' === $request->url) {
+                throw $failure;
+            }
+        });
+        $adapter = new SymfonyHttpClientAdapter(
+            httpClient: $spy,
+            baseUrl: 'https://api.example.com',
+            requestMiddlewares: [$middleware],
+        );
+
+        $results = $adapter->sendMany([
+            'before' => new PreparedRequest(RequestMiddlewareTestAction::create('GET', '/first'), null, null),
+            42 => new PreparedRequest(RequestMiddlewareTestAction::create('GET', '/rejected'), null, null),
+            'after' => new PreparedRequest(RequestMiddlewareTestAction::create('GET', '/last'), null, null),
+        ]);
+
+        self::assertSame(['before', 42, 'after'], array_keys($results));
+        self::assertSame($failure, $results[42]);
+        $expected = ['body' => ['id' => 1], 'headers' => [], 'statusCode' => 200];
+        self::assertSame($expected, $results['before']);
+        self::assertSame($expected, $results['after']);
+        self::assertSame([
+            'https://api.example.com/first',
+            'https://api.example.com/rejected',
+            'https://api.example.com/last',
+        ], $seen);
+        self::assertSame(2, $spy->callCount());
+        self::assertSame('https://api.example.com/last', $spy->lastUrl());
+    }
 }
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────

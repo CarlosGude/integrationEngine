@@ -24,15 +24,20 @@ the single source of these numbers, and that its `source.excludes` and
 
 As of 2026-09-22, measured locally on PHP 8.5.6 (unreleased working tree):
 
-- **752 tests, 2,075 assertions**, style and PHPStan max passing.
-- **Line coverage: 96.78%** — 2,163 of 2,235 executable lines, measured with Xdebug.
-- **Covered Code MSI: 99.54%** — 1,081 mutants: 1,075 killed by tests,
+- **778 tests, 2,155 assertions**, style and PHPStan max passing.
+- **Line coverage: 98.03%** — 2,188 of 2,232 executable lines, measured with Xdebug.
+- **Covered Code MSI: 99.54%** — 1,093 mutants: 1,087 killed by tests,
   1 errored, 5 escaped. Existing thresholds and exclusions are unchanged.
 
 GraphQL batches, form-encoded requests, observability setup, logging and
 resilience utilities now have behavioral tests. Mutation coverage alone still
 cannot establish whether all code is exercised: check PHPUnit's per-class
 coverage report as well. `Bundle` remains excluded from mutation testing below.
+
+Webhook parsing/dispatch, the REST adapter, authorization-header resolution and
+the middleware resolver also have full line coverage after the maintenance follow-up.
+The demo contract workflow now enables PCOV; its modified remote run remains to
+be verified. These local results do not stand in for that consuming-app check.
 
 ### Surviving mutants retained without new exclusions
 

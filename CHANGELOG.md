@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Webhook parsing validates the signature before decoding JSON and rejects lists
+  and scalars at the payload root with HTTP 406. Empty objects, numeric object keys
+  and nested data retain their existing representation. Signed malformed JSON
+  now reaches the parser's specific error instead of a generic request mismatch.
+- The demo contract workflow enables PCOV because the demo's `make test` requests
+  coverage; a missing coverage driver no longer causes that configuration warning.
 - Register the form-encoded adapter as a built-in client so `client: form_encoded`
   works without a manual service tag. Runtime base URL overrides now reach the
   adapter, and successful responses include their HTTP status for observability.
@@ -33,6 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Behavioral coverage for GraphQL batches and middleware fallback, form-encoded
   requests, observability registration and generation, logging, and resilience.
 - Command and DI tests cover integration inspection and form-encoded registration.
+- Tests cover webhook mapper mismatch, REST sequential batch failure isolation,
+  non-string authorization parameters and missing request-middleware classes.
+- Maintenance tasks now distinguish completed work from historical v5 items;
+  transport security, PHPStan rules and Prometheus remain scoped proposals.
 
 ## [7.0.2] - 2026-09-21
 

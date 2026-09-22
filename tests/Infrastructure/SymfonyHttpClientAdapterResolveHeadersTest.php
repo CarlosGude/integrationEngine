@@ -7,6 +7,7 @@ namespace IntegrationEngine\Tests\Infrastructure;
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Auth\StaticAuthorizationConfig;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -20,6 +21,43 @@ use Symfony\Contracts\HttpClient\ResponseStreamInterface;
  */
 final class SymfonyHttpClientAdapterResolveHeadersTest extends TestCase
 {
+    #[Test]
+    #[DataProvider('provideNonStringAuthorizationParamsFailBeforeTransportCases')]
+    public function nonStringAuthorizationParamsFailBeforeTransport(string $type, string $key, mixed $value, string $valueType): void
+    {
+        $spy = new RestHeadersSpyClient();
+        $adapter = new SymfonyHttpClientAdapter(httpClient: $spy, baseUrl: 'https://api.example.com');
+        $action = RestHeadersAction::create('GET', '/orders', authorization: new StaticAuthorizationConfig(
+            type: $type,
+            params: [$key => $value],
+        ));
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage(\sprintf('Static authorization param "%s" must be a string, got %s.', $key, $valueType));
+
+        try {
+            $adapter->send($action);
+        } finally {
+            self::assertSame([], $spy->lastHeaders());
+        }
+    }
+
+    /** @return iterable<string, array{string, string, mixed, string}> */
+    public static function provideNonStringAuthorizationParamsFailBeforeTransportCases(): iterable
+    {
+        yield 'integer token' => ['bearer', 'token', 123, 'int'];
+
+        yield 'boolean username' => ['basic', 'username', false, 'bool'];
+
+        yield 'array password' => ['basic', 'password', ['secret'], 'array'];
+
+        yield 'object header' => ['api_key', 'header', new \stdClass(), 'stdClass'];
+
+        yield 'null prefix is not an omitted prefix' => ['bearer', 'prefix', null, 'null'];
+
+        yield 'float prefix' => ['api_key', 'prefix', 1.5, 'float'];
+    }
+
     // ── basic ─────────────────────────────────────────────────────────────────
 
     #[Test]

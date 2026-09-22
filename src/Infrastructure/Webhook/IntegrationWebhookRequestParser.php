@@ -6,9 +6,7 @@ namespace IntegrationEngine\Infrastructure\Webhook;
 
 use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;
 use IntegrationEngine\Core\Contract\Webhook\SignatureVerifierInterface;
-use Symfony\Component\HttpFoundation\ChainRequestMatcher;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestMatcher\IsJsonRequestMatcher;
 use Symfony\Component\HttpFoundation\RequestMatcher\MethodRequestMatcher;
 use Symfony\Component\HttpFoundation\RequestMatcherInterface;
 use Symfony\Component\RemoteEvent\RemoteEvent;
@@ -61,10 +59,8 @@ abstract class IntegrationWebhookRequestParser extends AbstractRequestParser
      */
     protected function getRequestMatcher(): RequestMatcherInterface
     {
-        return new ChainRequestMatcher([
-            new MethodRequestMatcher('POST'),
-            new IsJsonRequestMatcher(),
-        ]);
+        // Decode JSON only after verifying the signature in doParse().
+        return new MethodRequestMatcher('POST');
     }
 
     /**
@@ -123,7 +119,9 @@ abstract class IntegrationWebhookRequestParser extends AbstractRequestParser
             );
         }
 
-        if (!\is_array($payload)) {
+        // Associative decoding turns both {} and [] into arrays, so retain
+        // the root type from the authenticated JSON document.
+        if (!\is_array($payload) || !str_starts_with(ltrim($body), '{')) {
             throw new RejectWebhookException(
                 statusCode: 406,
                 message: 'Payload must be a JSON object',
