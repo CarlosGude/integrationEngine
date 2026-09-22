@@ -62,6 +62,9 @@ services:
     IntegrationEngine\Infrastructure\Http\ClientAdapterResolver:
         public: true
 
+    IntegrationEngine\Infrastructure\Webhook\WebhookEventDispatcher:
+        public: true
+
     # Preserve the previously autodiscovered legacy service IDs.
     IntegrationEngine\Core\Resilience\ErrorClassifier: ~
     IntegrationEngine\Core\Resilience\ExponentialBackoffPolicy: ~
