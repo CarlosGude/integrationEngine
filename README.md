@@ -621,7 +621,7 @@ It's purely additive: in `prod` the `TracingMiddleware` is not wired, so there i
 
 ## Further reading
 
-- **📖 [`DOCUMENTACION_v8.0.0.md`](./DOCUMENTACION_v8.0.0.md)** — comprehensive technical guide in Spanish (20 pages, ~3000 words): breaking changes, new features, detailed migration guide, architecture, patterns, webhooks, security, and troubleshooting for v8.0.0.
+- **📖 [`DOCUMENTACION_v8.0.0.md`](./docs/DOCUMENTACION_v8.0.0.md)** — comprehensive technical guide in Spanish (20 pages, ~3000 words): breaking changes, new features, detailed migration guide, architecture, patterns, webhooks, security, and troubleshooting for v8.0.0.
 - [`DOCUMENTATION.md`](./docs/DOCUMENTATION.md) — deeper guide: engine pipeline, all configuration
   options, and links to per-topic references.
 - [`ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — design decisions: why actions are stateless,
