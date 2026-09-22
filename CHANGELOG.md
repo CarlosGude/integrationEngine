@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Demo app webhook mapper updated to v8.0 webhook API (static `eventType()` and `transform()` methods).
+
 ## [8.0.0] - 2026-09-22
 
 ### Changed — BREAKING
