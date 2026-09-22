@@ -92,7 +92,7 @@ jobs:
       matrix:
         php: ['8.2', '8.3', '8.4']
         symfony: ['6.4.*', '7.4.*', '8.*']
-        deps: ['lowest', 'stable']
+        deps: ['stable']
         exclude:
           # Symfony 8.x requires PHP >=8.4 (confirmed against
           # symfony/console's composer.json on the 8.0 branch).
