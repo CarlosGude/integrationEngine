@@ -9,6 +9,8 @@ deptrac:
       collectors: [{ type: directory, value: src/Bundle/.* }]
     - name: Utils
       collectors: [{ type: directory, value: src/Utils/.* }]
+    - name: Compatibility
+      collectors: [{ type: directory, value: src/Compatibility/.* }]
     - name: Tests
       collectors: [{ type: directory, value: tests/.* }]
     - name: Psr
@@ -21,5 +23,6 @@ deptrac:
     Core: [Psr]
     Infrastructure: [Core, Psr, Symfony]
     Bundle: [Core, Infrastructure, Psr, Symfony]
+    Compatibility: [Core, Infrastructure]
     Utils: []
-    Tests: [Core, Infrastructure, Bundle, Utils, Psr, Symfony, PHPUnit]
+    Tests: [Compatibility, Core, Infrastructure, Bundle, Utils, Psr, Symfony, PHPUnit]

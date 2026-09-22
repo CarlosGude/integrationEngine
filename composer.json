@@ -36,6 +36,7 @@
     "symfony/webhook": "^6.4|^7.0|^8.0"
   },
   "autoload": {
+    "classmap": ["src/Compatibility/"],
     "psr-4": {
       "IntegrationEngine\\": "src/"
     }
