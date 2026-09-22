@@ -23,9 +23,14 @@ execution and waiting, and must decide whether repeating a particular operation
 is appropriate, including the API's idempotency requirements.
 
 ```php
-use IntegrationEngine\Core\Resilience\ExponentialBackoffPolicy;
+use IntegrationEngine\Core\Resilience\ExponentialBackoff;
+use IntegrationEngine\Infrastructure\Resilience\SymfonyErrorClassifier;
 
-$policy = new ExponentialBackoffPolicy(maxAttempts: 3, initialBackoffMs: 100);
+$policy = new ExponentialBackoff(
+    maxAttempts: 3,
+    initialBackoffMs: 100,
+    classifier: new SymfonyErrorClassifier(),
+);
 // In an application-owned retry loop, after a failed call:
 if ($policy->shouldRetry($error, $retryNumber)) {
     $delayMs = $policy->getBackoffMs($retryNumber);
@@ -37,3 +42,13 @@ Retry numbers below 1 and invalid constructor values throw
 `InvalidArgumentException`. A zero initial delay is supported. Delays exceeding
 the integer range throw `OverflowException` instead of becoming negative or zero.
 `getFallback()` rethrows the original exception; it does not return cached data.
+
+The new ExponentialBackoff defaults to EngineErrorClassifier, which understands
+engine exceptions without depending on Symfony. Inject SymfonyErrorClassifier
+as above to include raw Symfony HTTP and transport exceptions. Both produce an
+ErrorClassification with status and network-failure information.
+
+The legacy ErrorClassifier and ExponentialBackoffPolicy names remain callable
+with their original Symfony-aware behavior and constructor arguments. Their
+deprecated facades live outside Core and are loaded through Composer's explicit
+classmap. See [ADR 0015](../adr/0015-resilience-classification-boundary.md).

@@ -19,11 +19,12 @@ use IntegrationEngine\Core\Contract\Action\AbstractAction;
  * Allows 3 retries by default, numbered from 1. This policy only makes
  * decisions; the caller owns execution, waiting, and invoking the fallback.
  */
-final class ExponentialBackoffPolicy implements ResiliencePolicyInterface
+final class ExponentialBackoff implements ResiliencePolicyInterface
 {
     public function __construct(
         private readonly int $maxAttempts = 3,
         private readonly int $initialBackoffMs = 100,
+        private readonly ErrorClassifierInterface $classifier = new EngineErrorClassifier(),
     ) {
         if ($maxAttempts < 1) {
             throw new \InvalidArgumentException('maxAttempts must be >= 1');
@@ -41,7 +42,7 @@ final class ExponentialBackoffPolicy implements ResiliencePolicyInterface
             return false; // Max attempts reached
         }
 
-        return ErrorClassifier::isTransient($e);
+        return $this->classifier->classify($e)->isTransient();
     }
 
     public function getBackoffMs(int $attempt): int

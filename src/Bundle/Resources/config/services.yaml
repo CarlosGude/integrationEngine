@@ -8,6 +8,8 @@ services:
     IntegrationEngine\:
         resource: '../../../'
         exclude:
+            # Legacy public namespaces are explicitly classmapped, not PSR-4 services.
+            - '../../../Compatibility/'
             - '../../../Infrastructure/Adapter/YamlConfigAdapter.php'
             - '../../../Infrastructure/Http/SymfonyHttpClientAdapter.php'
             - '../../../Infrastructure/Http/GraphQLClientAdapter.php'
@@ -56,3 +58,7 @@ services:
 
     IntegrationEngine\Infrastructure\Http\ClientAdapterResolver:
         public: true
+
+    # Preserve the previously autodiscovered legacy service IDs.
+    IntegrationEngine\Core\Resilience\ErrorClassifier: ~
+    IntegrationEngine\Core\Resilience\ExponentialBackoffPolicy: ~

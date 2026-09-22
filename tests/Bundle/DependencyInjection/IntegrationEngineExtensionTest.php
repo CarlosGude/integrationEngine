@@ -8,6 +8,8 @@ use IntegrationEngine\Bundle\Command\DebugIntegrationCommand;
 use IntegrationEngine\Bundle\DependencyInjection\Compiler\IntegrationCompilerPass;
 use IntegrationEngine\Bundle\DependencyInjection\IntegrationEngineExtension;
 use IntegrationEngine\Bundle\IntegrationEngineBundle;
+use IntegrationEngine\Core\Resilience\ErrorClassifier;
+use IntegrationEngine\Core\Resilience\ExponentialBackoffPolicy;
 use IntegrationEngine\Infrastructure\Adapter\FormEncodedClientAdapter;
 use IntegrationEngine\Infrastructure\Http\ClientAdapterResolver;
 use IntegrationEngine\Infrastructure\Http\GraphQLClientAdapter;
@@ -16,9 +18,25 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\HttpClient\Exception\TransportException;
 
 final class IntegrationEngineExtensionTest extends TestCase
 {
+    #[Test]
+    public function legacyResilienceServiceIdsStillResolveAfterClassmapMigration(): void
+    {
+        $container = $this->load(['integrations' => []]);
+        $container->setParameter('kernel.project_dir', sys_get_temp_dir());
+        $container->getDefinition(ErrorClassifier::class)->setPublic(true);
+        $container->getDefinition(ExponentialBackoffPolicy::class)->setPublic(true);
+        $container->compile();
+
+        self::assertInstanceOf(ErrorClassifier::class, $container->get(ErrorClassifier::class));
+        $policy = $container->get(ExponentialBackoffPolicy::class);
+        self::assertInstanceOf(ExponentialBackoffPolicy::class, $policy);
+        self::assertTrue($policy->shouldRetry(new TransportException('network'), 1));
+    }
+
     #[Test]
     public function loadExposesProcessedIntegrationsAsParameter(): void
     {

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Framework-independent error classification and injectable `ExponentialBackoff`,
+  with a Symfony adapter. The existing resilience utility names and service IDs
+  remain available through deprecated compatibility facades (ADR 0015).
+
 - `debug:integration` lists configured integrations; `debug:integration <name>`
   inspects action names, methods, paths and classes without instantiating actions
   or sending requests. Successful results also support `--format=json`.

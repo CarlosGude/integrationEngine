@@ -20,6 +20,7 @@ Each ADR documents:
 | [0006](0006-profiler-never-records-secrets.md) | Profiler never records secrets | Accepted |
 | [0007](0007-versioning-policy-after-v4.md) | Versioning policy after v4 | Accepted |
 | [0008](0008-no-messenger-bridge-in-the-bundle.md) | No Messenger bridge in the bundle | Accepted |
+| [0015](0015-resilience-classification-boundary.md) | Keep Symfony error classification outside Core | Accepted |
 
 ## How to Read These
 
