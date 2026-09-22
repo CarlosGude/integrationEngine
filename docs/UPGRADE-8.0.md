@@ -476,12 +476,13 @@ This is **not a breaking change**, but a new feature for advanced users.
 ### Usage
 
 ```php
-use IntegrationEngine\Core\Contract\Middleware\RequestMiddlewareInterface;
-use IntegrationEngine\Infrastructure\Http\Request;
+use IntegrationEngine\Core\Contract\Client\RequestMiddlewareInterface;
+use IntegrationEngine\Core\Contract\Client\Request;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 
 class Oauth1SigningMiddleware implements RequestMiddlewareInterface
 {
-    public function process(Request $request, callable $next): Response
+    public function process(Request $request, callable $next): ResponseInterface
     {
         // Mutate request URL, headers, body to sign it
         $signed = $this->signRequest($request);
