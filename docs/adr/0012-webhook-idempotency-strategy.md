@@ -1,9 +1,9 @@
 # 0012 · Webhook Idempotency: Deduplication Strategy
 
-- **Status:** Accepted  
+- **Status:** Superseded by ADR 0016
 - **Date:** 2026-09-18
 
-> **Superseded in part by [ADR 0014](./0014-no-vendor-integrations-in-the-bundle.md).** Still current: the fingerprint strategy lives on in WebhookFingerprinter. The dead-letter pieces around it were removed in 6.0 ([ADR 0014](./0014-no-vendor-integrations-in-the-bundle.md)).
+> **Current state:** [ADR 0016](./0016-generic-webhooks-and-application-idempotency.md) supersedes bundle-level fingerprinting. v8 exposes the provider event ID and requires the consuming application to implement durable idempotency around its side effects.
 
 ## Context
 

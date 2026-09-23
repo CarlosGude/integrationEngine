@@ -13,7 +13,7 @@ Deep dives into design, extensibility, and operational concerns.
 
 - **[debugging.md](./debugging.md)** — Troubleshooting, profiler, tracing
 - **[resilience.md](./resilience.md)** — Retry policy utilities and integration limits
-- **[next-features.md](./next-features.md)** — Proposed scope for transport security, mapper analysis and metrics
+- **[next-features.md](./next-features.md)** — Unimplemented transport-selection and metrics proposals
 - **[QUALITY.md](./QUALITY.md)** — Quality gates, test coverage, mutation testing
 - **[AI-AGENT-USAGE.md](./AI-AGENT-USAGE.md)** — Integrating with Claude and AI agents
 

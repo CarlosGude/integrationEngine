@@ -32,12 +32,12 @@ make ci     # qa + deptrac + mutation — run before opening a PR
 ## Code quality
 
 Quality gates (style, static analysis, tests, mutation), their commands, and
-current MSI: see [`docs/advanced/QUALITY.md`](advanced/QUALITY.md).
+current MSI: see [`docs/advanced/QUALITY.md`](docs/advanced/QUALITY.md).
 
 `make deptrac` enforces architectural layers locally and in CI, with no baseline
 and no uncovered dependencies. Core may depend only on PSR and its own classes;
 legacy resilience facades live in an explicit outer compatibility layer. See the
-[quality audit](quality-audit.md) and [ADR 0015](adr/0015-resilience-classification-boundary.md).
+[quality audit](docs/quality-audit.md) and [ADR 0015](docs/adr/0015-resilience-classification-boundary.md).
 
 The documentation tests run in the normal PHPUnit suite. Use Markdown links
 relative to the document containing them. Backtick path mentions are relative
@@ -119,8 +119,8 @@ Skip PRs only for trivial documentation (typos in README examples, comment fixes
 
 ## Further reading
 
-- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — design decisions: why actions are stateless,
+- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — design decisions: why actions are stateless,
   how path resolution works, the mapper invariant, cache behaviour, and the
   DTO/domain boundary.
-- [`CLAUDE.md`](../CLAUDE.md) — the engine's contracts and conventions in agent-readable
+- [`CLAUDE.md`](./CLAUDE.md) — the engine's contracts and conventions in agent-readable
   form; also the context for AI-assisted integration generation.

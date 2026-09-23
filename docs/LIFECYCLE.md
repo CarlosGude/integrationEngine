@@ -1,282 +1,82 @@
 # IntegrationEngine · Lifecycle Events
 
-Tap into integration lifecycle events for logging, metrics, debugging, and observability.
+IntegrationEngine emits immutable scalar metadata for outbound calls, auth refreshes and inbound webhooks. Events never carry request bodies, response objects, tokens or exception objects.
 
-**Quick start:** See [OBSERVABILITY.md](./OBSERVABILITY.md) for ready-made helpers (recommended).
+## Event catalogue
 
----
+| Event | Emitted when | Public fields |
+|---|---|---|
+| `RequestSent` | an outbound action has been resolved and is about to be dispatched | `integrationName`, `action`, `method`, `path`, `timestamp`, `connectionId`, `requestKey` |
+| `ResponseMapped` | the response has been successfully mapped (or `EmptyResponse` built) | `integrationName`, `action`, `durationMs`, `statusCode`, `responseClass`, `timestamp`, `requestKey` |
+| `RequestFailed` | preparation, transport, auth or mapping fails inside the engine flow | `integrationName`, `action`, `durationMs`, `statusCode`, `exceptionClass`, sanitized `message`, `timestamp`, `requestKey` |
+| `TokenRefreshed` | dynamic auth resolves a new token | `integrationName`, token `action`, `reason`, `timestamp`, `requestKey` |
+| `WebhookReceived` | a signed webhook is accepted and mapped | `integrationName`, `eventType`, `eventId`, `timestamp` |
+| `WebhookRejected` | webhook validation/signature/type validation rejects the request | `integrationName`, rejection `reason`, `timestamp` |
 
-## Low-level: Direct Event Subscription
+`requestKey` is populated for `sendMany()` items so one listener can correlate per-item batch events without receiving the request itself.
 
----
+`RequestFailed::message` is intentionally coarse (`Upstream request failed.` or `Integration request failed.`); detailed exception messages are not copied into the lifecycle event.
 
-## Events
+## Symfony applications
 
-The engine fires events at key points:
-
-| Event | When | Data |
-|-------|------|------|
-| `RequestSent` | Before HTTP call | integration name, action, method, path, timestamp |
-| `ResponseMapped` | After successful mapping | integration name, action, duration, status code, response class, timestamp |
-| `RequestFailed` | On error (HTTP or mapping) | integration name, action, duration, status code, exception class, message, timestamp |
-| `TokenRefreshed` | After dynamic auth refresh | integration name, action, timestamp |
-| `WebhookReceived` | Webhook signature verified | integration name, event type, timestamp |
-| `WebhookRejected` | Webhook rejected | integration name, event type, reason, timestamp |
-
----
-
-## Setup
-
-### Option 1: Built-in Dispatcher
-
-```php
-use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
-use IntegrationEngine\Core\Event\ResponseMapped;
-
-$dispatcher = new LifecycleEventDispatcher();
-
-// Subscribe to an event
-$dispatcher->subscribe(ResponseMapped::class, function(ResponseMapped $event) {
-    echo "Action {$event->action} completed in {$event->durationMs}ms\n";
-});
-
-// Pass dispatcher to engine
-$engine = new IntegrationEngine(
-    config: $config,
-    client: $client,
-    cache: $cache,
-    integrationName: 'shopify',
-    eventDispatcher: $dispatcher,
-);
-```
-
-### Option 2: Symfony EventDispatcher
-
-If your app already uses Symfony events, use the adapter. The bundle passes this service to every integration (5.3.2+; earlier versions never injected it, so listeners received nothing):
-
-```yaml
-# services.yaml
-services:
-  IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher:
-    class: IntegrationEngine\Infrastructure\Lifecycle\SymfonyEventDispatcherAdapter
-    arguments:
-      - '@event_dispatcher'
-```
-
-Then use `#[AsEventListener]` or `services.yaml` to listen:
+Bundle-managed engines receive Symfony's `event_dispatcher` when that service is available. The normal Symfony integration is therefore a listener/subscriber on the event class:
 
 ```php
 use IntegrationEngine\Core\Event\ResponseMapped;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
-#[AsEventListener(event: ResponseMapped::class)]
-public function onResponseMapped(ResponseMapped $event): void
+#[AsEventListener]
+final class IntegrationMetricsListener
 {
-    echo "Completed: {$event->action}\n";
+    public function __invoke(ResponseMapped $event): void
+    {
+        // $event->integrationName
+        // $event->action
+        // $event->durationMs
+        // $event->statusCode
+    }
 }
 ```
 
----
+The same applies to `RequestSent`, `RequestFailed`, `TokenRefreshed`, `WebhookReceived` and `WebhookRejected`.
 
-## Real-world Examples
+## Direct PSR-14 dispatcher
 
-### 1. Custom Logging
-
-Log each action with domain context:
+For framework-independent/manual wiring, `LifecycleEventDispatcher` implements `Psr\EventDispatcher\EventDispatcherInterface` and adds a small `subscribe()` API:
 
 ```php
-use IntegrationEngine\Core\Event\ResponseMapped;
 use IntegrationEngine\Core\Event\RequestFailed;
+use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
 
-$dispatcher->subscribe(ResponseMapped::class, function(ResponseMapped $event) {
-    $this->logger->info('Integration action succeeded', [
-        'integration' => $event->integrationName,
-        'action' => $event->action,
-        'duration_ms' => $event->durationMs,
-        'response_type' => $event->responseClass,
-    ]);
-});
-
-$dispatcher->subscribe(RequestFailed::class, function(RequestFailed $event) {
-    $this->logger->error('Integration action failed', [
-        'integration' => $event->integrationName,
-        'action' => $event->action,
-        'duration_ms' => $event->durationMs,
-        'error' => $event->message,
-    ]);
+$dispatcher = new LifecycleEventDispatcher();
+$dispatcher->subscribe(RequestFailed::class, static function (RequestFailed $event): void {
+    // record an application-specific metric or log entry
 });
 ```
 
-### 2. Prometheus Metrics
+Pass the **same dispatcher instance** to `IntegrationEngine` if you construct the engine manually.
 
-Export timing and error counters:
+`SymfonyEventDispatcherAdapter` extends this local dispatcher and forwards dispatched events to a Symfony dispatcher as well. Use it only when you specifically need both `subscribe()` and Symfony listeners on the same event stream.
 
-```php
-use Prometheus\CollectorRegistry;
-use IntegrationEngine\Core\Event\ResponseMapped;
-use IntegrationEngine\Core\Event\RequestFailed;
+## Timing semantics
 
-$registry = new CollectorRegistry();
-$histogram = $registry->registerHistogram(
-    'integration_engine',
-    'action_duration_ms',
-    'Action execution time',
-    ['integration', 'action', 'status']
-);
+`durationMs` is measured around the logical engine operation. It can include configuration/connection resolution after the initial timestamp, authentication work, transport, retries, middleware and mapping. It is not a pure network-latency metric.
 
-$dispatcher->subscribe(ResponseMapped::class, function(ResponseMapped $event) use ($histogram) {
-    $histogram
-        ->labels($event->integrationName, $event->action, 'success')
-        ->observe($event->durationMs);
-});
+For batches, each item gets its own start timestamp and completion/failure duration. Concurrent requests can therefore have overlapping durations; summing them is not equivalent to wall-clock batch duration.
 
-$dispatcher->subscribe(RequestFailed::class, function(RequestFailed $event) use ($histogram) {
-    $histogram
-        ->labels($event->integrationName, $event->action, 'failure')
-        ->observe($event->durationMs);
-});
-```
+`RequestSent::path` is the action's raw path at that point. Body-backed placeholders may already have been consumed by `YamlConfigAdapter`; placeholders left for `ActionContextInterface` can still appear in that string. Treat it as operation metadata, not as a complete URL or trace span.
 
-### 3. Alerting on Slow Requests
+## Token refresh reasons
 
-Notify ops if an integration is slow:
+Dynamic authentication currently emits:
 
-```php
-use IntegrationEngine\Core\Event\ResponseMapped;
+- `cache_miss` — no usable cached token existed;
+- `rejected_401` — a cached token was rejected and the engine fetched one fresh token for the single retry.
 
-$dispatcher->subscribe(ResponseMapped::class, function(ResponseMapped $event) {
-    if ($event->durationMs > 5000) {
-        $this->slack->notify([
-            'channel' => '#alerts',
-            'text' => "⚠️ Slow integration: {$event->integrationName} "
-                . "{$event->action} took {$event->durationMs}ms",
-        ]);
-    }
-});
-```
+A freshly fetched token that is rejected with 401 is not retried again.
 
-### 4. Error Tracking (Sentry)
+## Failure semantics
 
-Send errors to your error tracker:
+Lifecycle listeners execute through the configured dispatcher. If a listener throws, normal dispatcher exception semantics apply; the engine does not promise observer isolation. Production metrics/log listeners should therefore avoid throwing into the integration flow.
 
-```php
-use Sentry\captureMessage;
-use IntegrationEngine\Core\Event\RequestFailed;
-
-$dispatcher->subscribe(RequestFailed::class, function(RequestFailed $event) {
-    captureMessage($event->message, 'error', [
-        'tags' => [
-            'integration' => $event->integrationName,
-            'action' => $event->action,
-            'exception' => $event->exceptionClass,
-        ],
-        'extra' => [
-            'duration_ms' => $event->durationMs,
-            'status_code' => $event->statusCode,
-        ],
-    ]);
-});
-```
-
-### 5. Audit Trail
-
-Log all integrations to a database for compliance:
-
-```php
-use IntegrationEngine\Core\Event\ResponseMapped;
-
-$dispatcher->subscribe(ResponseMapped::class, function(ResponseMapped $event) {
-    $this->db->insert('integration_audit_log', [
-        'integration' => $event->integrationName,
-        'action' => $event->action,
-        'status' => 'success',
-        'duration_ms' => $event->durationMs,
-        'timestamp' => date('Y-m-d H:i:s', $event->timestamp),
-    ]);
-});
-```
-
----
-
-## Event Structure
-
-### RequestSent
-
-```php
-$event->integrationName: string    // e.g., 'shopify'
-$event->action: string             // Action name
-$event->method: string             // HTTP method
-$event->path: string               // Resolved path
-$event->timestamp: float           // microtime(true)
-$event->connectionId: ?string      // Optional connection identifier
-$event->requestKey: int|string|null // Batch request key, if applicable
-```
-
-### ResponseMapped
-
-```php
-$event->integrationName: string
-$event->action: string
-$event->durationMs: float          // Milliseconds elapsed
-$event->statusCode: int            // HTTP status code
-$event->responseClass: string      // FQN of response DTO
-$event->timestamp: float
-$event->requestKey: int|string|null
-```
-
-### RequestFailed
-
-```php
-$event->integrationName: string
-$event->action: string
-$event->durationMs: float
-$event->statusCode: int            // HTTP status, or 0 if no response
-$event->exceptionClass: string     // FQN of exception thrown
-$event->message: string            // Exception message
-$event->timestamp: float
-$event->requestKey: int|string|null
-```
-
-### TokenRefreshed
-
-```php
-$event->integrationName: string
-$event->action: string             // Token action name
-$event->timestamp: float
-```
-
-### WebhookReceived / WebhookRejected
-
-```php
-$event->integrationName: string
-$event->eventType: string          // Webhook event type
-$event->timestamp: float
-$event->reason: ?string            // Rejection reason (WebhookRejected only)
-```
-
----
-
-## Best Practices
-
-- **Keep subscribers fast.** They run in the critical path.
-- **Use RequestSent sparingly.** For correlation IDs, tracing spans, or request counting — not heavy logging.
-- **Catch exceptions in subscribers.** If a subscriber throws, the engine doesn't catch it; make sure your listeners are defensive.
-- **Batch logging.** If you log every request, buffer and flush to avoid I/O overhead.
-- **Never assume response/exception access.** Events carry only metadata (status codes, class names, messages), not the objects themselves — design your observability around primitives.
-
----
-
-## No Overhead if Unused
-
-If no dispatcher is passed to the engine, events are not created. There is zero performance cost.
-
-```php
-// No events, no overhead
-$engine = new IntegrationEngine(
-    config: $config,
-    client: $client,
-    cache: $cache,
-    integrationName: 'shopify',
-    // eventDispatcher: null (default)
-);
-```
+For higher-level helper registration, see [OBSERVABILITY.md](./OBSERVABILITY.md). For profiler/request debugging, see [advanced/debugging.md](./advanced/debugging.md).

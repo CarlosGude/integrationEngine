@@ -1,9 +1,9 @@
 # 0010 · Webhook Idempotency: Deduplication Strategy
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR 0016
 - **Date:** 2026-09-17
 
-> **Superseded in part by [ADR 0014](./0014-no-vendor-integrations-in-the-bundle.md).** The ports and value objects for the dead-letter queue and the audit trail were removed in 6.0 ([ADR 0014](./0014-no-vendor-integrations-in-the-bundle.md)); the idempotency service and its fingerprinter stayed.
+> **Current state:** ADR 0014 removed vendor/orchestration pieces, and [ADR 0016](./0016-generic-webhooks-and-application-idempotency.md) later removed bundle-owned deduplication entirely. The decision below is historical; v8 exposes provider event IDs and leaves durable idempotency to the application.
 
 ## Context
 

@@ -1,338 +1,87 @@
 # IntegrationEngine — Documentation
 
+This is the **single index for current documentation**. It describes the code on `main`; the latest tagged release is v8.0.1 and release history remains in [`CHANGELOG.md`](../CHANGELOG.md).
+
+The documentation is deliberately split by responsibility. If two pages appear to answer the same question, prefer the page listed here as the canonical source for that topic.
+
+## Start here
+
+| Need | Canonical document |
+|---|---|
+| Understand the architecture and dependency rules | [ARCHITECTURE.md](./ARCHITECTURE.md) |
+| Build the first action | [getting-started/actions.md](./getting-started/actions.md) |
+| Resolve path/query inputs | [getting-started/context-and-path.md](./getting-started/context-and-path.md) |
+| Configure auth/token caching | [getting-started/authorization.md](./getting-started/authorization.md) |
+| Map responses and headers | [getting-started/mappers-and-responses.md](./getting-started/mappers-and-responses.md) |
+| Send batches | [getting-started/batch-requests.md](./getting-started/batch-requests.md) |
+| Choose/customize clients, base URLs or connections | [advanced/architecture/clients.md](./advanced/architecture/clients.md) |
+| Add request/client middleware | [ARCHITECTURE.md](./ARCHITECTURE.md#middleware-boundaries) |
+| Configure retries/timeouts | [resilience-v8.md](./resilience-v8.md) |
+| Configure host/private-network protection | [security-v8.md](./security-v8.md) |
+| Receive webhooks | [WEBHOOK.md](./WEBHOOK.md) |
+| Observe lifecycle events | [LIFECYCLE.md](./LIFECYCLE.md) |
+| Configure helper observability | [OBSERVABILITY.md](./OBSERVABILITY.md) |
+| Debug an integration | [advanced/debugging.md](./advanced/debugging.md) |
+| Enable PHPStan integration rules | [phpstan.md](./phpstan.md) |
+| Run/extend the test suite | [TESTING.md](./TESTING.md) |
+| Check quality gates and measured evidence | [advanced/QUALITY.md](./advanced/QUALITY.md) |
+| Contribute | [CONTRIBUTING.md](../CONTRIBUTING.md) |
+
 ## Mental model
 
-An integration is a directory. An endpoint is a subdirectory. Each endpoint contains
-exactly two things: a request side and a response side. Nothing else is allowed to spread.
+The engine has two configuration scopes:
 
-The engine enforces this structure at the framework level — it is not a convention you
-can drift from, it is the contract.
+1. **Bundle configuration** (`config/packages/integration_engine.yaml`) wires each integration: base URL, client type/service, headers, cache, transport options, middleware and optional connection resolver.
+2. **Integration YAML** defines actions and optional webhook metadata: action class, method, path, body class, authorization, cache TTL, action timeout and webhook mapping/signature rules.
 
----
+At runtime, application code normally calls a small integration facade. The facade obtains an `IntegrationEngine` from `IntegrationRegistry`, calls `send()` or `sendMany()`, and returns integration DTOs. A Gateway/ACL then translates those DTOs into domain concepts when required.
 
-## Lifecycle of an integration
+## Current public flow
 
-The recommended starting point is the scaffolding command — it generates the facade,
-action map YAML, `Action`, `Mapper`, and `Response` with the correct structure and
-namespaces, leaving only `transform()` and the DTO fields to fill in:
-
-```bash
-php bin/console make:integration MyApi GetEmployee
+```text
+application facade
+    ↓
+IntegrationRegistry
+    ↓
+IntegrationEngine
+    ├─ ConfigPort / YamlConfigAdapter
+    ├─ optional ConnectionResolverInterface
+    ├─ authentication + token cache
+    ├─ client middleware
+    ├─ request middleware
+    ├─ built-in/custom ClientInterface
+    └─ ResponseBuilder → AbstractMapper → ResponseInterface
 ```
 
-1. **Scaffold** — run `make:integration` to generate the skeleton
-2. **Configure** — set `base_url` and `config_path` in `integration_engine.yaml`
-3. **Implement** — fill in `transform()` in the mapper and the DTO fields in the response
-4. **Use** — call the facade from an application service
+Batch requests use the same contracts. Each item is prepared independently; failures are returned as `BatchResult` values instead of aborting the whole batch. Built-in REST, GraphQL and form transports can dispatch concurrently, but built-in request middleware forces a sequential fallback because middleware may inspect or replace a completed response.
 
----
+## v8-specific references
 
-## The engine pipeline
+These pages are narrow references, not alternative manuals:
 
-When you call `$engine->send(actionName, context, body, headers, baseUrl, connection)`:
+- [form-v8.md](./form-v8.md) — how form encoding is selected.
+- [resilience-v8.md](./resilience-v8.md) — transport retry/timeout semantics.
+- [security-v8.md](./security-v8.md) — outgoing host/private-network policy.
+- [webhooks-v8.md](./webhooks-v8.md) — v8 webhook contract and migration notes; the usage guide remains `WEBHOOK.md`.
+- [phpstan.md](./phpstan.md) — optional development-time contracts.
 
-1. **Config resolution** — reads the YAML, finds the action entry, resolves any
-   `{placeholder}` the body supplies, instantiates the action class with method, path,
-   body, and authorization.
-2. **Connection resolution** — if `connection` was passed, resolves it to
-   `ConnectionCredentials` and applies any `base_url`/authorization override.
-3. **Authorization** — if dynamic auth, fetches and caches the token (namespaced per
-   connection), then rebuilds the action with static auth.
-4. **HTTP execution** — resolves any remaining path placeholders from context, builds
-   headers, serializes the body, runs request middlewares (if configured), executes
-   the request.
-5. **Mapping** — validates `$mapper::getAction() === $action::class`, calls
-   `transform()` with the response body and headers, returns a typed `ResponseInterface`.
+## Architecture decisions
 
----
+[`adr/`](./adr/) records *why* the project chose its boundaries. ADRs are not usage guides and some intentionally describe superseded decisions. Their status table is the source of truth for which decisions remain active.
 
-## Actions
+## Upgrade guides
 
-An action declares one endpoint: HTTP method, path, mapper. No logic, no state.
+Upgrade guides are historical migration documents. They intentionally mention APIs that no longer exist:
 
-```php
-final class GetEmployeeAction extends AbstractAction
-{
-    public static function getName(): string   { return 'GetEmployee'; }
-    public static function hasResponse(): bool { return true; }
-    public static function mapper(): ?string   { return GetEmployeeMapper::class; }
-}
-```
+- [UPGRADE-4.0.md](./UPGRADE-4.0.md)
+- [UPGRADE-5.0.md](./UPGRADE-5.0.md)
+- [UPGRADE-5.1.md](./UPGRADE-5.1.md)
+- [UPGRADE-6.0.md](./UPGRADE-6.0.md)
+- [UPGRADE-7.0.md](./UPGRADE-7.0.md)
+- [UPGRADE-8.0.md](./UPGRADE-8.0.md)
 
-```yaml
-GetEmployee:
-    action: App\...\GetEmployeeAction
-    method: GET
-    path:   /employees/{id}
-```
+For current behavior, use the guides in the sections above, not an old upgrade document.
 
-→ [Actions in depth](getting-started/actions.md) — all YAML options, `hasResponse: false`, the
-stateless invariant.
+## Archived material
 
----
-
-## Context and path parameters
-
-`{placeholder}` tokens in the path resolve from two sources, in priority order: the
-action's **body** first (declare `body:` on the action — no extra class needed), then
-**context** for whatever the body doesn't supply. For optional query params, implement
-`PathResolvableContextInterface`.
-
-```php
-// From the body — no context needed:
-$engine->send('UpdateEmployee', body: UpdateEmployeeBody::create(['id' => 42, 'name' => 'Ada']));
-
-// From context — for values that aren't part of the body:
-DefaultActionContext::create(['id' => 42]) // → /employees/42
-```
-
-→ [Context and path resolution](getting-started/context-and-path.md) — body-sourced placeholders,
-required vs. optional params, custom context with validation, decision table.
-
----
-
-## Mappers and responses
-
-A mapper transforms the raw HTTP response array into a typed DTO. One mapper per action.
-
-```php
-final class GetEmployeeMapper extends AbstractMapper
-{
-    public static function getAction(): string { return GetEmployeeAction::class; }
-
-    protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
-    {
-        return GetEmployeeResponse::create($response);
-    }
-}
-```
-
-```php
-final readonly class GetEmployeeResponse implements ResponseInterface
-{
-    public function __construct(public int $id, public string $name) {}
-    public static function create(array $data): self { ... }
-    public function toArray(): array { ... }
-}
-```
-
-→ [Mappers and responses](getting-started/mappers-and-responses.md) — type mapping table, nested
-DTOs, shared mapper logic, the `toArray()` contract.
-
----
-
-## Authorization
-
-Declare auth in the YAML action entry. The engine handles header injection, token
-fetching, caching, and 401 retries automatically.
-
-```yaml
-GetOrders:
-    authorization:
-        type:  bearer
-        token: '%env(MY_API_TOKEN)%'
-```
-
-For OAuth 2.0 or session tokens, use `type: dynamic` — the engine calls the token action,
-caches the result, and injects it transparently:
-
-```yaml
-GetOrders:
-    authorization:
-        type:        dynamic
-        action:      FetchToken
-        token_field: access_token
-        ttl:         3600
-```
-
-→ [Authorization](getting-started/authorization.md) — all static types (bearer, basic, api\_key),
-dynamic auth config, token action setup, caching (including per-connection isolation
-for multi-connection integrations), 401 retry, Redis backend.
-
----
-
-## Batch / Parallel Requests
-
-Use `sendMany()` when you need N results before you can proceed. Returns a
-`BatchResultCollection` — one `BatchResult` per key, independent successes and failures.
-
-```php
-$results = $engine->sendMany([
-    'alice' => new EngineRequest(GetEmployeeAction::getName(), context: DefaultActionContext::create(['id' => 1])),
-    'bob'   => new EngineRequest(GetEmployeeAction::getName(), context: DefaultActionContext::create(['id' => 2])),
-]);
-
-$results['alice']->isSuccess();  // bool
-$results['alice']->response();   // ResponseInterface
-$results['alice']->error();      // \Throwable|null
-```
-
-Real concurrency is independent of the protocol — it depends on whether the client
-implements `BatchClientInterface`. The default REST client does.
-
-→ [Batch / Parallel Requests](getting-started/batch-requests.md) — failure strategies,
-`sendManyOrFail()`, concurrency per client type, `AbstractBatchMapper` for homogeneous
-batches, mixed-action batches.
-
----
-
-## HTTP clients
-
-The default `rest` client handles standard REST APIs with no configuration. Set
-`client: graphql` for GraphQL. For full control — retry logic, circuit breaking, custom
-protocols — use `client_service:`. Every client returns `array{body, headers}` — the
-decoded body plus the response's HTTP headers, propagated to the mapper.
-
-```yaml
-my_api:
-    client_service: 'App\Infrastructure\Http\RetryingHttpClient'
-```
-
-→ [HTTP Clients](advanced/architecture/clients.md) — GraphQL body interface, `client:` vs
-`client_service:`, custom protocol adapters, `BatchClientInterface` for concurrency.
-
----
-
-## Runtime connection resolution
-
-For an integration that serves several connections at runtime (multi-tenant: one
-store/account per customer) with different `base_url` and/or credentials, configure a
-`connection_resolver` instead of building a separate `IntegrationEngine` per connection:
-
-```yaml
-my_api:
-    connection_resolver: App\Infrastructure\Integrations\MyApi\MyApiConnectionResolver
-```
-
-```php
-$engine->send('get_orders', connection: $tenantId);
-```
-
-→ [HTTP Clients — runtime connection resolution](advanced/architecture/clients.md#runtime-connection-resolution--connectionresolverinterface) —
-`ConnectionResolverInterface`, `ConnectionCredentials`, the dynamic-auth token cache
-discriminator for connections sharing one `base_url`.
-
----
-
-## Request middleware — full-request signing
-
-For providers that sign the complete request (OAuth 1.0a, AWS SigV4) rather than a
-static credential, implement `RequestMiddlewareInterface` — it runs on the
-fully-resolved request immediately before the HTTP call:
-
-```yaml
-my_api:
-    request_middlewares:
-        - App\Infrastructure\Integrations\MyApi\OAuth1SigningMiddleware
-```
-
-→ [HTTP Clients — request middleware](advanced/architecture/clients.md#request-middleware--full-request-signing) —
-the `Request` value object, chain semantics, why `sendMany()` degrades to sequential
-dispatch when configured.
-
----
-
-## Debugging — Symfony Profiler
-
-In `dev`/`test`, every outgoing call made through any configured integration shows up
-in the Symfony Toolbar/Profiler automatically — no configuration needed. In `prod`, the
-real client is used unwrapped: zero overhead.
-
-→ [Debugging](advanced/debugging.md) — what the panel shows, why it's a decorator and not
-engine instrumentation, how it relates to the optional `LoggerInterface` logging.
-
----
-
-## Anti-Corruption Layer
-
-Integration DTOs must never reach the domain layer. The translation happens in an
-application service:
-
-```
-Controller → ApplicationService → IntegrationFacade → Engine
-                ↓
-           DomainObject ← (translation happens here)
-```
-
-If the external API changes a field name or type, only the DTO, its mapper, and the
-application service's translation code need to change. Domain objects and domain logic
-are unaffected.
-
----
-
-## Lifecycle Events & Observability
-
-Tap into integration lifecycle for logging, metrics, and observability with **zero boilerplate**.
-
-### Quick Start
-
-Generate observability setup:
-```bash
-php bin/console make:observability shopify
-```
-
-This creates `src/Integration/Shopify/ShopifyObservabilitySetup.php` with stubs for:
-- **Logging** — automatic with async buffer (no perf overhead)
-- **Metrics** — Prometheus histogram/counters
-- **Error handling** — Sentry integration
-- **Alerts** — Slack on slow requests
-
-### Performance
-
-Observability overhead with async logging: **+0.06ms per call** (unmeasurable).
-
-Metrics only (no logs): **+0.01ms per call**.
-
-Configure in `monolog.yaml` for production:
-```yaml
-monolog:
-  handlers:
-    main:
-      type: buffer
-      handler: stream
-      buffer_size: 100  # Batch logs
-      level: info       # Skip debug
-```
-
-### Manual Setup (Advanced)
-
-```php
-$dispatcher = new LifecycleEventDispatcher();
-
-\IntegrationEngine\Infrastructure\Lifecycle\ObservabilitySetup::register(
-    $dispatcher,
-    $logger,
-    [
-        'logging' => true,
-        'slow_request_threshold_ms' => 3000,
-        'metrics_callback' => fn($e) => $prometheus->record($e),
-        'error_callback' => fn($e) => Sentry\captureException($e->error()),
-    ]
-);
-
-$engine = new IntegrationEngine(
-    config: $config,
-    client: $client,
-    cache: $cache,
-    integrationName: 'stripe',
-    eventDispatcher: $dispatcher,
-);
-```
-
-→ **[Observability Guide](./OBSERVABILITY.md)** — setup, performance options, real examples.
-→ **[Lifecycle Events Guide](./LIFECYCLE.md)** — low-level event subscription.
-
----
-
-## Inbound Webhooks
-
-IntegrationEngine also supports **receiving** webhooks, on top of Symfony's
-Webhook component. It provides:
-
-- **Signature verification** — the three common HMAC schemes, or your own verifier
-- **Event mapping** — transform webhook payloads into typed DTOs your listeners receive
-- **Scaffolding** — `make:webhook` writes the parser, mapper, DTO and consumer into your app
-- **Idempotency** — duplicate detection by payload fingerprint, over storage you provide
-- **Async processing** — Symfony routes the event to Messenger when you want it off the request
-
-→ **[Inbound Webhooks Guide](./WEBHOOK.md)** — complete documentation for receiving and processing webhooks from external APIs.
+[`archived/`](./archived/) contains implementation plans, old release preparation, maintenance notes and spikes. They are retained as decision history only and **must not be used as current API documentation**.

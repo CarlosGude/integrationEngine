@@ -1,194 +1,113 @@
 # Authorization
 
-Authorization is declared per action in the YAML. The engine handles header injection,
-token fetching, caching, and 401 retries automatically — no manual token management.
+Authorization is declared per action. IntegrationEngine supports static credentials and dynamic token acquisition; runtime connection resolution can override either for a specific call.
 
----
-
-## The minimum — static bearer token
-
-Add an `authorization` block to any action entry:
+## Static authorization
 
 ```yaml
 GetOrders:
     action: App\...\GetOrdersAction
     method: GET
-    path:   /orders
+    path: /orders
     authorization:
-        type:  bearer
+        type: bearer
         token: '%env(MY_API_TOKEN)%'
 ```
 
-The engine injects `Authorization: Bearer <token>` on every request. That's all.
+Supported static forms:
 
----
-
-## All static auth types
-
-| Type | Required fields | Header produced |
+| Type | Fields | Result |
 |---|---|---|
-| `bearer` | `token` | `Authorization: Bearer {token}` |
-| `bearer` + `prefix` | `token`, `prefix` | `Authorization: {prefix} {token}` |
-| `basic` | `username`, `password` | `Authorization: Basic {base64(user:pass)}` |
-| `api_key` | `token` | `X-Api-Key: {token}` |
-| `api_key` + `header` | `token`, `header` | `{header}: {token}` |
-| `api_key` + `header` + `prefix` | `token`, `header`, `prefix` | `{header}: {prefix} {token}` |
+| `bearer` | `token`, optional `prefix` | `Authorization: <prefix> <token>`; prefix defaults to `Bearer` |
+| `basic` | `username`, `password` | HTTP Basic `Authorization` header |
+| `api_key` | `token`, optional `header`, optional `prefix` | Custom header; header defaults to `X-Api-Key` |
 
 ```yaml
-# Bearer with custom prefix
+# Basic
 authorization:
-    type:   bearer
-    token:  '%env(TOKEN)%'
-    prefix: Token          # → Authorization: Token <value>
-
-# Basic auth
-authorization:
-    type:     basic
+    type: basic
     username: '%env(API_USER)%'
     password: '%env(API_PASS)%'
 
-# API key in custom header
+# API key in a provider-specific header
 authorization:
-    type:   api_key
-    token:  '%env(API_KEY)%'
-    header: X-Api-Key
-    prefix: ''             # omit prefix entirely
+    type: api_key
+    token: '%env(API_KEY)%'
+    header: X-Shopify-Access-Token
 ```
 
----
+## Dynamic authorization
 
-## Dynamic auth — OAuth 2.0, session tokens
-
-Use `type: dynamic` when the API requires a token obtained from a separate auth endpoint.
-The engine calls the token action, caches the result, and injects it as static auth on
-every protected action — no manual token management:
+Use `type: dynamic` when a second action must obtain the credential:
 
 ```yaml
 FetchToken:
     action: App\...\FetchTokenAction
     method: POST
-    path:   /oauth/token
+    path: /oauth/token
 
 GetOrders:
     action: App\...\GetOrdersAction
     method: GET
-    path:   /orders
+    path: /orders
     authorization:
-        type:         dynamic
-        action:       FetchToken       # calls this action to obtain the token
-        token_field:  access_token     # field in the token response toArray()
-        ttl:          3600             # cache duration in seconds
-        header:       Authorization    # optional — defaults to Authorization
-        prefix:       Bearer           # optional — defaults to Bearer for Authorization header
+        type: dynamic
+        action: FetchToken
+        token_field: access_token
+        ttl: 3600
+        header: Authorization       # optional
+        prefix: Bearer              # optional
 ```
 
-The token action is a regular action — it needs its own `Action`, `Mapper`, and
-`Response`. The response `toArray()` must expose the field named in `token_field`:
+The token action is a normal action. Its mapped response must expose `token_field` through `toArray()`.
 
-```php
-use IntegrationEngine\Core\Contract\Response\ResponseInterface;
+On a cache miss the engine executes the token action, extracts the scalar token, stores it for `ttl`, converts the dynamic configuration to static authorization and sends the protected request.
 
-final readonly class FetchTokenResponse implements ResponseInterface
-{
-    public function __construct(public readonly string $accessToken) {}
+### Rejected cached tokens
 
-    public function toArray(): array
-    {
-        return ['access_token' => $this->accessToken]; // must match token_field
-    }
-}
+A 401 is retried once only when the rejected token came from cache:
+
+1. remove the cached token;
+2. fetch and cache a fresh token;
+3. retry the protected request once.
+
+A 401 returned after a freshly fetched token is not retried, and non-401 failures do not evict the token.
+
+## Token cache identity
+
+Dynamic token keys have this logical shape:
+
+```text
+integration_engine.token.{integration}.{token_action}.{xxh128(discriminator)}
 ```
 
----
+The PSR-6 adapter sanitizes characters that are not portable cache-key characters before accessing the configured pool.
 
-## How caching works
+For runtime connections, the discriminator is selected in this order:
 
-The engine caches the token under a key namespaced by integration, token
-action, and a connection discriminator:
+1. resolved `ConnectionCredentials::connectionId`;
+2. the caller's scalar `connection` value;
+3. resolved `baseUrl`;
+4. an empty string when no connection-specific discriminator exists.
 
-```
-integration_engine.token.{integrationName}.{authActionName}.{sha1(discriminator)}
-```
-
-For integrations that never use runtime connection resolution (see below),
-`discriminator` is empty — the key behaves exactly as before, just with a
-fixed `sha1('')` suffix.
-
-On subsequent calls within the TTL, the cached token is used directly — the auth action
-is not called again.
-
-**401 retry:** If the API rejects a *cached* token with HTTP 401 (revoked or expired
-server-side before its TTL), the engine:
-
-1. Deletes the cache entry
-2. Fetches a fresh token
-3. Retries the original request **once**
-
-A freshly fetched token rejected with 401 is **not** retried. Non-401 errors never evict
-the cache.
-
----
-
-## Contextual caching — multi-connection integrations
-
-If the integration uses [runtime connection resolution](../advanced/architecture/clients.md#runtime-connection-resolution--connectionresolverinterface)
-(`connection_resolver:` + a `connection` argument on `send()`/`sendMany()`),
-dynamic-auth tokens are cached per connection, not just per integration —
-two connections never share a cached token.
-
-The discriminator used to tell connections apart, in priority order:
-
-1. `connectionId` from the resolved `ConnectionCredentials`, if set
-2. the `$connection` value itself, if it's a scalar (string/int/etc.)
-3. the resolved `baseUrl`
-
-Case 3 is enough when every connection has its own `base_url`. Case 1 is
-**required** when several connections could share one `base_url` (one
-multi-tenant endpoint distinguished only by credentials) — without it,
-those connections would collide on the same cached token:
-
-```php
-final class MyApiConnectionResolver implements ConnectionResolverInterface
-{
-    public function resolve(mixed $connection): ConnectionCredentials
-    {
-        $tenant = $this->tenants->getById($connection);
-
-        return new ConnectionCredentials(
-            baseUrl: 'https://shared.example.com',      // same for every tenant
-            authorization: /* per-tenant static or dynamic auth */,
-            connectionId: (string) $connection,          // required here — keeps tokens apart
-        );
-    }
-}
-```
-
-Never put a secret (API key, consumer secret, access token) into the
-discriminator — it becomes part of the cache key string, and the key isn't
-treated as sensitive.
-
----
+Use a stable, non-secret `connectionId` when several tenants can share the same base URL. Never use an API key, token or client secret as a connection ID.
 
 ## Cache backend
 
-The default cache is `cache.app`, which is process-local under PHP-FPM (filesystem or
-APCu). Each worker fetches its own token on first warm-up — with N workers, the token
-endpoint is called up to N times per TTL window. For most APIs this is acceptable.
+The bundle's default `CachePort` is a `Psr6CacheAdapter` over Symfony's `cache.app`. The actual storage and sharing semantics therefore depend on the application's Symfony Cache configuration; IntegrationEngine does not assume that `cache.app` is local, filesystem-backed or shared.
 
-For APIs with strict rate limits on the token endpoint, configure a shared Redis pool:
+Override the pool per integration when token storage needs a dedicated backend:
 
 ```yaml
 # config/packages/integration_engine.yaml
 integration_engine:
     integrations:
         my_api:
-            cache_service: 'cache.my_api_tokens'
-
-# config/packages/cache.yaml
-framework:
-    cache:
-        pools:
-            cache.my_api_tokens:
-                adapter:  cache.adapter.redis
-                provider: 'redis://localhost'
+            cache_service: cache.my_api_tokens
 ```
+
+The configured service must satisfy the cache contract expected by the bundle wiring.
+
+## Runtime connection overrides
+
+A configured `connection_resolver` can return `ConnectionCredentials` with a different `baseUrl`, `authorization`, and optional `connectionId` for each call. The override is resolved before dynamic authorization, so per-connection credentials and token caches stay separated. See [HTTP clients — runtime connection resolution](../advanced/architecture/clients.md#runtime-connection-resolution).

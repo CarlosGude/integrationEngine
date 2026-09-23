@@ -24,7 +24,7 @@ interface ClientAdapterInterface extends ClientInterface
 {
     /**
      * The identifier used in the `client:` key of integration_engine.yaml.
-     * Built-in values: "rest", "graphql".
+     * Built-in values: "rest", "graphql", "form_encoded".
      */
     public static function getClientType(): string;
 

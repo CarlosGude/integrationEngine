@@ -1,290 +1,188 @@
 # Webhook Integration Guide
 
-IntegrationEngine does not ship its own webhook endpoint. Inbound webhooks go through Symfony's Webhook component (`symfony/webhook` + `symfony/remote-event`), and the bundle provides the pieces that plug into it:
+Inbound webhooks in v8 are configured in the same integration YAML as outbound actions, but they use Symfony's Webhook/RemoteEvent transport. The bundle supplies provider-neutral signature schemes, parsing and typed mapping; the application owns business handling and idempotency.
 
-- **`IntegrationWebhookRequestParser`** — base request parser that verifies the signature and decodes the payload
-- **Signature verifiers** — hex HMAC behind a prefix, raw HMAC in base64, timestamped HMAC; or your own `SignatureVerifierInterface`
-- **`AbstractWebhookMapper`** — turns the raw payload into a typed `WebhookEventInterface` DTO
-- **`WebhookEventDispatcher`** — maps a verified `RemoteEvent` and dispatches the typed event to your listeners
+## Requirements
 
-```bash
-composer require symfony/webhook   # pulls symfony/remote-event and symfony/messenger
+Webhook support is optional. A consuming application that enables a `webhooks:` definition needs Symfony's webhook/remote-event stack available; the bundle detects `AbstractRequestParser` during container compilation and rejects webhook wiring when the component is missing.
+
+The generated parser service ID is:
+
+```text
+integration_engine.webhook_parser.<integration-name>
 ```
 
-## How It Fits Together
+## 1. Define the webhook contract in integration YAML
 
+```yaml
+# src/Infrastructure/Integrations/Stripe/Stripe.yaml
+webhooks:
+    type_field: type
+    id_field: id
+    unknown_events: reject
+    signature:
+        type: hmac_sha256
+        header: X-Webhook-Signature
+        secret: '%env(STRIPE_WEBHOOK_SECRET)%'
+    events:
+        payment.completed:
+            mapper: App\Webhooks\Stripe\PaymentCompletedMapper
 ```
-POST /webhook/{type}                         Symfony's WebhookController (framework.webhook.routing)
-  → YourParser::parse()                      extends IntegrationWebhookRequestParser
-      verify signature (SignatureVerifierInterface)   → 406 on failure
-      decode JSON object → RemoteEvent(name: getDefinition(), id: payload.id, payload)
-  → Messenger (sync by default; async if you route ConsumeRemoteEventMessage to a transport)
-  → YourConsumer::consume(RemoteEvent)       #[AsRemoteEventConsumer('{type}')]
-      WebhookEventDispatcher::dispatch($event, $mapper, $headers)
-        → AbstractWebhookMapper::map()  → typed WebhookEventInterface DTO
-        → EventDispatcher::dispatch(DTO)
-  → your #[AsEventListener] listeners        (application layer)
-```
 
-Symfony answers `202 Accepted` once the event has been handed to Messenger.
+The top-level action entries and `webhooks:` block coexist in the same file.
 
-## Step by Step
+### Fields
 
-The example is Stripe's `payment_intent.succeeded`. `php bin/console make:webhook stripe payment_intent.succeeded` asks for the verifier type (`hmac_sha256` for a hex digest behind a prefix, `hmac_base64` for the raw digest base64-encoded, `timestamped_hmac` for the signed-timestamp shape) and the signature header and scaffolds steps 1–3 and 5 under `src/Webhooks/Stripe/` (namespace `App\Webhooks\Stripe`; change with `--namespace` / `--path`). It then prints the routing entry for step 4, keyed `stripe_payment_intent_succeeded` — the same name the generated consumer answers to, and the URL segment the provider posts to.
+| Field | Meaning |
+|---|---|
+| `type_field` | dot path used to read the provider event type |
+| `id_field` | dot path used to read the provider event ID |
+| `unknown_events` | `reject` or `ignore` |
+| `signature.type` | `hmac_sha256`, `hmac_base64`, or `timestamped_hmac` |
+| `signature.header` | header containing the provider signature |
+| `signature.secret` | signing secret; may be an env placeholder resolved by DI |
+| `signature.tolerance` | required only for `timestamped_hmac` |
+| `signature.prefix` | optional only for `hmac_sha256` |
+| `events.<type>.mapper` | mapper class; its `eventType()` must equal the YAML event key |
 
-Only step 6, the listener, is left: that one is your domain.
+`type_field` and `id_field` are non-empty dot-separated key paths. Event IDs may be strings or integers and are normalized to strings.
 
-The generated parser has no constructor and needs no `services.yaml` entry: it is autowired as it stands, and the signing secret arrives from the routing entry.
-
-### 1. Event DTO
+## 2. Create a typed event and mapper
 
 ```php
-namespace App\Webhooks\Stripe;
-
+use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;
 use IntegrationEngine\Core\Contract\Webhook\WebhookEventInterface;
 
-final readonly class PaymentIntentSucceededEvent implements WebhookEventInterface
+final readonly class PaymentCompleted implements WebhookEventInterface
 {
     public function __construct(
-        public string $paymentIntentId,
+        public string $id,
         public int $amount,
-        public string $currency,
     ) {}
 }
-```
 
-### 2. Mapper
-
-`getDefinition()` must return the same event type as the parser: `WebhookEventDispatcher` throws if they differ.
-
-```php
-namespace App\Webhooks\Stripe;
-
-use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;
-
-final class PaymentIntentSucceededEventMapper extends AbstractWebhookMapper
+final class PaymentCompletedMapper extends AbstractWebhookMapper
 {
-    public function getDefinition(): string
+    public static function eventType(): string
     {
-        return 'payment_intent.succeeded';
+        return 'payment.completed';
     }
 
-    public function map(array $payload, array $headers): PaymentIntentSucceededEvent
+    protected static function transform(array $payload, array $headers): WebhookEventInterface
     {
-        $intent = $payload['data']['object'];
-
-        return new PaymentIntentSucceededEvent(
-            paymentIntentId: (string) $intent['id'],
-            amount: (int) $intent['amount'],
-            currency: (string) $intent['currency'],
+        return new PaymentCompleted(
+            id: (string) $payload['id'],
+            amount: (int) $payload['data']['amount'],
         );
     }
 }
 ```
 
-### 3. Parser
+`AbstractWebhookMapper::map()` checks that the runtime event type equals `eventType()` before calling `transform()`.
 
-```php
-namespace App\Webhooks\Stripe;
+## 3. Route Symfony Webhook to the generated parser
 
-use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;
-use IntegrationEngine\Core\Contract\Webhook\SignatureVerifierInterface;
-use IntegrationEngine\Core\Webhook\TimestampedHmacSignatureVerifier;
-use IntegrationEngine\Infrastructure\Webhook\IntegrationWebhookRequestParser;
-use Psr\Clock\ClockInterface;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
-
-final class PaymentIntentSucceededRequestParser extends IntegrationWebhookRequestParser
-{
-    public function __construct(
-        private readonly ClockInterface $clock,
-        #[Autowire(env: 'STRIPE_WEBHOOK_SECRET')]
-        private readonly string $secret,
-    ) {}
-
-    public function getDefinition(): string
-    {
-        return 'payment_intent.succeeded';
-    }
-
-    public function getMapper(): AbstractWebhookMapper
-    {
-        return new PaymentIntentSucceededEventMapper();
-    }
-
-    protected function getSignatureVerifier(): SignatureVerifierInterface
-    {
-        return new TimestampedHmacSignatureVerifier('Stripe-Signature', 300, $this->clock);
-    }
-
-    protected function getSignatureSecret(): string
-    {
-        return $this->secret;
-    }
-}
-```
-
-> The parser verifies with the secret Symfony passes in from `framework.webhook.routing.<type>.secret`, and falls back to `getSignatureSecret()` when that one is empty. If both are empty the request is rejected (`406`): an empty key would accept HMACs anyone can compute.
-
-The parser class must not be `readonly`: Symfony's `AbstractRequestParser` isn't, and a readonly class can't extend a non-readonly one.
-
-The base parser accepts POST requests and verifies the signature before decoding
-the body. Malformed JSON and a root value that is not an object return `406`;
-lists such as `[]` or `[{"id": 1}]` are rejected. Empty objects, objects with
-numeric keys and nested lists are supported. `Content-Type` restrictions can be
-added by overriding the request matcher; they are not imposed by the base parser.
-
-### 4. Route It
+Configure `framework.webhook.routing` with the parser service. The parser deliberately ignores Symfony's routing secret and uses the secret from the integration YAML as the single signing-secret source, so leave the routing secret empty.
 
 ```yaml
 # config/packages/framework.yaml
 framework:
     webhook:
         routing:
-            stripe:                                   # → POST /webhook/stripe
-                service: App\Webhooks\Stripe\PaymentIntentSucceededRequestParser
-                secret: '%env(STRIPE_WEBHOOK_SECRET)%'
+            stripe:
+                service: 'integration_engine.webhook_parser.stripe'
+                secret: ''
 ```
 
-```yaml
-# config/routes/webhook.yaml — make sure your kernel actually imports config/routes/*.yaml
-webhook:
-    resource: '@FrameworkBundle/Resources/config/routing/webhook.php'
-    prefix: /webhook
-```
+Import Symfony's webhook route resource according to the Symfony version used by the consuming application. Symfony 6.4/7.x and 8.x use different resource formats; follow that version's Webhook documentation rather than copying a route file across majors.
 
-> On Symfony 6.4 and 7.0–7.2 that file is `webhook.xml`: the `.php` variant arrives in 7.3, which is also when the XML one starts warning it is deprecated. Importing the wrong one fails with `Unable to find file "@FrameworkBundle/Resources/config/routing/webhook.php"`.
+## 4. Consume the `RemoteEvent`
 
-### 5. Consumer
+The parser returns `MappedRemoteEvent`, a `RemoteEvent` that retains both the authenticated decoded payload and the already-mapped typed event:
 
 ```php
-namespace App\Webhooks\Stripe;
-
-use IntegrationEngine\Core\Contract\Webhook\AbstractWebhookMapper;
-use IntegrationEngine\Infrastructure\Webhook\ConsumesWebhookEvents;
+use IntegrationEngine\Infrastructure\Webhook\MappedRemoteEvent;
 use Symfony\Component\RemoteEvent\Attribute\AsRemoteEventConsumer;
 use Symfony\Component\RemoteEvent\Consumer\ConsumerInterface;
+use Symfony\Component\RemoteEvent\RemoteEvent;
 
 #[AsRemoteEventConsumer('stripe')]
-final class PaymentIntentSucceededConsumer implements ConsumerInterface
+final class StripeWebhookConsumer implements ConsumerInterface
 {
-    use ConsumesWebhookEvents;
-
-    protected function mapper(): AbstractWebhookMapper
+    public function consume(RemoteEvent $event): void
     {
-        return new PaymentIntentSucceededEventMapper();
+        if (!$event instanceof MappedRemoteEvent) {
+            return;
+        }
+
+        $typedEvent = $event->event();
+        // hand $typedEvent to application/domain code
     }
 }
 ```
 
-`ConsumesWebhookEvents` brings the constructor (it takes the `WebhookEventDispatcher`), `consume()`, and the check that skips events of another type arriving at the same URL — see *One parser per event type* below. A provider that names the type somewhere other than `payload['type']` overrides `handles()`.
+This is the shortest v8 path. `WebhookEventDispatcher` and `ConsumesWebhookEvents` remain available for applications that want to map/dispatch from a plain `RemoteEvent`, but the v8 parser already returns a `MappedRemoteEvent`; do not remap it just to reach the same DTO again.
 
-### 6. Listener
+## Parser behavior
 
-```php
-namespace App\Billing\Infrastructure\EventListener;
+The current parser:
 
-use App\Webhooks\Stripe\PaymentIntentSucceededEvent;
-use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
+1. accepts only `POST`;
+2. accepts `application/json` and structured `application/*+json` media types;
+3. reads the raw request bytes;
+4. verifies the configured signature **before** JSON decoding;
+5. requires a JSON object at the root (lists/scalars are rejected);
+6. reads event type/id using configured dot paths;
+7. validates the event against the configured mapper table;
+8. returns `MappedRemoteEvent` and emits `WebhookReceived`.
 
-final class PaymentIntentSucceededListener
-{
-    #[AsEventListener]
-    public function __invoke(PaymentIntentSucceededEvent $event): void
-    {
-        // Translate the DTO into domain terms here — keep mappers dumb.
-    }
-}
+Rejected requests use HTTP 406 through Symfony's `RejectWebhookException` and emit `WebhookRejected`. Rejection messages carry fixed reason codes and do not include payloads, signatures or secrets.
+
+## Unknown events
+
+`unknown_events: reject` explicitly rejects an authenticated but undeclared event.
+
+`unknown_events: ignore` makes the parser return `null`. Be aware that Symfony Webhook controller behavior around a `null` parser result is version-sensitive and, in the supported 6.4/7.4/8.0 controller flow verified by the project spike, a null event is not a portable way to guarantee a 2xx acknowledgement. Use `reject` when you need unambiguous behavior, or own the acknowledgement/controller policy in the application.
+
+See [webhooks-v8.md](./webhooks-v8.md) for the compatibility finding behind this caveat.
+
+## Signature schemes
+
+### `hmac_sha256`
+
+Compares a hexadecimal HMAC-SHA256 signature. Optional `prefix` is supported by this scheme only.
+
+### `hmac_base64`
+
+Compares the raw HMAC-SHA256 digest encoded as base64.
+
+### `timestamped_hmac`
+
+Validates timestamped HMAC input and requires a non-negative `tolerance`. It uses a PSR-20 clock through the bundle's `SystemClock` adapter.
+
+## Generator
+
+```bash
+php bin/console make:webhook stripe payment.completed \
+    --signature-type=hmac_sha256 \
+    --signature-header=X-Webhook-Signature
 ```
 
-## Things to Know
+The command generates a typed event and mapper, and merges the webhook definition into the integration YAML. It then prints the parser service ID to use in Symfony routing.
 
-### One parser per event type
+## Idempotency belongs to the application
 
-`IntegrationWebhookRequestParser` names every `RemoteEvent` after `getDefinition()`, whatever type the payload declares. If the provider sends several event types to the same URL, check the type in the consumer (as above) and ignore the rest, or give each event type its own URL / routing key when the provider allows it. Don't return `null` from the parser to skip an event: Symfony answers `406` and the provider will keep retrying.
+v8 does **not** ship `WebhookIdempotencyService`, `WebhookFingerprinter` or an idempotency storage port. A provider can redeliver the same valid event, so side-effecting consumers must still be idempotent.
 
-### Request headers
+Prefer a durable unique receipt keyed by provider/event ID and, where possible, write that receipt in the same transaction as the business side effect. A cache TTL alone cannot guarantee exactly-once processing.
 
-`RemoteEvent` doesn't carry request headers, so a mapper driven from a consumer receives whatever you pass to `WebhookEventDispatcher::dispatch()` (usually `[]`). A mapper that needs a header has to be driven from somewhere that still holds the `Request` — your own controller calling `WebhookEventDispatcher::dispatch()` with the headers you pick out of it.
+## Business boundary
 
-### Signature verifiers
+Signature verification proves authenticity according to the configured scheme. It does not make payload fields trustworthy domain state. Keep validation and business invariants in the consuming application after mapping.
 
-| Verifier | Scheme | Default header |
-|---|---|---|
-| `HmacSha256SignatureVerifier($header, $prefix)` | `{prefix}{hex HMAC-SHA256(body)}`; prefix `sha256=` when empty | — |
-| `TimestampedHmacSignatureVerifier($header, $toleranceSeconds, ClockInterface)` | Stripe: `t={ts},v1={hex HMAC-SHA256("{ts}.{body}")}`; rejects timestamps outside the tolerance; any matching `v1` passes (key rotation) | — |
-| `Base64HmacSignatureVerifier($header)` | base64 HMAC-SHA256(body), sent whole | `X-Shopify-Hmac-SHA256`, `X-WC-Webhook-Signature` |
+## Related documents
 
-Any other scheme: implement `SignatureVerifierInterface` (`verify($body, $signature, $secret)` and `getHeaderName()`).
-
-### YAML webhook definitions
-
-`YamlConfigAdapter` reads an optional `webhooks:` section from the **integration's own YAML** (the file under `config_path`), exposed through `ConfigPort::getWebhookDefinition()`. Nothing in the request flow reads it; it is metadata you can consume yourself.
-
-```yaml
-# src/Integrations/Stripe/Stripe.yaml
-webhooks:
-    payment_intent.succeeded:
-        mapper: App\Webhooks\Stripe\PaymentIntentSucceededEventMapper
-        signature:
-            type: timestamped_hmac        # or hmac_sha256
-            header: Stripe-Signature
-            timestamp_tolerance: 300      # required for timestamped_hmac; not allowed for hmac_sha256
-```
-
-`webhooks:` is **not** a key of the bundle config (`integration_engine.integrations.<name>`); putting it there fails with `Unrecognized option "webhooks"`.
-
-## Testing
-
-Post a correctly signed request through the real stack and assert on the typed event your listener receives:
-
-```php
-use App\Webhooks\Stripe\PaymentIntentSucceededEvent;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-
-final class StripeWebhookTest extends WebTestCase
-{
-    public function testSignedEventReachesListeners(): void
-    {
-        $client = self::createClient();
-        $received = [];
-        self::getContainer()->get(EventDispatcherInterface::class)->addListener(
-            PaymentIntentSucceededEvent::class,
-            static function (PaymentIntentSucceededEvent $event) use (&$received): void { $received[] = $event; },
-        );
-
-        $body = json_encode([
-            'id' => 'evt_1',
-            'type' => 'payment_intent.succeeded',
-            'data' => ['object' => ['id' => 'pi_1', 'amount' => 500, 'currency' => 'usd']],
-        ], \JSON_THROW_ON_ERROR);
-        $t = time();
-        $signature = \sprintf('t=%d,v1=%s', $t, hash_hmac('sha256', "{$t}.{$body}", 'whsec_test')); // = STRIPE_WEBHOOK_SECRET in the test env
-
-        $client->request('POST', '/webhook/stripe', server: [
-            'CONTENT_TYPE' => 'application/json',
-            'HTTP_STRIPE_SIGNATURE' => $signature,
-        ], content: $body);
-
-        self::assertResponseStatusCodeSame(202);
-        self::assertCount(1, $received);
-    }
-}
-```
-
-Also worth covering: a forged signature and an expired timestamp (both `406`), and an event type you don't handle (`202`, nothing dispatched).
-
-## Best Practices
-
-1. **Verify before trusting**: the parser rejects the request before any payload is decoded or mapped.
-2. **Keep mappers dumb**: map to the DTO; translate to domain objects in the listener.
-3. **Expect replays**: providers retry, so make listeners idempotent (or use `WebhookIdempotencyService` with your own storage).
-4. **Test with real payloads**: record them from the provider and replay them with valid signatures.
-5. **Keep secrets out of Git**: use env vars / a vault for webhook secrets.
-
-## See Also
-
-- **CLAUDE.md**: Architecture overview and command reference
-- **tests/Infrastructure/Webhook/**: parser, consumer trait and idempotency tests
-- **src/Core/Contract/Webhook/**: Ports and mapper contracts
+- [webhooks-v8.md](./webhooks-v8.md) — v8 migration/compatibility notes
+- [LIFECYCLE.md](./LIFECYCLE.md) — `WebhookReceived` / `WebhookRejected`
+- [ADR 0016](./adr/0016-generic-webhooks-and-application-idempotency.md) — generic webhook + application idempotency decision
+- [UPGRADE-8.0.md](./UPGRADE-8.0.md) — migration from the v7 webhook model

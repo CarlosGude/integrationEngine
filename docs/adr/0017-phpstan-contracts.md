@@ -1,4 +1,4 @@
-# PHPStan contracts without speculative send inference
+# 0017 · PHPStan contracts without speculative send inference
 
 - **Status:** Accepted
 - **Date:** 2026-09-22

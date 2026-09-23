@@ -142,7 +142,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
      * Returns a Reference to the raw HTTP adapter for this integration.
      *
      * $requestMiddlewares is only passed through as a 4th constructor
-     * argument for the two built-in adapter classes, whose shared
+     * argument for the three built-in adapter classes, whose shared
      * constructor shape (httpClient, baseUrl, defaultHeaders, requestMiddlewares)
      * this method already assumes. A custom adapter registered via
      * integration_engine.client_adapter with a different constructor isn't

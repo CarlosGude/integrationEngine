@@ -1,6 +1,6 @@
 # 0013 · Intermediate Timing Events (HttpResponseReceived, ResponseMapped)
 
-- **Status:** Accepted
+- **Status:** Superseded in v8
 - **Date:** 2026-09-18
 
 ## Context

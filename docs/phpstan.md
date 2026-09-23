@@ -39,7 +39,7 @@ The extension deliberately does not narrow `IntegrationEngine::send()` based on
 `SomeAction::getName()`. The engine resolves that string through its configured
 `ConfigPort`; the expression does not guarantee which action class the runtime
 configuration selects. Concrete facades should declare the response type and
-validate the engine result. See the [inference decision](adr/v8-phpstan.md).
+validate the engine result. See the [inference decision](adr/0017-phpstan-contracts.md).
 
 ## Verification
 

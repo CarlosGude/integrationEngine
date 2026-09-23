@@ -241,7 +241,7 @@ La tabla de auditoría anterior conserva el estado inicial. Cierre posterior:
   verdes; 14 celdas de compatibilidad, generador PHP 8.2, arquitectura y mutación.
   Integración de la PR pendiente; revisión de calidad terminada.
 
-Evidencia, resultados y límites: [auditoría de calidad](quality-audit.md).
+Evidencia, resultados y límites: [auditoría de calidad](../quality-audit.md).
 
 ### Seguimiento del bloque 1B · Landing
 
