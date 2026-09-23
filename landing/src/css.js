@@ -21,7 +21,7 @@ export const CSS = `
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 section[id] { scroll-margin-top: 64px; }
-.step, .struct-panel, .example-code-panel, .cpanel { min-width: 0; }
+.step, .struct-panel, .example-code-panel, .cpanel, .ext-card { min-width: 0; }
 .step-code { overflow-wrap: anywhere; }
 
 body {
@@ -285,7 +285,7 @@ footer a:hover { text-decoration: underline; }
 .ext-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; margin-top: 2rem; }
 @media (max-width: 700px) { .ext-grid { grid-template-columns: 1fr; } }
 .ext-card { background: rgba(255,255,255,.04); border: 1px solid rgba(74,143,212,.18); border-radius: 10px; padding: 1.25rem 1.35rem; }
-.ext-iface { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: .78rem; font-weight: 600; color: #7dd3fc; background: rgba(47,111,189,.18); padding: .2rem .65rem; border-radius: 4px; margin-bottom: .6rem; }
+.ext-iface { display: inline-block; max-width: 100%; overflow-wrap: anywhere; font-family: 'JetBrains Mono', monospace; font-size: .78rem; font-weight: 600; color: #7dd3fc; background: rgba(47,111,189,.18); padding: .2rem .65rem; border-radius: 4px; margin-bottom: .6rem; }
 .ext-card p { font-size: .83rem; color: var(--muted); line-height: 1.65; }
 /* ── STATUS SECTION ── */
 .demo-status { font-size: .85rem !important; color: var(--muted); margin-top: 1rem; }
