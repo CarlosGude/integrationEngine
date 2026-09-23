@@ -8,6 +8,7 @@ The documentation is deliberately split by responsibility. If two pages appear t
 
 | Need | Canonical document |
 |---|---|
+| Read the bundle end to end | [DEVELOPER-GUIDE.md](./DEVELOPER-GUIDE.md) |
 | Understand the architecture and dependency rules | [ARCHITECTURE.md](./ARCHITECTURE.md) |
 | Build the first action | [getting-started/actions.md](./getting-started/actions.md) |
 | Resolve path/query inputs | [getting-started/context-and-path.md](./getting-started/context-and-path.md) |
