@@ -31,19 +31,20 @@ jobs:
           extensions: pdo_sqlite, intl, zip
           coverage: pcov # The demo's make test requests coverage.
 
-      # Fetch tags to ensure Composer can resolve the correct version
+      # Fetch tags so the path repository can expose this checkout as the
+      # latest released version in the current major line.
       - name: Fetch git tags
         run: cd bundle && git fetch --tags
 
-      # The demo requires "dev-main", so the path repo has to offer exactly that
-      # version: a path repo is canonical, and anything it does not match makes
-      # the package uninstallable rather than falling through to the VCS repo.
-      # (It used to declare 6.0.99, which worked only while the demo asked for
-      # "@dev" — an implicit "*" that any version satisfies.)
+      # The demo requires a released 8.x version (currently ^8.0.4). A path
+      # repository is canonical, so advertising the checkout as dev-main makes
+      # Composer reject it even though the VCS repository contains a matching
+      # tag. Use the latest bundle tag as the synthetic path-package version.
       - name: Install the demo against this bundle checkout
         working-directory: demo
         run: |
-          composer config repositories.bundle '{"type": "path", "url": "../bundle", "options": {"symlink": false, "versions": {"carlosgude/integration-engine": "dev-main"}}}'
+          BUNDLE_VERSION="$(git -C ../bundle describe --tags --abbrev=0 | sed 's/^v//')"
+          composer config repositories.bundle "{"type": "path", "url": "../bundle", "options": {"symlink": false, "versions": {"carlosgude/integration-engine": "${BUNDLE_VERSION}"}}}"
           composer update --no-interaction --prefer-dist # NOSONAR: the demo has no lock file; this resolves it against this checkout on purpose
           composer show carlosgude/integration-engine | grep -E '^(versions|source|dist)'
 
