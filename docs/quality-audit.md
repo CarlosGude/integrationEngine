@@ -1,6 +1,6 @@
 # Quality audit — 2026-09-22
 
-This records the quality work following the [bundle plan](PLAN-STATUS.md).
+This records the quality work following the [historical bundle plan](archived/PLAN-STATUS.md).
 The implementation baseline is `6f3107cd98daef8114d05dab9e56dd4979347c9d`;
 measurements below also include the local quality changes. They are not remote
 CI results for a new commit.
@@ -34,7 +34,7 @@ MSI **96.00%**, covered MSI **97.27%**. Documentation counts reflect that execut
 
 All default mutators are enabled and every ignore entry has been removed.
 The standard local/CI command now includes --with-uncovered, so uncovered code
-reduces MSI. Thresholds remain 85/95. The earlier experiments below are retained
+reduces MSI. Current thresholds are 85/90. The earlier experiments below are retained
 as history, not current totals.
 
 The new scalar-connection regression test covers the formerly suppressed CastString

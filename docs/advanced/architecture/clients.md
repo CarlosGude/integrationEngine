@@ -1,249 +1,149 @@
-# HTTP Clients
+# HTTP clients and transport wiring
 
-The client executes the HTTP request and returns `array{body: array, headers:
-array<string, string[]>}` — the decoded body plus the response's HTTP headers,
-which the engine hands to your mapper as separate arguments. Two built-in
-adapters are included; you can add your own.
+IntegrationEngine separates the engine contract from the HTTP implementation. `ClientInterface` is the minimum capability; optional interfaces add batching and runtime URL overrides.
 
----
+For the architectural boundary around clients and middleware, see [ARCHITECTURE.md](../../ARCHITECTURE.md). This page is the configuration and extension reference.
 
-## The minimum — REST (default)
+## Built-in clients
 
-No configuration needed. When `client:` and `client_service:` are both absent, the
-engine uses `SymfonyHttpClientAdapter` (REST):
+Select the transport at integration level:
 
 ```yaml
 integration_engine:
     integrations:
         my_api:
             base_url: 'https://api.example.com'
-            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MyApi/MyApi.yaml'
+            config_path: '%kernel.project_dir%/config/integrations/my_api.yaml'
+            client: rest
 ```
 
-Standard REST semantics: JSON body serialization, status-code error handling, streaming
-response consumption.
+`client` defaults to `rest`.
 
----
+| `client` | Adapter | Body/request model | Batch | Runtime `baseUrl` |
+|---|---|---|---|---|
+| `rest` | `SymfonyHttpClientAdapter` | ordinary HTTP, JSON by default | yes | yes |
+| `graphql` | `GraphQLClientAdapter` | POST to the configured endpoint using `GraphQLBodyInterface` | yes | yes |
+| `form_encoded` | `FormEncodedClientAdapter` | `application/x-www-form-urlencoded` | yes | yes |
 
-## GraphQL
+All three built-ins implement `BatchClientInterface` and `DynamicBaseUrlClientInterface`. With `request_middlewares` configured, their batch path falls back to sequential per-item dispatch so middleware semantics remain identical to `send()`.
 
-Set `client: graphql` on the integration and implement `GraphQLBodyInterface` for each
-action that sends a query:
+### REST
 
-```yaml
-my_graphql_api:
-    base_url:    'https://api.example.com/graphql'
-    config_path: '...'
-    client:      graphql
-```
+REST is the default. Action method and path are used to build the request. Bodies are JSON unless the action implements the form-encoding contract described below.
+
+### GraphQL
+
+Configure the endpoint as the integration `base_url` and implement `GraphQLBodyInterface`:
 
 ```php
 use IntegrationEngine\Core\Contract\Action\GraphQLBodyInterface;
 
-final class GetUserBody implements GraphQLBodyInterface
+final readonly class GetUserBody implements GraphQLBodyInterface
 {
-    private function __construct(private int $id) {}
-
-    public static function create(array $data): self { return new self((int) $data['id']); }
+    public function __construct(private int $id) {}
 
     public function getQuery(): string
     {
-        return 'query GetUser($id: ID!) { user(id: $id) { id name email } }';
+        return 'query GetUser($id: ID!) { user(id: $id) { id name } }';
     }
 
-    public function getVariables(): array { return ['id' => $this->id]; }
-    public function toArray(): array { return ['query' => $this->getQuery(), 'variables' => $this->getVariables()]; }
-}
-```
-
-`GraphQLClientAdapter` posts to `base_url` (ignoring the action path), extracts `data`
-from the response, and throws `RequestResponseException` on `errors`.
-
-> **Note:** The built-in GraphQL adapter sends requests sequentially in `sendMany()`.
-> For real concurrency with GraphQL, see [Batch Requests — Concurrency](../../getting-started/batch-requests.md#concurrency).
-
----
-
-## `client:` vs `client_service:`
-
-These are two different extension points:
-
-| Option | What it does |
-|---|---|
-| `client: rest` / `client: graphql` | Selects a registered protocol adapter; the bundle handles wiring |
-| `client_service: 'App\...\MyClient'` | Injects your service directly as `ClientInterface`; bypasses the adapter system |
-
-The two are mutually exclusive. Use `client:` when you want the bundle to manage the
-HTTP layer. Use `client_service:` when you need full control.
-
----
-
-## Custom protocol adapter
-
-Register a service with the `integration_engine.client_adapter` tag — the bundle
-discovers it automatically. If `getClientType()` matches an existing adapter, yours takes
-precedence:
-
-```php
-use IntegrationEngine\Core\Contract\Action\AbstractAction;
-use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
-
-final class SoapClientAdapter implements ClientAdapterInterface
-{
-    public static function getClientType(): string  { return 'soap'; }
-    public static function requiresPath(): bool     { return false; }
-    public static function requiresMethod(): bool   { return false; }
-
-    public function send(AbstractAction $action, ...): array
+    public function getVariables(): array
     {
-        // build SOAP envelope, execute, decode the response, and return
-        // both the body and the response headers:
-        return ['body' => $decoded, 'headers' => $responseHeaders];
+        return ['id' => $this->id];
     }
-}
-```
 
-```yaml
-# services.yaml
-App\Infrastructure\Http\SoapClientAdapter:
-    tags:
-        - { name: integration_engine.client_adapter }
-```
-
-```yaml
-# integration_engine.yaml
-my_soap_api:
-    client: soap
-```
-
----
-
-## Custom service — full control
-
-Use `client_service:` for retry logic, circuit breaking, custom logging, or test doubles:
-
-```php
-use IntegrationEngine\Core\Contract\Client\ClientInterface;
-
-final class RetryingHttpClient implements ClientInterface
-{
-    public function send(AbstractAction $action, ?ActionContextInterface $context = null, ...): array
+    public function toArray(): array
     {
-        // retry on 429, circuit break on 503, custom headers, etc.
-        return ['body' => $decoded, 'headers' => $responseHeaders];
+        return ['query' => $this->getQuery(), 'variables' => $this->getVariables()];
     }
 }
 ```
 
-`request_middlewares:` (see below) is not available here — a `client_service`
-builds its own requests, so it's responsible for any request-level logic
-(including full-request signing) itself.
+The GraphQL adapter posts to the integration endpoint, returns the `data` payload to the mapper and converts GraphQL `errors` into `RequestResponseException`.
 
-```yaml
-my_api:
-    client_service: 'App\Infrastructure\Http\RetryingHttpClient'
-```
+### Form-encoded requests
 
----
+Use `client: form_encoded` when an integration is form-based by default. `FormEncodedClientAdapter` delegates transport behavior to the REST adapter with form body encoding.
 
-## Concurrency — `BatchClientInterface`
+For a REST integration where only particular actions are form-encoded, implement `FormEncodedBodyInterface` on those action bodies instead of changing the whole integration client.
 
-To get real concurrency in `sendMany()`, the client must implement `BatchClientInterface`.
-`SymfonyHttpClientAdapter` does (dispatches all, then consumes); `GraphQLClientAdapter`
-does not. A custom adapter or service can implement it regardless of protocol:
+## `client` vs `client_service`
 
-```php
-use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
-use IntegrationEngine\Core\Contract\Client\ClientInterface;
-
-final class ConcurrentGraphQLClient implements ClientInterface, BatchClientInterface
-{
-    public function send(...): array { ... }
-
-    public function sendMany(array $requests): array
-    {
-        // Each PreparedRequest carries: action (static auth applied), context, caller headers.
-        // 1. dispatch all — responses are lazy, requests run concurrently
-        $handles = [];
-        foreach ($requests as $key => $prepared) {
-            $body = $prepared->action->getBody();
-            $handles[$key] = $this->http->request('POST', $this->endpointUrl, [
-                'json'    => $body?->toArray(),
-                'headers' => $prepared->headers?->toArray() ?? [],
-            ]);
-        }
-
-        // 2. consume — read only after all are in-flight
-        $results = [];
-        foreach ($handles as $key => $handle) {
-            try {
-                $results[$key] = ['body' => $handle->toArray(), 'headers' => $handle->getHeaders(false)];
-            } catch (\Throwable $e) {
-                $results[$key] = $e;
-            }
-        }
-
-        return $results;
-    }
-}
-```
-
-The engine detects `BatchClientInterface` at runtime and falls back to sequential sends
-transparently when it is absent — no configuration, no error.
-
----
-
-## Dynamic base URL per request — `DynamicBaseUrlClientInterface`
-
-For integrations without one fixed base URL — e.g. an installable app where each
-store/customer lives on its own domain — pass `baseUrl` to `send()`/`sendMany()` instead
-of resolving a per-tenant client service yourself:
-
-```php
-$engine->send('get_orders', context: $context, baseUrl: $tenant->domain());
-```
-
-A client opts in by implementing:
-
-```php
-use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
-
-interface DynamicBaseUrlClientInterface
-{
-    public function withBaseUrl(string $baseUrl): static;
-}
-```
-
-| Client | Implements it? |
-|---|---|
-| `SymfonyHttpClientAdapter` | Yes — returns a new instance with `$baseUrl` swapped in |
-| `GraphQLClientAdapter` | Yes — returns a new instance with `$endpointUrl` swapped in |
-| Custom `ClientInterface` | Optional — if absent, an explicit `baseUrl` is silently ignored |
-
-The engine checks `instanceof DynamicBaseUrlClientInterface` before calling
-`withBaseUrl()`; clients that don't implement it keep using their configured URL with no
-error. Omitting `baseUrl` entirely behaves exactly as before — this is purely additive.
-
-In `sendMany()`, requests are grouped by their resolved `baseUrl` before dispatch, so a
-batch mixing several target URLs still runs each group through `BatchClientInterface`
-concurrently rather than falling back to sequential sends for the whole batch.
-
-The bundle does not resolve or persist that URL — deciding *which* URL to pass (resolving
-the active tenant/store) is the calling application's responsibility.
-
----
-
-## Runtime connection resolution — `ConnectionResolverInterface`
-
-`baseUrl` above only swaps the target URL. When a connection also needs
-different credentials — one integration serving several tenants, each with
-its own API key — configure a resolver instead:
+`client_service` bypasses the built-in adapter construction and injects an application service implementing `ClientInterface`:
 
 ```yaml
 integration_engine:
     integrations:
         my_api:
-            base_url: 'https://api.example.com'   # fallback
+            config_path: '%kernel.project_dir%/config/integrations/my_api.yaml'
+            client_service: App\Infrastructure\Http\MyApiClient
+```
+
+`client` and `client_service` are alternative extension points. With `client_service`, the bundle does not control the transport, so transport options such as `retry`, `timeout`, `max_duration` and `block_private_networks` are rejected by configuration. Request middleware is likewise the responsibility of the custom client.
+
+A custom service can opt into additional engine capabilities by implementing `BatchClientInterface` and/or `DynamicBaseUrlClientInterface`.
+
+## Custom adapter type
+
+Use `ClientAdapterInterface` when you want a reusable protocol type selectable through `client:`. Tag the service with `integration_engine.client_adapter`; the adapter's `getClientType()` becomes the configuration value.
+
+```php
+use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
+
+final class SoapClientAdapter implements ClientAdapterInterface
+{
+    public static function getClientType(): string
+    {
+        return 'soap';
+    }
+
+    public static function requiresPath(): bool
+    {
+        return false;
+    }
+
+    public static function requiresMethod(): bool
+    {
+        return false;
+    }
+
+    // ClientInterface::send() implementation omitted.
+}
+```
+
+```yaml
+App\Infrastructure\Http\SoapClientAdapter:
+    tags: [integration_engine.client_adapter]
+```
+
+An application adapter registered for an existing type can replace the bundle adapter for that type.
+
+## Runtime base URL
+
+The `baseUrl` argument on `send()` and `EngineRequest` is honored only when the resolved client implements `DynamicBaseUrlClientInterface`:
+
+```php
+$response = $engine->send(
+    GetOrdersAction::getName(),
+    context: $context,
+    baseUrl: $tenant->apiBaseUrl(),
+);
+```
+
+The three built-ins support this. A custom client that does not implement the interface keeps its configured endpoint; the override is ignored.
+
+In a batch, the engine groups prepared requests by resolved base URL before delegating each group to the client.
+
+## Runtime connection resolution
+
+Use `connection_resolver` when a per-call connection changes credentials as well as, or instead of, the URL:
+
+```yaml
+integration_engine:
+    integrations:
+        my_api:
+            base_url: 'https://api.example.com'
+            config_path: '%kernel.project_dir%/config/integrations/my_api.yaml'
             connection_resolver: App\Infrastructure\Integrations\MyApi\MyApiConnectionResolver
 ```
 
@@ -259,7 +159,7 @@ final class MyApiConnectionResolver implements ConnectionResolverInterface
 
         return new ConnectionCredentials(
             baseUrl: $tenant->baseUrl,
-            authorization: new StaticAuthorizationConfig('bearer', ['token' => $tenant->apiKey]),
+            authorization: $tenant->authorization,
             connectionId: (string) $connection,
         );
     }
@@ -267,66 +167,51 @@ final class MyApiConnectionResolver implements ConnectionResolverInterface
 ```
 
 ```php
-$engine->send('get_orders', connection: $tenantId);
+$response = $engine->send(GetOrdersAction::getName(), connection: $tenantId);
 ```
 
-`ConnectionCredentials { ?baseUrl, ?authorization, ?connectionId }` — every
-field optional; only set what actually varies per connection. `$connection`
-is opaque to the engine; your resolver decides what it means. Omitting
-`connection` never touches the resolver, so existing single-connection
-integrations are unaffected; passing it without a `connection_resolver`
-configured throws `ConnectionResolutionException`.
+`ConnectionCredentials` can provide `baseUrl`, `authorization` and `connectionId`; every field is optional. Passing a connection without a configured resolver is an error. Omitting `connection` leaves the integration's static configuration unchanged.
 
-**Dynamic-auth token cache:** if the action uses dynamic authorization and
-several connections could share one `base_url`, set `connectionId` to a
-stable, non-secret identifier (never the API key/secret) — otherwise those
-connections would collide on the same cached token. If every connection has
-its own `base_url`, the engine already discriminates by that and
-`connectionId` is optional.
+`connectionId` is also the strongest discriminator for dynamic-auth token caching. Use a stable, non-secret identifier when different connections may share one endpoint.
 
----
+## Engine middleware vs request middleware
 
-## Request middleware — full-request signing
+These extension points run at different levels.
 
-For signature schemes that need the complete outgoing request (method,
-resolved URL, headers, body) rather than a static credential — OAuth 1.0a,
-AWS SigV4 — implement `RequestMiddlewareInterface`:
+`middlewares:` registers `AbstractClientMiddleware` services. They see the action, context and caller headers before a final transport request is built. This is appropriate for engine-level cross-cutting behavior.
+
+`request_middlewares:` registers `RequestMiddlewareInterface` services. They receive an immutable `Request` containing the resolved method, URL, headers, body, encoding and optional timeout immediately before transport execution. This is the extension point for signatures such as OAuth 1.0a or AWS SigV4.
 
 ```php
 use IntegrationEngine\Core\Contract\Client\Request;
 use IntegrationEngine\Core\Contract\Client\RequestMiddlewareInterface;
 
-final class OAuth1SigningMiddleware implements RequestMiddlewareInterface
+final class SigningMiddleware implements RequestMiddlewareInterface
 {
     public function handle(Request $request, callable $next): array
     {
-        $signature = $this->sign($request); // your signing logic
-
-        return $next($request->withHeader('Authorization', $signature));
+        return $next($request->withHeader('Authorization', $this->sign($request)));
     }
 }
 ```
 
 ```yaml
-# services.yaml
-App\Infrastructure\Integrations\MyApi\OAuth1SigningMiddleware:
-    tags: [integration_engine.request_middleware]
+integration_engine:
+    integrations:
+        my_api:
+            request_middlewares:
+                - App\Infrastructure\Integrations\MyApi\SigningMiddleware
 ```
 
-```yaml
-# integration_engine.yaml
-my_api:
-    request_middlewares:
-        - App\Infrastructure\Integrations\MyApi\OAuth1SigningMiddleware
-```
+The built-in REST, GraphQL and form-encoded clients support request middleware. A `client_service` owns its request construction and must implement equivalent behavior itself if needed.
 
-`Request { method, url, headers, ?body }` is the fully-resolved request —
-everything a signature could need is already present. `$next` continues the
-chain (optionally with a modified `$request`); not calling it rejects the
-request (throw) or short-circuits with a canned result. Multiple
-middlewares run outermost-first, same convention as `middlewares:`.
+## Transport controls for built-in clients
 
-Only the built-in REST/GraphQL adapters support this — see the note in
-"Custom service — full control" above. Configuring any `request_middlewares`
-for an integration makes its `sendMany()` dispatch sequentially instead of
-concurrently, since each item's chain may need to observe its own response.
+The bundle can wrap its managed Symfony HTTP transport with:
+
+- `timeout` and `max_duration`;
+- private-network blocking;
+- an `allowed_hosts` policy;
+- retry configuration for selected status codes and methods.
+
+These settings are integration-level controls. An action may additionally define its own `timeout`, which travels on the prepared request. See [Resilience and transport policy](../resilience.md) and [Security v8](../../security-v8.md) for the specialized rules rather than duplicating them here.

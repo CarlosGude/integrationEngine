@@ -12,8 +12,7 @@ namespace IntegrationEngine\Core\Contract\Client;
  *
  * Registered per integration via the `request_middlewares` bundle config
  * key (ordered list, first entry outermost — same convention as
- * `middlewares:`). Only the built-in SymfonyHttpClientAdapter and
- * GraphQLClientAdapter support this; a fully custom client_service is
+ * `middlewares:`). The built-in REST, GraphQL and form-encoded adapters support this; a fully custom client_service is
  * responsible for handling signing itself if it needs it.
  *
  * Implementations must not hold connection-specific state (e.g. a signing

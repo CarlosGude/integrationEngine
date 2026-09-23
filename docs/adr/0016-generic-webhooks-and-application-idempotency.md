@@ -1,6 +1,6 @@
 # 0016 · Generic authenticated webhooks and application idempotency
 
-- **Status:** Accepted (parser and domain contracts); transport acknowledgement pending
+- **Status:** Accepted — parser/domain contract current; transport acknowledgement caveat remains
 - **Date:** 2026-09-22
 
 ## Context
@@ -23,7 +23,7 @@ Consumers receive typed events directly. v7 instance mapper and verifier APIs ch
 
 ## References
 
-- [Spike with exact Symfony tags](../spikes/webhooks-v8.md)
+- [Archived spike with exact Symfony tags](../archived/spikes/webhooks.md)
 - [v8 webhook usage and migration](../webhooks-v8.md)
 - [Parser](../../src/Infrastructure/Webhook/IntegrationWebhookRequestParser.php)
 - [Timestamp boundary tests](../../tests/Core/Webhook/TimestampedHmacSignatureVerifierTest.php)

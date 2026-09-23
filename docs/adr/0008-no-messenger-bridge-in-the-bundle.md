@@ -1,6 +1,6 @@
 # 0008 · No Messenger bridge in the bundle
 
-- **Status:** Accepted
+- **Status:** Accepted — restored by ADR 0014 after being superseded by ADR 0011
 - **Date:** 2026-09-11
 
 ## Context

@@ -1,54 +1,61 @@
-# Resilience utilities
+# Resilience
 
-`ErrorClassifier` and `ExponentialBackoffPolicy` are utilities for application-owned
-retry logic. The engine does not invoke them automatically or provide a YAML
-retry-policy option. Its existing single retry after rejection of a cached auth
-token is a separate mechanism.
+IntegrationEngine has two distinct resilience layers. Keeping them separate avoids implying that application retry utilities automatically wrap engine calls.
 
-The classifier accepts Symfony HTTP exceptions and the engine's
-`RequestResponseException`. HTTP 408, 429 and 500–599 are transient; other
-400–499 responses are permanent. Unrecognised exceptions are neither transient
-nor permanent. Their integer exception codes are not treated as HTTP statuses.
+## Managed HTTP transport retries
 
-Raw Symfony transport exceptions are transient. Built-in adapters currently wrap
-transport failures as `RequestResponseException` with status 0 without retaining
-the original cause. Status 0 also represents local preparation failures, so the
-classifier intentionally leaves it unclassified. Applications cannot reliably
-distinguish these cases using this wrapper alone.
+For built-in clients, `integration_engine.yaml` can configure Symfony's managed transport retry policy:
 
-`ExponentialBackoffPolicy` numbers proposed retries from **1**. With its default
-configuration it permits retries 1, 2 and 3 for transient errors, and rejects retry
-4. The corresponding delays are 100, 200 and 400 milliseconds. The caller owns
-execution and waiting, and must decide whether repeating a particular operation
-is appropriate, including the API's idempotency requirements.
+```yaml
+integration_engine:
+    integrations:
+        my_api:
+            retry:
+                max_retries: 3
+                delay_ms: 200
+                multiplier: 2
+                max_delay_ms: 2000
+                jitter: 0.1
+                status_codes: [423, 425, 429, 500, 502, 503, 504, 507, 510]
+                retry_non_idempotent: false
+```
+
+This policy belongs to the HTTP transport constructed by the bundle. It is not available with `client_service`, because a custom client owns its own transport behavior. Non-idempotent methods are not retried unless explicitly enabled.
+
+See [resilience-v8.md](../resilience-v8.md) for the detailed transport classification and configuration introduced for v8.
+
+## Application-owned resilience utilities
+
+The core also exposes framework-independent classification/backoff contracts for code that owns a retry loop outside the engine transport:
+
+- `EngineErrorClassifier` and `ErrorClassifierInterface`;
+- `ErrorClassification`;
+- `ExponentialBackoff` and `ResiliencePolicyInterface`;
+- `SymfonyErrorClassifier` when Symfony HTTP exception knowledge is useful.
+
+Example:
 
 ```php
 use IntegrationEngine\Core\Resilience\ExponentialBackoff;
 use IntegrationEngine\Infrastructure\Resilience\SymfonyErrorClassifier;
 
 $policy = new ExponentialBackoff(
-    maxAttempts: 3,
-    initialBackoffMs: 100,
+    maxRetries: 3,
     classifier: new SymfonyErrorClassifier(),
 );
-// In an application-owned retry loop, after a failed call:
+
 if ($policy->shouldRetry($error, $retryNumber)) {
     $delayMs = $policy->getBackoffMs($retryNumber);
-    // Schedule the next attempt according to the application's execution model.
+    // The application decides how and when to wait/retry.
 }
 ```
 
-Retry numbers below 1 and invalid constructor values throw
-`InvalidArgumentException`. A zero initial delay is supported. Delays exceeding
-the integer range throw `OverflowException` instead of becoming negative or zero.
-`getFallback()` rethrows the original exception; it does not return cached data.
+These objects do not intercept `IntegrationEngine::send()` automatically. They are building blocks for application orchestration.
 
-The new ExponentialBackoff defaults to EngineErrorClassifier, which understands
-engine exceptions without depending on Symfony. Inject SymfonyErrorClassifier
-as above to include raw Symfony HTTP and transport exceptions. Both produce an
-ErrorClassification with status and network-failure information.
+## Dynamic-auth 401 retry
 
-The legacy ErrorClassifier and ExponentialBackoffPolicy names remain callable
-with their original Symfony-aware behavior and constructor arguments. Their
-deprecated facades live outside Core and are loaded through Composer's explicit
-classmap. See [ADR 0015](../adr/0015-resilience-classification-boundary.md).
+Dynamic authorization has one separate, narrowly scoped retry: when a cached token is rejected with 401, the engine evicts it, fetches a new token and retries the protected request once. This is credential refresh behavior, not the general transport retry policy. See [Authorization](../getting-started/authorization.md).
+
+## Compatibility names
+
+Legacy `ErrorClassifier` and `ExponentialBackoffPolicy` names remain in the compatibility layer. New code should use the core contracts/classes above; compatibility exists to preserve migrations, not as a parallel API to document independently.

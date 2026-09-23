@@ -2,7 +2,7 @@
 
 Estado revisado el 2026-09-22. Este documento sustituye el listado de v5.4.0;
 la revisión antigua y sus anotaciones se conservan en
-[el archivo histórico](./archived/roadmap-fix-v5.md).
+[el archivo histórico](./roadmap-fix-v5.md).
 
 ## Completado para la próxima versión
 
@@ -51,15 +51,15 @@ la revisión antigua y sus anotaciones se conservan en
 - [x] Pruebas negativas remotas de generador PHP 8.2 y contrato demo completadas;
   PR temporal #6 cerrado sin fusionar. Evidencia enlazada en la auditoría.
 
-Resultados, pruebas negativas y límites: [auditoría de calidad](quality-audit.md).
+Resultados, pruebas negativas y límites: [auditoría de calidad](../quality-audit.md).
 
 Los mutantes supervivientes permanecen visibles y cuentan contra los umbrales.
-La medición actual y el alcance están en [QUALITY.md](./advanced/QUALITY.md).
+La medición actual y el alcance están en [QUALITY.md](../advanced/QUALITY.md).
 Los componentes de proveedores, DLQ y state machine eliminados en v6 no son tareas
 pendientes del bundle.
 
 ## Funcionalidades propuestas, todavía sin implementar
 
 El alcance de selección de transporte/SSRF, regla PHPStan de mapper y métricas
-está definido en [next-features.md](./advanced/next-features.md). Esa propuesta
+está definido en [next-features.md](../advanced/next-features.md). Esa propuesta
 incluye límites y criterios de aceptación; no declara entregadas esas funciones.

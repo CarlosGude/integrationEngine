@@ -1,6 +1,6 @@
 # 0009 · Inbound Webhooks: Design and Parser Contract
 
-- **Status:** Accepted
+- **Status:** Superseded in part by ADR 0014 and ADR 0016
 - **Date:** 2026-09-17
 
 ## Context

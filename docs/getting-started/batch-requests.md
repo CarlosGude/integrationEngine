@@ -1,202 +1,89 @@
-# Batch / Parallel Requests
+# Batch requests
 
-Use `sendMany()` when you need the results of N calls before you can proceed — fetching
-a list of accommodations by ID, paginating through a resource, or hydrating a set of
-entities from different endpoints at once.
+`sendMany()` executes several `EngineRequest` values while preserving each input key and isolating failures. It uses a client's batch capability when available and otherwise falls back to individual sends.
 
----
-
-## Building the batch
-
-Each item in a batch is an `EngineRequest` — the same arguments as a single
-`send()` call (`actionName`, `context`, `body`, `headers`, `baseUrl`,
-`connection`), wrapped as an immutable value object:
+## Build and dispatch a batch
 
 ```php
 use IntegrationEngine\Core\Batch\EngineRequest;
 use IntegrationEngine\Core\Contract\Action\DefaultActionContext;
 
 $requests = [
-    'lon' => new EngineRequest(GetAccommodationAction::getName(), context: DefaultActionContext::create(['id' => 101])),
-    'par' => new EngineRequest(GetAccommodationAction::getName(), context: DefaultActionContext::create(['id' => 202])),
-    'mad' => new EngineRequest(GetAccommodationAction::getName(), context: DefaultActionContext::create(['id' => 303])),
+    'lon' => new EngineRequest(
+        GetAccommodationAction::getName(),
+        context: DefaultActionContext::create(['id' => 101]),
+    ),
+    'par' => new EngineRequest(
+        GetAccommodationAction::getName(),
+        context: DefaultActionContext::create(['id' => 202]),
+    ),
 ];
 
-$results = $engine->sendMany($requests); // BatchResultCollection
+$results = $engine->sendMany($requests);
 ```
 
-Keys are arbitrary and preserved throughout — `$results['lon']` corresponds to the
-request you passed under `'lon'`.
+An `EngineRequest` can carry the same per-call inputs as `send()`: action name, context, body, headers, base URL override and connection value.
 
----
+## Results and failure semantics
 
-## Reading results — `BatchResultCollection`
-
-`sendMany()` returns a `BatchResultCollection`. Each item is a `BatchResult`:
+`sendMany()` returns `BatchResultCollection`. Every input key gets one `BatchResult`; one failure does not cancel unrelated items.
 
 ```php
-$results['lon']->isSuccess();  // bool
-$results['lon']->response();   // GetAccommodationResponse — throws if the item failed
-$results['lon']->error();      // \Throwable|null
-```
-
-The collection is iterable and countable:
-
-```php
-count($results);               // int
-$results->keys();              // ['lon', 'par', 'mad']
-
-foreach ($results as $key => $result) { ... }
-```
-
-A single failure never aborts the rest of the batch — every item always resolves.
-
----
-
-## Failure strategies
-
-`BatchResultCollection` gives you the building blocks; you decide the semantics.
-
-**Strict — all or nothing:**
-
-```php
-if ($results->hasFailures()) {
-    throw array_values($results->errors())[0];
+if ($results['lon']->isSuccess()) {
+    $response = $results['lon']->response();
+} else {
+    $error = $results['lon']->error();
 }
 
-// ->responses() contains only successes, keyed like the input
-$accommodations = array_map(fn($dto) => Accommodation::fromDto($dto), $results->responses());
-```
-
-**Lenient — process what succeeded, log what failed:**
-
-```php
 foreach ($results->errors() as $key => $error) {
-    $this->logger->warning('Fetch failed', ['key' => $key, 'error' => $error->getMessage()]);
-}
-
-$accommodations = array_map(fn($dto) => Accommodation::fromDto($dto), $results->responses());
-```
-
-**Item-by-item — full control:**
-
-```php
-foreach ($results as $key => $result) {
-    if ($result->isSuccess()) {
-        $accommodations[$key] = Accommodation::fromDto($result->response());
-    }
+    // application-owned failure policy
 }
 ```
 
----
+`responses()` returns successful mapped responses and `errors()` returns failures, both keyed like the input.
 
-## `sendManyOrFail()` — strict shorthand
-
-When you want an exception on the first failure and do not need `BatchResultCollection`:
+For strict handling:
 
 ```php
-// Returns array<key, ResponseInterface> or throws the first failure in input order
 $responses = $engine->sendManyOrFail($requests);
 ```
 
-The whole batch is always dispatched before failures are evaluated — no item is skipped.
-
----
+The complete batch is dispatched first; `sendManyOrFail()` then unwraps results in input order and throws when it reaches the first failed item.
 
 ## Concurrency
 
-Real concurrency means all HTTP requests are in-flight simultaneously — dispatched before
-any response is read, so a slow item does not block the others.
+Concurrency is a client capability, represented by `BatchClientInterface`. The three built-in transports implement it:
 
-**Concurrency is independent of the protocol.** REST, GraphQL, and SOAP are all HTTP
-under the hood. What determines concurrency is whether the client dispatches all requests
-before reading any response — that is the `BatchClientInterface` contract.
-
-The bundle proposes, it does not impose: implement `BatchClientInterface` in your client
-to opt in to real concurrency. The built-in `SymfonyHttpClientAdapter` (REST) does;
-`GraphQLClientAdapter` does not — by design choice, not by protocol limitation.
-
-| Client | Concurrent? |
+| Built-in client | Batch behavior |
 |---|---|
-| `client: rest` (default) | ✅ `SymfonyHttpClientAdapter` implements `BatchClientInterface` |
-| `client: graphql` | ❌ `GraphQLClientAdapter` does not — falls back to sequential |
-| `client: <custom adapter>` | up to you — implement `BatchClientInterface` to opt in |
-| `client_service:` (custom service) | up to you — implement `BatchClientInterface` to opt in |
+| `rest` | concurrent HTTP dispatch |
+| `graphql` | concurrent HTTP dispatch |
+| `form_encoded` | concurrent HTTP dispatch through the REST transport |
 
-### REST — zero configuration
+For REST and GraphQL, requests are dispatched before responses are consumed. The form adapter delegates batch work to the same REST transport.
 
-No explicit `client:` key needed. `SymfonyHttpClientAdapter` is the default and gives
-real concurrency out of the box:
+When `request_middlewares` are configured on a built-in client, batch execution deliberately falls back to per-item sequential `send()`. A request middleware can inspect, replace or short-circuit a completed request, so the transport cannot preserve the same middleware semantics while blindly pre-dispatching every item.
 
-```yaml
-integration_engine:
-    integrations:
-        booking:
-            base_url: 'https://supply-xml.booking.com'
-            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/Booking/Booking.yaml'
-```
+A custom `client_service` or adapter is concurrent only if it implements `BatchClientInterface`; otherwise the engine transparently uses sequential `ClientInterface::send()` calls.
 
-### GraphQL or SOAP with real concurrency
+## Mixed actions and connections
 
-Use `client_service:` and implement `BatchClientInterface` yourself. Symfony's
-`HttpClientInterface` supports async dispatch natively — dispatch all, then consume:
+A batch may contain different actions and different runtime connections:
 
 ```php
-use IntegrationEngine\Core\Contract\Client\BatchClientInterface;
-use IntegrationEngine\Core\Contract\Client\ClientInterface;
-use IntegrationEngine\Core\Batch\PreparedRequest;
-
-final class ConcurrentGraphQLClient implements ClientInterface, BatchClientInterface
-{
-    public function send(...): array { ... }
-
-    /** @param array<array-key, PreparedRequest> $requests */
-    public function sendMany(array $requests): array
-    {
-        // Each PreparedRequest carries the resolved action (with static auth),
-        // the context (for path resolution), and optional caller headers.
-        // For GraphQL, the endpoint URL is fixed — the action path is ignored.
-
-        // 1. dispatch all — responses are lazy; requests run concurrently
-        $handles = [];
-        foreach ($requests as $key => $prepared) {
-            $body = $prepared->action->getBody();
-            $handles[$key] = $this->httpClient->request('POST', $this->endpointUrl, [
-                'json'    => $body?->toArray(),           // ['query' => '...', 'variables' => [...]]
-                'headers' => $prepared->headers?->toArray() ?? [],
-            ]);
-        }
-
-        // 2. consume — read responses only after all are in-flight
-        $results = [];
-        foreach ($handles as $key => $handle) {
-            try {
-                $results[$key] = ['body' => $handle->toArray(), 'headers' => $handle->getHeaders(false)];
-            } catch (\Throwable $e) {
-                $results[$key] = $e;
-            }
-        }
-
-        return $results;
-    }
-}
+$results = $engine->sendMany([
+    'orders-acme' => new EngineRequest(GetOrdersAction::getName(), connection: 'acme'),
+    'profile' => new EngineRequest(GetProfileAction::getName(), connection: 'globex'),
+]);
 ```
 
-```yaml
-integration_engine:
-    integrations:
-        booking:
-            client_service: 'App\Infrastructure\Http\ConcurrentGraphQLClient'
-```
+Each item resolves its own action, connection, authorization and mapper. Connection resolution is memoized within one `sendMany()` call for repeated equivalent connection values, avoiding redundant resolver calls.
 
----
+Items are grouped by resolved base URL before batch dispatch. That keeps dynamic endpoint overrides compatible with clients that implement both `BatchClientInterface` and `DynamicBaseUrlClientInterface`.
 
-## Consolidating a homogeneous batch — `AbstractBatchMapper`
+## Homogeneous batch mapping
 
-When all N requests share the same action (same endpoint, N different contexts), extend
-`AbstractBatchMapper` to consolidate the individual DTOs into a single `ResponseInterface`.
-This is the second stage of batch mapping — the first stage (raw array → DTO) already ran
-per item inside `sendMany()`.
+`AbstractBatchMapper` is optional. Use it when all successful results belong to the same action and the application wants to consolidate them into one response object:
 
 ```php
 use IntegrationEngine\Core\Batch\AbstractBatchMapper;
@@ -216,64 +103,11 @@ final class AccommodationListBatchMapper extends AbstractBatchMapper
             throw array_values($results->errors())[0];
         }
 
-        return new AccommodationListResponse(
-            array_map(
-                fn(GetAccommodationResponse $dto) => Accommodation::fromDto($dto),
-                $results->responses(),
-            )
-        );
+        return new AccommodationListResponse($results->responses());
     }
 }
+
+$list = $engine->sendMany($requests)->mapWith(AccommodationListBatchMapper::class);
 ```
 
-Invoke it via `BatchResultCollection::mapWith()`:
-
-```php
-$list = $this->engine
-    ->sendMany($requests)
-    ->mapWith(AccommodationListBatchMapper::class); // AccommodationListResponse
-```
-
-The engine validates that every resolved item belongs to `GetAccommodationAction` before
-calling `consolidate()`. Items that failed during HTTP are passed as failures —
-`$results->hasFailures()` covers them. The consolidator decides whether to throw, skip,
-or log them.
-
-`AbstractBatchMapper` is for **homogeneous** batches (same action). For mixed-action
-batches, process `$results->responses()` directly.
-
----
-
-## Mixed actions
-
-The batch key is arbitrary — actions do not need to be the same:
-
-```php
-$results = $engine->sendMany([
-    'employee'   => new EngineRequest(GetEmployeeAction::getName(), context: DefaultActionContext::create(['id' => 7])),
-    'department' => new EngineRequest(GetDepartmentAction::getName(), context: DefaultActionContext::create(['id' => 3])),
-]);
-```
-
-Each item is mapped by its own action's mapper. The mapper invariant (`getAction() ===
-$action::class`) is enforced per item, exactly as in single `send()` calls.
-
----
-
-## Per-item connection
-
-`EngineRequest`'s `connection` argument works exactly like `send()`'s (see
-[Clients — runtime connection resolution](../advanced/architecture/clients.md#runtime-connection-resolution--connectionresolverinterface)):
-mix items for different connections in one batch by setting `connection` per
-item.
-
-```php
-$results = $engine->sendMany([
-    'acme'  => new EngineRequest(GetOrdersAction::getName(), connection: 'acme'),
-    'globex' => new EngineRequest(GetOrdersAction::getName(), connection: 'globex'),
-]);
-```
-
-Items sharing the same `connection` value resolve it once per `sendMany()`
-call, not once per item — the resolver isn't invoked redundantly for a
-batch of many items belonging to one connection.
+For mixed-action batches, consume `BatchResultCollection` directly instead of forcing a common batch mapper.

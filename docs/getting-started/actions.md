@@ -1,84 +1,77 @@
 # Actions
 
-An action declares one API endpoint: its HTTP method, path, and which mapper handles
-the response. No logic, no state — purely declarative.
+An action is the static contract for one external operation: method, path, response mapper and optional body type. Runtime data is supplied separately, so action classes remain stateless.
 
----
+## Define an action
 
-## The minimum
-
-Extend `AbstractAction` and implement three static methods:
+Extend `AbstractAction` and implement the three static methods:
 
 ```php
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
 
 final class GetEmployeeAction extends AbstractAction
 {
-    public static function getName(): string   { return 'GetEmployee'; }
-    public static function hasResponse(): bool { return true; }
-    public static function mapper(): ?string   { return GetEmployeeMapper::class; }
+    public static function getName(): string
+    {
+        return 'GetEmployee';
+    }
+
+    public static function hasResponse(): bool
+    {
+        return true;
+    }
+
+    public static function mapper(): ?string
+    {
+        return GetEmployeeMapper::class;
+    }
 }
 ```
 
-Register it in the integration YAML:
+Then register the action in that integration's YAML file:
 
 ```yaml
 GetEmployee:
     action: App\Infrastructure\Integrations\MyApi\GetEmployee\Request\GetEmployeeAction
     method: GET
-    path:   /employees/{id}
+    path: /employees/{id}
 ```
 
-That's it. The engine resolves the rest.
+`getName()` must match the YAML key. `hasResponse(): false` does not skip the HTTP call; it skips mapper resolution and returns `EmptyResponse` after the request succeeds.
 
----
+## Action YAML
 
-## The three methods
-
-| Method | Returns | Purpose |
-|---|---|---|
-| `getName()` | `string` | Key used in YAML and when calling `send()` / building an `EngineRequest` |
-| `hasResponse()` | `bool` | `false` for write actions (DELETE, fire-and-forget POST) — engine returns `EmptyResponse` |
-| `mapper()` | `?string` | Fully qualified mapper class. `null` only when `hasResponse()` is `false` |
-
-**`hasResponse(): false` still executes the HTTP request** — it just skips the mapping
-step and returns `EmptyResponse`. Use it for endpoints that return 204 or an empty body.
-
----
-
-## YAML options
+The action file accepts these fields:
 
 ```yaml
 ActionName:
-    action:  App\...\ActionClass   # required — fully qualified class name
-    method:  GET                   # optional — defaults to POST
-    path:    /resource/{id}        # optional — defaults to /
-    client:  rest                  # optional — rest (default) or graphql
-    authorization:                 # optional — see docs/authorization.md
+    action: App\...\ActionClass        # required
+    method: POST                       # optional, default POST
+    path: /resource/{id}               # optional, default /
+    body: App\...\ActionBody          # optional ActionBodyInterface class
+    authorization:                     # optional; see authorization.md
         type: bearer
-        token: '%env(TOKEN)%'
-    body:    App\...\BodyClass     # optional — class implementing ActionBodyInterface
+        token: '%env(API_TOKEN)%'
+    cache_ttl: 60                      # optional raw-response cache TTL in seconds
+    timeout: 5.0                       # optional per-action request timeout
 ```
 
----
+Transport selection (`client`, `client_service`, retries, host policy and middleware) belongs in `config/packages/integration_engine.yaml`, not in the action YAML. See [HTTP clients](../advanced/architecture/clients.md).
 
-## Stateless by design
+## Runtime data
 
-Actions are **immutable value objects**. The engine creates them via the internal
-`Action::create()` factory — you never instantiate them directly with `new`.
+The configuration adapter creates action instances through `AbstractAction::create()`. Application code normally does not instantiate actions directly. Data that varies per call uses separate contracts:
 
-Runtime values — path parameters, request body, correlation IDs, per-request headers —
-never belong in the action. They travel through separate channels:
-
-| Runtime value | Channel |
+| Runtime value | Contract |
 |---|---|
-| Path parameters / filters | `ActionContextInterface` |
+| Path parameters and request context | `ActionContextInterface` |
 | Request payload | `ActionBodyInterface` |
 | Per-request headers | `RequestHeadersInterface` |
+| Runtime endpoint override | `baseUrl` argument on `send()` / `EngineRequest` |
+| Runtime connection/credentials | `connection` argument when a resolver is configured |
 
-This means the same action class can safely serve concurrent requests without any shared
-mutable state. Two calls to `send()` with different contexts produce independent
-executions — the action is never mutated between them.
+Body-backed path placeholders are resolved first by `YamlConfigAdapter` and removed from the outgoing body. Any remaining `{placeholder}` is resolved later from the action context. See [Context and path resolution](context-and-path.md).
 
-The `getName()` return value must match the key in the YAML exactly — it is the
-lookup key used by `ConfigPort::getAction()`.
+## Invariants
+
+Actions carry no mutable request state. A configured action may therefore be reused safely across single and batch dispatch without leaking values between calls. When `hasResponse()` is `true`, `mapper()` must identify the mapper for that action; the engine validates that relationship before mapping.

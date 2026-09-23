@@ -2,7 +2,7 @@
 
 Status: draft, not tagged or published. The release is proposed as a minor version
 because it adds the `debug:integration` command alongside fixes and tests.
-The authoritative change list remains [CHANGELOG.md](../CHANGELOG.md), under Unreleased.
+The authoritative change list remains [CHANGELOG.md](../../CHANGELOG.md), under Unreleased.
 
 ## Release notes draft
 
@@ -43,7 +43,7 @@ sequential batch failures and invalid authorization/middleware configuration.
 
 ## Validation and publication
 
-Local quality results are recorded in [QUALITY.md](./advanced/QUALITY.md).
+Local quality results are recorded in [QUALITY.md](../advanced/QUALITY.md).
 Remote validation checked on 2026-09-22 for commit
 `6f3107cd98daef8114d05dab9e56dd4979347c9d`:
 
