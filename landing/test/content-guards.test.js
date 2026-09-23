@@ -48,6 +48,10 @@ const forbidden = [
   ['company-name claim', /SAP, Salesforce/],
   ['old demo repository', /integrationEngine-use-example/],
   ['outdated quality claim', /100% mutation|100% de mutation|646 tests/],
+  ['removed lifecycle events', /ActionStarted|ActionCompleted|ActionFailed/],
+  ['removed timing API', /httpDurationMs|mappingDurationMs|totalDurationMs/],
+  ['removed webhook idempotency API', /WebhookIdempotencyService|WebhookFingerprinter|WebhookIdempotencyPort/],
+  ['legacy wiki documentation links', /github\.com\/CarlosGude\/integrationEngine\/wiki\//],
 ];
 
 for (const [name, pattern] of forbidden) {

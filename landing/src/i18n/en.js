@@ -215,13 +215,13 @@ export default {
     // Observability section
     obsEyebrow: 'Observability',
     obsH2:      'Production monitoring built in.',
-    obsSub: "Lifecycle events expose timings for individual send() calls. Connect logging, metrics callbacks or error tracking with the observability helper. Applications provide metrics storage and exporters; batch lifecycle semantics are still being defined.",
+    obsSub: "Scalar lifecycle events expose bounded metadata for requests, mappings, failures, token refreshes and webhooks. Bundle-managed engines dispatch through Symfony's event dispatcher; applications own metrics storage and exporters.",
     obsFeatures: [
-        'Detailed timing: HTTP call duration + DTO mapping duration',
-        'Lifecycle events with metadata (action, integration, duration, status)',
-        'LifecycleEventDispatcher for direct subscription',
-        'SymfonyEventDispatcher adapter (#[AsEventListener])',
-        'ObservabilitySetup helper (logging + metrics callbacks + error tracking)',
+        'Scalar-only lifecycle metadata: no request, response, token or Throwable objects',
+        'Logical operation duration, status and response/exception class metadata',
+        'Symfony #[AsEventListener] support for bundle-managed engines',
+        'LifecycleEventDispatcher for deliberate manual/shared-dispatcher wiring',
+        'Optional ObservabilitySetup helper for logging, metrics callbacks and alerts',
     ],
     obsBtn:     'View observability guide →',
 
@@ -230,12 +230,12 @@ export default {
     wikiH2:        'Complete documentation and guides.',
     wikiSub:       'Configuration, patterns, testing, troubleshooting. Architecture Decision Records explaining every design choice. Migration guides for every upgrade path.',
     wikiFeatures: [
-        { title: 'Getting Started', desc: 'Quick start guide, installation, and basic usage', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Getting-Started' },
-        { title: 'Architecture', desc: 'Core abstractions, data flow, and design patterns', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Architecture' },
-        { title: 'Testing', desc: 'Test structure, strategies, and running tests', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Testing' },
-        { title: 'Lifecycle Events', desc: 'Observability hooks for integrations', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Lifecycle-Events' },
-        { title: 'Observability', desc: 'Logging, metrics, error tracking integration', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Observability' },
-        { title: 'Webhooks', desc: 'Receiving webhooks, signature verification, idempotency', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Webhooks' },
+        { title: 'Getting Started', desc: 'Quick start guide, installation, and basic usage', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/getting-started/README.md' },
+        { title: 'Architecture', desc: 'Core abstractions, data flow, and design patterns', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/ARCHITECTURE.md' },
+        { title: 'Testing', desc: 'Test structure, strategies, and running tests', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/TESTING.md' },
+        { title: 'Lifecycle Events', desc: 'Scalar observability events and timing semantics', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/LIFECYCLE.md' },
+        { title: 'Observability', desc: 'Symfony listeners, helper wiring, metrics and logging', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/OBSERVABILITY.md' },
+        { title: 'Webhooks', desc: 'Authenticated inbound webhooks and application-owned idempotency', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/WEBHOOK.md' },
     ],
     wikiBtn:     'Browse documentation →',
 

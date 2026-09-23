@@ -215,13 +215,13 @@ export default {
     // Observability section
     obsEyebrow: 'Observabilidad',
     obsH2:      'Monitoreo de producción incluido.',
-    obsSub: "Los eventos de ciclo de vida exponen tiempos de llamadas individuales a send(). Conecta logging, callbacks de métricas o seguimiento de errores con el helper de observabilidad. La aplicación aporta almacenamiento y exportadores de métricas; la semántica del ciclo de vida de lotes está pendiente de definición.",
+    obsSub: "Los eventos de ciclo de vida exponen metadatos escalares acotados para peticiones, mapeos, fallos, renovación de tokens y webhooks. Los engines gestionados por el bundle publican mediante el event dispatcher de Symfony; la aplicación aporta almacenamiento y exportadores de métricas.",
     obsFeatures: [
-        'Timing detallado: duración HTTP call + duración DTO mapping',
-        'Lifecycle events con metadata (action, integration, duration, status)',
-        'LifecycleEventDispatcher para suscripción directa',
-        'Adaptador SymfonyEventDispatcher (#[AsEventListener])',
-        'ObservabilitySetup helper (logging + metrics callbacks + error tracking)',
+        'Metadatos escalares: sin objetos request, response, token ni Throwable',
+        'Duración lógica de operación, status y clase de respuesta/excepción',
+        'Soporte #[AsEventListener] de Symfony para engines gestionados por el bundle',
+        'LifecycleEventDispatcher para wiring manual/compartido explícito',
+        'ObservabilitySetup opcional para logging, métricas y alertas',
     ],
     obsBtn:     'Ver guía de observabilidad →',
 
@@ -230,12 +230,12 @@ export default {
     wikiH2:        'Documentación completa y guías.',
     wikiSub:       'Configuración, patrones, testing, troubleshooting. Architecture Decision Records explicando cada decisión de diseño. Guías de migración para cada actualización.',
     wikiFeatures: [
-        { title: 'Getting Started', desc: 'Guía de inicio rápido, instalación y uso básico', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Getting-Started' },
-        { title: 'Architecture', desc: 'Abstracciones, flujo de datos y patrones de diseño', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Architecture' },
-        { title: 'Testing', desc: 'Estructura de tests, estrategias y ejecución', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Testing' },
-        { title: 'Lifecycle Events', desc: 'Hooks de observabilidad para integraciones', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Lifecycle-Events' },
-        { title: 'Observability', desc: 'Logs, métricas e integración de error tracking', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Observability' },
-        { title: 'Webhooks', desc: 'Recibir webhooks, verificación de firma, idempotencia', href: 'https://github.com/CarlosGude/integrationEngine/wiki/Webhooks' },
+        { title: 'Getting Started', desc: 'Guía de inicio rápido, instalación y uso básico', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/getting-started/README.md' },
+        { title: 'Architecture', desc: 'Abstracciones, flujo de datos y patrones de diseño', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/ARCHITECTURE.md' },
+        { title: 'Testing', desc: 'Estructura de tests, estrategias y ejecución', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/TESTING.md' },
+        { title: 'Lifecycle Events', desc: 'Eventos escalares de observabilidad y semántica temporal', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/LIFECYCLE.md' },
+        { title: 'Observability', desc: 'Listeners Symfony, wiring del helper, métricas y logging', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/OBSERVABILITY.md' },
+        { title: 'Webhooks', desc: 'Webhooks autenticados e idempotencia propiedad de la aplicación', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/WEBHOOK.md' },
     ],
     wikiBtn:     'Explorar documentación →',
 
