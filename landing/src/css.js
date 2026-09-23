@@ -299,4 +299,290 @@ footer a:hover { text-decoration: underline; }
 .status-card strong { color: var(--blue); font-weight: 700; }
 .status-footer { text-align: center; margin-top: 1.5rem; }
 .status-footer a { display: inline-block; }
+
+/* ── MOBILE RESPONSIVE ── */
+.nav-mobile-langs { display: none; }
+
+@media (max-width: 600px) {
+  .container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .s-light,
+  .s-white,
+  .s-dark,
+  .cta-section {
+    padding: 3rem 1rem;
+  }
+
+  .topnav {
+    padding: 0 .75rem;
+    gap: .5rem;
+  }
+
+  .hero {
+    padding: 3.5rem 1rem 3rem;
+  }
+
+  .hero::before {
+    width: 100%;
+  }
+
+  .hero-badge {
+    font-size: .64rem;
+    letter-spacing: .08em;
+  }
+
+  .hero h1 {
+    font-size: clamp(1.8rem, 9vw, 2.4rem);
+  }
+
+  .hero p {
+    font-size: .95rem;
+    margin-bottom: 2rem;
+  }
+
+  .hero-benefits {
+    gap: .5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .benefit-pill {
+    max-width: 100%;
+    white-space: normal;
+    text-align: left;
+  }
+
+  .install-box {
+    display: block;
+    width: min(100%, 430px);
+    max-width: 100%;
+    margin: 0 auto 1.5rem;
+    padding: .7rem .85rem;
+    font-size: .76rem;
+    overflow-wrap: anywhere;
+  }
+
+  .hero-actions,
+  .cta-actions,
+  .mid-cta-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-actions {
+    max-width: 360px;
+    margin: 0 auto;
+  }
+
+  .hero-actions a,
+  .cta-btn,
+  .mid-cta-actions a {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .trust-bar {
+    padding: .7rem 1rem;
+    gap: .5rem;
+  }
+
+  .trust-sep {
+    display: none;
+  }
+
+  .s-heading {
+    font-size: clamp(1.45rem, 7vw, 1.9rem);
+    line-height: 1.2;
+  }
+
+  .s-sub {
+    margin-bottom: 1.5rem;
+    font-size: .9rem;
+  }
+
+  .compare-wrap,
+  .steps-grid,
+  .biz-grid,
+  .proof-grid,
+  .ext-grid,
+  .status-grid,
+  .example-panels,
+  .panel-duo,
+  .feature-grid {
+    gap: 1rem;
+  }
+
+  .compare-col,
+  .step,
+  .biz-card,
+  .proof-card,
+  .status-card,
+  .ext-card {
+    min-width: 0;
+  }
+
+  .compare-col-header {
+    padding: .6rem .85rem;
+  }
+
+  .compare-item {
+    padding: .65rem .85rem;
+    align-items: flex-start;
+    gap: .55rem;
+    font-size: .84rem;
+  }
+
+  .step,
+  .biz-card,
+  .proof-card,
+  .status-card,
+  .ext-card {
+    padding: 1rem;
+  }
+
+  .patron-grid {
+    gap: 2.5rem;
+  }
+
+  .patron-header {
+    gap: .75rem;
+    margin-bottom: 1rem;
+  }
+
+  .patron-num {
+    width: 28px;
+    height: 28px;
+    font-size: .78rem;
+  }
+
+  .patron-meta h3 {
+    font-size: 1rem;
+  }
+
+  .cpanel-head {
+    padding: .5rem .75rem;
+  }
+
+  .file-label {
+    padding: .4rem .75rem;
+    overflow-wrap: anywhere;
+  }
+
+  .code-block,
+  .struct-panel pre,
+  .step-tree {
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .code-block {
+    min-height: 0;
+    padding: .75rem;
+    font-size: .68rem;
+    line-height: 1.65;
+  }
+
+  .struct-panel pre {
+    padding: .85rem;
+    font-size: .68rem;
+  }
+
+  .step-tree {
+    padding: .65rem .7rem;
+    font-size: .68rem;
+  }
+
+  .insight {
+    padding: .75rem .85rem;
+  }
+
+  .pattern-expand-btn {
+    padding: .85rem 1rem;
+    font-size: .9rem;
+  }
+
+  .example-cta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .example-cta .btn-primary,
+  .example-cta .btn-outline {
+    width: 100%;
+    text-align: center;
+  }
+
+  .mid-cta {
+    padding: 2rem 1rem;
+  }
+
+  .gen-docs-link {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .cta-email-addr {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  footer {
+    padding: 2rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .topnav > .lang-pill {
+    display: none;
+  }
+
+  .nav-mobile-langs {
+    display: flex;
+    gap: .5rem;
+    padding: .65rem 1rem .4rem;
+  }
+
+  .nav-mobile-menu .nav-mobile-langs a {
+    flex: 1;
+    padding: .5rem .75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .75rem;
+  }
+
+  .nav-mobile-menu .nav-mobile-langs a.lang-active {
+    color: #fff;
+    background: var(--navy-light);
+    border-color: var(--blue);
+  }
+
+  .nav-mobile-menu .nav-mobile-langs a.lang-inactive {
+    color: var(--muted);
+  }
+
+  .hero-badge {
+    line-height: 1.5;
+  }
+
+  .install-box {
+    font-size: .72rem;
+  }
+
+  .cta-btn {
+    flex-wrap: wrap;
+  }
+
+  .cta-email-addr {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
 `;

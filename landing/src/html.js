@@ -96,6 +96,10 @@ export function getHTML(lang = 'en') {
   <a href="https://github.com/CarlosGude/integrationEngine-demo" target="_blank" rel="noopener">${t.demoSource} ↗</a>
   <a href="${docsHref}" target="_blank" rel="noopener">Docs ↗</a>
   <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener">GitHub ↗</a>
+  <div class="nav-mobile-langs">
+    <a href="?lang=es" class="${isEs ? 'lang-active' : 'lang-inactive'}">ES</a>
+    <a href="?lang=en" class="${isEs ? 'lang-inactive' : 'lang-active'}">EN</a>
+  </div>
 </div>
 
 <!-- HERO -->
