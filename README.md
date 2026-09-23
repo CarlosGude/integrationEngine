@@ -1,6 +1,6 @@
 # IntegrationEngine
 
-**Version:** 8.0.1
+**Version:** 8.0.3
 
 **PHP:** >=8.2 | **Symfony:** 6.4, 7.x, 8.x
 
