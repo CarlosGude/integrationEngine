@@ -5,58 +5,60 @@
 
 ## Context
 
-In development and testing, the Symfony Profiler records integration calls for debugging:
-- Method, status, URL, duration
-- But **not** the request/response body or authorization headers
+In development and testing, the Symfony Profiler records integration calls for debugging. Profiler data may be persisted to disk and inspected through the browser, so recording request bodies, response bodies, authorization headers or arbitrary exception messages would create an unnecessary secret/PII exposure path.
 
-Developers use this to trace what APIs were called. However, if we record authorization headers or request bodies, we risk:
-1. Logging tokens and API keys to the profiler (disk, inspectable in browser)
-2. Exposing user input or sensitive data (query parameters, POST payloads)
-3. Violating privacy regulations (GDPR, etc.)
+In particular, an upstream HTTP error may include its response body in an exception message. Display-time redaction would be too late because the sensitive value would already have entered profiler storage.
 
 ## Decision
 
-**Record only the bare minimum: method, path template, response status, timing.**
+**Record metadata, never payloads or exception messages.**
 
-The `IntegrationCall` object (stored in the profiler) records:
-- Action name
-- HTTP method
-- Path template (not resolved)
-- HTTP status
-- Duration
-- Number of attempts (if retried)
+The profiler's `IntegrationCall` records:
 
-It **explicitly does not** record:
-- Authorization headers
-- Request body
-- Response body
-- Context/path parameters
+- integration name and action name;
+- HTTP method;
+- raw action path template, not the resolved URL;
+- duration;
+- HTTP status when known;
+- whether the result came from cache;
+- the exception **class name** when a call fails.
+
+It explicitly does **not** record:
+
+- authorization headers or credentials;
+- request or response bodies;
+- resolved context/path values;
+- exception messages or upstream error bodies.
+
+`IntegrationEngineDataCollector::recordCall()` receives the original throwable only long enough to classify the failure by class; its message is discarded before the `IntegrationCall` is created.
 
 ## Alternatives considered
 
-1. **Record everything, hash sensitive fields**
-   - Pros: complete audit trail
-   - Cons: hashing is cryptographic overhead; still leaks field names and structure
-   - Rejected: minimal recording is safer and simpler
+1. **Record everything and redact at display time**
+   - Pros: richer debugging information
+   - Cons: sensitive data still reaches profiler memory/storage and a rendering regression could expose it
+   - Rejected: do not retain data the profiler does not need
 
-2. **Redact secrets at display time** (Profiler only)
-   - Pros: complete logging for emergency use
-   - Cons: risk of displaying secrets if display code breaks; still in memory
-   - Rejected: don't record if you don't need it
+2. **Special-case only HTTP response exceptions**
+   - Pros: protects the most obvious upstream-body path
+   - Cons: arbitrary exception messages can also contain tokens, URLs or application data
+   - Rejected: the invariant is simpler and stronger when no exception message is stored
 
 ## Consequences
 
 **Positive:**
-- Profiler is safe for shared environments (CI, shared dev machines)
-- No accidental secret leakage to browser tools
-- Reduced profiler storage overhead
+
+- The profiler cannot leak an upstream response body through `IntegrationCall::error`.
+- Error rows still identify the exception class and HTTP status.
+- The rule is enforced by a regression test containing a deliberate secret value.
 
 **Negative:**
-- Debugging API issues requires looking at HTTP client logs or the integration YAML separately
-- If a call fails mysteriously, the profiler won't show you why (body not logged)
+
+- Detailed provider error text must be inspected through an explicitly configured application/HTTP-client logging strategy rather than the profiler.
 
 ## References
 
-- [`IntegrationCall`](../../src/Infrastructure/Debug/IntegrationCall.php) — profiler data structure
-- [`TracingMiddleware`](../../src/Infrastructure/Debug/TracingMiddleware.php) — profiler integration
-- Profiler secret-security test to be added in v4.6 (aspirational ADR)
+- [`IntegrationCall`](../../src/Infrastructure/Debug/IntegrationCall.php)
+- [`IntegrationEngineDataCollector`](../../src/Infrastructure/Debug/IntegrationEngineDataCollector.php)
+- [`TracingMiddleware`](../../src/Infrastructure/Debug/TracingMiddleware.php)
+- [Profiler regression test](../../tests/Infrastructure/Debug/IntegrationEngineDataCollectorTest.php)

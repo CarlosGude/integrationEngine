@@ -18,6 +18,10 @@ use Symfony\Component\HttpKernel\DataCollector\DataCollectorInterface;
  * at collect() time, since the engine has no single point where every
  * outgoing call funnels through before the response is built.
  *
+ * Exception messages are deliberately discarded. The profiler stores only the
+ * exception class and status metadata so upstream response bodies, credentials
+ * or other sensitive text cannot be copied into profiler storage.
+ *
  * Excluded from the bundle's blanket service autodiscovery (see services.yaml)
  * because DataCollectorInterface comes from symfony/http-kernel, which is not
  * a required dependency of this bundle — only registered by IntegrationCompilerPass
@@ -44,7 +48,7 @@ final class IntegrationEngineDataCollector implements DataCollectorInterface
             method: $method,
             path: $path,
             durationMs: $durationMs,
-            error: $error?->getMessage(),
+            error: null === $error ? null : $error::class,
             statusCode: $statusCode,
             cached: $cached,
         );

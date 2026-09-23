@@ -27,6 +27,29 @@ final class IntegrationEngineDataCollectorTest extends TestCase
     }
 
     #[Test]
+    public function recordCallStoresExceptionClassButNeverExceptionMessage(): void
+    {
+        $collector = new IntegrationEngineDataCollector();
+        $secret = 'sk_live_never_store_me';
+
+        $collector->recordCall(
+            'my_api',
+            'Charge',
+            'POST',
+            '/charges',
+            5.0,
+            new RequestResponseException(422, 'upstream body contains '.$secret),
+            422,
+        );
+
+        $call = $collector->getCalls()[0];
+
+        self::assertSame(RequestResponseException::class, $call->error);
+        self::assertStringNotContainsString($secret, $call->error ?? '');
+        self::assertSame(422, $call->statusCode);
+    }
+
+    #[Test]
     public function getTotalDurationMsSumsEveryRecordedCall(): void
     {
         $collector = new IntegrationEngineDataCollector();

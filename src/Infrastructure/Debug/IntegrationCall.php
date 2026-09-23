@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace IntegrationEngine\Infrastructure\Debug;
 
 /**
- * One recorded outgoing call, captured by TraceableClient and exposed to
- * the profiler template by IntegrationEngineDataCollector.
+ * One recorded outgoing call, captured by TracingMiddleware and exposed to the
+ * profiler template by IntegrationEngineDataCollector.
+ *
+ * error contains only an exception class name. Exception messages are never
+ * persisted because they may contain upstream response bodies or secrets.
  */
 final readonly class IntegrationCall
 {
