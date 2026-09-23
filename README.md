@@ -1,8 +1,11 @@
 # IntegrationEngine
 
 **Version:** 8.0.1
+
 **PHP:** >=8.2 | **Symfony:** 6.4, 7.x, 8.x
+
 **Packagist:** [carlosgude/integration-engine](https://packagist.org/packages/carlosgude/integration-engine)
+
 **Demo:** [integrationengine.dev](https://integrationengine.dev)
 
 ---
