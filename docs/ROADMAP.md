@@ -4,7 +4,7 @@ This roadmap separates shipped behavior from proposals. It intentionally avoids 
 
 ## Recently shipped
 
-### v8.0.1 / v8.0.0
+### v8.0.x
 
 - scalar-only lifecycle/webhook observability events;
 - YAML-driven generic webhooks with typed mapping;
@@ -19,7 +19,7 @@ The exact breaking changes are in [UPGRADE-8.0.md](./UPGRADE-8.0.md) and release
 
 ## Current branch
 
-`v8.0.1` is the latest tag. It keeps the v8.0.0 public architecture and adds documentation/API-reference corrections plus the mutation-gate adjustment recorded in `CHANGELOG.md`. This documentation consolidation changes no runtime contract.
+`v8.0.3` is the latest tag and points at the current `main` baseline. Runtime/API changes in the v8 line are captured by v8.0.0/v8.0.1; v8.0.2 and v8.0.3 only adjust README/documentation. This documentation consolidation changes no runtime contract.
 
 ## Next proposals
 
