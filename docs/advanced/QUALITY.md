@@ -10,7 +10,7 @@ is used.
 | Static analysis | `make stan` | PHPStan max over src and tests, no baseline |
 | Tests | `make test` | Green, no skipped/incomplete tests |
 | Architecture | `make deptrac` | Zero violations, uncovered dependencies or skipped violations |
-| Mutation | `make mutation` | MSI >=85%, covered MSI >=95%; includes uncovered code |
+| Mutation | `make mutation` | MSI >=85%, covered MSI >=90%; includes uncovered code |
 | Landing | `cd landing && node --test` | EN/ES parity and content checks; dedicated CI job |
 
 ```bash

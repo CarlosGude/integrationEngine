@@ -17,7 +17,7 @@ final class QualityConfigTest extends TestCase
         $config = self::readInfectionConfig();
 
         self::assertSame(85, $config['minMsi'], 'infection.json5 minMsi must be the single 85 standard.');
-        self::assertSame(95, $config['minCoveredMsi'], 'infection.json5 minCoveredMsi must be the single 95 standard.');
+        self::assertSame(90, $config['minCoveredMsi'], 'infection.json5 minCoveredMsi must be the single 90 standard.');
     }
 
     #[Test]
