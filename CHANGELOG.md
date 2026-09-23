@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- Symfony Profiler no longer stores exception messages from failed integration calls. It records only the exception class and HTTP status when available, preventing upstream response bodies or other sensitive exception text from being persisted in profiler storage.
+
 ### Fixed
 
 - Demo app webhook mapper updated to v8.0 webhook API (static `eventType()` and `transform()` methods).
@@ -27,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-- `docs/DOCUMENTACION_v8.0.0.md` referenced classes that don't exist: the removed `ActionCompleted` event, a `RequestEncoding` enum that was never implemented, and `RequestMiddlewareInterface`/`Request` under the wrong namespace. Corrected to match the actual v8.0.0 API (`ResponseMapped`/`RequestFailed` events, `FormEncodedBodyInterface` for form-encoded bodies, `Core\Contract\Client` namespace).
+- `docs/archived/DOCUMENTACION_v8.0.0.md` referenced classes that don't exist: the removed `ActionCompleted` event, a `RequestEncoding` enum that was never implemented, and `RequestMiddlewareInterface`/`Request` under the wrong namespace. Corrected to match the actual v8.0.0 API (`ResponseMapped`/`RequestFailed` events, `FormEncodedBodyInterface` for form-encoded bodies, `Core\Contract\Client` namespace).
 - Mutation testing's required Covered Code MSI lowered from 95% to 90% to match actual measured coverage (92.46%); the previous threshold was unreachable and had left CI red on every push since the v8.0.0 release.
 
 ## [8.0.0] - 2026-09-22

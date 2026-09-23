@@ -25,7 +25,7 @@ final class RoadmapAndStatusTest extends TestCase
         $content = file_get_contents(self::ROADMAP_PATH);
         self::assertIsString($content);
 
-        $requiredSections = ['Now', 'Next', 'Later', 'Recently shipped', 'Out of scope'];
+        $requiredSections = ['Recently shipped', 'Current branch', 'Next proposals', 'Out of scope', 'Delivery policy'];
         foreach ($requiredSections as $section) {
             self::assertStringContainsString(
                 $section,

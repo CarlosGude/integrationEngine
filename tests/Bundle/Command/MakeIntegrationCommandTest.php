@@ -174,7 +174,7 @@ final class MakeIntegrationCommandTest extends TestCase
 
     /**
      * The CI job that validates the generator on PHP 8.2 (see
-     * .github/workflows/php.yml) runs this command with --no-interaction
+     * .github/workflows/ci.yml) runs this command with --no-interaction
      * against a bare project with no bundle config yet — every question
      * must fall back to its default instead of blocking on input.
      */
