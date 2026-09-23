@@ -45,7 +45,7 @@ make stan PATHS='src/Core/IntegrationEngine.php'
 | `AbstractMapper` | Transforms raw response `array` body + response `array` headers → typed `ResponseInterface`. One mapper per action, enforced at runtime |
 | `ResponseInterface` | DTO marker; must implement `toArray()`. Represents the external API shape, not domain objects |
 | `ActionContextInterface` | Carries dynamic values at call time (path params, filter values). Default: `DefaultActionContext` |
-| `ActionBodyInterface` | Request payload converted to JSON (REST) or GraphQL query. Also the source for body-sourced path placeholders (see Path Resolution) |
+| `ActionBodyInterface` | Request payload contract. REST bodies are JSON by default; `FormEncodedBodyInterface` selects form encoding for one action; `GraphQLBodyInterface` supplies query + variables. Also the source for body-sourced path placeholders |
 | `IntegrationEngine` | Orchestrator: Config → Connection → Client → Mapper → Response. Pure orchestration; delegates dispatch logic to internal helpers |
 | `AuthenticationHandler` | Internal: resolves dynamic tokens and caches them. Returns action with static auth token injected, or throws if token fetch fails |
 | `ConnectionResolver` | Internal: resolves opaque connection info to credentials, applies authorization overrides |
@@ -60,16 +60,16 @@ make stan PATHS='src/Core/IntegrationEngine.php'
 | `ConnectionResolverInterface` | App-owned: resolves opaque runtime `$connection` info (e.g. a tenant id) to `ConnectionCredentials`. Configured per integration via `connection_resolver` |
 | `ConnectionCredentials` | `{baseUrl, authorization, connectionId}`, all optional — only what actually varies per connection needs to be set. `connectionId` namespaces the dynamic-auth token cache when several connections share one `baseUrl` |
 | `RequestMiddlewareInterface` | Runs on the fully-built `Request` (method, resolved URL, headers, body) right before the HTTP call — for concerns needing the final request, e.g. OAuth 1.0a signing. Distinct from `AbstractClientMiddleware`, which runs before path/body resolution |
-| `Request` | Value object passed to `RequestMiddlewareInterface`: `{method, url, headers, body}` |
+| `Request` | Fully-built value object passed to `RequestMiddlewareInterface`: `{method, url, headers, body, bodyEncoding, timeout}` |
 
 ### Key Ports and Adapters
 
 - **`ConfigPort`** — loads action config from YAML (`YamlConfigAdapter`)
-- **`ClientInterface`** — executes HTTP. Built-in: `SymfonyHttpClientAdapter` (REST) and `GraphQLClientAdapter`. Tagged `integration_engine.client_adapter`; multiple adapters are discovered automatically
+- **`ClientInterface`** — executes HTTP. Built-ins: `SymfonyHttpClientAdapter` (`rest`), `GraphQLClientAdapter` (`graphql`) and `FormEncodedClientAdapter` (`form_encoded`). Tagged `integration_engine.client_adapter`; multiple adapters are discovered automatically
 - **`BatchClientInterface`** — optional capability: executes a batch of `PreparedRequest`s concurrently, returning `{body, headers}` or Throwable per key. `SymfonyHttpClientAdapter` implements it (lazy responses: dispatch all, then consume). Clients without it fall back to sequential sends
 - **`AbstractClientMiddleware`** — base class for cross-cutting concern hooks with `process()` (single) and `processMany()` (batch). Provides a default `processMany()` passthrough — override only when batch-aware behaviour is needed. Tag services with `integration_engine.middleware` to register them; declare them under `middlewares:` in each integration's config to control injection order
 - **`MiddlewareClient`** — always wraps the HTTP adapter. Layer order (outermost → innermost): `CachingMiddleware` → user middlewares in declaration order → `TracingMiddleware` (debug only) → HTTP adapter. Always implements `BatchClientInterface` and `DynamicBaseUrlClientInterface`
-- **`RequestMiddlewareInterface`** — optional capability wired *inside* `SymfonyHttpClientAdapter`/`GraphQLClientAdapter` (not `client_service`), tagged `integration_engine.request_middleware`, declared under `request_middlewares:`. Runs on the resolved `Request` right before transport. When configured, `sendMany()` degrades to sequential `send()` calls (loses `BatchClientInterface` concurrency) so each item's middleware chain can observe/short-circuit its own response
+- **`RequestMiddlewareInterface`** — optional capability wired inside all three built-in adapters (`rest`, `graphql`, `form_encoded`; not `client_service`), tagged `integration_engine.request_middleware`, declared under `request_middlewares:`. Runs on the resolved `Request` right before transport. When configured, `sendMany()` falls back to sequential per-item execution so each middleware chain can observe/short-circuit its own response
 - **`CachePort`** — caches dynamic auth tokens with `get`/`set`/`delete` (`Psr6CacheAdapter` wrapping Symfony's PSR-6 cache)
 - **`MiddlewareResolver`** — DI extension helper: validates and resolves tagged middlewares and request middlewares from the DI container into integration-specific ordered lists
 - **`AdapterMapBuilder`** — DI extension helper: builds a type → class-string map from tagged client adapters, with validation that classes exist and implement `ClientAdapterInterface`
@@ -104,7 +104,7 @@ Application services translate infrastructure DTOs to domain objects — DTOs mu
 
 **Sequential fallback**: When request middlewares are configured (`request_middlewares:` in integration config), concurrency is disabled — each request executes sequentially through its own middleware chain. This is by design: request middlewares may need to observe or short-circuit individual responses (e.g., OAuth 1.0a signing). Clients expose this via `sendManySequentially()` (private method, used internally when middleware chains are active).
 
-Dynamic auth in batches: the token is resolved once per token action (not per item). Items that entered the batch with a pre-batch cached token get the single 401 retry with one shared fresh token; a token fetched during the batch counts as fresh for every item, so their 401s are final.
+Dynamic auth in batches is shared per token cache key: integration + token action + connection discriminator. Items sharing that key reuse one fetched token. Items that entered with a pre-batch cached token may get the single 401 refresh; a token fetched during the current batch is already fresh, so its 401 is final.
 
 ### Path Resolution
 
@@ -124,7 +124,7 @@ When an action has a dynamic auth config, the engine:
 3. Reconstructs the original action with the token as static auth
 4. If a **cached** token is rejected with HTTP 401, deletes it and retries once with a fresh token (fresh-token 401s and non-401 errors propagate without retry)
 
-Per-worker token fetches under PHP-FPM are expected and by design.
+The default token cache is `Psr6CacheAdapter` over Symfony `cache.app`. Process-local vs shared behavior therefore depends on the consuming application's Symfony Cache configuration; the engine does not assume one topology.
 
 ### Runtime Connection Resolution
 
@@ -136,7 +136,7 @@ For integrations whose base URL and/or authorization vary per call (multi-connec
 
 ### Request Middleware
 
-For request signing schemes that need the *fully-built* request (method, resolved URL, headers, body) rather than the pre-resolution action — e.g. OAuth 1.0a — implement `RequestMiddlewareInterface` and tag it `integration_engine.request_middleware`, declared under `request_middlewares:` per integration (ordered list, outermost first, same convention as `middlewares:`). Runs inside `SymfonyHttpClientAdapter`/`GraphQLClientAdapter` only — a custom `client_service` owns its own request construction and isn't affected. Not calling `$next` short-circuits the request (reject by throwing, or return a canned response); calling it continues the chain and lets the middleware observe/wrap the response on the way back.
+For request signing schemes that need the *fully-built* request (method, resolved URL, headers, body) rather than the pre-resolution action — e.g. OAuth 1.0a — implement `RequestMiddlewareInterface` and tag it `integration_engine.request_middleware`, declared under `request_middlewares:` per integration (ordered list, outermost first, same convention as `middlewares:`). Runs inside the built-in REST, GraphQL and form-encoded adapters — a custom `client_service` owns its own request construction and isn't affected. Not calling `$next` short-circuits the request (reject by throwing, or return a canned response); calling it continues the chain and lets the middleware observe/wrap the response on the way back.
 
 ### Mapper Invariant
 
@@ -149,7 +149,7 @@ Tests live in `tests/` with `Fake/` subdirectories containing minimal test doubl
 - `tests/Core/` — engine contract, action path resolution, dynamic auth (including 401 retry), connection resolution, mapper invariant
 - `tests/Infrastructure/` — HTTP adapter headers/response headers, request middleware, GraphQL adapter, PSR-6 cache, adapter resolver
 - `tests/Bundle/` — bundle configuration, DI extension, compiler pass, generator, `make:integration` command
-- `tests/Fake/` — `FakeClient`, `FakeCache`, `FakeConfigPort`, `FakeContext`, `FakeMiddleware`, `FakeConnectionResolver`, `FakeRequestMiddleware`, `FakeSlowAction`/`FakeSlowMapper` (measurable delays for the lifecycle durations), `WebhookIdempotencyAdapter`, etc.
+- `tests/Fake/` — minimal fakes such as `FakeClient`, `FakeCache`, `FakeConfigPort`, `FakeContext`, `FakeMiddleware`, `FakeConnectionResolver`, `FakeRequestMiddleware`, `FakeSlowAction`/`FakeSlowMapper`, token fakes and event/logging fakes.
 
 ## Creating a New Integration
 
@@ -180,9 +180,9 @@ integration_engine:
 
 Tap into integration lifecycle for observability. See **[LIFECYCLE.md](./docs/LIFECYCLE.md)** for:
 
-- `ActionStarted`, `ActionCompleted`, `ActionFailed` events
-- Examples: logging, Prometheus metrics, error tracking (Sentry), audit trails
-- Built-in dispatcher + Symfony EventDispatcher adapter
+- `RequestSent`, `ResponseMapped`, `RequestFailed`, `TokenRefreshed`, `WebhookReceived`, `WebhookRejected`
+- Scalar-only metadata: no request/response/token/exception objects in lifecycle events
+- Bundle-managed engines dispatch through Symfony's `event_dispatcher`; `LifecycleEventDispatcher` is for manual/shared-dispatcher wiring
 
 ---
 
@@ -190,7 +190,7 @@ Tap into integration lifecycle for observability. See **[LIFECYCLE.md](./docs/LI
 
 For **receiving** webhooks from external platforms, see **[WEBHOOK.md](./docs/WEBHOOK.md)**. It covers:
 
-- How the bundle plugs into Symfony's Webhook component: `IntegrationWebhookRequestParser` → `#[AsRemoteEventConsumer]` → `WebhookEventDispatcher` → typed event listeners
-- Signature verifiers for the three common schemes (hex HMAC behind a prefix, raw HMAC in base64, timestamped HMAC) and payload mapping
-- Idempotency: `WebhookIdempotencyService` and `WebhookFingerprinter`, over a `WebhookIdempotencyPort` you implement
-- Step-by-step guide and end-to-end test example
+- How the bundle plugs into Symfony's Webhook/RemoteEvent components: `IntegrationWebhookRequestParser` → `MappedRemoteEvent` → application consumer
+- Signature verifiers for the three common schemes (hex HMAC behind a prefix, raw HMAC in base64, timestamped HMAC) and typed payload mapping
+- Idempotency belongs to the consuming application; v8 ships no bundle-owned idempotency service or storage port
+- Symfony's standard webhook controller uses Messenger; custom parser/controller wiring can choose a different transport policy

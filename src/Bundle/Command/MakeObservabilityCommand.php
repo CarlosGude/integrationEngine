@@ -147,12 +147,14 @@ class {$className}ObservabilitySetup
      */
     private function recordError(RequestFailed \$event): void
     {
-        // \\Sentry\\captureException(\$event->error(), [
-        //     'tags' => [
-        //         'integration' => '{$integration}',
-        //         'action' => \$event->action,
-        //     ],
-        //     'extra' => ['duration_ms' => \$event->durationMs],
+        // RequestFailed intentionally carries no Throwable object or raw
+        // upstream message. Send bounded scalar metadata to your error backend:
+        // \$this->errors->capture([
+        //     'integration' => '{$integration}',
+        //     'action' => \$event->action,
+        //     'exception_class' => \$event->exceptionClass,
+        //     'status_code' => \$event->statusCode,
+        //     'duration_ms' => \$event->durationMs,
         // ]);
     }
 }

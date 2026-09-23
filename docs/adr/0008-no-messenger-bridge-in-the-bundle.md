@@ -1,4 +1,4 @@
-# 0008 · No Messenger bridge in the bundle
+# 0008 · No bundle-owned Messenger bridge
 
 - **Status:** Accepted — restored by ADR 0014 after being superseded by ADR 0011
 - **Date:** 2026-09-11
@@ -15,12 +15,14 @@ This seems helpful: "integration errors? Queue them automatically." However, it 
 
 ## Decision
 
-**The bundle does not include Messenger integration. Webhooks are passed to the application; queuing is the app's choice.**
+**The bundle does not own a Messenger message/handler/retry abstraction. Delivery and queue policy remain the consuming application's responsibility.**
 
 Instead:
-- The bundle parses and verifies webhooks
-- Returns a typed `WebhookEvent` to the application
-- The application decides: handle immediately or queue?
+
+- the bundle parses, verifies and maps a webhook to `MappedRemoteEvent`;
+- Symfony's standard Webhook controller may use Messenger/`ConsumeRemoteEventMessage` as its transport mechanism;
+- the bundle does not add a second message type, handler, retry policy or DLQ abstraction;
+- an application using a custom controller/transport may choose another delivery mechanism.
 
 This keeps the bundle focused on **what arrives** (integration mechanics), not **when it's processed** (application deployment model).
 
@@ -45,9 +47,8 @@ This keeps the bundle focused on **what arrives** (integration mechanics), not *
 - Easier to test (no queue stubbing in bundle tests)
 
 **Negative:**
-- Apps using Messenger must write their own listener and dispatcher
-- No built-in retry mechanism (app must implement or use Messenger's)
-- More boilerplate in the consuming app
+- Queue routing, retry and failure-transport policy live in the consuming Symfony application
+- Applications not using Symfony's standard webhook controller own their delivery mechanism explicitly
 
 ## References
 

@@ -19,7 +19,7 @@ The exact breaking changes are in [UPGRADE-8.0.md](./UPGRADE-8.0.md) and release
 
 ## Current branch
 
-`v8.0.3` is the latest tag and points at the current `main` baseline. Runtime/API changes in the v8 line are captured by v8.0.0/v8.0.1; v8.0.2 and v8.0.3 only adjust README/documentation. This documentation consolidation changes no runtime contract.
+`v8.0.3` is the latest tag. Current `main` is ahead of that tag with the post-release documentation consolidation and follow-up maintenance. Runtime/API changes in the tagged v8 line are captured by v8.0.0/v8.0.1; v8.0.2 and v8.0.3 are documentation-only tags.
 
 ## Next proposals
 

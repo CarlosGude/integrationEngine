@@ -411,108 +411,70 @@ MyApi/
     </div>
     <div class="panel-stack">
 
-      <!-- Step 1: Generate -->
+      <div class="example-panel-full">
+        <div class="example-code-panel">
+          <div class="file-label">Recommended: listen to the scalar v8 lifecycle events</div>
+          <div class="code-block"><span class="kw">use</span> IntegrationEngine\\Core\\Event\\ResponseMapped;
+<span class="kw">use</span> IntegrationEngine\\Core\\Event\\RequestFailed;
+<span class="kw">use</span> Symfony\\Component\\EventDispatcher\\Attribute\\AsEventListener;
+
+<span class="kw">final class</span> <span class="cls">IntegrationObservability</span>
+{
+    <span class="attr">#[AsEventListener]</span>
+    <span class="kw">public function</span> <span class="fn">onSuccess</span>(<span class="cls">ResponseMapped</span> <span class="var">$event</span>): <span class="kw">void</span>
+    {
+        <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">observe</span>(
+            <span class="str">'integration.duration_ms'</span>,
+            <span class="var">$event</span>-&gt;durationMs,
+            [<span class="str">'integration'</span> =&gt; <span class="var">$event</span>-&gt;integrationName, <span class="str">'action'</span> =&gt; <span class="var">$event</span>-&gt;action],
+        );
+    }
+
+    <span class="attr">#[AsEventListener]</span>
+    <span class="kw">public function</span> <span class="fn">onFailure</span>(<span class="cls">RequestFailed</span> <span class="var">$event</span>): <span class="kw">void</span>
+    {
+        <span class="var">$this</span>-&gt;<span class="var">logger</span>-&gt;<span class="fn">error</span>(<span class="str">'Integration request failed'</span>, [
+            <span class="str">'integration'</span> =&gt; <span class="var">$event</span>-&gt;integrationName,
+            <span class="str">'action'</span> =&gt; <span class="var">$event</span>-&gt;action,
+            <span class="str">'status_code'</span> =&gt; <span class="var">$event</span>-&gt;statusCode,
+            <span class="str">'exception_class'</span> =&gt; <span class="var">$event</span>-&gt;exceptionClass,
+        ]);
+    }
+}</div>
+        </div>
+      </div>
+
       <div class="example-code-panel">
-        <div class="file-label">Step 1: One command generates everything</div>
+        <div class="file-label">Events are metadata, not payload containers</div>
+        <div class="code-block"><span class="cm">// Outbound lifecycle</span>
+<span class="cls">RequestSent</span>
+<span class="cls">ResponseMapped</span>
+<span class="cls">RequestFailed</span>
+<span class="cls">TokenRefreshed</span>
+
+<span class="cm">// Inbound webhook lifecycle</span>
+<span class="cls">WebhookReceived</span>
+<span class="cls">WebhookRejected</span>
+
+<span class="cm">// No request/response/token/Throwable objects are carried by these events.</span></div>
+      </div>
+
+      <div class="example-code-panel">
+        <div class="file-label">Optional helper: manual/shared-dispatcher wiring only</div>
         <div class="code-block"><span class="cm">$ php bin/console make:observability shopify</span>
-<span class="cm"></span>
-<span class="cm">Generates:</span>
-<span class="str">src/Integration/Shopify/ShopifyObservabilitySetup.php</span>
-<span class="cm">Updated: config/services.yaml</span></div>
+
+<span class="cm">// The helper subscribes to LifecycleEventDispatcher.</span>
+<span class="cm">// Bundle-managed engines use Symfony's event_dispatcher by default.</span>
+<span class="cm">// Use the generated helper only when the engine and helper share</span>
+<span class="cm">// the same LifecycleEventDispatcher/SymfonyEventDispatcherAdapter instance.</span></div>
       </div>
 
-      <!-- Step 2: The generated class -->
-      <div class="example-panel-full">
-        <div class="example-code-panel">
-          <div class="file-label">Step 2: Generated class with 3 observability layers</div>
-          <div class="code-block"><span class="kw">class</span> <span class="cls">ShopifyObservabilitySetup</span>
-{
-    <span class="kw">public function</span> <span class="fn">__construct</span>(
-        <span class="kw">private</span> <span class="cls">LoggerInterface</span> <span class="var">$logger</span>,
-        <span class="cm">// private PrometheusRegistry $prometheus,</span>
-        <span class="cm">// private SlackNotifier $slack,</span>
-    ) {}
-
-    <span class="kw">public function</span> <span class="fn">register</span>(<span class="cls">LifecycleEventDispatcher</span> <span class="var">$dispatcher</span>): <span class="kw">void</span>
-    {
-        <span class="cm">// Layer 1: Auto-logging (ActionStarted, ActionCompleted, ActionFailed)</span>
-        <span class="cls">ObservabilitySetup</span>::<span class="fn">register</span>(<span class="var">$dispatcher</span>, <span class="var">$this</span>-&gt;<span class="var">logger</span>, [
-            <span class="str">'logging'</span> =&gt; <span class="kw">true</span>,
-            <span class="str">'slow_request_threshold_ms'</span> =&gt; 3000,
-            <span class="str">'integration_filter'</span> =&gt; <span class="str">'shopify'</span>,
-        ]);
-
-        <span class="cm">// Layer 2: Metrics (ActionCompleted + ActionFailed)</span>
-        <span class="cls">ObservabilitySetup</span>::<span class="fn">register</span>(<span class="var">$dispatcher</span>, <span class="var">$this</span>-&gt;<span class="var">logger</span>, [
-            <span class="str">'metrics_callback'</span> =&gt; <span class="fn">fn</span>(<span class="var">$e</span>) =&gt; <span class="var">$this</span>-&gt;<span class="fn">recordMetrics</span>(<span class="var">$e</span>),
-            <span class="str">'integration_filter'</span> =&gt; <span class="str">'shopify'</span>,
-        ]);
-
-        <span class="cm">// Layer 3: Errors (ActionFailed)</span>
-        <span class="cls">ObservabilitySetup</span>::<span class="fn">register</span>(<span class="var">$dispatcher</span>, <span class="var">$this</span>-&gt;<span class="var">logger</span>, [
-            <span class="str">'error_callback'</span> =&gt; <span class="fn">fn</span>(<span class="var">$e</span>) =&gt; <span class="var">$this</span>-&gt;<span class="fn">recordError</span>(<span class="var">$e</span>),
-            <span class="str">'integration_filter'</span> =&gt; <span class="str">'shopify'</span>,
-        ]);
-    }
-
-    <span class="cm">// …and two stubs it writes for you, one per callback:</span>
-    <span class="cm">// recordMetrics() with a commented Prometheus histogram,</span>
-    <span class="cm">// recordError() with a commented Sentry captureException().</span>
-}</div>
-        </div>
-      </div>
-
-      <!-- Step 3: Wiring -->
       <div class="example-code-panel">
-        <div class="file-label">Step 3: Auto-wired in services.yaml</div>
-        <div class="code-block"><span class="key">app.shopify.observability</span>:
-    <span class="key">class</span>: <span class="val">App\Integration\Shopify\ShopifyObservabilitySetup</span>
-    <span class="key">calls</span>:
-      - [<span class="fn">register</span>, [<span class="str">'@IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher'</span>, <span class="str">'@logger'</span>]]</div>
-      </div>
-
-      <!-- Step 4: Optional scaling -->
-      <div class="example-panel-full">
-        <div class="example-code-panel">
-          <div class="file-label">Step 4 (optional): Extract to handlers for clarity</div>
-          <div class="code-block"><span class="cm">// As your observability grows, split into handlers</span>
-<span class="kw">class</span> <span class="cls">ShopifyObservabilitySetup</span>
-{
-    <span class="kw">public function</span> <span class="fn">__construct</span>(
-        <span class="kw">private</span> <span class="cls">LoggerInterface</span> <span class="var">$logger</span>,
-        <span class="kw">private</span> <span class="cls">MetricsHandler</span> <span class="var">$metrics</span>,
-        <span class="kw">private</span> <span class="cls">ErrorHandler</span> <span class="var">$errors</span>,
-    ) {}
-
-    <span class="kw">public function</span> <span class="fn">register</span>(<span class="cls">LifecycleEventDispatcher</span> <span class="var">$dispatcher</span>): <span class="kw">void</span>
-    {
-        <span class="cls">ObservabilitySetup</span>::<span class="fn">register</span>(<span class="var">$dispatcher</span>, <span class="var">$this</span>-&gt;<span class="var">logger</span>, [
-            <span class="str">'metrics_callback'</span> =&gt; <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">record</span>(...),
-            <span class="str">'error_callback'</span> =&gt; <span class="var">$this</span>-&gt;<span class="var">errors</span>-&gt;<span class="fn">handle</span>(...),
-        ]);
-    }
-}</div>
-        </div>
-      </div>
-
-      <!-- Bonus: Timing breakdown -->
-      <div class="example-panel-full">
-        <div class="example-code-panel">
-          <div class="file-label">Bonus: Track HTTP vs. mapping separately</div>
-          <div class="code-block"><span class="cm">// Listen to ResponseMapped to see the breakdown</span>
-<span class="attr">#[AsEventListener(event: ResponseMapped::class)]</span>
-<span class="kw">public function</span> <span class="fn">onResponseMapped</span>(<span class="cls">ResponseMapped</span> <span class="var">$event</span>): <span class="kw">void</span>
-{
-    <span class="cm">// See where time was actually spent</span>
-    <span class="var">$httpTime</span> = <span class="var">$event</span>-&gt;<span class="fn">httpDurationMs</span>();
-    <span class="var">$mappingTime</span> = <span class="var">$event</span>-&gt;<span class="fn">mappingDurationMs</span>();
-    <span class="var">$overhead</span> = <span class="var">$event</span>-&gt;<span class="fn">totalDurationMs</span>() - <span class="var">$httpTime</span> - <span class="var">$mappingTime</span>;
-
-    <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">gauge</span>(<span class="str">'shopify.http_ms'</span>, <span class="var">$httpTime</span>);
-    <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">gauge</span>(<span class="str">'shopify.mapping_ms'</span>, <span class="var">$mappingTime</span>);
-    <span class="var">$this</span>-&gt;<span class="var">metrics</span>-&gt;<span class="fn">gauge</span>(<span class="str">'shopify.overhead_ms'</span>, <span class="var">$overhead</span>);
-}</div>
-        </div>
+        <div class="file-label">Timing semantics</div>
+        <div class="code-block"><span class="cm">// ResponseMapped::durationMs is the logical engine duration.</span>
+<span class="cm">// It can include auth, transport, retry, middleware and mapping.</span>
+<span class="cm">// It is not a separate HTTP-vs-mapping timing breakdown.</span>
+<span class="var">$durationMs</span> = <span class="var">$event</span>-&gt;durationMs;</div>
       </div>
 
     </div>

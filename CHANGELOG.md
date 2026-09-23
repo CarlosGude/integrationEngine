@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Demo app webhook mapper updated to v8.0 webhook API (static `eventType()` and `transform()` methods).
 
+## [8.0.3] - 2026-09-23
+
+### Changed
+
+- README release marker aligned with the v8.0.3 tag. No runtime/API behavior changed.
+
+## [8.0.2] - 2026-09-23
+
+### Changed
+
+- README condensed to a one-page project overview. No runtime/API behavior changed.
+
 ## [8.0.1] - 2026-09-23
 
 ### Fixed
@@ -35,9 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   Mapper classes still extend `AbstractWebhookMapper` and must declare their event type;
   the engine validates they match YAML declarations at runtime.
 
-- **Form-encoded and JSON requests unified in a single model.** Configure `encoding: form` in
-  action YAML to send `application/x-www-form-urlencoded`; default is JSON. Batch requests
-  preserve encoding per action; concurrent batch dispatch supports both.
+- **Form-encoded and JSON requests unified in a single model.** Implement `FormEncodedBodyInterface`
+  when one REST action must use `application/x-www-form-urlencoded`, or select `client: form_encoded`
+  when the integration uses form bodies by default. Batch requests preserve body encoding per action;
+  concurrent batch dispatch supports both.
 
 - **SSRF/host-allowlist protection is now built-in.** Configure `allowed_hosts` in integration
   transport config; the engine blocks requests to disallowed hosts before sending. Private
@@ -69,9 +82,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `RequestMiddlewareInterface` for request signing (e.g., OAuth 1.0a) that needs the
   fully-built request. Declared per-integration in `request_middlewares:` config.
 
-- Batch token refresh: dynamic auth is fetched once per batch, shared across all requests
-  with the same token action. Retries on 401 use the single fresh token; subsequent 401s
-  and non-401 failures propagate without retry.
+- Batch token refresh: dynamic auth is shared within a batch per token cache key (integration + token
+  action + connection discriminator). Retries on 401 refresh a token that was already cached before
+  the batch; tokens first fetched during the batch are already fresh and are not retried again.
 
 - `ConnectionResolverInterface` for multi-connection integrations. Pass opaque `$connection`
   to `send()` or `sendMany()`; the resolver returns base URL, authorization, and connection ID
@@ -103,7 +116,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Enforce Deptrac in local and remote CI after separating Symfony resilience
   classification from Core; legacy APIs remain available through compatibility facades.
 - Enable every default mutator, remove all mutation ignores and include uncovered
-  code in the standard 85/95 gate. Add regression tests for timestamps, CSV encoding,
+  code in the standard 85/90 gate. Add regression tests for timestamps, CSV encoding,
   fractional connection IDs and default backoff values.
 - Correct landing request constructors, documentation links and unsupported
   claims; add a bilingual roadmap, demo source links and a Node content-test CI job.

@@ -11,7 +11,7 @@ ADRs preserve decisions in their historical context. A superseded ADR is intenti
 | [0005](0005-token-cache-per-connection-and-single-retry-on-401.md) | Token cache per connection; one retry on rejected cached token | Accepted |
 | [0006](0006-profiler-never-records-secrets.md) | Profiler never records secrets | Accepted |
 | [0007](0007-versioning-policy-after-v4.md) | Versioning policy after v4 | Accepted |
-| [0008](0008-no-messenger-bridge-in-the-bundle.md) | No Messenger bridge in the bundle | Restored by 0014 after 0011 |
+| [0008](0008-no-messenger-bridge-in-the-bundle.md) | No bundle-owned Messenger bridge | Restored by 0014 after 0011 |
 | [0009](0009-inbound-webhooks.md) | Inbound webhook parser contract | Superseded in part by 0014 and 0016 |
 | [0010](0010-webhook-idempotency.md) | Webhook idempotency in the bundle | Superseded by 0016 |
 | [0011](0011-messenger-support-for-webhooks.md) | Messenger support for webhooks | Superseded by 0014 |

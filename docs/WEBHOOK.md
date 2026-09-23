@@ -6,6 +6,14 @@ Inbound webhooks in v8 are configured in the same integration YAML as outbound a
 
 Webhook support is optional. A consuming application that enables a `webhooks:` definition needs Symfony's webhook/remote-event stack available; the bundle detects `AbstractRequestParser` during container compilation and rejects webhook wiring when the component is missing.
 
+For Symfony's standard webhook controller/consumer path install Messenger as well:
+
+```bash
+composer require symfony/webhook symfony/remote-event symfony/messenger
+```
+
+Messenger is a requirement of Symfony's supplied webhook controller flow, not of the parser itself. An application that invokes the parser through its own controller/transport can choose a different delivery mechanism.
+
 The generated parser service ID is:
 
 ```text
