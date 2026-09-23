@@ -12,3 +12,5 @@ symfony.lock
 memory/
 /.deptrac.cache
 /.mcp.json
+/.claude/
+/.codex/
