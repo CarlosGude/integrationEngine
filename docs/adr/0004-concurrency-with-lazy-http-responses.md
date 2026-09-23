@@ -5,9 +5,7 @@
 
 ## Context
 
-When fetching data from multiple external APIs in parallel (`sendMany()`), there are two models:
-1. **Eager:** dispatch all requests, wait for all responses before returning (simpler but slower)
-2. **Lazy:** dispatch all requests, return response objects immediately, consume on-demand (complex but faster)
+When fetching multiple external resources in `sendMany()`, the transport can either dispatch and consume each request sequentially or exploit Symfony HttpClient's lazy handles to dispatch several requests before consuming their responses.
 
 The choice impacts:
 - Time to first response
@@ -19,12 +17,13 @@ The choice impacts:
 **Use Symfony HttpClient's lazy response model.**
 
 `SymfonyHttpClientAdapter::sendMany()`:
-1. Dispatches all `PreparedRequest`s concurrently
-2. Returns response objects immediately (response body not yet consumed)
-3. Body is fetched when first accessed (lazy)
-4. Individual item failures don't abort the batch
 
-This avoids blocking on the slowest request while still benefiting from parallelism.
+1. builds and dispatches every request handle first;
+2. then consumes each dispatched response into the bundle's normal array response shape;
+3. captures failures per key instead of aborting unrelated items;
+4. returns the completed keyed result array only after that consumption pass.
+
+The public batch API is therefore **not lazy to its caller**. Concurrency comes from dispatch-all-then-consume-all using Symfony's lazy HTTP response handles internally.
 
 ## Alternatives considered
 
@@ -41,14 +40,14 @@ This avoids blocking on the slowest request while still benefiting from parallel
 ## Consequences
 
 **Positive:**
-- Better throughput: fast responses are available while slow ones are still loading
-- Better memory: response bodies are streamed, not buffered entirely
-- Matches Symfony HttpClient design philosophy
+- Better throughput than per-item send/consume sequencing
+- Preserves one result/failure per caller key
+- Uses Symfony HttpClient's lazy transport model without leaking transport response objects through the engine API
 
 **Negative:**
-- Errors only surface when response is accessed (lazy)
-- Batch result iteration order doesn't guarantee response order
-- Caller must handle per-item failures (more complexity)
+- The adapter still waits for the batch consumption pass before returning
+- Request middleware forces a sequential fallback because it may inspect or replace each completed response
+- Caller must handle per-item failures unless using the strict `sendManyOrFail()` wrapper
 
 ## References
 

@@ -13,10 +13,12 @@ Rather than encoding this contract in PHP classes with mutable state (setters, s
 
 ## Decision
 
-Each API endpoint is represented by an **immutable `AbstractAction` subclass**:
-- Declares HTTP method, path template, auth, mapper, optional body/context interfaces
-- No state mutations after creation
-- Configuration sourced from YAML, parsed once at bundle compile time
+Each external operation is represented by an **immutable `AbstractAction` subclass plus YAML configuration**:
+
+- the concrete action declares its stable name, whether it has a response, and its mapper;
+- YAML supplies method, path, optional body class, authorization, cache TTL and timeout;
+- runtime context/body/header values stay outside the action instance;
+- `YamlConfigAdapter` parses the integration file when the adapter is constructed and creates immutable action values per dispatch.
 
 **Alternative considered:** API configuration in PHP attributes or builder pattern.
 - **Rejected:** attributes scatter the contract across generated code and are harder to audit; builder pattern encourages mutable intermediate states and validation at call time instead of at configuration load.
@@ -38,8 +40,8 @@ Each API endpoint is represented by an **immutable `AbstractAction` subclass**:
 **Positive:**
 - Action contract is centralized, auditable, version-controlled
 - YAML configuration is easy to diff and review
-- Configuration errors fail fast at bundle compilation
-- Actions are thread-safe and reusable across requests
+- Structural bundle configuration is validated during container wiring; integration-YAML validation occurs when `YamlConfigAdapter` loads the file
+- Action definitions are stateless and each resolved action value is immutable for its dispatch
 
 **Negative:**
 - YAML is less discoverable than IDE hints in PHP

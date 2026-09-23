@@ -8,7 +8,7 @@
 
 The webhook side of the bundle grew two kinds of code under the same roof:
 
-**Mechanism** — the request parser base class, the signature schemes, the mapper contract, the event dispatcher, the idempotency and dead-letter contracts, `make:webhook`. None of it knows who is calling.
+**Mechanism** — the request parser, signature schemes, mapper/event contracts and `make:webhook`. None of it names a provider.
 
 **Integrations** — `ShopifyHmacSignatureVerifier`, `WooCommerceHmacSignatureVerifier`, two Shopify parsers, six mappers, six event DTOs, `ShopifyWebhookController`, and the multi-platform routing trio (`WebhookPlatform`, `WebhookPlatformConfig`, `WebhookPlatformRegistry`, `MultiPlatformWebhookController`). Twenty files that each name one vendor.
 
@@ -22,20 +22,21 @@ Three things made the split worth settling:
 
 **The bundle ships what is provider-agnostic. Anything that names a vendor belongs in the application.**
 
-Kept, because none of it names anyone:
+The provider-neutral boundary that remains current in v8 is:
 
-- `IntegrationWebhookRequestParser`, `AbstractWebhookMapper`, `WebhookEventInterface`, `SignatureVerifierInterface`
-- The three signature schemes: `HmacSha256SignatureVerifier` (hex behind a prefix), `Base64HmacSignatureVerifier` (raw digest in base64), `TimestampedHmacSignatureVerifier` (signed timestamp with a tolerance)
-- `WebhookEventDispatcher`, `ConsumesWebhookEvents`, `WebhookEventRegistry`
-- The contracts an application backs with its own storage: idempotency, dead-letter queue, audit trail, mapper resolution
-- `make:webhook`, which writes the vendor-specific classes into the application, where they can be edited
+- `IntegrationWebhookRequestParser`, `MappedRemoteEvent`, `AbstractWebhookMapper`, `WebhookEventInterface` and `SignatureVerifierInterface`;
+- the three signature schemes: `HmacSha256SignatureVerifier`, `Base64HmacSignatureVerifier` and `TimestampedHmacSignatureVerifier`;
+- `WebhookEventDispatcher` / `ConsumesWebhookEvents` for applications that deliberately use the plain-`RemoteEvent` dispatch path;
+- `make:webhook`, which writes application-owned DTO/mapper configuration.
 
-Removed in 6.0.0: the twenty files listed above.
+The v6 implementation also retained bundle-owned idempotency/registry contracts. ADR 0016 later superseded that part: v8 exposes provider event IDs and leaves durable idempotency, replay and business side effects to the application.
+
+Removed in 6.0.0: the vendor-specific files listed above.
 
 ## Consequences
 
 - **It breaks.** Anyone using the shipped Shopify or WooCommerce classes has to bring them into their own codebase. `make:webhook` generates equivalents, and UPGRADE-6.0.md carries the mapping.
-- A webhook costs one `make:webhook` run and one routing entry per event type — the same as before, minus the illusion that the bundle already knew the provider.
+- A webhook definition maps provider event types to application mappers in integration YAML; routing points to the integration's generated parser service rather than shipping vendor-specific parser classes.
 - The signature schemes stay first-class: a new provider is covered as long as it signs in one of the three shapes, and `SignatureVerifierInterface` is there when it does not.
 - The bundle stops being a place where a vendor's API changes force a release.
 
