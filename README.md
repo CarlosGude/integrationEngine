@@ -1,6 +1,6 @@
 # IntegrationEngine
 
-[![CI](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml/badge.svg)](https://github.com/CarlosGude/integrationEngine/actions/workflows/php.yml)
+[![CI](https://github.com/CarlosGude/integrationEngine/actions/workflows/ci.yml/badge.svg)](https://github.com/CarlosGude/integrationEngine/actions/workflows/ci.yml)
 
 **Latest tagged release:** v8.0.3
 **Requirements:** PHP 8.2+ · Symfony 6.4 / 7.x / 8.x

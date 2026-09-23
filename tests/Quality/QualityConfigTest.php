@@ -25,7 +25,7 @@ final class QualityConfigTest extends TestCase
     {
         self::assertSame(['@default' => true], self::readInfectionConfig()['mutators']);
 
-        foreach (['Makefile', '.github/workflows/php.yml'] as $file) {
+        foreach (['Makefile', '.github/workflows/ci.yml'] as $file) {
             $contents = (string) file_get_contents(self::ROOT.'/'.$file);
             preg_match_all('/^.*vendor\/bin\/infection.*$/m', $contents, $matches);
             self::assertNotEmpty($matches[0], $file.' must run Infection.');
