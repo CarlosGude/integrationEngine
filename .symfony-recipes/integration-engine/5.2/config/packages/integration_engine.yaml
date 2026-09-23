@@ -9,8 +9,10 @@ integration_engine:
     #     connection_resolver: ~    # optional, multi-tenant integrations
 
 services:
-    # Lifecycle events (ActionStarted, ActionCompleted, ...) through Symfony's
-    # EventDispatcher, so #[AsEventListener] listeners receive them.
+    # Manual/local lifecycle dispatcher. Bundle-managed engines dispatch
+    # RequestSent/ResponseMapped/RequestFailed/etc. through Symfony's
+    # event_dispatcher directly; share this adapter explicitly only when
+    # using LifecycleEventDispatcher::subscribe() in manual wiring.
     IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher:
         class: IntegrationEngine\Infrastructure\Lifecycle\SymfonyEventDispatcherAdapter
         arguments:
