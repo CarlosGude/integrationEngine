@@ -10,10 +10,7 @@ export function getHTML(lang = 'en') {
 
     const benefitPills = t.heroBenefits.map(b => `<span class="benefit-pill">${b}</span>`).join('');
 
-    const isEs = lang === 'es';
-    const docsHref = isEs
-        ? 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/es/DOCUMENTATION.md'
-        : 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/DOCUMENTATION.md';
+    const docsHref = 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/DOCUMENTATION.md';
 
     const compareLeft  = t.compareItems.map(i => `
       <div class="compare-item"><span class="ci-icon">&#10007;</span>${i.without}</div>`).join('');
