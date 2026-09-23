@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- Symfony Profiler no longer stores exception messages from failed integration calls. It records only the exception class and HTTP status when available, preventing upstream response bodies or other sensitive exception text from being persisted in profiler storage.
+
 ### Fixed
 
 - Demo app webhook mapper updated to v8.0 webhook API (static `eventType()` and `transform()` methods).

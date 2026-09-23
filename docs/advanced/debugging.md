@@ -32,21 +32,26 @@ and shown in the Symfony Toolbar/Profiler — automatically, with zero configura
 ## What you see
 
 A panel listing every call made during the current app request: integration name,
-action, HTTP method, path, duration, and status (or the error, if it failed). The
-toolbar shows a compact summary — total calls, total time, and an error badge when any
-call failed.
+action, HTTP method, raw path template, duration, HTTP status when available, and the
+exception class when a call fails. Exception messages, upstream response bodies,
+resolved URLs and runtime context values are deliberately not stored.
 
-This is per **app request**, not per outgoing call: if a controller triggers three
-calls across two integrations (including a `sendMany()` batch), all three show up in the
-same panel, in the order they completed.
+The toolbar shows a compact summary — total calls, total time, cache hits and an error
+badge when any call failed.
+
+This is per **app request**, not per outgoing call. If a controller triggers three calls
+across two integrations (including a `sendMany()` batch), all three show up in the same
+panel. Batch entries are recorded in the input request order after the batch completes;
+they are not ordered by network completion time.
 
 ---
 
 ## Why only `dev`/`test`
 
-The panel works through `TracingMiddleware`, the innermost built-in layer in
-`MiddlewareClient`, which times every `send()`/`sendMany()` call and reports it to a
-collector. `IntegrationCompilerPass` only wires `TracingMiddleware` when **all three** hold:
+The panel works primarily through `TracingMiddleware`, the innermost built-in layer in
+`MiddlewareClient`, which times requests that reach the transport and reports them to a
+collector. Cache hits never reach `TracingMiddleware`; `CachingMiddleware` records those
+directly with zero transport duration and marks them as cached. `IntegrationCompilerPass` only wires `TracingMiddleware` when **all three** hold:
 
 1. `kernel.debug` is `true`.
 2. `symfony/http-kernel`'s `DataCollectorInterface` is available — it is not a required
@@ -69,12 +74,13 @@ no memory cost.
 
 ## Why middleware, not engine instrumentation
 
-The panel sees the request actually sent over the wire — HTTP method, path, duration,
-status — because `TracingMiddleware` sits at the HTTP adapter boundary. It does **not**
-instrument inside `IntegrationEngine::send()` — the engine flow is not touched. It
-recovers the Action's logical name via `$action::getName()`, the same `AbstractAction`
-instance the middleware already receives, so the panel reads e.g. `GetEmployee`, not just
-`GET /api/v1/employee/42`.
+The panel records action-level transport metadata — HTTP method, raw path template,
+duration and status when available — because `TracingMiddleware` sits at the HTTP adapter
+boundary. It deliberately does **not** retain the fully resolved URL or runtime context
+values. It also does **not** instrument inside `IntegrationEngine::send()`; the core engine
+flow is untouched. The Action's logical name comes from `$action::getName()`, so the panel
+can identify `GetEmployee` without persisting a resolved path such as a concrete employee
+identifier.
 
 This trade-off was deliberate: instrumenting inside `IntegrationEngine` would mean
 touching the one class every request flows through, for a feature that is purely
@@ -88,7 +94,9 @@ The bundle already logs specific events through the optional `LoggerInterface` p
 `IntegrationEngine`/`DynamicAuthHandler` — auth token cache hits, 401 retries. That logger
 is for **events worth a log line in any environment**, including production.
 
-The profiler panel is the complementary view: **every** outgoing call of the current
-request, only in `dev`/`test`, for the moment you're looking at a screen — not a
-persistent record. Use the logger to know something happened; use the profiler to see
-everything that happened on this one request.
+The profiler panel is the complementary view: outgoing calls for one application request,
+normally in `dev`/`test`. It is a per-request debugging view, **not** an application
+audit log or production observability store. Symfony may persist profiler data, which is
+why the collector keeps only bounded metadata and never stores exception messages,
+payloads, resolved URLs or credentials. Use application logging/metrics for persistent
+operational evidence and the profiler for request-scoped diagnosis.
