@@ -80,8 +80,8 @@ Symfony dependencies and unclassified external dependencies fail the command.
 
 ## Compatibility and negative verification
 
-The test matrix covers PHP 8.2/8.3/8.4, Symfony 6.4/7.4/8.x and lowest/stable
-resolutions, excluding PHP 8.2/8.3 with Symfony 8. Symfony documents PHP >=8.2 for
+The CI matrix covers PHP 8.2/8.3/8.4 against supported Symfony 6.4/7.4/8.x
+stable resolutions, excluding PHP 8.2/8.3 with Symfony 8. Symfony documents PHP >=8.2 for
 [7.4](https://symfony.com/releases/7.4) and PHP >=8.4 for
 [8.0](https://symfony.com/releases/8.0), matching these exclusions.
 

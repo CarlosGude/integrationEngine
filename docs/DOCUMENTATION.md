@@ -27,6 +27,12 @@ The documentation is deliberately split by responsibility. If two pages appear t
 | Check quality gates and measured evidence | [advanced/QUALITY.md](./advanced/QUALITY.md) |
 | Contribute | [CONTRIBUTING.md](../CONTRIBUTING.md) |
 
+## Browse by area
+
+- [Getting started](./getting-started/README.md)
+- [Advanced topics](./advanced/README.md)
+- [Architecture decisions](./adr/)
+
 ## Mental model
 
 The engine has two configuration scopes:
