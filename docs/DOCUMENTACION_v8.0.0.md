@@ -211,18 +211,26 @@ public function createPayment(CreatePaymentIntent $request): CreatePaymentIntent
 
 **Ahora (v8.0.0):**
 ```php
-// Ser explícito sobre la codificación
-use IntegrationEngine\Core\Contract\RequestEncoding;
+// El body declara su propia codificación implementando FormEncodedBodyInterface;
+// send() no necesita ningún parámetro extra.
+use IntegrationEngine\Core\Contract\Action\FormEncodedBodyInterface;
+
+final readonly class CreatePaymentIntent implements FormEncodedBodyInterface {
+    public function __construct(private array $data) {}
+
+    public function toArray(): array {
+        return $this->data;
+    }
+}
 
 $response = $this->engine->send(
     CreatePaymentIntentAction::class,
     new DefaultActionContext(),
-    $request,
-    encoding: RequestEncoding::FormEncoded  // Explícito
+    $request  // se envía como application/x-www-form-urlencoded
 );
 
-// O usar el cliente FormEncodedClientAdapter
-// en lugar de SymfonyHttpClientAdapter
+// O usar el cliente FormEncodedClientAdapter (selector 'form_encoded')
+// en lugar de SymfonyHttpClientAdapter, si toda la API usa form-encoding.
 ```
 
 **Configurar en `services.yaml`:**
@@ -336,8 +344,8 @@ integration_engine:
 Ejecuta **después** de que se resuelven path y body, justo antes del transporte HTTP. Ideal para esquemas de firma complejos como OAuth 1.0a.
 
 ```php
-use IntegrationEngine\Core\Contract\RequestMiddleware\RequestMiddlewareInterface;
-use IntegrationEngine\Core\Contract\RequestMiddleware\Request;
+use IntegrationEngine\Core\Contract\Client\RequestMiddlewareInterface;
+use IntegrationEngine\Core\Contract\Client\Request;
 
 class OAuth1SigningMiddleware implements RequestMiddlewareInterface {
     public function __construct(private OAuthSigner $signer) {}
@@ -561,9 +569,7 @@ composer install
 ### Paso 2: Cambiar Eventos del Ciclo de Vida
 
 ```php
-// Antes
-use IntegrationEngine\Core\Event\ActionCompleted;
-
+// Antes (IntegrationEngine\Core\Event\ActionCompleted — eliminada en v8.0.0)
 class MyObserver {
     public function onActionCompleted(ActionCompleted $event): void {
         $response = $event->response;  // ❌ Ya no existe
@@ -571,14 +577,14 @@ class MyObserver {
 }
 
 // Después
-use IntegrationEngine\Core\Event\ActionCompleted;
+use IntegrationEngine\Core\Event\ResponseMapped;
 
 class MyObserver {
-    public function onActionCompleted(ActionCompleted $event): void {
+    public function onResponseMapped(ResponseMapped $event): void {
         // Solo puedes acceder a datos escalares
         $durationMs = $event->durationMs;
         $statusCode = $event->statusCode;
-        $actionName = $event->actionName;
+        $actionName = $event->action;
     }
 }
 ```
@@ -712,15 +718,15 @@ make stan
 // Antes
 $response = $this->engine->send(CreatePaymentIntentAction::class, $context, $request);
 
-// Después - Ser explícito
-use IntegrationEngine\Core\Contract\RequestEncoding;
+// Después - el body declara la codificación implementando FormEncodedBodyInterface;
+// send() no cambia.
+use IntegrationEngine\Core\Contract\Action\FormEncodedBodyInterface;
 
-$response = $this->engine->send(
-    CreatePaymentIntentAction::class,
-    $context,
-    $request,
-    encoding: RequestEncoding::FormEncoded  // Si el API requiere form-encoded
-);
+final readonly class CreatePaymentIntent implements FormEncodedBodyInterface {
+    // ...
+}
+
+$response = $this->engine->send(CreatePaymentIntentAction::class, $context, $request);
 ```
 
 ### Paso 6: Ejecutar Tests
