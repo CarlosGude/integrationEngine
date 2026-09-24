@@ -1,30 +1,31 @@
 export default {
     roadmapColumns: [
-        {
-            "title": "Publicada",
-            "items": [
-                "v8.0.0: Eventos solo escalares, definiciones de webhooks en YAML, soporte form-encoded, protección SSRF.",
-                "Reintentos y timeouts declarativos, reglas PHPStan opcionales, middleware de solicitud para firmas."
-            ]
-        },
-        {
-            "title": "Próximo",
-            "items": [
-                "v8.1.0: Observabilidad mejorada con recolección de métricas personalizada.",
-                "Estrategias avanzadas de reintentos y patrones circuit-breaker.",
-                "Mejoras en el resolvedor de múltiples conexiones."
-            ]
-        },
-        {
-            "title": "Después",
-            "items": [
-                "Guías de migración legacy para adopción de v7 → v8.",
-                "Materiales de taller de diseño de integraciones y casos de estudio."
-            ]
-        }
-    ],
+    {
+        "title": "Publicada",
+        "items": [
+            "v9.0.0: Los parámetros de URL salen exclusivamente de context. Se conservan todos los campos del body.",
+            "Respuestas tipadas, peticiones concurrentes, webhooks en YAML, reintentos y timeouts declarativos."
+        ]
+    },
+    {
+        "title": "Próximas propuestas",
+        "items": [
+            "Usar un transporte HTTP de Symfony proporcionado por la aplicación con los adaptadores incluidos.",
+            "Un exportador de métricas propio, una vez definido su modelo de almacenamiento y workers."
+        ]
+    },
+    {
+        "title": "Criterio de planificación",
+        "items": [
+            "Las propuestas no tienen una versión ni una fecha de entrega comprometidas.",
+            "Las funcionalidades se documentan como disponibles tras implementarlas y validarlas."
+        ]
+    }
+],
     roadmapLink: "Ver la hoja de ruta completa →",
-    roadmapSub: "Última versión: v8.0.0 con seguridad mejorada, configuración simplificada y seguridad de tipos. Ver UPGRADE-8.0.md para la guía de migración.",
+    roadmapSub: "Última versión: v9.0.0. Al actualizar, pasa los parámetros de URL del body al context. Mantenlos en body solo si la API también los exige en el payload.",
+    releaseLink: "Notas de v9.0.0 →",
+    migrationLink: "Ejemplos de contexto y migración →",
     statusH2: "Hoja de ruta",
     parallelComment: "// Concurrente con el adaptador REST incluido; con middleware de petición es secuencial",
     demoSoon: "Demo online · próximamente",
@@ -137,12 +138,12 @@ export default {
     // Pattern 2
     p2Title:       'Construcción de rutas con parámetros',
     p2Anti:        '&#10007; Concatenar strings para construir la URL es propenso a typos silenciosos. Un <code>null</code> produce una URL válida pero semánticamente incorrecta.',
-    p2Sol:         '&#10003; Plantillas <code>{placeholder}</code> en el YAML resueltas por <code>DefaultActionContext</code>. El engine lanza excepción inmediata si falta un parámetro.',
+    p2Sol: "&#10003; Los valores de <code>{placeholder}</code> del YAML salen exclusivamente de <code>context</code>. Usa <code>DefaultActionContext</code>; si falta un parámetro, falla antes de HTTP.",
     p2CmOneParam:  '// Un parámetro en la ruta',
     p2CmTwoParam:  '// Dos parámetros en la ruta',
     p2CmNull:      '// Si $stationId === null:\n// &rarr; /photoStationById/de/\n// &rarr; HTTP 404 sin excepción descriptiva.\n// El error aparece tarde, lejos del origen.',
     p2CmMissing:   '// Si falta &apos;stationId&apos;: excepción inmediata y descriptiva\n// antes de que se haga la llamada HTTP.',
-    p2Insight:     '<strong>Por qué importa:</strong> la concatenación de strings falla en silencio. Los placeholders del engine son contratos: si falta uno, el error es inmediato y descriptivo, no un 404 misterioso dos capas más abajo.',
+    p2Insight: "<strong>URL y payload explícitos:</strong> pasa los parámetros de URL en <code>context</code> y los campos del payload en <code>body</code>. Aunque ambos contengan <code>id</code>, el campo del body se conserva. El body nunca resuelve un parámetro de URL que falte.",
 
     // Pattern 3
     p3Title:         'Mapeo de la respuesta',

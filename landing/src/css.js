@@ -230,9 +230,9 @@ footer a:hover { text-decoration: underline; }
 .patron-collapsible.open { max-height: 20000px; opacity: 1; transition: max-height 1.4s ease-out, opacity .4s ease .05s; }
 
 /* ── EXAMPLE PANELS ── */
-.example-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem; }
-@media (max-width: 900px) { .example-panels { grid-template-columns: 1fr; } }
-.example-panel-full { grid-column: 1 / -1; }
+.example-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 2rem; }
+@media (max-width: 900px) { .example-panels { grid-template-columns: minmax(0, 1fr); } }
+.example-panel-full { grid-column: 1 / -1; min-width: 0; }
 /* Sequential steps read top to bottom: a two-column grid with full-width
    children leaves a hole next to every half-width one. */
 .panel-stack { display: grid; gap: 1rem; margin-top: 2rem; }
@@ -297,7 +297,7 @@ footer a:hover { text-decoration: underline; }
 .status-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
 .status-card p { font-size: .84rem; color: #4a5568; line-height: 1.65; }
 .status-card strong { color: var(--blue); font-weight: 700; }
-.status-footer { text-align: center; margin-top: 1.5rem; }
+.status-footer { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; text-align: center; margin-top: 1.5rem; }
 .status-footer a { display: inline-block; }
 
 /* ── MOBILE RESPONSIVE ── */

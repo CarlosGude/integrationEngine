@@ -1,30 +1,31 @@
 export default {
     roadmapColumns: [
-        {
-            "title": "Released",
-            "items": [
-                "v8.0.0: Scalar-only lifecycle events, YAML webhook definitions, form-encoded support, SSRF protection.",
-                "Declarative retries & timeouts, optional PHPStan rules, request middleware for signing."
-            ]
-        },
-        {
-            "title": "Next",
-            "items": [
-                "v8.1.0: Enhanced observability with custom metric collection.",
-                "Advanced retry strategies and circuit-breaker patterns.",
-                "Multi-connection resolver improvements."
-            ]
-        },
-        {
-            "title": "Later",
-            "items": [
-                "Legacy migration guides for v7 → v8 adoption.",
-                "Integration design workshop materials and case studies."
-            ]
-        }
-    ],
+    {
+        "title": "Released",
+        "items": [
+            "v9.0.0: URL parameters come exclusively from context. Every body field is preserved.",
+            "Typed responses, concurrent requests, YAML webhooks, declarative retries and timeouts."
+        ]
+    },
+    {
+        "title": "Next proposals",
+        "items": [
+            "Use an application-provided Symfony HTTP transport with the built-in adapters.",
+            "A first-party metrics exporter, once its storage and worker model is defined."
+        ]
+    },
+    {
+        "title": "Planning policy",
+        "items": [
+            "Proposals have no committed release version or delivery date.",
+            "Features are documented as available only after implementation and validation."
+        ]
+    }
+],
     roadmapLink: "Read the full roadmap →",
-    roadmapSub: "Latest: v8.0.0 with improved security, simplified configuration, and type safety. See UPGRADE-8.0.md for migration guide.",
+    roadmapSub: "Latest: v9.0.0. When upgrading, move URL parameters from body to context. Keep them in body only if the API also requires them in the payload.",
+    releaseLink: "v9.0.0 release notes →",
+    migrationLink: "Context and migration examples →",
     statusH2: "Roadmap",
     parallelComment: "// Concurrent with the built-in REST adapter; request middleware runs sequentially",
     demoSoon: "Live demo · coming soon",
@@ -137,12 +138,12 @@ export default {
     // Pattern 2
     p2Title:       'Route building with parameters',
     p2Anti:        '&#10007; Concatenating strings to build URLs is prone to silent typos. A <code>null</code> produces a valid but semantically incorrect URL.',
-    p2Sol:         '&#10003; <code>{placeholder}</code> templates in YAML resolved by <code>DefaultActionContext</code>. The engine throws an immediate exception if a parameter is missing.',
+    p2Sol: "&#10003; YAML <code>{placeholder}</code> values come exclusively from <code>context</code>. Use <code>DefaultActionContext</code>; missing parameters fail before HTTP.",
     p2CmOneParam:  '// One parameter in the path',
     p2CmTwoParam:  '// Two parameters in the path',
     p2CmNull:      '// If $stationId === null:\n// &rarr; /photoStationById/de/\n// &rarr; HTTP 404 with no descriptive exception.\n// The error surfaces late, far from the source.',
     p2CmMissing:   '// If &apos;stationId&apos; is missing: immediate, descriptive exception\n// before the HTTP call is made.',
-    p2Insight:     '<strong>Why it matters:</strong> string concatenation fails silently. The engine&rsquo;s placeholders are contracts: if one is missing, the error is immediate and descriptive, not a mysterious 404 two layers below.',
+    p2Insight: "<strong>URL and payload are explicit:</strong> pass URL parameters in <code>context</code> and payload fields in <code>body</code>. Even when both contain <code>id</code>, the body field is preserved. The body never supplies a missing URL parameter.",
 
     // Pattern 3
     p3Title:         'Response mapping',

@@ -415,7 +415,7 @@ MyApi/
 
       <div class="example-panel-full">
         <div class="example-code-panel">
-          <div class="file-label">Recommended: listen to the scalar v8 lifecycle events</div>
+          <div class="file-label">Recommended: listen to the scalar lifecycle events</div>
           <div class="code-block"><span class="kw">use</span> IntegrationEngine\\Core\\Event\\ResponseMapped;
 <span class="kw">use</span> IntegrationEngine\\Core\\Event\\RequestFailed;
 <span class="kw">use</span> Symfony\\Component\\EventDispatcher\\Attribute\\AsEventListener;
@@ -907,7 +907,7 @@ MyApi/
     <div class="status-grid">
       ${t.roadmapColumns.map(column => `<article class="status-card"><h3>${column.title}</h3><ul>${column.items.map(item => `<li>${item}</li>`).join('')}</ul></article>`).join('')}
     </div>
-    <div class="status-footer"><a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/ROADMAP.md" target="_blank" rel="noopener" class="btn-outline">${t.roadmapLink}</a></div>
+    <div class="status-footer"><a href="https://github.com/CarlosGude/integrationEngine/releases/tag/v9.0.0" target="_blank" rel="noopener" class="btn-outline">${t.releaseLink}</a> <a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/getting-started/context-and-path.md" target="_blank" rel="noopener" class="btn-outline">${t.migrationLink}</a> <a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/ROADMAP.md" target="_blank" rel="noopener" class="btn-outline">${t.roadmapLink}</a></div>
   </div>
 </section>
 
