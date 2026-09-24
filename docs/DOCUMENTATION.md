@@ -1,6 +1,6 @@
 # IntegrationEngine — Documentation
 
-This is the **single index for current documentation**. It describes the code on `main`; the latest tagged release is v8.0.3 and release history remains in [`CHANGELOG.md`](../CHANGELOG.md).
+This is the **single index for current documentation**. It describes the code on `main`; the latest tagged release is [v8.0.4](https://github.com/CarlosGude/integrationEngine/releases/tag/v8.0.4) and release history remains in [`CHANGELOG.md`](../CHANGELOG.md).
 
 The documentation is deliberately split by responsibility. If two pages appear to answer the same question, prefer the page listed here as the canonical source for that topic.
 
