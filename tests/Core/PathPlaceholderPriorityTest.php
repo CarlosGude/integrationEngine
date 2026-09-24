@@ -5,23 +5,19 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Core;
 
 use IntegrationEngine\Core\Contract\Action\ActionBodyInterface;
+use IntegrationEngine\Core\Exception\PathResolutionException;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
+use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use IntegrationEngine\Tests\Fake\FakeCache;
 use IntegrationEngine\Tests\Fake\FakeClient;
 use IntegrationEngine\Tests\Fake\FakeContext;
 use IntegrationEngine\Tests\Fake\FakePathAction;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpClient\MockHttpClient;
+use Symfony\Component\HttpClient\Response\MockResponse;
 
-/**
- * End-to-end coverage (real YamlConfigAdapter, not FakeConfigPort) for how
- * body-sourced and context-sourced path placeholders coexist: body is
- * resolved eagerly in ConfigPort::getAction(), before context even exists
- * in the call — so a placeholder present in the body is always settled by
- * the time AbstractAction::getPath() runs, and context is only ever
- * consulted for whatever the body left unresolved.
- */
 final class PathPlaceholderPriorityTest extends TestCase
 {
     private string $tmpDir;
@@ -41,13 +37,14 @@ final class PathPlaceholderPriorityTest extends TestCase
     }
 
     #[Test]
-    public function placeholderSuppliedOnlyByBodyIsResolved(): void
+    public function placeholderSuppliedOnlyByBodyCannotResolvePath(): void
     {
         [$engine, $client] = $this->buildEngine();
 
         $engine->send('get_variations', body: PathPriorityTestBody::create(['product_id' => 123]));
 
-        self::assertSame('/products/123/variations', $client->lastAction()?->getRawPath());
+        $this->expectException(PathResolutionException::class);
+        $client->lastAction()?->getPath($client->lastContext());
     }
 
     #[Test]
@@ -57,15 +54,12 @@ final class PathPlaceholderPriorityTest extends TestCase
 
         $engine->send('get_variations', context: FakeContext::create(['product_id' => 456]));
 
-        // Unlike the body path (resolved eagerly in ConfigPort, baked into
-        // getRawPath()), context is only resolved lazily by getPath() at
-        // send time — the raw path still carries the placeholder here.
         self::assertSame('/products/{product_id}/variations', $client->lastAction()?->getRawPath());
         self::assertSame('/products/456/variations', $client->lastAction()->getPath($client->lastContext()));
     }
 
     #[Test]
-    public function bodyValueTakesPriorityOverContextWhenBothSupplyTheSameKey(): void
+    public function contextResolvesPathWithoutRemovingMatchingBodyField(): void
     {
         [$engine, $client] = $this->buildEngine();
 
@@ -75,7 +69,63 @@ final class PathPlaceholderPriorityTest extends TestCase
             body: PathPriorityTestBody::create(['product_id' => 'from_body']),
         );
 
-        self::assertSame('/products/from_body/variations', $client->lastAction()?->getRawPath());
+        self::assertSame('/products/from_context/variations', $client->lastAction()?->getPath($client->lastContext()));
+        self::assertSame(['product_id' => 'from_body'], $client->lastAction()->getBody()?->toArray());
+    }
+
+    #[Test]
+    public function httpRequestUsesContextAndPreservesEntirePayload(): void
+    {
+        $http = new MockHttpClient(static function (string $method, string $url, array $options): MockResponse {
+            self::assertSame('PUT', $method);
+            self::assertSame('https://api.example.com/products/42/variations', $url);
+            self::assertIsString($options['body']);
+            self::assertSame(['product_id' => ['nested' => true], 'name' => 'Ada'], json_decode($options['body'], true));
+
+            return new MockResponse('{}');
+        });
+        $engine = $this->buildHttpEngine($http);
+
+        $engine->send(
+            'get_variations',
+            context: FakeContext::create(['product_id' => 42]),
+            body: PathPriorityTestBody::create(['product_id' => ['nested' => true], 'name' => 'Ada']),
+        );
+
+        self::assertSame(1, $http->getRequestsCount());
+    }
+
+    #[Test]
+    public function missingContextParameterPreventsHttpRequestEvenWhenBodyContainsIt(): void
+    {
+        $http = new MockHttpClient(static function (): MockResponse {
+            self::fail('An unresolved URL must never reach HTTP.');
+        });
+        $engine = $this->buildHttpEngine($http);
+
+        $this->expectException(PathResolutionException::class);
+
+        try {
+            $engine->send('get_variations', body: PathPriorityTestBody::create(['product_id' => 42]));
+        } finally {
+            self::assertSame(0, $http->getRequestsCount());
+        }
+    }
+
+    private function buildHttpEngine(MockHttpClient $http): IntegrationEngine
+    {
+        $this->buildEngine();
+        $configPath = $this->tmpDir.'/integration.yaml';
+        $config = file_get_contents($configPath);
+        self::assertIsString($config);
+        file_put_contents($configPath, str_replace('method: GET', 'method: PUT', $config));
+
+        return new IntegrationEngine(
+            config: new YamlConfigAdapter($configPath),
+            client: new SymfonyHttpClientAdapter($http, 'https://api.example.com'),
+            cache: new FakeCache(),
+            integrationName: 'test_integration',
+        );
     }
 
     /**

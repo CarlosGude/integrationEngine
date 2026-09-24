@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [9.0.0] - 2026-09-24
+
+### Changed — BREAKING
+
+- URL placeholders resolve exclusively from action context. Body fields no longer supply URL parameters or get removed when their names match placeholders.
+- Migration: pass URL parameters via `DefaultActionContext::create()` or a custom context. Keep a matching field in the body only when the API requires it in the payload. Missing context parameters fail before the HTTP request.
+
+### Documentation
+
+- Updated path-resolution examples, architecture, lifecycle and migration guidance for the context-only contract.
+
+### Fixed
+
+- Improved landing-page mobile layout and prevented horizontal overflow.
+- Made contract-test path repository version resolution reliable.
+
 ## [8.0.4] - 2026-09-23
 
 ### Security

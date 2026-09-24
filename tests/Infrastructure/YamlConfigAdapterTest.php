@@ -9,7 +9,6 @@ use IntegrationEngine\Core\Contract\Action\ActionBodyInterface;
 use IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\Auth\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
-use IntegrationEngine\Core\Exception\PathResolutionException;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
 use IntegrationEngine\Tests\Fake\FakePathAction;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -330,10 +329,8 @@ final class YamlConfigAdapterTest extends TestCase
         $adapter->getAction('get_employee', YamlConfigTestBody::create(['name' => 'Ada']));
     }
 
-    // ── path placeholders from body ─────────────────────────────────────────
-
     #[Test]
-    public function getActionResolvesOnePlaceholderFromBody(): void
+    public function getActionPreservesBodyAndRawPathEvenWhenKeysMatchPlaceholders(): void
     {
         $adapter = $this->buildAdapter(<<<'YAML'
             get_variations:
@@ -343,200 +340,12 @@ final class YamlConfigAdapterTest extends TestCase
                 body: 'IntegrationEngine\Tests\Infrastructure\YamlConfigTestBody'
             YAML);
 
-        $action = $adapter->getAction('get_variations', YamlConfigTestBody::create(['product_id' => 123]));
-
-        self::assertSame('/products/123/variations', $action->getRawPath());
-    }
-
-    #[Test]
-    public function getActionResolvesSeveralPlaceholdersFromBody(): void
-    {
-        $adapter = $this->buildAdapter(<<<'YAML'
-            get_note:
-                action: '%s'
-                method: GET
-                path: /orders/{order_id}/notes/{note_id}
-                body: 'IntegrationEngine\Tests\Infrastructure\YamlConfigTestBody'
-            YAML);
-
-        $action = $adapter->getAction('get_note', YamlConfigTestBody::create(['order_id' => 42, 'note_id' => 7]));
-
-        self::assertSame('/orders/42/notes/7', $action->getRawPath());
-    }
-
-    #[Test]
-    public function getActionResolvesStringValuedPlaceholderFromBody(): void
-    {
-        $adapter = $this->buildAdapter(<<<'YAML'
-            get_product:
-                action: '%s'
-                method: GET
-                path: /products/{sku}
-                body: 'IntegrationEngine\Tests\Infrastructure\YamlConfigTestBody'
-            YAML);
-
-        $action = $adapter->getAction('get_product', YamlConfigTestBody::create(['sku' => 'ABC-123']));
-
-        self::assertSame('/products/ABC-123', $action->getRawPath());
-    }
-
-    /**
-     * Regression: the same placeholder name appearing twice in the path
-     * must resolve both occurrences from the same body value. The first
-     * implementation deleted the body key after the first substitution, so
-     * the second occurrence of the same name was left as a literal
-     * "{name}" — a malformed path silently sent to the transport.
-     */
-    #[Test]
-    public function getActionResolvesARepeatedPlaceholderNameAtEveryOccurrence(): void
-    {
-        $adapter = $this->buildAdapter(<<<'YAML'
-            get_history:
-                action: '%s'
-                method: GET
-                path: /orgs/{org_id}/users/{org_id}/history
-                body: 'IntegrationEngine\Tests\Infrastructure\YamlConfigTestBody'
-            YAML);
-
-        $action = $adapter->getAction('get_history', YamlConfigTestBody::create(['org_id' => 42]));
-
-        self::assertSame('/orgs/42/users/42/history', $action->getRawPath());
-        self::assertSame([], $action->getBody()?->toArray());
-    }
-
-    /**
-     * A placeholder missing from the body must be left untouched in the
-     * path rather than raising an error here — AbstractAction::getPath()
-     * resolves it from ActionContextInterface at send time and rejects the
-     * request there if no source supplies it. Failing here would break any
-     * integration that supplies the value via context instead of body.
-     */
-    #[Test]
-    public function getActionLeavesPlaceholderMissingFromBodyUnresolvedForContextToHandle(): void
-    {
-        $adapter = $this->buildAdapter(<<<'YAML'
-            get_variations:
-                action: '%s'
-                method: GET
-                path: /products/{product_id}/variations
-                body: 'IntegrationEngine\Tests\Infrastructure\YamlConfigTestBody'
-            YAML);
-
-        $action = $adapter->getAction('get_variations', YamlConfigTestBody::create(['other_field' => 'x']));
+        $body = YamlConfigTestBody::create(['product_id' => ['nested' => true], 'per_page' => 50]);
+        $action = $adapter->getAction('get_variations', $body);
 
         self::assertSame('/products/{product_id}/variations', $action->getRawPath());
-        self::assertSame(['other_field' => 'x'], $action->getBody()?->toArray());
-    }
-
-    /**
-     * When only some placeholders resolve from the body, the ones that
-     * don't must survive in the returned path exactly as "{name}" — not as
-     * a bare "name" — so AbstractAction::getPath() still recognises them
-     * as placeholders to resolve from context at send time.
-     */
-    #[Test]
-    public function getActionLeavesAnUnresolvedPlaceholderBracedWhenAnotherOneInThePathResolves(): void
-    {
-        $adapter = $this->buildAdapter(<<<'YAML'
-            get_note:
-                action: '%s'
-                method: GET
-                path: /orders/{order_id}/notes/{note_id}
-                body: 'IntegrationEngine\Tests\Infrastructure\YamlConfigTestBody'
-            YAML);
-
-        $action = $adapter->getAction('get_note', YamlConfigTestBody::create(['order_id' => 42]));
-
-        self::assertSame('/orders/42/notes/{note_id}', $action->getRawPath());
-    }
-
-    #[Test]
-    public function getActionLeavesPathUntouchedWhenActionHasNoPlaceholders(): void
-    {
-        $adapter = $this->buildAdapter(<<<'YAML'
-            get_employee:
-                action: '%s'
-                method: GET
-                path: /employees
-                body: 'IntegrationEngine\Tests\Infrastructure\YamlConfigTestBody'
-            YAML);
-
-        $body = YamlConfigTestBody::create(['name' => 'Ada']);
-        $action = $adapter->getAction('get_employee', $body);
-
-        self::assertSame('/employees', $action->getRawPath());
         self::assertSame($body, $action->getBody());
-    }
-
-    /**
-     * A value consumed to resolve a path placeholder must not also survive
-     * as a body field — otherwise it would be duplicated as a query/body
-     * parameter alongside the path segment that already carries it.
-     */
-    #[Test]
-    public function getActionRemovesPlaceholderValueFromBodyAfterResolvingPath(): void
-    {
-        $adapter = $this->buildAdapter(<<<'YAML'
-            get_variations:
-                action: '%s'
-                method: GET
-                path: /products/{product_id}/variations
-                body: 'IntegrationEngine\Tests\Infrastructure\YamlConfigTestBody'
-            YAML);
-
-        $action = $adapter->getAction('get_variations', YamlConfigTestBody::create([
-            'product_id' => 123,
-            'per_page' => 50,
-        ]));
-
-        self::assertSame('/products/123/variations', $action->getRawPath());
-        self::assertSame(['per_page' => 50], $action->getBody()?->toArray());
-    }
-
-    #[Test]
-    public function getActionThrowsWhenPlaceholderValueInBodyIsNotScalar(): void
-    {
-        $adapter = $this->buildAdapter(<<<'YAML'
-            get_variations:
-                action: '%s'
-                method: GET
-                path: /products/{product_id}/variations
-                body: 'IntegrationEngine\Tests\Infrastructure\YamlConfigTestBody'
-            YAML);
-
-        $this->expectException(PathResolutionException::class);
-        $this->expectExceptionMessage('Path parameter "product_id" must be a scalar value.');
-
-        $adapter->getAction('get_variations', YamlConfigTestBody::create(['product_id' => ['nested' => true]]));
-    }
-
-    /**
-     * preg_replace_callback() returns null (rather than throwing) on an
-     * internal PCRE failure — forced here via pcre.backtrack_limit — and
-     * that null must become a PathResolutionException, not silently flow
-     * on as if it were the resolved path.
-     */
-    #[Test]
-    public function getActionThrowsOnInternalPcreFailure(): void
-    {
-        $adapter = $this->buildAdapter(<<<'YAML'
-            get_variations:
-                action: '%s'
-                method: GET
-                path: /products/{product_id}/variations
-                body: 'IntegrationEngine\Tests\Infrastructure\YamlConfigTestBody'
-            YAML);
-
-        $originalLimit = ini_set('pcre.backtrack_limit', '0');
-
-        try {
-            $this->expectException(PathResolutionException::class);
-            $this->expectExceptionMessage('PCRE error resolving path "/products/{product_id}/variations".');
-
-            $adapter->getAction('get_variations', YamlConfigTestBody::create(['product_id' => 123]));
-        } finally {
-            ini_set('pcre.backtrack_limit', false !== $originalLimit ? $originalLimit : '1000000');
-        }
+        self::assertSame(['product_id' => ['nested' => true], 'per_page' => 50], $action->getBody()->toArray());
     }
 
     // ── cache_ttl ────────────────────────────────────────────────────────────

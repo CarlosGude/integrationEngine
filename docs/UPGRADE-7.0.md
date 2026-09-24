@@ -135,28 +135,21 @@ $engine->send('GetOrders', connection: $tenantId);
 
 ---
 
-### 5. Path Resolution from Request Body (NEW)
+### 5. Path Resolution Uses Context Only
 
-Placeholders in path (e.g., `{id}`) now resolve from the request body first, then context:
-
-```yaml
-UpdateEmployee:
-  method: PUT
-  path: /employees/{id}
-  body: App\...\UpdateEmployeeBody
-```
+Move URL parameters previously supplied by the body into `context`:
 
 ```php
-$engine->send('UpdateEmployee', 
-  body: UpdateEmployeeBody::create(['id' => 42, 'name' => 'Ada'])
+$engine->send('UpdateEmployee',
+  context: DefaultActionContext::create(['id' => 42]),
+  body: UpdateEmployeeBody::create(['name' => 'Ada'])
 );
-// → PUT /employees/42, body { "name": "Ada" }  ← id consumed from body, not sent in JSON
+// → PUT /employees/42, body { "name": "Ada" }
 ```
 
-**Resolution priority:**
-1. Body (if action has `body:` and field exists) — consumed, removed from payload
-2. Context (if `ActionContextInterface` provides it)
-3. Fail (if placeholder not satisfied)
+Use `IntegrationEngine\Core\Contract\Action\DefaultActionContext` or a custom context.
+Body fields are preserved, including fields whose names match URL placeholders.
+If a URL parameter is absent from context, path resolution fails even when the body contains it.
 
 ---
 

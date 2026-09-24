@@ -70,7 +70,7 @@ The configuration adapter creates action instances through `AbstractAction::crea
 | Runtime endpoint override | `baseUrl` argument on `send()` / `EngineRequest` |
 | Runtime connection/credentials | `connection` argument when a resolver is configured |
 
-Body-backed path placeholders are resolved first by `YamlConfigAdapter` and removed from the outgoing body. Any remaining `{placeholder}` is resolved later from the action context. See [Context and path resolution](context-and-path.md).
+All `{placeholder}` values are resolved exclusively from the action context. The body is preserved, including fields whose names match placeholders. See [Context and path resolution](context-and-path.md).
 
 ## Invariants
 

@@ -19,7 +19,7 @@ The exact breaking changes are in [UPGRADE-8.0.md](./UPGRADE-8.0.md) and release
 
 ## Current branch
 
-[v8.0.4](https://github.com/CarlosGude/integrationEngine/releases/tag/v8.0.4) is the latest tag. It includes the documentation consolidation, a profiler security fix, demo webhook compatibility and CI maintenance. Current `main` is ahead of that tag with landing-page responsive fixes and contract-test CI fixes; those commits do not change the bundle's runtime API. v8.0.2 and v8.0.3 were documentation-only releases.
+[v9.0.0](https://github.com/CarlosGude/integrationEngine/releases/tag/v9.0.0) is the latest tag. URL parameters now come exclusively from context, while body fields are preserved. It also includes landing-page responsive fixes and contract-test CI fixes. See [the changelog](../CHANGELOG.md) for migration guidance.
 
 ## Next proposals
 

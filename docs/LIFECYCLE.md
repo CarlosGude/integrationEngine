@@ -64,7 +64,7 @@ Pass the **same dispatcher instance** to `IntegrationEngine` if you construct th
 
 For batches, each item gets its own start timestamp and completion/failure duration. Concurrent requests can therefore have overlapping durations; summing them is not equivalent to wall-clock batch duration.
 
-`RequestSent::path` is the action's raw path at that point. Body-backed placeholders may already have been consumed by `YamlConfigAdapter`; placeholders left for `ActionContextInterface` can still appear in that string. Treat it as operation metadata, not as a complete URL or trace span.
+`RequestSent::path` is the action's raw path at that point. It preserves the configured placeholders; `ActionContextInterface` supplies their values during path resolution. Treat it as operation metadata, not as a complete URL or trace span.
 
 ## Token refresh reasons
 

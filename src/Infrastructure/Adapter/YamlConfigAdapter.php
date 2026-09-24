@@ -12,7 +12,6 @@ use IntegrationEngine\Core\Contract\Webhook\SignatureConfig;
 use IntegrationEngine\Core\Contract\Webhook\UnknownEventPolicy;
 use IntegrationEngine\Core\Contract\Webhook\WebhookDefinition;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
-use IntegrationEngine\Core\Exception\PathResolutionException;
 use IntegrationEngine\Core\Port\ConfigPort;
 use Symfony\Component\Yaml\Yaml;
 
@@ -89,7 +88,6 @@ final class YamlConfigAdapter implements ConfigPort
             : null;
 
         $body = $this->resolveBody($name, $actionConfig, $bodyData);
-        [$path, $body] = $this->resolvePathPlaceholders($actionConfig['path'] ?? '/', $body);
 
         $actionClass = $actionConfig['action'];
 
@@ -97,7 +95,7 @@ final class YamlConfigAdapter implements ConfigPort
 
         return $actionClass::create(
             method: $actionConfig['method'] ?? 'POST',
-            path: $path,
+            path: $actionConfig['path'] ?? '/',
             body: $body,
             authorization: $authorization,
             cacheTtl: isset($actionConfig['cache_ttl']) ? (int) $actionConfig['cache_ttl'] : null,
@@ -135,61 +133,6 @@ final class YamlConfigAdapter implements ConfigPort
 
         /** @var array<string, mixed> $signature */
         return new WebhookDefinition($typeField, $idField, SignatureConfig::fromArray($signature), $unknownEvents, $mappers);
-    }
-
-    /**
-     * Resolves {name} placeholders in the path using values available on
-     * the action's body, and strips consumed keys from the body so they
-     * aren't also sent as a body/query parameter.
-     *
-     * Placeholders absent from the body are left untouched in the path —
-     * AbstractAction::getPath() resolves those from ActionContextInterface
-     * at send time, and rejects the request there if neither source
-     * supplies them. This keeps body values taking priority without this
-     * adapter needing to know about context at all.
-     *
-     * @return array{0: string, 1: ?ActionBodyInterface}
-     */
-    private function resolvePathPlaceholders(string $path, ?ActionBodyInterface $body): array
-    {
-        if (null === $body) {
-            return [$path, $body];
-        }
-
-        $data = $body->toArray();
-
-        // never mutated) so a placeholder name repeated more than once in
-        // the path resolves every occurrence instead of only the first —
-        // deleting the key from $data after the first match would make
-        // subsequent matches of the same name see it as absent.
-        $consumed = [];
-
-        $resolvedPath = preg_replace_callback(
-            '/\{(\w+)}/',
-            static function (array $matches) use ($data, &$consumed): string {
-                $key = $matches[1];
-
-                if (!\array_key_exists($key, $data)) {
-                    return $matches[0];
-                }
-
-                $value = $data[$key];
-                if (!\is_scalar($value)) {
-                    throw PathResolutionException::nonScalarParameter($key);
-                }
-
-                $consumed[$key] = true;
-
-                return (string) $value;
-            },
-            $path,
-        ) ?? throw PathResolutionException::pcreError($path);
-
-        if ([] === $consumed) {
-            return [$path, $body];
-        }
-
-        return [$resolvedPath, $body::create(array_diff_key($data, $consumed))];
     }
 
     /**

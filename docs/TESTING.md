@@ -24,7 +24,7 @@ Tests under `tests/Core/` cover:
 
 - single request orchestration and response mapping;
 - mapper/action reciprocity and response-less actions;
-- body/context path resolution and placeholder precedence;
+- context-only path resolution and preservation of matching body fields;
 - dynamic auth cache behavior and the single cached-token 401 refresh;
 - runtime connection resolution and cache discrimination;
 - batch success/failure isolation, strict unwrapping and batch mapper checks;

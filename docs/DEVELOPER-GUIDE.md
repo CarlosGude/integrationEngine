@@ -249,7 +249,7 @@ The registry refuses blank names and the marker constant value __MUST_OVERRIDE__
 | hasResponse() | Whether ResponseBuilder must map a response. |
 | mapper() | Mapper class for response actions, otherwise null. |
 | getMethod() | Resolved HTTP method. |
-| getRawPath() | Path after body-sourced placeholder substitution but before context resolution. |
+| getRawPath() | Configured path before context resolution. |
 | getPath(context) | Final path after custom/default context resolution. |
 | getBody() | Resolved body object. |
 | getAuthorization() | Current authorization config; may be replaced by connection/dynamic auth. |
@@ -274,14 +274,13 @@ A GraphQL action body implements getQuery() and getVariables(). The GraphQL adap
 
 ## 6.3 Contexts
 
-ActionContextInterface holds per-call values that are not request-body fields. DefaultActionContext is a generic array-backed implementation. PathResolvableContextInterface adds resolvePath(string): ?string for optional/computed query strings or custom path construction.
+ActionContextInterface holds per-call values used to build the URL independently of request-body fields. DefaultActionContext is a generic array-backed implementation. PathResolvableContextInterface adds resolvePath(string): ?string for optional/computed query strings or custom path construction.
 
 
-## 6.4 Two-stage placeholder resolution
+## 6.4 Context-only placeholder resolution
 
-1. YamlConfigAdapter first scans the YAML path for {name} placeholders and substitutes matching scalar keys from the body.
-1. Every body key consumed by a placeholder is removed from the body before dispatch, so identifiers are not duplicated into the payload.
-1. Any placeholders still present are resolved later from the context by AbstractAction::getPath().
+1. YamlConfigAdapter preserves the configured path and all body fields.
+1. AbstractAction::getPath() resolves {name} placeholders exclusively from context.
 1. A PathResolvableContextInterface may return a complete path. Returning null falls back to standard placeholders; returning an empty string is an error.
 ```text
 # YAML
@@ -291,15 +290,18 @@ UpdateEmployee:
     path: /employees/{id}
     body: App\...\UpdateEmployeeBody
 
+# Runtime context
+['id' => 42]
+
 # Runtime body
-['id' => 42, 'name' => 'Ada']
+['name' => 'Ada']
 
 # Result
 PUT /employees/42
 body: {'name': 'Ada'}
 ```
 
-**Validation:** Placeholder values from body or context must be scalar. Missing context placeholders, non-scalar values, PCRE failures and empty custom paths produce PathResolutionException.
+**Validation:** Placeholder values from context must be scalar. Body fields never resolve URL parameters and are never removed by path resolution. Missing context placeholders, non-scalar values, PCRE failures and empty custom paths produce PathResolutionException.
 
 
 ## 6.5 Request headers
@@ -1287,7 +1289,7 @@ Use normal try/catch around send(). For sendMany(), inspect BatchResult values r
 | Term | Meaning |
 | --- | --- |
 | Action | Immutable configured operation value created from a concrete AbstractAction class plus YAML. |
-| Body | ActionBodyInterface payload object; may also supply path placeholders. |
+| Body | ActionBodyInterface payload object; URL parameters come exclusively from context. |
 | Context | Per-call values primarily used for path/query resolution. |
 | Facade | Application-owned typed wrapper around IntegrationRegistry/IntegrationEngine. |
 | Integration YAML | Per-integration file defining actions and optional webhooks. |

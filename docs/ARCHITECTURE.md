@@ -53,8 +53,7 @@ For `IntegrationEngine::send()` the current order is:
 
 ```text
 1. ConfigPort::getAction(actionName, body)
-   ├─ instantiate body declared by YAML
-   └─ consume body-backed {path} placeholders
+   └─ instantiate body declared by YAML, preserving its fields
 2. ConnectionResolver (optional)
    ├─ base URL override
    ├─ authorization override
@@ -97,14 +96,11 @@ Instances are created through `AbstractAction::create()` by the configuration ad
 
 No mutable request state is stored on the concrete action class.
 
-## Path resolution precedence
+## Path resolution
 
-There are two path-resolution stages, with a deliberate precedence:
+`YamlConfigAdapter` preserves the configured path and body. `AbstractAction::getPath()` resolves placeholders exclusively from context. A custom `PathResolvableContextInterface` may resolve the whole path first; returning null delegates to the default context lookup.
 
-1. `YamlConfigAdapter` replaces `{name}` from the action body when that key exists and removes the consumed key from the body.
-2. Remaining placeholders are resolved by `AbstractAction::getPath()` from the context. A custom `PathResolvableContextInterface` may resolve the whole path first; otherwise the default context lookup is used.
-
-Missing or non-scalar placeholders fail explicitly. This lets a value that is already part of a body DTO drive the URL without being sent twice.
+Missing or non-scalar context parameters fail explicitly. A body field never supplies a URL parameter, and matching body fields remain in the payload.
 
 Detailed examples: [context-and-path.md](./getting-started/context-and-path.md).
 

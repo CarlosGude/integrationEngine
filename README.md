@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/CarlosGude/integrationEngine/actions/workflows/ci.yml/badge.svg)](https://github.com/CarlosGude/integrationEngine/actions/workflows/ci.yml)
 
-**Latest tagged release:** [v8.0.4](https://github.com/CarlosGude/integrationEngine/releases/tag/v8.0.4)
+**Latest tagged release:** [v9.0.0](https://github.com/CarlosGude/integrationEngine/releases/tag/v9.0.0)
 **Requirements:** PHP 8.2+ · Symfony 6.4 / 7.x / 8.x
 **Website:** [integrationengine.dev](https://integrationengine.dev)
 **Documentation:** [docs/DOCUMENTATION.md](./docs/DOCUMENTATION.md)
