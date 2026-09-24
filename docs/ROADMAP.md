@@ -19,7 +19,7 @@ The exact breaking changes are in [UPGRADE-8.0.md](./UPGRADE-8.0.md) and release
 
 ## Current branch
 
-`v8.0.3` is the latest tag. Current `main` is ahead of that tag with the post-release documentation consolidation and follow-up maintenance. Runtime/API changes in the tagged v8 line are captured by v8.0.0/v8.0.1; v8.0.2 and v8.0.3 are documentation-only tags.
+[v8.0.4](https://github.com/CarlosGude/integrationEngine/releases/tag/v8.0.4) is the latest tag. It includes the documentation consolidation, a profiler security fix, demo webhook compatibility and CI maintenance. Current `main` is ahead of that tag with landing-page responsive fixes and contract-test CI fixes; those commits do not change the bundle's runtime API. v8.0.2 and v8.0.3 were documentation-only releases.
 
 ## Next proposals
 
