@@ -45,7 +45,7 @@ make stan PATHS='src/Core/IntegrationEngine.php'
 | `AbstractMapper` | Transforms raw response `array` body + response `array` headers → typed `ResponseInterface`. One mapper per action, enforced at runtime |
 | `ResponseInterface` | DTO marker; must implement `toArray()`. Represents the external API shape, not domain objects |
 | `ActionContextInterface` | Carries dynamic values at call time (path params, filter values). Default: `DefaultActionContext` |
-| `ActionBodyInterface` | Request payload contract. REST bodies are JSON by default; `FormEncodedBodyInterface` selects form encoding for one action; `GraphQLBodyInterface` supplies query + variables. Also the source for body-sourced path placeholders |
+| `ActionBodyInterface` | Request payload contract. REST bodies are JSON by default; `FormEncodedBodyInterface` selects form encoding for one action; `GraphQLBodyInterface` supplies query + variables |
 | `IntegrationEngine` | Orchestrator: Config → Connection → Client → Mapper → Response. Pure orchestration; delegates dispatch logic to internal helpers |
 | `AuthenticationHandler` | Internal: resolves dynamic tokens and caches them. Returns action with static auth token injected, or throws if token fetch fails |
 | `ConnectionResolver` | Internal: resolves opaque connection info to credentials, applies authorization overrides |
@@ -80,7 +80,7 @@ make stan PATHS='src/Core/IntegrationEngine.php'
 Application service
   → IntegrationRegistry::get(NAME) → IntegrationEngine
   → engine->send(actionName, context, body, headers, baseUrl, connection)
-  → ConfigPort::getAction()          (resolves body-sourced path placeholders)
+  → ConfigPort::getAction()          (instantiates body declared by YAML)
   → [if $connection given] ConnectionResolverInterface::resolve() → ConnectionCredentials
         → overrides authorization, base_url; connectionId namespaces the token cache
   → [if dynamic auth] fetch + cache token, rebuild action with static auth
@@ -89,7 +89,7 @@ Application service
       → [user middlewares, in declaration order under middlewares:]
       → TracingMiddleware   (dev/test only — records timing, action, status)
       → HTTP adapter
-          → resolves path/body into a Request (method, url, headers, body)
+          → resolves path from context, body into a Request (method, url, headers, body)
           → [request middlewares, in declaration order under request_middlewares:]
           → transport call → {body, headers}
   → AbstractMapper::map(action, body, headers) → ResponseInterface
@@ -108,13 +108,12 @@ Dynamic auth in batches is shared per token cache key: integration + token actio
 
 ### Path Resolution
 
-Three approaches, in order of complexity:
+Two approaches, in order of complexity:
 
-1. **Body-sourced placeholder** — `YamlConfigAdapter` resolves `{param}` from `ActionBodyInterface` at `getAction()` time (before context even exists), removing consumed keys from the body so they aren't also sent as a body/query parameter. A placeholder present in the body is always settled before context is consulted — this is priority, not a merge
-2. **YAML placeholder via context** — define `{param}` in path; pass required params via `DefaultActionContext`. Only reached for placeholders the body didn't supply
-3. **Custom context** — implement `PathResolvableContextInterface::resolvePath()` for optional params or complex logic; return `null` to fall back to the placeholder resolver
+1. **YAML placeholder via context** — define `{param}` in path; pass required params via `DefaultActionContext`. Missing or non-scalar context parameters throw `PathResolutionException` before the HTTP request is made
+2. **Custom context** — implement `PathResolvableContextInterface::resolvePath()` for optional params or complex logic; return `null` to fall back to the default context-based resolver
 
-A placeholder repeated more than once in the same path resolves every occurrence from a single body/context value.
+`{param}` is resolved exclusively from `context`, never from `body` (breaking change in v9.0.0). A body field matching a placeholder name is preserved unchanged and sent as payload — set it explicitly in `body` if the API also requires it there. A placeholder repeated more than once in the same path resolves every occurrence from a single context value.
 
 ### Dynamic Authentication
 
