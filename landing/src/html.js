@@ -441,7 +441,7 @@ MyApi/
       </div>
     </div>
     <div class="example-cta">
-      <a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/WEBHOOK.md" target="_blank" rel="noopener" class="btn-primary">${t.webhookBtn}</a>
+      <a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/webhook.md" target="_blank" rel="noopener" class="btn-primary">${t.webhookBtn}</a>
     </div>
   </div>
 </section>

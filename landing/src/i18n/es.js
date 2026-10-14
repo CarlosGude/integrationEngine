@@ -233,11 +233,11 @@ export default {
     wikiSub:       'Configuración, patrones, testing, troubleshooting. Architecture Decision Records explicando cada decisión de diseño. Guías de migración para cada actualización.',
     wikiFeatures: [
         { title: 'Getting Started', desc: 'Guía de inicio rápido, instalación y uso básico', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/getting-started/README.md' },
-        { title: 'Architecture', desc: 'Abstracciones, flujo de datos y patrones de diseño', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/ARCHITECTURE.md' },
+        { title: 'Architecture', desc: 'Abstracciones, flujo de datos y patrones de diseño', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/architecture.md' },
         { title: 'Testing', desc: 'Estructura de tests, estrategias y ejecución', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/TESTING.md' },
-        { title: 'Lifecycle Events', desc: 'Eventos escalares de observabilidad y semántica temporal', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/LIFECYCLE.md' },
+        { title: 'Lifecycle Events', desc: 'Eventos escalares de observabilidad y semántica temporal', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/lifecycle.md' },
         { title: 'Observability', desc: 'Listeners Symfony, wiring del helper, métricas y logging', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/OBSERVABILITY.md' },
-        { title: 'Webhooks', desc: 'Webhooks autenticados e idempotencia propiedad de la aplicación', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/WEBHOOK.md' },
+        { title: 'Webhooks', desc: 'Webhooks autenticados e idempotencia propiedad de la aplicación', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/webhook.md' },
     ],
     wikiBtn:     'Explorar documentación →',
 
