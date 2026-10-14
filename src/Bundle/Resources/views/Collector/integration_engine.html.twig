@@ -114,6 +114,27 @@
                             <td colspan="7"><code>{{ call.error }}</code></td>
                         </tr>
                     {% endif %}
+                    {% if call.bodyData is not null or call.contextData is not null or call.responseData is not null %}
+                        <tr>
+                            <td colspan="7">
+                                <details>
+                                    <summary>payload (profiler_payloads)</summary>
+                                    {% if call.bodyData is not null %}
+                                        <p><strong>Body</strong></p>
+                                        <pre>{{ call.bodyData|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+                                    {% endif %}
+                                    {% if call.contextData is not null %}
+                                        <p><strong>Context</strong></p>
+                                        <pre>{{ call.contextData|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+                                    {% endif %}
+                                    {% if call.responseData is not null %}
+                                        <p><strong>Response</strong></p>
+                                        <pre>{{ call.responseData|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+                                    {% endif %}
+                                </details>
+                            </td>
+                        </tr>
+                    {% endif %}
                 {% endfor %}
             </tbody>
         </table>

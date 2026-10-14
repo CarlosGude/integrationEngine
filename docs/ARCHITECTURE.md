@@ -41,7 +41,8 @@ Bundle configuration accepts, per integration:
 - `headers`, `cache_service`;
 - `connection_resolver`;
 - `middlewares`, `request_middlewares`;
-- transport `timeout`, `max_duration`, `retry`, `allowed_hosts`, `block_private_networks`.
+- transport `timeout`, `max_duration`, `retry`, `allowed_hosts`, `block_private_networks`;
+- `profiler_payloads` (debug-only opt-in, see [ADR 0019](adr/0019-profiler-payload-visibility.md)).
 
 Integration YAML accepts action entries with `action`, optional `method`, `path`, `body`, `authorization`, `cache_ttl`, and per-action `timeout`, plus an optional top-level `webhooks` block.
 

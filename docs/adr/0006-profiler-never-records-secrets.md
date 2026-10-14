@@ -24,12 +24,11 @@ The profiler's `IntegrationCall` records:
 - the exception **class name** when a call fails;
 - the request body's **class name** (not its contents) — see [0018](0018-body-type-invariant.md).
 
-It explicitly does **not** record:
+It explicitly does **not** record, by default:
 
-- authorization headers or credentials;
-- request or response bodies;
-- resolved context/path values;
-- exception messages or upstream error bodies.
+- authorization headers or credentials — never, with no opt-out;
+- request/response bodies and resolved context/path values — unless the integration explicitly opts in via `profiler_payloads`, see [0019](0019-profiler-payload-visibility.md). Even then, a failed call's response/error body is still never recorded;
+- exception messages or upstream error bodies — never, with no opt-out.
 
 `IntegrationEngineDataCollector::recordCall()` receives the original throwable only long enough to classify the failure by class; its message is discarded before the `IntegrationCall` is created.
 

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `profiler_payloads` integration option (default `false`): shows action body, context and response contents in the Symfony Profiler panel. Only has any effect while `kernel.debug` is `true`; never records headers/credentials or a failed call's response. See [ADR 0019](docs/adr/0019-profiler-payload-visibility.md).
+
 ## [9.1.0] - 2026-10-14
 
 ### Changed

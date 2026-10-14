@@ -16,12 +16,19 @@ use IntegrationEngine\Core\Exception\RequestResponseException;
  * Symfony Profiler data collector. Only wired when kernel.debug is true and
  * the web-profiler-bundle is active. Sits inside CachingMiddleware so it only
  * fires for requests that actually reach the HTTP adapter, not for cache hits.
+ *
+ * $capturePayloads additionally records body, context and response contents
+ * (never headers/credentials) when the integration opts in via
+ * profiler_payloads (see ADR 0019). It is irrelevant on its own: this class
+ * is only ever wired into the container when kernel.debug is already true,
+ * so there is no code path where payloads are captured outside debug mode.
  */
 final class TracingMiddleware extends AbstractClientMiddleware
 {
     public function __construct(
         private readonly string $integrationName,
         private readonly IntegrationEngineDataCollector $collector,
+        private readonly bool $capturePayloads = false,
     ) {}
 
     /** @return array<mixed> */
@@ -34,9 +41,12 @@ final class TracingMiddleware extends AbstractClientMiddleware
         $start = microtime(true);
         $error = null;
         $body = $action->getBody();
+        $result = null;
 
         try {
-            return $next($action, $context, $headers);
+            $result = $next($action, $context, $headers);
+
+            return $result;
         } catch (\Throwable $e) {
             $error = $e;
 
@@ -51,6 +61,9 @@ final class TracingMiddleware extends AbstractClientMiddleware
                 error: $error,
                 statusCode: $error instanceof RequestResponseException ? $error->statusCode : null,
                 bodyClass: null !== $body ? $body::class : null,
+                bodyData: $this->capturePayloads ? $body?->toArray() : null,
+                contextData: $this->capturePayloads ? $context?->toArray() : null,
+                responseData: $this->capturePayloads ? $this->extractResponseBody($result) : null,
             );
         }
     }
@@ -86,9 +99,22 @@ final class TracingMiddleware extends AbstractClientMiddleware
                 error: $error,
                 statusCode: $error instanceof RequestResponseException ? $error->statusCode : null,
                 bodyClass: null !== $body ? $body::class : null,
+                bodyData: $this->capturePayloads ? $body?->toArray() : null,
+                contextData: $this->capturePayloads ? $request->context?->toArray() : null,
+                responseData: $this->capturePayloads ? $this->extractResponseBody($result) : null,
             );
         }
 
         return $results;
+    }
+
+    /** @return null|array<mixed> */
+    private function extractResponseBody(mixed $result): ?array
+    {
+        if (!\is_array($result) || !\is_array($result['body'] ?? null)) {
+            return null;
+        }
+
+        return $result['body'];
     }
 }

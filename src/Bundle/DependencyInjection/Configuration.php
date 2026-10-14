@@ -100,6 +100,11 @@ final class Configuration implements ConfigurationInterface
             ->scalarPrototype()->end()
             ->defaultValue([])
             ->end()
+
+            ->booleanNode('profiler_payloads')
+            ->defaultFalse()
+            ->info('Show action body, context and response contents (never headers/credentials) in the Symfony Profiler panel. Only has any effect when kernel.debug is true; inert otherwise regardless of this setting. Recommended under when@dev: as config hygiene. See ADR 0019.')
+            ->end()
             ->end()
 
             ->validate()

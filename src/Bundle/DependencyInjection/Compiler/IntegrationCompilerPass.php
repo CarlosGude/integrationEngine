@@ -40,6 +40,7 @@ use Symfony\Component\HttpKernel\DataCollector\DataCollectorInterface;
  *     middlewares: list<string>,
  *     request_middlewares: list<string>,
  *     headers: array<string, string>,
+ *     profiler_payloads?: bool,
  *     timeout?: ?float,
  *     max_duration?: ?float,
  *     allowed_hosts?: list<string>,
@@ -108,7 +109,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         $integrationRequestMiddlewares = $wiring->middlewareResolver->resolveIntegrationRequestMiddlewares($config['request_middlewares'], $wiring->registeredRequestMiddlewares, $name);
         $httpClientRef = $this->resolveHttpClientRef($container, $name, $config, $wiring->adapterMap, $integrationRequestMiddlewares);
         $integrationMiddlewares = $wiring->middlewareResolver->resolveIntegrationMiddlewares($config['middlewares'], $wiring->registeredMiddlewares, $name);
-        $clientRef = $this->buildMiddlewareClient($container, $name, $httpClientRef, $cacheRef, $integrationMiddlewares);
+        $clientRef = $this->buildMiddlewareClient($container, $name, $httpClientRef, $cacheRef, $integrationMiddlewares, $config['profiler_payloads'] ?? false);
 
         $authHandlerId = "integration_engine.auth_handler.{$name}";
         $container->setDefinition($authHandlerId, new Definition(
@@ -243,6 +244,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         Reference $httpClientRef,
         Reference $cacheRef,
         array $userMiddlewares,
+        bool $capturePayloads,
     ): Reference {
         $collectorRef = new Reference(IntegrationEngineDataCollector::class, ContainerInterface::NULL_ON_INVALID_REFERENCE);
 
@@ -258,7 +260,7 @@ final class IntegrationCompilerPass implements CompilerPassInterface
         if ($this->shouldTrace($container)) {
             $tracingCollectorRef = $this->registerDataCollector($container);
             $tracingId = "integration_engine.middleware.tracing.{$name}";
-            $container->setDefinition($tracingId, new Definition(TracingMiddleware::class, [$name, $tracingCollectorRef]));
+            $container->setDefinition($tracingId, new Definition(TracingMiddleware::class, [$name, $tracingCollectorRef, $capturePayloads]));
             $middlewares[] = new Reference($tracingId);
         }
 
