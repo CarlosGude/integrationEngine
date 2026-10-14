@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `defaults:` section in integration YAML: `defaults.authorization` is shared by every action that doesn't declare its own, with per-action override (full replacement on a different `type`, field-level merge on the same `type` or none) and explicit opt-out via `authorization: false` (`~`/`null` also accepted). See [ADR 0020](docs/adr/0020-shared-default-authorization.md).
+- An action's `authorization:` that is none of a map, `false`, or `~`/`null` (e.g. `true`) is now rejected when the YAML file loads, with a message naming the action and the offending type — previously this value type passed validation and only failed later, at dispatch time, with an unrelated low-level error. `defaults.authorization` keeps its existing, stricter validation: a map, or absent.
+
 ## [9.2.0] - 2026-10-14
 
 ### Added

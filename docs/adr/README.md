@@ -23,6 +23,7 @@ ADRs preserve decisions in their historical context. A superseded ADR is intenti
 | [0017](0017-phpstan-contracts.md) | PHPStan contracts without speculative send inference | Accepted |
 | [0018](0018-body-type-invariant.md) | Body type invariant, validated at config time | Accepted |
 | [0019](0019-profiler-payload-visibility.md) | Opt-in payload visibility in the profiler | Accepted |
+| [0020](0020-shared-default-authorization.md) | Shared `defaults.authorization` with per-action override | Accepted |
 
 ## Adding an ADR
 

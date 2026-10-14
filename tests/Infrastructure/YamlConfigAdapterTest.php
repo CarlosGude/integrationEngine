@@ -235,6 +235,155 @@ final class YamlConfigAdapterTest extends TestCase
         self::assertSame(300, $authorization->ttl);
     }
 
+    // ── defaults.authorization ──────────────────────────────────────────────
+
+    #[Test]
+    public function getActionInheritsDefaultAuthorizationWhenActionDeclaresNone(): void
+    {
+        $adapter = $this->buildAdapter(<<<'YAML'
+            defaults:
+                authorization:
+                    type: dynamic
+                    action: fetch_token
+                    token_field: access_token
+                    ttl: 300
+            get_employee:
+                action: '%s'
+            YAML);
+
+        $authorization = $adapter->getAction('get_employee')->getAuthorization();
+
+        self::assertInstanceOf(DynamicAuthorizationConfig::class, $authorization);
+        self::assertSame('fetch_token', $authorization->action);
+        self::assertSame('access_token', $authorization->tokenField);
+        self::assertSame(300, $authorization->ttl);
+    }
+
+    #[Test]
+    public function getActionMergesOwnAuthorizationOverDefaultOfTheSameType(): void
+    {
+        $adapter = $this->buildAdapter(<<<'YAML'
+            defaults:
+                authorization:
+                    type: dynamic
+                    action: fetch_token
+                    token_field: access_token
+                    ttl: 300
+            get_employee:
+                action: '%s'
+                authorization:
+                    ttl: 900
+            YAML);
+
+        $authorization = $adapter->getAction('get_employee')->getAuthorization();
+
+        self::assertInstanceOf(DynamicAuthorizationConfig::class, $authorization);
+        self::assertSame('fetch_token', $authorization->action);
+        self::assertSame('access_token', $authorization->tokenField);
+        self::assertSame(900, $authorization->ttl);
+    }
+
+    #[Test]
+    public function getActionOwnAuthorizationOfADifferentTypeReplacesTheDefaultEntirely(): void
+    {
+        $adapter = $this->buildAdapter(<<<'YAML'
+            defaults:
+                authorization:
+                    type: dynamic
+                    action: fetch_token
+                    token_field: access_token
+                    ttl: 300
+            get_employee:
+                action: '%s'
+                authorization:
+                    type: bearer
+                    token: sk_live_123
+            YAML);
+
+        $authorization = $adapter->getAction('get_employee')->getAuthorization();
+
+        self::assertInstanceOf(StaticAuthorizationConfig::class, $authorization);
+        self::assertSame('bearer', $authorization->type);
+        self::assertSame(['token' => 'sk_live_123'], $authorization->params);
+    }
+
+    #[Test]
+    public function getActionExplicitNullAuthorizationOptsOutOfTheDefault(): void
+    {
+        $adapter = $this->buildAdapter(<<<'YAML'
+            defaults:
+                authorization:
+                    type: dynamic
+                    action: fetch_token
+                    token_field: access_token
+                    ttl: 300
+            fetch_token:
+                action: '%s'
+                authorization: ~
+            YAML);
+
+        self::assertNull($adapter->getAction('fetch_token')->getAuthorization());
+    }
+
+    #[Test]
+    public function getActionExplicitFalseAuthorizationOptsOutOfTheDefault(): void
+    {
+        $adapter = $this->buildAdapter(<<<'YAML'
+            defaults:
+                authorization:
+                    type: dynamic
+                    action: fetch_token
+                    token_field: access_token
+                    ttl: 300
+            fetch_token:
+                action: '%s'
+                authorization: false
+            YAML);
+
+        self::assertNull($adapter->getAction('fetch_token')->getAuthorization());
+    }
+
+    #[Test]
+    public function constructorThrowsWhenDefaultAuthorizationIsInvalid(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Dynamic authorization config must define "action"');
+
+        $this->buildAdapter(<<<'YAML'
+            defaults:
+                authorization:
+                    type: dynamic
+            get_employee:
+                action: '%s'
+            YAML);
+    }
+
+    #[Test]
+    public function constructorThrowsWhenActionAuthorizationIsNotAMapOrNull(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Action "get_employee" authorization must be a map, false, or null (~), got bool.');
+
+        $this->buildAdapter(<<<'YAML'
+            get_employee:
+                action: '%s'
+                authorization: true
+            YAML);
+    }
+
+    #[Test]
+    public function constructorThrowsWhenDefaultsSectionIsNotAMap(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Defaults section in config must be a map.');
+
+        $this->buildAdapter(<<<'YAML'
+            defaults: just_a_string
+            get_employee:
+                action: '%s'
+            YAML);
+    }
+
     // ── cache_ttl ────────────────────────────────────────────────────────────
 
     #[Test]
