@@ -83,7 +83,9 @@ $response = $registry->get('my_api')->send(
 );
 ```
 
-In practice, wrap that behind a small facade instead of calling `IntegrationRegistry` directly from controllers and application services, so callers get a typed return instead of the base `ResponseInterface`. This is the recommended facade pattern:
+In practice, wrap that behind a small facade instead of calling `IntegrationRegistry` directly from controllers and application services, so callers get a typed return instead of the base `ResponseInterface`.
+
+The facade implements `IntegrationName` so the integration is referenced as `MyApiIntegration::NAME` rather than a bare string — the constant is autocompleted and can be grepped/refactored with the rest of the codebase, instead of relying on string literals that silently drift. This is the recommended facade pattern:
 
 ```php
 use IntegrationEngine\Core\Contract\Action\DefaultActionContext;
