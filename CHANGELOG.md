@@ -7,10 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [9.3.0] - 2026-10-14
+
 ### Added
 
 - `defaults:` section in integration YAML: `defaults.authorization` is shared by every action that doesn't declare its own, with per-action override (full replacement on a different `type`, field-level merge on the same `type` or none) and explicit opt-out via `authorization: false` (`~`/`null` also accepted). See [ADR 0020](docs/adr/0020-shared-default-authorization.md).
 - An action's `authorization:` that is none of a map, `false`, or `~`/`null` (e.g. `true`) is now rejected when the YAML file loads, with a message naming the action and the offending type — previously this value type passed validation and only failed later, at dispatch time, with an unrelated low-level error. `defaults.authorization` keeps its existing, stricter validation: a map, or absent.
+
+### Documentation
+
+- Rewrote `docs/webhook.md`'s request flow around an explicit three-layer diagram (bundle → Symfony Webhook/Messenger → application consumer), making clear the HTTP response is sent before the consumer runs. Added a dedicated "What happens if the event fails" section covering both rejection-before-acceptance and consumer failure (sync vs. async Messenger transport), and a concrete idempotent-receipt code example.
+
+### Fixed
+
+- Fixed landing page links to `docs/OBSERVABILITY.md` and `docs/TESTING.md` left over from an earlier lowercase filename rename; they now resolve to `docs/observability.md` and `docs/testing.md`.
 
 ## [9.2.0] - 2026-10-14
 
