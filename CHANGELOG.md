@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-- Fixed landing page links to `docs/OBSERVABILITY.md` and `docs/TESTING.md` left over from an earlier lowercase filename rename; they now resolve to `docs/observability.md` and `docs/testing.md`.
+- Fixed landing page links to the old uppercase `OBSERVABILITY.md` and `TESTING.md` filenames, left over from an earlier lowercase rename; they now resolve to `docs/observability.md` and `docs/testing.md`.
 
 ## [9.2.0] - 2026-10-14
 
