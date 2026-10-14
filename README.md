@@ -112,6 +112,18 @@ final class MyApiIntegration implements IntegrationName
 }
 ```
 
+A failed call (HTTP 4xx/5xx, or a network error) throws `RequestResponseException`, which carries the status code and context:
+
+```php
+use IntegrationEngine\Core\Exception\RequestResponseException;
+
+try {
+    $response = $this->registry->get(self::NAME)->send(/* ... */);
+} catch (RequestResponseException $e) {
+    // $e->statusCode, $e->context
+}
+```
+
 See [Getting started](./docs/getting-started/README.md) for the request, context, auth, mapping and batch contracts.
 
 ## Current capabilities
