@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [9.3.1] - 2026-10-14
+
+### Fixed
+
+- Fixed a CHANGELOG backtick-link false positive: the v9.3.0 entry's mention of the retired uppercase `OBSERVABILITY.md`/`TESTING.md` filenames tripped `DocumentationLinksTest`, which treats any backtick-quoted path-like mention in a `.md` file as a link to verify.
+- Renamed `ROADMAP.md` and the six `UPGRADE-N.0.md` files under `docs/` to lowercase (`roadmap.md`, `upgrade-N.0.md`), the only `docs/` filenames left out of the earlier lowercase rename, and updated every internal reference (README, ADRs, CHANGELOG, `webhook.md`, the landing page and its tests).
+- Refreshed the stale `v9.0.0` "latest release" marker to `v9.3.0` in `docs/documentation.md`, `docs/roadmap.md` and the landing page copy.
+
 ## [9.3.0] - 2026-10-14
 
 ### Added
