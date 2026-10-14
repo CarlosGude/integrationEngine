@@ -26,6 +26,10 @@ The bundle then handles configuration lookup, path resolution, static or dynamic
 
 It intentionally does **not** own your domain model. Keep the external DTOs behind a Gateway / Anti-Corruption Layer when they cross into application or domain code.
 
+## When not to use it
+
+IntegrationEngine is a poor fit when an API needs a highly stateful SDK, protocol-specific streaming/session behavior, or a vendor library that already owns transport, retries and object mapping coherently. In those cases, wrapping the SDK behind your own application boundary is usually simpler than forcing it into this action/mapper model.
+
 ## Install
 
 ```bash
@@ -147,7 +151,3 @@ Repository gates cover style, PHPStan, PHPUnit, Deptrac and Infection. Measured 
 ## Further reading
 
 Start from [docs/DOCUMENTATION.md](./docs/DOCUMENTATION.md). It is the only documentation index; archived plans, spikes and release-preparation notes live under [docs/archived/](./docs/archived/) and are explicitly non-current.
-
-## When not to use it
-
-IntegrationEngine is a poor fit when an API needs a highly stateful SDK, protocol-specific streaming/session behavior, or a vendor library that already owns transport, retries and object mapping coherently. In those cases, wrapping the SDK behind your own application boundary is usually simpler than forcing it into this action/mapper model.
