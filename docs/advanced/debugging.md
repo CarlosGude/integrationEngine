@@ -34,10 +34,60 @@ and shown in the Symfony Toolbar/Profiler — automatically, with zero configura
 A panel listing every call made during the current app request: integration name,
 action, HTTP method, raw path template, duration, HTTP status when available, and the
 exception class when a call fails. Exception messages, upstream response bodies,
-resolved URLs and runtime context values are deliberately not stored.
+resolved URLs and runtime context values are deliberately not stored by default.
 
 The toolbar shows a compact summary — total calls, total time, cache hits and an error
 badge when any call failed.
+
+### Opt-in: showing body, context and response contents
+
+By default the panel only shows metadata — never the actual body, context or response
+content, per [ADR 0006](../adr/0006-profiler-never-records-secrets.md). Set
+`profiler_payloads: true` on an integration to also show, per call:
+
+- the action body's contents (`toArray()`);
+- the resolved context's contents (`toArray()`);
+- the response body — **only for successful calls**; a failed call's response/error body
+  is still never recorded, same as the exception-message rule above.
+
+Authorization headers and other credentials are never recorded, with or without this flag.
+
+```yaml
+# config/packages/integration_engine.yaml
+when@dev:
+    integration_engine:
+        integrations:
+            my_api:
+                profiler_payloads: true
+```
+
+This flag only has any effect while `kernel.debug` is `true` — the same condition that
+gates the whole panel (see "Why only dev/test" below). Declaring it under `when@dev:` is
+recommended as config hygiene, making the intent explicit in the YAML, but it is not what
+makes this safe: the `kernel.debug` gate already makes the flag inert in production
+regardless of where it's declared. See [ADR 0019](../adr/0019-profiler-payload-visibility.md)
+for the full rationale, including why this doesn't weaken ADR 0006's existing rules for
+credentials and failed-call bodies.
+
+#### Why this matters beyond the browser toolbar
+
+The toolbar itself only renders when a browser loads the HTML response. Two common
+workflows don't get that for free, and this is where `profiler_payloads` earns its keep
+over a throwaway `dump()`:
+
+- **Calling your own endpoint through Postman/Bruno/curl instead of a browser.** Symfony
+  still profiles the request and returns an `X-Debug-Token` response header even though
+  there's no toolbar to show it. Copy that token and open
+  `/_profiler/{token}` in a browser afterwards to get the full IntegrationEngine panel for
+  that exact request — including, with the flag on, what was actually sent to the upstream
+  API and what came back. A black-box look at your own endpoint's response never shows
+  that intermediate call; the profiler does.
+- **Step debugging isn't always available.** Classic Xdebug remote debugging assumes a
+  request that starts and ends one process. Worker-mode runtimes (FrankenPHP in worker
+  mode, Swoole, RoadRunner) keep processes alive across requests, which makes attaching a
+  step debugger noticeably more fiddly than on traditional PHP-FPM. The profiler panel
+  needs no IDE↔process connection at all, so it keeps working exactly the same regardless
+  of which runtime is serving the app.
 
 This is per **app request**, not per outgoing call. If a controller triggers three calls
 across two integrations (including a `sendMany()` batch), all three show up in the same
@@ -76,11 +126,13 @@ no memory cost.
 
 The panel records action-level transport metadata — HTTP method, raw path template,
 duration and status when available — because `TracingMiddleware` sits at the HTTP adapter
-boundary. It deliberately does **not** retain the fully resolved URL or runtime context
-values. It also does **not** instrument inside `IntegrationEngine::send()`; the core engine
-flow is untouched. The Action's logical name comes from `$action::getName()`, so the panel
-can identify `GetEmployee` without persisting a resolved path such as a concrete employee
-identifier.
+boundary. It never retains the fully resolved URL (e.g. a concrete employee identifier
+substituted into the path), with or without `profiler_payloads`. Runtime context values
+are likewise not retained by default — only when `profiler_payloads` is explicitly enabled
+for that integration, see "Opt-in" above. It also does **not** instrument inside
+`IntegrationEngine::send()`; the core engine flow is untouched. The Action's logical name
+comes from `$action::getName()`, so the panel can identify `GetEmployee` without the flag
+needing to be on just to know which action ran.
 
 This trade-off was deliberate: instrumenting inside `IntegrationEngine` would mean
 touching the one class every request flows through, for a feature that is purely
@@ -97,6 +149,7 @@ is for **events worth a log line in any environment**, including production.
 The profiler panel is the complementary view: outgoing calls for one application request,
 normally in `dev`/`test`. It is a per-request debugging view, **not** an application
 audit log or production observability store. Symfony may persist profiler data, which is
-why the collector keeps only bounded metadata and never stores exception messages,
-payloads, resolved URLs or credentials. Use application logging/metrics for persistent
-operational evidence and the profiler for request-scoped diagnosis.
+why the collector keeps only bounded metadata by default and never stores exception
+messages, resolved URLs or credentials — payloads are the one opt-in exception, see
+"Opt-in" above. Use application logging/metrics for persistent operational evidence and
+the profiler for request-scoped diagnosis.

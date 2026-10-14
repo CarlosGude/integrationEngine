@@ -53,6 +53,30 @@ final class IntegrationCompilerPassDebugTest extends TestCase
     }
 
     #[Test]
+    public function tracingMiddlewareDefaultsToNotCapturingPayloads(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig()], debug: true);
+
+        (new IntegrationCompilerPass())->process($container);
+
+        $tracingDef = $container->getDefinition('integration_engine.middleware.tracing.my_api');
+        self::assertFalse($tracingDef->getArgument(2));
+    }
+
+    #[Test]
+    public function profilerPayloadsTrueIsPassedToTracingMiddleware(): void
+    {
+        $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig([
+            'profiler_payloads' => true,
+        ])], debug: true);
+
+        (new IntegrationCompilerPass())->process($container);
+
+        $tracingDef = $container->getDefinition('integration_engine.middleware.tracing.my_api');
+        self::assertTrue($tracingDef->getArgument(2));
+    }
+
+    #[Test]
     public function declaredMiddlewaresArePositionedBetweenCachingAndTracingInDebugMode(): void
     {
         $container = $this->containerWithCoreServices(['my_api' => $this->integrationConfig([

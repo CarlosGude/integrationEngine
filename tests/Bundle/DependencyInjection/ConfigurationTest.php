@@ -40,6 +40,22 @@ final class ConfigurationTest extends TestCase
         self::assertSame([], $integration['headers']);
         self::assertSame([], $integration['middlewares']);
         self::assertSame([], $integration['request_middlewares']);
+        self::assertFalse($integration['profiler_payloads']);
+    }
+
+    #[Test]
+    public function profilerPayloadsCanBeEnabled(): void
+    {
+        $config = $this->process([
+            'integrations' => [
+                'my_api' => [
+                    'base_url' => 'https://api.example.com',
+                    'profiler_payloads' => true,
+                ],
+            ],
+        ]);
+
+        self::assertTrue($config['integrations']['my_api']['profiler_payloads']);
     }
 
     #[Test]

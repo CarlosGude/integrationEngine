@@ -180,6 +180,7 @@ This prevents per-call values from leaking into shared service state and makes a
 | middlewares | Ordered AbstractClientMiddleware service IDs, outermost first. |
 | request_middlewares | Ordered RequestMiddlewareInterface service IDs for the fully-built request. |
 | headers | Default integration headers. Header keys keep their original spelling. |
+| profiler_payloads | Show body/context/response contents (never headers/credentials) in the Symfony Profiler panel. Default false. Only has any effect when kernel.debug is true. See ADR 0019. |
 
 
 ### Transport ownership with client_service

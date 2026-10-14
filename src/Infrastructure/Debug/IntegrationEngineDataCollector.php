@@ -32,6 +32,11 @@ final class IntegrationEngineDataCollector implements DataCollectorInterface
     /** @var list<IntegrationCall> */
     private array $calls = [];
 
+    /**
+     * @param null|array<mixed> $bodyData
+     * @param null|array<mixed> $contextData
+     * @param null|array<mixed> $responseData
+     */
     public function recordCall(
         string $integrationName,
         string $actionName,
@@ -42,6 +47,9 @@ final class IntegrationEngineDataCollector implements DataCollectorInterface
         ?int $statusCode = null,
         bool $cached = false,
         ?string $bodyClass = null,
+        ?array $bodyData = null,
+        ?array $contextData = null,
+        ?array $responseData = null,
     ): void {
         $this->calls[] = new IntegrationCall(
             integrationName: $integrationName,
@@ -53,6 +61,9 @@ final class IntegrationEngineDataCollector implements DataCollectorInterface
             statusCode: $statusCode,
             cached: $cached,
             bodyClass: $bodyClass,
+            bodyData: $bodyData,
+            contextData: $contextData,
+            responseData: $responseData,
         );
     }
 

@@ -22,6 +22,7 @@ ADRs preserve decisions in their historical context. A superseded ADR is intenti
 | [0016](0016-generic-webhooks-and-application-idempotency.md) | Generic authenticated webhooks and application idempotency | Accepted; transport caveat documented |
 | [0017](0017-phpstan-contracts.md) | PHPStan contracts without speculative send inference | Accepted |
 | [0018](0018-body-type-invariant.md) | Body type invariant, validated at config time | Accepted |
+| [0019](0019-profiler-payload-visibility.md) | Opt-in payload visibility in the profiler | Accepted |
 
 ## Adding an ADR
 

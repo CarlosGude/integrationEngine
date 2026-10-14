@@ -121,6 +121,43 @@ final class IntegrationEngineDataCollectorTest extends TestCase
     }
 
     #[Test]
+    public function recordCallStoresPayloadFieldsWhenProvided(): void
+    {
+        $collector = new IntegrationEngineDataCollector();
+
+        $collector->recordCall(
+            'my_api',
+            'CreateEmployee',
+            'POST',
+            '/employees',
+            5.0,
+            null,
+            201,
+            bodyData: ['name' => 'Ada'],
+            contextData: ['id' => 1],
+            responseData: ['id' => 42],
+        );
+
+        $call = $collector->getCalls()[0];
+        self::assertSame(['name' => 'Ada'], $call->bodyData);
+        self::assertSame(['id' => 1], $call->contextData);
+        self::assertSame(['id' => 42], $call->responseData);
+    }
+
+    #[Test]
+    public function recordCallDefaultsPayloadFieldsToNull(): void
+    {
+        $collector = new IntegrationEngineDataCollector();
+
+        $collector->recordCall('my_api', 'GetItems', 'GET', '/items', 1.0, null);
+
+        $call = $collector->getCalls()[0];
+        self::assertNull($call->bodyData);
+        self::assertNull($call->contextData);
+        self::assertNull($call->responseData);
+    }
+
+    #[Test]
     public function getNameReturnsTheCollectorId(): void
     {
         self::assertSame('integration_engine', (new IntegrationEngineDataCollector())->getName());

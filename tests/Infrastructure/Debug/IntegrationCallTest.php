@@ -41,4 +41,22 @@ final class IntegrationCallTest extends TestCase
 
         self::assertNull($call->bodyClass);
     }
+
+    #[Test]
+    public function payloadFieldsDefaultToNull(): void
+    {
+        $call = new IntegrationCall(
+            integrationName: 'my_api',
+            actionName: 'get_items',
+            method: 'GET',
+            path: '/items',
+            durationMs: 12.0,
+            error: null,
+            statusCode: 200,
+        );
+
+        self::assertNull($call->bodyData);
+        self::assertNull($call->contextData);
+        self::assertNull($call->responseData);
+    }
 }

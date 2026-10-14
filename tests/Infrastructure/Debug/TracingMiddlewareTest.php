@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IntegrationEngine\Tests\Infrastructure\Debug;
 
 use IntegrationEngine\Core\Batch\PreparedRequest;
+use IntegrationEngine\Core\Contract\Action\DefaultActionContext;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use IntegrationEngine\Infrastructure\Debug\IntegrationEngineDataCollector;
 use IntegrationEngine\Infrastructure\Debug\TracingMiddleware;
@@ -105,6 +106,111 @@ final class TracingMiddlewareTest extends TestCase
 
         self::assertSame(1, $collector->getErrorCount());
         self::assertSame(503, $collector->getCalls()[0]->statusCode);
+    }
+
+    // ── capturePayloads ──────────────────────────────────────────────────────
+
+    #[Test]
+    public function processDoesNotCapturePayloadsByDefault(): void
+    {
+        $collector = new IntegrationEngineDataCollector();
+        $mw = new TracingMiddleware('my_api', $collector);
+        $body = FakeFormBody::create(['name' => 'Ada']);
+        $next = static fn (): array => ['body' => ['id' => 42], 'headers' => []];
+
+        $mw->process(
+            FakePathAction::create('POST', '/items', $body),
+            DefaultActionContext::create(['id' => 1]),
+            null,
+            $next,
+        );
+
+        $call = $collector->getCalls()[0];
+        self::assertNull($call->bodyData);
+        self::assertNull($call->contextData);
+        self::assertNull($call->responseData);
+    }
+
+    #[Test]
+    public function processCapturesBodyContextAndResponseWhenEnabled(): void
+    {
+        $collector = new IntegrationEngineDataCollector();
+        $mw = new TracingMiddleware('my_api', $collector, capturePayloads: true);
+        $body = FakeFormBody::create(['name' => 'Ada']);
+        $next = static fn (): array => ['body' => ['id' => 42], 'headers' => []];
+
+        $mw->process(
+            FakePathAction::create('POST', '/items', $body),
+            DefaultActionContext::create(['id' => 1]),
+            null,
+            $next,
+        );
+
+        $call = $collector->getCalls()[0];
+        self::assertSame(['name' => 'Ada'], $call->bodyData);
+        self::assertSame(['id' => 1], $call->contextData);
+        self::assertSame(['id' => 42], $call->responseData);
+    }
+
+    #[Test]
+    public function processNeverCapturesResponseDataWhenTheCallFails(): void
+    {
+        $collector = new IntegrationEngineDataCollector();
+        $mw = new TracingMiddleware('my_api', $collector, capturePayloads: true);
+        $body = FakeFormBody::create(['name' => 'Ada']);
+        $next = static fn (): never => throw new RequestResponseException(500, 'upstream body with a secret');
+
+        try {
+            $mw->process(FakePathAction::create('POST', '/items', $body), null, null, $next);
+            self::fail('Expected exception to propagate.');
+        } catch (RequestResponseException) {
+        }
+
+        $call = $collector->getCalls()[0];
+        self::assertSame(['name' => 'Ada'], $call->bodyData);
+        self::assertNull($call->responseData);
+    }
+
+    #[Test]
+    public function processManyCapturesBodyContextAndResponsePerRequestWhenEnabled(): void
+    {
+        $collector = new IntegrationEngineDataCollector();
+        $mw = new TracingMiddleware('my_api', $collector, capturePayloads: true);
+        $body = FakeFormBody::create(['name' => 'Ada']);
+
+        $mw->processMany(
+            [
+                'a' => new PreparedRequest(FakePathAction::create('POST', '/a', $body), DefaultActionContext::create(['id' => 1]), null),
+                'b' => new PreparedRequest(FakePathAction::create('GET', '/b'), null, null),
+            ],
+            static fn (array $reqs): array => [
+                'a' => ['body' => ['ok' => true], 'headers' => []],
+                'b' => new RequestResponseException(500, 'boom'),
+            ],
+        );
+
+        self::assertSame(['name' => 'Ada'], $collector->getCalls()[0]->bodyData);
+        self::assertSame(['id' => 1], $collector->getCalls()[0]->contextData);
+        self::assertSame(['ok' => true], $collector->getCalls()[0]->responseData);
+        self::assertNull($collector->getCalls()[1]->responseData);
+    }
+
+    #[Test]
+    public function processManyDoesNotCapturePayloadsByDefault(): void
+    {
+        $collector = new IntegrationEngineDataCollector();
+        $mw = new TracingMiddleware('my_api', $collector);
+        $body = FakeFormBody::create(['name' => 'Ada']);
+
+        $mw->processMany(
+            ['a' => new PreparedRequest(FakePathAction::create('POST', '/a', $body), DefaultActionContext::create(['id' => 1]), null)],
+            static fn (array $reqs): array => ['a' => ['body' => ['ok' => true], 'headers' => []]],
+        );
+
+        $call = $collector->getCalls()[0];
+        self::assertNull($call->bodyData);
+        self::assertNull($call->contextData);
+        self::assertNull($call->responseData);
     }
 
     // ── processMany() ─────────────────────────────────────────────────────────
