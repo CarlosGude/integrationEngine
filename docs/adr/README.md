@@ -21,6 +21,7 @@ ADRs preserve decisions in their historical context. A superseded ADR is intenti
 | [0015](0015-resilience-classification-boundary.md) | Resilience classification boundary | Accepted |
 | [0016](0016-generic-webhooks-and-application-idempotency.md) | Generic authenticated webhooks and application idempotency | Accepted; transport caveat documented |
 | [0017](0017-phpstan-contracts.md) | PHPStan contracts without speculative send inference | Accepted |
+| [0018](0018-body-type-invariant.md) | Body type invariant, validated at config time | Accepted |
 
 ## Adding an ADR
 

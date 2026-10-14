@@ -21,7 +21,8 @@ The profiler's `IntegrationCall` records:
 - duration;
 - HTTP status when known;
 - whether the result came from cache;
-- the exception **class name** when a call fails.
+- the exception **class name** when a call fails;
+- the request body's **class name** (not its contents) — see [0018](0018-body-type-invariant.md).
 
 It explicitly does **not** record:
 

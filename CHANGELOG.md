@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed — BREAKING
+
+- A body passed to `send()` / `sendMany()` must now be an instance of the class declared in the action's YAML `body:` entry. `YamlConfigAdapter` throws `\InvalidArgumentException` on mismatch, before the HTTP call is made. See [ADR 0018](docs/adr/0018-body-type-invariant.md).
+
+### Added
+
+- The Symfony Profiler panel now shows the action body's class name (never its contents) per outgoing call.
+
 ## [9.0.0] - 2026-09-24
 
 ### Changed — BREAKING

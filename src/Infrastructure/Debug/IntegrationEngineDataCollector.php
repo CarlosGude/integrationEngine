@@ -41,6 +41,7 @@ final class IntegrationEngineDataCollector implements DataCollectorInterface
         ?\Throwable $error,
         ?int $statusCode = null,
         bool $cached = false,
+        ?string $bodyClass = null,
     ): void {
         $this->calls[] = new IntegrationCall(
             integrationName: $integrationName,
@@ -51,6 +52,7 @@ final class IntegrationEngineDataCollector implements DataCollectorInterface
             error: null === $error ? null : $error::class,
             statusCode: $statusCode,
             cached: $cached,
+            bodyClass: $bodyClass,
         );
     }
 

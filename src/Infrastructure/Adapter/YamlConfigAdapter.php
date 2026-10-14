@@ -161,6 +161,15 @@ final class YamlConfigAdapter implements ConfigPort
             throw new \InvalidArgumentException(\sprintf('Body "%s" must implement %s', $bodyClass, ActionBodyInterface::class));
         }
 
+        if (null !== $bodyData && !$bodyData instanceof $bodyClass) {
+            throw new \InvalidArgumentException(\sprintf(
+                'Action "%s" declares body "%s" in its YAML config, but received "%s".',
+                $name,
+                $bodyClass,
+                $bodyData::class,
+            ));
+        }
+
         return $bodyData ?? $bodyClass::create([]);
     }
 

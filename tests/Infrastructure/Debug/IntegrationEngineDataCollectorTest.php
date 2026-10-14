@@ -101,6 +101,26 @@ final class IntegrationEngineDataCollectorTest extends TestCase
     }
 
     #[Test]
+    public function recordCallStoresBodyClassWhenProvided(): void
+    {
+        $collector = new IntegrationEngineDataCollector();
+
+        $collector->recordCall('my_api', 'CreateEmployee', 'POST', '/employees', 5.0, null, 201, bodyClass: 'App\CreateEmployeeBody');
+
+        self::assertSame('App\CreateEmployeeBody', $collector->getCalls()[0]->bodyClass);
+    }
+
+    #[Test]
+    public function recordCallDefaultsBodyClassToNull(): void
+    {
+        $collector = new IntegrationEngineDataCollector();
+
+        $collector->recordCall('my_api', 'GetItems', 'GET', '/items', 1.0, null);
+
+        self::assertNull($collector->getCalls()[0]->bodyClass);
+    }
+
+    #[Test]
     public function getNameReturnsTheCollectorId(): void
     {
         self::assertSame('integration_engine', (new IntegrationEngineDataCollector())->getName());

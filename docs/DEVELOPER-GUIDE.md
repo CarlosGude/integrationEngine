@@ -259,7 +259,7 @@ The registry refuses blank names and the marker constant value __MUST_OVERRIDE__
 
 ## 6.2 Action bodies
 
-ActionBodyInterface is a small immutable-data contract: create(array) and toArray(). The YAML body class determines whether a body is accepted. Passing a body to an action that does not declare body is an error. If the action declares a body and the caller passes none, the body class is created with an empty array.
+ActionBodyInterface is a small immutable-data contract: create(array) and toArray(). The YAML body class determines whether a body is accepted. Passing a body to an action that does not declare body is an error. If the action declares a body and the caller passes none, the body class is created with an empty array. If a body is passed and it is not an instance of the declared class, YamlConfigAdapter throws before the HTTP call is made (see [ADR 0018](adr/0018-body-type-invariant.md)).
 
 
 ### FormEncodedBodyInterface

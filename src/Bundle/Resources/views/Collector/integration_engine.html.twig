@@ -79,6 +79,7 @@
                     <th>Action</th>
                     <th>Method</th>
                     <th>Path</th>
+                    <th>Body</th>
                     <th>Duration</th>
                     <th>Status</th>
                 </tr>
@@ -90,6 +91,13 @@
                         <td>{{ call.actionName }}</td>
                         <td>{{ call.method }}</td>
                         <td><code>{{ call.path }}</code></td>
+                        <td>
+                            {% if call.bodyClass %}
+                                <code>{{ call.bodyClass|split('\\')|last }}</code>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
                         <td>{{ call.cached ? '—' : call.durationMs|number_format(1) ~ ' ms' }}</td>
                         <td>
                             {% if call.cached %}
@@ -103,7 +111,7 @@
                     </tr>
                     {% if call.error %}
                         <tr{{ call.error ? ' class="status-error"' : '' }}>
-                            <td colspan="6"><code>{{ call.error }}</code></td>
+                            <td colspan="7"><code>{{ call.error }}</code></td>
                         </tr>
                     {% endif %}
                 {% endfor %}
