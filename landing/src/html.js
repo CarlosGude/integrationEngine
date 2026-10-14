@@ -479,9 +479,26 @@ MyApi/
 <span class="var">$durationMs</span> = <span class="var">$event</span>-&gt;durationMs;</div>
       </div>
 
+      <div class="example-code-panel">
+        <div class="file-label">Debugging one request locally — no dump() needed</div>
+        <div class="code-block"><span class="cm">// config/packages/integration_engine.yaml</span>
+<span class="key">when@dev</span>:
+    <span class="key">integration_engine</span>:
+        <span class="key">integrations</span>:
+            <span class="key">my_api</span>:
+                <span class="key">profiler_payloads</span>: <span class="str">true</span>
+
+<span class="cm">// Symfony Profiler panel now shows that request's body, context</span>
+<span class="cm">// and response &mdash; never headers/credentials, never a failed</span>
+<span class="cm">// call's response. Dev-only: inert unless kernel.debug is true.</span>
+<span class="cm">// Calling via curl/Postman instead of a browser? Read the</span>
+<span class="cm">// X-Debug-Token response header, then open /_profiler/{token}.</span></div>
+      </div>
+
     </div>
     <div class="example-cta">
       <a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/OBSERVABILITY.md" target="_blank" rel="noopener" class="btn-primary">${t.obsBtn}</a>
+      <a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/advanced/debugging.md" target="_blank" rel="noopener" class="btn-outline">${t.obsDebugBtn}</a>
     </div>
   </div>
 </section>

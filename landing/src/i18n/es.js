@@ -223,8 +223,10 @@ export default {
         'Soporte #[AsEventListener] de Symfony para engines gestionados por el bundle',
         'LifecycleEventDispatcher para wiring manual/compartido explícito',
         'ObservabilitySetup opcional para logging, métricas y alertas',
+        'Visibilidad opcional de payloads en el profiler: body, context y response de una request, sin dump() ni sesión de Xdebug',
     ],
     obsBtn:     'Ver guía de observabilidad →',
+    obsDebugBtn: 'Ver guía de depuración →',
 
     // Wiki section
     wikiEyebrow:   'Aprende y Consulta',
