@@ -1,6 +1,6 @@
 # Authorization
 
-Authorization is declared per action. IntegrationEngine supports static credentials and dynamic token acquisition; runtime connection resolution can override either for a specific call.
+Authorization is declared per action. IntegrationEngine supports static credentials and dynamic token acquisition; runtime connection resolution can override either for a specific call. A `defaults:` block lets every action in the file share one authorization config instead of repeating it.
 
 ## Static authorization
 
@@ -72,6 +72,47 @@ A 401 is retried once only when the rejected token came from cache:
 3. retry the protected request once.
 
 A 401 returned after a freshly fetched token is not retried, and non-401 failures do not evict the token.
+
+## Sharing authorization across actions
+
+Most integrations have one token action protecting many endpoints. Declare it once under `defaults.authorization` instead of repeating the full block on every action:
+
+```yaml
+defaults:
+    authorization:
+        type: dynamic
+        action: FetchToken
+        token_field: access_token
+        ttl: 3600
+
+FetchToken:
+    action: App\...\FetchTokenAction
+    method: POST
+    path: /oauth/token
+    authorization: false   # opts out of the default: the token action itself is unauthenticated
+
+GetOrders:
+    action: App\...\GetOrdersAction
+    method: GET
+    path: /orders
+    # inherits the default dynamic authorization as-is
+
+GetOrderDetails:
+    action: App\...\GetOrderDetailsAction
+    method: GET
+    path: /orders/{id}
+    authorization:
+        ttl: 7200   # overrides only ttl; action/token_field/header/prefix come from the default
+```
+
+Resolution rules, in order:
+
+1. **No `authorization:` key on the action** → the default applies unchanged (or no authorization, if there is no default).
+2. **`authorization: false`** → opts this action out of the default; it sends no authorization. This is how the token action itself (`FetchToken` above) stays unauthenticated under a default. `authorization: ~` (explicit null) is equivalent — `false` is the recommended spelling because it reads as an explicit decision ("no auth here") rather than something that looks accidentally empty.
+3. **`authorization:` with fields but no `type`, or the same `type` as the default** → shallow-merged on top of the default; the action's fields win on conflict.
+4. **`authorization:` with a different `type`** → replaces the default entirely for this action; nothing is merged.
+
+`authorization:` must be a map, `false`, or `~`/`null` — any other scalar (e.g. `true`) is rejected eagerly when the YAML file loads, with an error naming the action and the offending type. `defaults.authorization` is validated the same way — an invalid default fails immediately rather than on first dispatch.
 
 ## Token cache identity
 

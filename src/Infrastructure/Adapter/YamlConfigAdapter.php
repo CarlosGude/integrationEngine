@@ -17,11 +17,14 @@ use Symfony\Component\Yaml\Yaml;
 
 final class YamlConfigAdapter implements ConfigPort
 {
-    /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>, cache_ttl?: int, timeout?: float}> */
+    /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: null|array<string, mixed>|false, cache_ttl?: int, timeout?: float}> */
     private array $config;
 
     /** @var array<string, mixed> */
     private array $webhooks;
+
+    /** @var null|array<string, mixed> */
+    private ?array $defaultAuthorization;
 
     public function __construct(string $configPath, private readonly ?string $webhookSecret = null)
     {
@@ -38,10 +41,11 @@ final class YamlConfigAdapter implements ConfigPort
         }
 
         $webhooks = $parsed['webhooks'] ?? [];
+        $defaults = $parsed['defaults'] ?? [];
         $actions = [];
 
         foreach ($parsed as $key => $item) {
-            if ('webhooks' === $key) {
+            if ('webhooks' === $key || 'defaults' === $key) {
                 continue;
             }
             $actions[$key] = $item;
@@ -62,9 +66,15 @@ final class YamlConfigAdapter implements ConfigPort
                     throw new \InvalidArgumentException('timeout must be a finite non-negative number');
                 }
             }
+            if (\array_key_exists('authorization', $actionConfig)) {
+                $ownAuthorization = $actionConfig['authorization'];
+                if (null !== $ownAuthorization && false !== $ownAuthorization && !\is_array($ownAuthorization)) {
+                    throw new \InvalidArgumentException(\sprintf('Action "%s" authorization must be a map, false, or null (~), got %s.', $actionName, get_debug_type($ownAuthorization)));
+                }
+            }
         }
 
-        /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>, cache_ttl?: int, timeout?: float}> $actions */
+        /** @var array<string, array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: null|array<string, mixed>|false, cache_ttl?: int, timeout?: float}> $actions */
         $this->config = $actions;
 
         if (!\is_array($webhooks)) {
@@ -73,6 +83,22 @@ final class YamlConfigAdapter implements ConfigPort
 
         /** @var array<string, mixed> $webhooks */
         $this->webhooks = $webhooks;
+
+        if (!\is_array($defaults)) {
+            throw new \InvalidArgumentException('Defaults section in config must be a map.');
+        }
+
+        $defaultAuthorization = $defaults['authorization'] ?? null;
+        if (null !== $defaultAuthorization && !\is_array($defaultAuthorization)) {
+            throw new \InvalidArgumentException('defaults.authorization must be a map.');
+        }
+
+        /** @var null|array<string, mixed> $defaultAuthorization */
+        if (null !== $defaultAuthorization) {
+            AuthorizationConfig::fromArray($defaultAuthorization);
+        }
+
+        $this->defaultAuthorization = $defaultAuthorization;
     }
 
     public function getAction(string $name, ?ActionBodyInterface $bodyData = null): AbstractAction
@@ -83,9 +109,7 @@ final class YamlConfigAdapter implements ConfigPort
 
         $actionConfig = $this->config[$name];
 
-        $authorization = isset($actionConfig['authorization'])
-            ? AuthorizationConfig::fromArray($actionConfig['authorization'])
-            : null;
+        $authorization = $this->resolveAuthorization($actionConfig);
 
         $body = $this->resolveBody($name, $actionConfig, $bodyData);
 
@@ -136,7 +160,38 @@ final class YamlConfigAdapter implements ConfigPort
     }
 
     /**
-     * @param array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: array<string, mixed>} $actionConfig
+     * Merges the action's own `authorization:` on top of `defaults.authorization`
+     * (array-shallow, action keys win) when both share a type, or the action
+     * doesn't declare one. An explicit `authorization: false` (or `~`) opts
+     * out of the default entirely, distinct from the key being absent.
+     *
+     * @param array{authorization?: null|array<string, mixed>|false} $actionConfig
+     */
+    private function resolveAuthorization(array $actionConfig): ?AuthorizationConfig
+    {
+        $own = $actionConfig['authorization'] ?? null;
+
+        if (false === $own) {
+            return null;
+        }
+
+        if (null === $own) {
+            if (\array_key_exists('authorization', $actionConfig)) {
+                return null; // explicit `authorization: ~`
+            }
+
+            return null !== $this->defaultAuthorization ? AuthorizationConfig::fromArray($this->defaultAuthorization) : null;
+        }
+
+        if (null !== $this->defaultAuthorization && (!isset($own['type']) || $own['type'] === $this->defaultAuthorization['type'])) {
+            $own = [...$this->defaultAuthorization, ...$own];
+        }
+
+        return AuthorizationConfig::fromArray($own);
+    }
+
+    /**
+     * @param array{action: class-string<AbstractAction>, method?: string, path?: string, body?: class-string, authorization?: null|array<string, mixed>|false} $actionConfig
      */
     private function resolveBody(
         string $name,
