@@ -508,7 +508,7 @@ MyApi/
 
     </div>
     <div class="example-cta">
-      <a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/OBSERVABILITY.md" target="_blank" rel="noopener" class="btn-primary">${t.obsBtn}</a>
+      <a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/observability.md" target="_blank" rel="noopener" class="btn-primary">${t.obsBtn}</a>
       <a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/advanced/debugging.md" target="_blank" rel="noopener" class="btn-outline">${t.obsDebugBtn}</a>
     </div>
   </div>

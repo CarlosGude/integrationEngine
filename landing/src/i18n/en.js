@@ -234,9 +234,9 @@ export default {
     wikiFeatures: [
         { title: 'Getting Started', desc: 'Quick start guide, installation, and basic usage', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/getting-started/README.md' },
         { title: 'Architecture', desc: 'Core abstractions, data flow, and design patterns', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/architecture.md' },
-        { title: 'Testing', desc: 'Test structure, strategies, and running tests', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/TESTING.md' },
+        { title: 'Testing', desc: 'Test structure, strategies, and running tests', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/testing.md' },
         { title: 'Lifecycle Events', desc: 'Scalar observability events and timing semantics', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/lifecycle.md' },
-        { title: 'Observability', desc: 'Symfony listeners, helper wiring, metrics and logging', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/OBSERVABILITY.md' },
+        { title: 'Observability', desc: 'Symfony listeners, helper wiring, metrics and logging', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/observability.md' },
         { title: 'Webhooks', desc: 'Authenticated inbound webhooks and application-owned idempotency', href: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/webhook.md' },
     ],
     wikiBtn:     'Browse documentation →',
