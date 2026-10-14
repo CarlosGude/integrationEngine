@@ -31,6 +31,7 @@ export default {
     demoSoon: "Demo online · próximamente",
     demoSource: "Código de la demo",
     navRoadmap: "Hoja de ruta",
+    metaTitle: "IntegrationEngine — Bundle de Symfony para integración de APIs",
     metaDescription: "Conecta APIs externas con Symfony mediante acciones declarativas, respuestas tipadas y peticiones concurrentes. Explora el código, la arquitectura y los ejemplos.",
     lang: 'es',
 
@@ -104,9 +105,7 @@ export default {
     startStep1Title: 'Instala',
     startStep1Code:  'composer require carlosgude/integration-engine',
     startStep2Title: 'Genera',
-    startStep2Code:  'php bin/console make:integration MyApi GetUser',
-    startStep2Tree:  `src/Infrastructure/Integrations/MyApi/\n├─ MyApi.yaml                  <span class="cm">← el endpoint, declarado</span>\n├─ MyApiIntegration.php\n└─ GetUser/\n   ├─ Request/GetUserAction.php   <span class="cm">← lo que entra</span>\n   └─ Response/\n      ├─ GetUserMapper.php        <span class="cm">← payload → DTO</span>\n      └─ GetUserResponse.php      <span class="cm">← el DTO tipado</span>`,
-    startStep2Desc:  'Añade la lógica y 3 líneas al MyApi.yaml &mdash; listo.',
+    startStep2Desc:  'Mira exactamente qué se genera abajo &darr; &mdash; añade la lógica y 3 líneas al MyApi.yaml, listo.',
     startSub:        'Se instala junto al código existente. Sin reescritura masiva &mdash; usa el patrón en el próximo endpoint nuevo y migra el código legacy a tu ritmo.',
     startStep3Title: 'Profundiza',
     startStep3Desc:  'Auth dinámica, batch requests y contextos personalizados están en la documentación.',

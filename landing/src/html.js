@@ -35,18 +35,47 @@ export function getHTML(lang = 'en') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IntegrationEngine &mdash; Symfony API Integration Bundle</title>
+<title>${t.metaTitle}</title>
 <meta name="description" content="${t.metaDescription}" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="alternate" hreflang="en" href="https://integrationengine.dev/?lang=en" />
+<link rel="alternate" hreflang="es" href="https://integrationengine.dev/?lang=es" />
+<link rel="alternate" hreflang="x-default" href="https://integrationengine.dev/?lang=en" />
 <meta property="og:type"        content="website" />
 <meta property="og:url"         content="https://integrationengine.dev/?lang=${lang}" />
-<meta property="og:title"       content="IntegrationEngine &mdash; Symfony API Integration Bundle" />
+<meta property="og:title"       content="${t.metaTitle}" />
 <meta property="og:description" content="${t.metaDescription}" />
+<meta property="og:image"       content="https://integrationengine.dev/og-image.png" />
+<meta property="og:image:width"  content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt"   content="${t.metaTitle}" />
+<meta property="og:locale"      content="${isEs ? 'es_ES' : 'en_US'}" />
 <meta name="twitter:card"        content="summary_large_image" />
-<meta name="twitter:title"       content="IntegrationEngine &mdash; Symfony API Integration Bundle" />
+<meta name="twitter:title"       content="${t.metaTitle}" />
 <meta name="twitter:description" content="${t.metaDescription}" />
+<meta name="twitter:image"       content="https://integrationengine.dev/og-image.png" />
+<meta name="twitter:image:alt"   content="${t.metaTitle}" />
 <link rel="canonical" href="https://integrationengine.dev/?lang=${lang}" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  "name": "IntegrationEngine",
+  "description": ${JSON.stringify(t.metaDescription)},
+  "codeRepository": "https://github.com/CarlosGude/integrationEngine",
+  "programmingLanguage": "PHP",
+  "runtimePlatform": "Symfony",
+  "license": "https://opensource.org/licenses/MIT",
+  "author": {
+    "@type": "Person",
+    "name": "Carlos Gude"
+  }
+}
+</script>
 <style>${CSS}</style>
 </head>
 <body>
@@ -182,17 +211,20 @@ export function getHTML(lang = 'en') {
     <h2 class="s-heading lt">${t.parallelH2}</h2>
     <p class="s-sub lt">${t.parallelSub}</p>
     <div class="struct-panel">
-      <div class="struct-header">PHP</div>
-      <pre><span class="var">$requests</span> = [];
-<span class="kw">foreach</span> (<span class="var">$movieParams</span> <span class="kw">as</span> <span class="var">$key</span> =&gt; <span class="var">$params</span>) {
-    <span class="var">$requests</span>[<span class="var">$key</span>] = <span class="kw">new</span> <span class="cls">EngineRequest</span>(
-        <span class="key">actionName</span>: <span class="cls">GetMovieAction</span>::<span class="fn">getName</span>(),
-        <span class="key">context</span>:    <span class="cls">DefaultActionContext</span>::<span class="fn">create</span>(<span class="var">$params</span>),
-    );
-}
+      <div class="struct-header">src/Engine/.../MovieCatalogIntegration.php</div>
+      <pre><span class="kw">public function</span> <span class="fn">getManyMovies</span>(<span class="cls">array</span> <span class="var">$movieParams</span>): <span class="cls">array</span>
+{
+    <span class="var">$requests</span> = [];
+    <span class="kw">foreach</span> (<span class="var">$movieParams</span> <span class="kw">as</span> <span class="var">$key</span> =&gt; <span class="var">$params</span>) {
+        <span class="var">$requests</span>[<span class="var">$key</span>] = <span class="kw">new</span> <span class="cls">EngineRequest</span>(
+            <span class="key">actionName</span>: <span class="cls">GetMovieAction</span>::<span class="fn">getName</span>(),
+            <span class="key">context</span>:    <span class="cls">DefaultActionContext</span>::<span class="fn">create</span>(<span class="var">$params</span>),
+        );
+    }
 
-<span class="cm">${t.parallelComment}</span>
-<span class="var">$results</span> = <span class="var">$this</span>-&gt;<span class="var">engine</span>-&gt;<span class="hl">sendManyOrFail</span>(<span class="var">$requests</span>);</pre>
+    <span class="cm">${t.parallelComment}</span>
+    <span class="kw">return</span> <span class="var">$this</span>-&gt;<span class="var">engine</span>-&gt;<span class="hl">sendManyOrFail</span>(<span class="var">$requests</span>);
+}</pre>
     </div>
   </div>
 </section>
@@ -212,8 +244,6 @@ export function getHTML(lang = 'en') {
       <div class="step">
         <div class="step-num">2</div>
         <h3>${t.startStep2Title}</h3>
-        <div class="step-code">${t.startStep2Code}</div>
-        <div class="step-tree">${t.startStep2Tree}</div>
         <p>${t.startStep2Desc}</p>
       </div>
       <div class="step">
@@ -444,39 +474,6 @@ MyApi/
     }
 }</div>
         </div>
-      </div>
-
-      <div class="example-code-panel">
-        <div class="file-label">Events are metadata, not payload containers</div>
-        <div class="code-block"><span class="cm">// Outbound lifecycle</span>
-<span class="cls">RequestSent</span>
-<span class="cls">ResponseMapped</span>
-<span class="cls">RequestFailed</span>
-<span class="cls">TokenRefreshed</span>
-
-<span class="cm">// Inbound webhook lifecycle</span>
-<span class="cls">WebhookReceived</span>
-<span class="cls">WebhookRejected</span>
-
-<span class="cm">// No request/response/token/Throwable objects are carried by these events.</span></div>
-      </div>
-
-      <div class="example-code-panel">
-        <div class="file-label">Optional helper: manual/shared-dispatcher wiring only</div>
-        <div class="code-block"><span class="cm">$ php bin/console make:observability shopify</span>
-
-<span class="cm">// The helper subscribes to LifecycleEventDispatcher.</span>
-<span class="cm">// Bundle-managed engines use Symfony's event_dispatcher by default.</span>
-<span class="cm">// Use the generated helper only when the engine and helper share</span>
-<span class="cm">// the same LifecycleEventDispatcher/SymfonyEventDispatcherAdapter instance.</span></div>
-      </div>
-
-      <div class="example-code-panel">
-        <div class="file-label">Timing semantics</div>
-        <div class="code-block"><span class="cm">// ResponseMapped::durationMs is the logical engine duration.</span>
-<span class="cm">// It can include auth, transport, retry, middleware and mapping.</span>
-<span class="cm">// It is not a separate HTTP-vs-mapping timing breakdown.</span>
-<span class="var">$durationMs</span> = <span class="var">$event</span>-&gt;durationMs;</div>
       </div>
 
       <div class="example-code-panel">
