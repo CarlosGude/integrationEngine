@@ -47,7 +47,7 @@ As a secondary, lower-risk piece of the same decision, `TracingMiddleware` now a
 - The Profiler panel now shows which body class (if any) was sent per call, without recording payload data.
 
 **Negative:**
-- A caller that was previously passing a mismatched body and relying on the external API's own (looser or coincidentally-compatible) validation will now get a hard failure instead — this is a breaking change for that edge case.
+- A caller that was previously passing a mismatched body and relying on the external API's own (looser or coincidentally-compatible) validation will now get a hard failure instead of whatever happened before. No public interface or method signature changes, so this ships as a minor release ([0007](0007-versioning-policy-after-v4.md)) — but it is a real behavior change for that specific, already-incorrect edge case.
 - The invariant lives in `YamlConfigAdapter` specifically; a custom `ConfigPort` implementation does not get it for free.
 
 ## References

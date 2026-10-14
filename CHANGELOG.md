@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Changed — BREAKING
+## [9.1.0] - 2026-10-14
 
-- A body passed to `send()` / `sendMany()` must now be an instance of the class declared in the action's YAML `body:` entry. `YamlConfigAdapter` throws `\InvalidArgumentException` on mismatch, before the HTTP call is made. See [ADR 0018](docs/adr/0018-body-type-invariant.md).
+### Changed
+
+- A body passed to `send()` / `sendMany()` must now be an instance of the class declared in the action's YAML `body:` entry; a mismatch was previously accepted silently. `YamlConfigAdapter` throws `\InvalidArgumentException` on mismatch, before the HTTP call is made. No change for callers already passing the declared body class. See [ADR 0018](docs/adr/0018-body-type-invariant.md).
 
 ### Added
 
