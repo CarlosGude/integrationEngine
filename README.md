@@ -180,3 +180,12 @@ Repository gates cover style, PHPStan, PHPUnit, Deptrac and Infection. Measured 
 ## Further reading
 
 Start from [docs/DOCUMENTATION.md](./docs/DOCUMENTATION.md). It is the only documentation index; archived plans, spikes and release-preparation notes live under [docs/archived/](./docs/archived/) and are explicitly non-current.
+
+A rough guide to where things live:
+
+- [docs/getting-started/](./docs/getting-started/) — task-oriented guides for building a first integration: actions, context/path, auth, mapping, batching.
+- [docs/advanced/](./docs/advanced/) — client/architecture internals, debugging, quality gates, AI-agent-assisted generation.
+- [docs/adr/](./docs/adr/) — Architecture Decision Records; read these for *why* a design was chosen, not just *what* it does.
+- [docs/archived/](./docs/archived/) — historical plans, audits and spikes; explicitly not the current contract.
+- `docs/ARCHITECTURE.md` is the single reference for dependency rules and the runtime pipeline.
+- `docs/UPGRADE-X.0.md` files hold breaking-change migration notes per major version.
