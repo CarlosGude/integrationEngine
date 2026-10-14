@@ -195,7 +195,7 @@ http_client
 
 `HostPolicy` is also checked by the engine before dispatch. `HostPolicyHttpClient` checks the final URL again, including token requests and URLs modified by request middleware, and disables automatic redirects when an allowlist is active.
 
-See [security-v8.md](./security-v8.md) and [resilience-v8.md](./resilience-v8.md) for behavior and supported-version notes.
+See [security.md](./security.md) and [resilience.md](./resilience.md) for behavior and supported-version notes.
 
 ## Lifecycle and observability boundary
 

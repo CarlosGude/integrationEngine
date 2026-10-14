@@ -22,7 +22,7 @@ integration_engine:
 
 This policy belongs to the HTTP transport constructed by the bundle. It is not available with `client_service`, because a custom client owns its own transport behavior. Non-idempotent methods are not retried unless explicitly enabled.
 
-See [resilience-v8.md](../resilience-v8.md) for the detailed transport classification and configuration introduced for v8.
+See [the transport resilience reference](../resilience.md) for the detailed transport classification and configuration introduced for v8.
 
 ## Application-owned resilience utilities
 

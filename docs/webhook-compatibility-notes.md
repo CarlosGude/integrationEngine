@@ -1,6 +1,6 @@
-# v8 webhook contract and compatibility notes
+# Webhook contract and compatibility notes
 
-This page records what is specific to the v8 webhook design. For implementation steps, use [WEBHOOK.md](./WEBHOOK.md).
+This page records the current webhook contract's background and compatibility findings. For implementation steps, use [WEBHOOK.md](./WEBHOOK.md).
 
 ## What changed in v8
 

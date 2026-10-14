@@ -17,8 +17,8 @@ The documentation is deliberately split by responsibility. If two pages appear t
 | Send batches | [getting-started/batch-requests.md](./getting-started/batch-requests.md) |
 | Choose/customize clients, base URLs or connections | [advanced/architecture/clients.md](./advanced/architecture/clients.md) |
 | Add request/client middleware | [ARCHITECTURE.md](./ARCHITECTURE.md#middleware-boundaries) |
-| Configure retries/timeouts | [resilience-v8.md](./resilience-v8.md) |
-| Configure host/private-network protection | [security-v8.md](./security-v8.md) |
+| Configure retries/timeouts | [resilience.md](./resilience.md) |
+| Configure host/private-network protection | [security.md](./security.md) |
 | Receive webhooks | [WEBHOOK.md](./WEBHOOK.md) |
 | Observe lifecycle events | [LIFECYCLE.md](./LIFECYCLE.md) |
 | Configure helper observability | [OBSERVABILITY.md](./OBSERVABILITY.md) |
@@ -62,14 +62,14 @@ IntegrationEngine
 
 Batch requests use the same contracts. Each item is prepared independently; failures are returned as `BatchResult` values instead of aborting the whole batch. Built-in REST, GraphQL and form transports can dispatch concurrently, but built-in request middleware forces a sequential fallback because middleware may inspect or replace a completed response.
 
-## v8-specific references
+## Specialized references
 
 These pages are narrow references, not alternative manuals:
 
-- [form-v8.md](./form-v8.md) — how form encoding is selected.
-- [resilience-v8.md](./resilience-v8.md) — transport retry/timeout semantics.
-- [security-v8.md](./security-v8.md) — outgoing host/private-network policy.
-- [webhooks-v8.md](./webhooks-v8.md) — v8 webhook contract and migration notes; the usage guide remains `WEBHOOK.md`.
+- [form-bodies.md](./form-bodies.md) — how form encoding is selected.
+- [resilience.md](./resilience.md) — transport retry/timeout semantics.
+- [security.md](./security.md) — outgoing host/private-network policy.
+- [webhook-compatibility-notes.md](./webhook-compatibility-notes.md) — webhook contract background and compatibility notes; the usage guide remains `WEBHOOK.md`.
 - [phpstan.md](./phpstan.md) — optional development-time contracts.
 
 ## Architecture decisions

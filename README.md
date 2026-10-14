@@ -133,14 +133,14 @@ See [Getting started](./docs/getting-started/README.md) for the request, context
 | Area | Current contract | Reference |
 |---|---|---|
 | REST | Built-in Symfony HttpClient adapter; JSON by default | [HTTP clients](./docs/advanced/architecture/clients.md) |
-| Form bodies | `FormEncodedBodyInterface`, or `client: form_encoded` for an all-form API | [Form bodies](./docs/form-v8.md) |
+| Form bodies | `FormEncodedBodyInterface`, or `client: form_encoded` for an all-form API | [Form bodies](./docs/form-bodies.md) |
 | GraphQL | `GraphQLBodyInterface`; body is sent as `query` + `variables` | [HTTP clients](./docs/advanced/architecture/clients.md) |
 | Batch | `sendMany()` isolates failures; built-in REST, GraphQL and form adapters support concurrent dispatch when request middleware does not force the sequential fallback | [Batch requests](./docs/getting-started/batch-requests.md) |
 | Auth | bearer/basic/API key; dynamic token action with cache + one fresh-token retry after a cached-token 401 | [Authorization](./docs/getting-started/authorization.md) |
 | Multi-connection | `ConnectionResolverInterface` can override base URL/auth and namespace token caches per call | [HTTP clients](./docs/advanced/architecture/clients.md#runtime-connection-resolution) |
 | Middleware | action-level client middleware plus full-request middleware for signing | [Architecture](./docs/ARCHITECTURE.md#middleware-boundaries) |
-| Resilience | transport timeout, max duration and Symfony retry configuration | [Resilience](./docs/resilience-v8.md) |
-| Outgoing security | hostname allowlist and optional private-network blocking for built-in transports | [Security](./docs/security-v8.md) |
+| Resilience | transport timeout, max duration and Symfony retry configuration | [Resilience](./docs/resilience.md) |
+| Outgoing security | hostname allowlist and optional private-network blocking for built-in transports | [Security](./docs/security.md) |
 | Observability | scalar-only request, response, failure, token and webhook events | [Lifecycle events](./docs/LIFECYCLE.md) |
 | Webhooks | YAML definition, HMAC verification, typed mapper, Symfony Webhook/RemoteEvent integration | [Webhooks](./docs/WEBHOOK.md) |
 | Static analysis | optional PHPStan rules for mapper reciprocity, response modifiers and facade return types | [PHPStan](./docs/phpstan.md) |
@@ -188,4 +188,4 @@ A rough guide to where things live:
 - [docs/adr/](./docs/adr/) — Architecture Decision Records; read these for *why* a design was chosen, not just *what* it does.
 - [docs/archived/](./docs/archived/) — historical plans, audits and spikes; explicitly not the current contract.
 - `docs/ARCHITECTURE.md` is the single reference for dependency rules and the runtime pipeline.
-- `docs/UPGRADE-X.0.md` files hold breaking-change migration notes per major version.
+- Breaking-change migration notes live under `docs/`, one `UPGRADE-N.0.md` file per major version.

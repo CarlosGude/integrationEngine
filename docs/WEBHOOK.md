@@ -152,7 +152,7 @@ Rejected requests use HTTP 406 through Symfony's `RejectWebhookException` and em
 
 `unknown_events: ignore` makes the parser return `null`. Be aware that Symfony Webhook controller behavior around a `null` parser result is version-sensitive and, in the supported 6.4/7.4/8.0 controller flow verified by the project spike, a null event is not a portable way to guarantee a 2xx acknowledgement. Use `reject` when you need unambiguous behavior, or own the acknowledgement/controller policy in the application.
 
-See [webhooks-v8.md](./webhooks-v8.md) for the compatibility finding behind this caveat.
+See [webhook-compatibility-notes.md](./webhook-compatibility-notes.md) for the compatibility finding behind this caveat.
 
 ## Signature schemes
 
@@ -190,7 +190,7 @@ Signature verification proves authenticity according to the configured scheme. I
 
 ## Related documents
 
-- [webhooks-v8.md](./webhooks-v8.md) — v8 migration/compatibility notes
+- [webhook-compatibility-notes.md](./webhook-compatibility-notes.md) — contract background and compatibility notes
 - [LIFECYCLE.md](./LIFECYCLE.md) — `WebhookReceived` / `WebhookRejected`
 - [ADR 0016](./adr/0016-generic-webhooks-and-application-idempotency.md) — generic webhook + application idempotency decision
 - [UPGRADE-8.0.md](./UPGRADE-8.0.md) — migration from the v7 webhook model

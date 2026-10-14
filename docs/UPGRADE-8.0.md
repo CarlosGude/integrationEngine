@@ -573,7 +573,7 @@ webhooks:
 ## 11. Need Help?
 
 - **Lifecycle events:** See [LIFECYCLE.md](./LIFECYCLE.md) and [OBSERVABILITY.md](./OBSERVABILITY.md)
-- **Webhooks:** See [WEBHOOK.md](./WEBHOOK.md) and [webhooks-v8.md](./webhooks-v8.md)
+- **Webhooks:** See [WEBHOOK.md](./WEBHOOK.md) and [webhook-compatibility-notes.md](./webhook-compatibility-notes.md)
 - **Configuration:** See [CLAUDE.md](../CLAUDE.md) Bundle Configuration section
 - **Tests:** Check `tests/Infrastructure/Webhook/` and `tests/Core/Event/` for examples
 

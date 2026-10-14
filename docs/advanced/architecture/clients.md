@@ -214,4 +214,4 @@ The bundle can wrap its managed Symfony HTTP transport with:
 - an `allowed_hosts` policy;
 - retry configuration for selected status codes and methods.
 
-These settings are integration-level controls. An action may additionally define its own `timeout`, which travels on the prepared request. See [Resilience and transport policy](../resilience.md) and [Security v8](../../security-v8.md) for the specialized rules rather than duplicating them here.
+These settings are integration-level controls. An action may additionally define its own `timeout`, which travels on the prepared request. See [Resilience and transport policy](../resilience.md) and [Security](../../security.md) for the specialized rules rather than duplicating them here.
