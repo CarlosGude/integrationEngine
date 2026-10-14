@@ -72,7 +72,18 @@ GetEmployee:
     path: /employees/{id}
 ```
 
-A small facade keeps `IntegrationRegistry` out of controllers and application services:
+At the lowest level, calling an action is a single `send()` through the registry:
+
+```php
+use IntegrationEngine\Core\Contract\Action\DefaultActionContext;
+
+$response = $registry->get('my_api')->send(
+    actionName: GetEmployeeAction::getName(),
+    context: DefaultActionContext::create(['id' => $id]),
+);
+```
+
+In practice, wrap that behind a small facade instead of calling `IntegrationRegistry` directly from controllers and application services, so callers get a typed return instead of the base `ResponseInterface`. This is the recommended facade pattern:
 
 ```php
 use IntegrationEngine\Core\Contract\Action\DefaultActionContext;
