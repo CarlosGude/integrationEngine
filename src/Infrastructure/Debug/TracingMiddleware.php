@@ -33,6 +33,7 @@ final class TracingMiddleware extends AbstractClientMiddleware
     ): array {
         $start = microtime(true);
         $error = null;
+        $body = $action->getBody();
 
         try {
             return $next($action, $context, $headers);
@@ -49,6 +50,7 @@ final class TracingMiddleware extends AbstractClientMiddleware
                 durationMs: (microtime(true) - $start) * 1000,
                 error: $error,
                 statusCode: $error instanceof RequestResponseException ? $error->statusCode : null,
+                bodyClass: null !== $body ? $body::class : null,
             );
         }
     }
@@ -73,6 +75,7 @@ final class TracingMiddleware extends AbstractClientMiddleware
         foreach ($requests as $key => $request) {
             $result = $results[$key] ?? null;
             $error = $result instanceof \Throwable ? $result : null;
+            $body = $request->action->getBody();
 
             $this->collector->recordCall(
                 integrationName: $this->integrationName,
@@ -82,6 +85,7 @@ final class TracingMiddleware extends AbstractClientMiddleware
                 durationMs: $durationMs,
                 error: $error,
                 statusCode: $error instanceof RequestResponseException ? $error->statusCode : null,
+                bodyClass: null !== $body ? $body::class : null,
             );
         }
 

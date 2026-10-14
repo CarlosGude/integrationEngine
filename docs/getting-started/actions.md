@@ -75,3 +75,5 @@ All `{placeholder}` values are resolved exclusively from the action context. The
 ## Invariants
 
 Actions carry no mutable request state. A configured action may therefore be reused safely across single and batch dispatch without leaking values between calls. When `hasResponse()` is `true`, `mapper()` must identify the mapper for that action; the engine validates that relationship before mapping.
+
+When the YAML declares a `body` class for an action, a body passed to `send()` / `sendMany()` must be an instance of that declared class — `YamlConfigAdapter` throws `\InvalidArgumentException` otherwise, before any HTTP call is made. See [0018](../adr/0018-body-type-invariant.md).

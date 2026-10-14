@@ -8,6 +8,7 @@ use IntegrationEngine\Core\Batch\PreparedRequest;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use IntegrationEngine\Infrastructure\Debug\IntegrationEngineDataCollector;
 use IntegrationEngine\Infrastructure\Debug\TracingMiddleware;
+use IntegrationEngine\Tests\Fake\FakeFormBody;
 use IntegrationEngine\Tests\Fake\FakePathAction;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -36,6 +37,31 @@ final class TracingMiddlewareTest extends TestCase
         // addition of two Unix timestamps (a multi-billion-ms "duration").
         self::assertLessThan(1000.0, $call->durationMs);
         self::assertNull($call->error);
+    }
+
+    #[Test]
+    public function processRecordsNullBodyClassWhenActionHasNoBody(): void
+    {
+        $collector = new IntegrationEngineDataCollector();
+        $mw = new TracingMiddleware('my_api', $collector);
+        $next = static fn (): array => [];
+
+        $mw->process(FakePathAction::create('GET', '/items'), null, null, $next);
+
+        self::assertNull($collector->getCalls()[0]->bodyClass);
+    }
+
+    #[Test]
+    public function processRecordsTheActionBodyClassWhenPresent(): void
+    {
+        $collector = new IntegrationEngineDataCollector();
+        $mw = new TracingMiddleware('my_api', $collector);
+        $next = static fn (): array => [];
+        $body = FakeFormBody::create(['name' => 'Ada']);
+
+        $mw->process(FakePathAction::create('POST', '/items', $body), null, null, $next);
+
+        self::assertSame(FakeFormBody::class, $collector->getCalls()[0]->bodyClass);
     }
 
     /**
@@ -100,6 +126,25 @@ final class TracingMiddlewareTest extends TestCase
         self::assertSame(['a' => ['x' => 1], 'b' => ['x' => 2]], $result);
         self::assertSame(2, $collector->getTotalCalls());
         self::assertSame('my_api', $collector->getCalls()[0]->integrationName);
+    }
+
+    #[Test]
+    public function processManyRecordsTheActionBodyClassPerRequest(): void
+    {
+        $collector = new IntegrationEngineDataCollector();
+        $mw = new TracingMiddleware('my_api', $collector);
+        $body = FakeFormBody::create(['name' => 'Ada']);
+
+        $mw->processMany(
+            [
+                'a' => new PreparedRequest(FakePathAction::create('POST', '/a', $body), null, null),
+                'b' => new PreparedRequest(FakePathAction::create('GET', '/b'), null, null),
+            ],
+            static fn (array $reqs): array => ['a' => [], 'b' => []],
+        );
+
+        self::assertSame(FakeFormBody::class, $collector->getCalls()[0]->bodyClass);
+        self::assertNull($collector->getCalls()[1]->bodyClass);
     }
 
     /**

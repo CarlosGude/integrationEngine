@@ -10,6 +10,7 @@ use IntegrationEngine\Core\Contract\Auth\DynamicAuthorizationConfig;
 use IntegrationEngine\Core\Contract\Auth\StaticAuthorizationConfig;
 use IntegrationEngine\Core\Exception\ActionNotFoundException;
 use IntegrationEngine\Infrastructure\Adapter\YamlConfigAdapter;
+use IntegrationEngine\Tests\Fake\FakeFormBody;
 use IntegrationEngine\Tests\Fake\FakePathAction;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -313,6 +314,25 @@ final class YamlConfigAdapterTest extends TestCase
         $this->expectExceptionMessage(\sprintf('must implement %s', ActionBodyInterface::class));
 
         $adapter->getAction('create_employee');
+    }
+
+    #[Test]
+    public function getActionThrowsWhenProvidedBodyDoesNotMatchDeclaredClass(): void
+    {
+        $adapter = $this->buildAdapter(<<<'YAML'
+            create_employee:
+                action: '%s'
+                body: 'IntegrationEngine\Tests\Infrastructure\YamlConfigTestBody'
+            YAML);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage(\sprintf(
+            'Action "create_employee" declares body "%s" in its YAML config, but received "%s".',
+            YamlConfigTestBody::class,
+            FakeFormBody::class,
+        ));
+
+        $adapter->getAction('create_employee', FakeFormBody::create(['name' => 'Ada']));
     }
 
     #[Test]

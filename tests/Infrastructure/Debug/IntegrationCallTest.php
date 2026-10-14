@@ -25,4 +25,20 @@ final class IntegrationCallTest extends TestCase
 
         self::assertFalse($call->cached);
     }
+
+    #[Test]
+    public function bodyClassDefaultsToNull(): void
+    {
+        $call = new IntegrationCall(
+            integrationName: 'my_api',
+            actionName: 'get_items',
+            method: 'GET',
+            path: '/items',
+            durationMs: 12.0,
+            error: null,
+            statusCode: 200,
+        );
+
+        self::assertNull($call->bodyClass);
+    }
 }
