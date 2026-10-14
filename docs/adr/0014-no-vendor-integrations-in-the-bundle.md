@@ -35,7 +35,7 @@ Removed in 6.0.0: the vendor-specific files listed above.
 
 ## Consequences
 
-- **It breaks.** Anyone using the shipped Shopify or WooCommerce classes has to bring them into their own codebase. `make:webhook` generates equivalents, and UPGRADE-6.0.md carries the mapping.
+- **It breaks.** Anyone using the shipped Shopify or WooCommerce classes has to bring them into their own codebase. `make:webhook` generates equivalents, and upgrade-6.0.md carries the mapping.
 - A webhook definition maps provider event types to application mappers in integration YAML; routing points to the integration's generated parser service rather than shipping vendor-specific parser classes.
 - The signature schemes stay first-class: a new provider is covered as long as it signs in one of the three shapes, and `SignatureVerifierInterface` is there when it does not.
 - The bundle stops being a place where a vendor's API changes force a release.

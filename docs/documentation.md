@@ -1,6 +1,6 @@
 # IntegrationEngine — Documentation
 
-This is the **single index for current documentation**. It describes the code on `main`; the latest tagged release is [v9.0.0](https://github.com/CarlosGude/integrationEngine/releases/tag/v9.0.0) and release history remains in [`CHANGELOG.md`](../CHANGELOG.md).
+This is the **single index for current documentation**. It describes the code on `main`; the latest tagged release is [v9.3.0](https://github.com/CarlosGude/integrationEngine/releases/tag/v9.3.0) and release history remains in [`CHANGELOG.md`](../CHANGELOG.md).
 
 The documentation is deliberately split by responsibility. If two pages appear to answer the same question, prefer the page listed here as the canonical source for that topic.
 
@@ -80,12 +80,12 @@ These pages are narrow references, not alternative manuals:
 
 Upgrade guides are historical migration documents. They intentionally mention APIs that no longer exist:
 
-- [UPGRADE-4.0.md](./UPGRADE-4.0.md)
-- [UPGRADE-5.0.md](./UPGRADE-5.0.md)
-- [UPGRADE-5.1.md](./UPGRADE-5.1.md)
-- [UPGRADE-6.0.md](./UPGRADE-6.0.md)
-- [UPGRADE-7.0.md](./UPGRADE-7.0.md)
-- [UPGRADE-8.0.md](./UPGRADE-8.0.md)
+- [upgrade-4.0.md](./upgrade-4.0.md)
+- [upgrade-5.0.md](./upgrade-5.0.md)
+- [upgrade-5.1.md](./upgrade-5.1.md)
+- [upgrade-6.0.md](./upgrade-6.0.md)
+- [upgrade-7.0.md](./upgrade-7.0.md)
+- [upgrade-8.0.md](./upgrade-8.0.md)
 
 For current behavior, use the guides in the sections above, not an old upgrade document.
 

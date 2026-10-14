@@ -15,11 +15,11 @@ This roadmap separates shipped behavior from proposals. It intentionally avoids 
 - batch-aware dynamic-token refresh and runtime connection resolution improvements;
 - `debug:integration` command and strengthened architecture/quality gates.
 
-The exact breaking changes are in [UPGRADE-8.0.md](./UPGRADE-8.0.md) and release history in [`CHANGELOG.md`](../CHANGELOG.md).
+The exact breaking changes are in [upgrade-8.0.md](./upgrade-8.0.md) and release history in [`CHANGELOG.md`](../CHANGELOG.md).
 
 ## Current branch
 
-[v9.0.0](https://github.com/CarlosGude/integrationEngine/releases/tag/v9.0.0) is the latest tag. URL parameters now come exclusively from context, while body fields are preserved. It also includes landing-page responsive fixes and contract-test CI fixes. See [the changelog](../CHANGELOG.md) for migration guidance.
+[v9.3.0](https://github.com/CarlosGude/integrationEngine/releases/tag/v9.3.0) is the latest tag. Since v9.0.0 (URL parameters resolved exclusively from context) it has added body-type validation against the declared YAML class (v9.1.0), an opt-in profiler payload panel (v9.2.0), and shared `defaults.authorization` with per-action override (v9.3.0). See [the changelog](../CHANGELOG.md) for details and migration guidance.
 
 ## Next proposals
 

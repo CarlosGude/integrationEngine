@@ -23,8 +23,8 @@ export default {
     }
 ],
     roadmapLink: "Read the full roadmap →",
-    roadmapSub: "Latest: v9.0.0. When upgrading, move URL parameters from body to context. Keep them in body only if the API also requires them in the payload.",
-    releaseLink: "v9.0.0 release notes →",
+    roadmapSub: "Latest: v9.3.0. Since v9.0.0 (URL parameters moved to context), it has added body-type validation, an opt-in profiler payload panel, and shared default authorization with per-action override.",
+    releaseLink: "v9.3.0 release notes →",
     migrationLink: "Context and migration examples →",
     statusH2: "Roadmap",
     parallelComment: "// Concurrent with the built-in REST adapter; request middleware runs sequentially",

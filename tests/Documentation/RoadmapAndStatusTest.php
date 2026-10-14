@@ -8,14 +8,14 @@ use PHPUnit\Framework\TestCase;
 
 final class RoadmapAndStatusTest extends TestCase
 {
-    private const ROADMAP_PATH = __DIR__.'/../../docs/ROADMAP.md';
+    private const ROADMAP_PATH = __DIR__.'/../../docs/roadmap.md';
     private const README_PATH = __DIR__.'/../../README.md';
 
     public function testRoadmapFileExists(): void
     {
         self::assertFileExists(
             self::ROADMAP_PATH,
-            'docs/ROADMAP.md must exist'
+            'docs/roadmap.md must exist'
         );
     }
 
@@ -30,7 +30,7 @@ final class RoadmapAndStatusTest extends TestCase
             self::assertStringContainsString(
                 $section,
                 $content,
-                \sprintf('ROADMAP.md must contain "%s" section', $section)
+                \sprintf('roadmap.md must contain "%s" section', $section)
             );
         }
     }

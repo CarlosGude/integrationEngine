@@ -1,6 +1,6 @@
 # Upgrading from v5.0 to v5.1
 
-> **Superseded in 6.0.** The multi-platform pieces described here — `WebhookPlatform`, `WebhookPlatformConfig`, `WebhookPlatformRegistry`, `MultiPlatformWebhookController` — and the shipped Shopify and WooCommerce classes were removed in 6.0. See [UPGRADE-6.0.md](./UPGRADE-6.0.md). The rest of this guide is kept as the record of what 5.1 introduced.
+> **Superseded in 6.0.** The multi-platform pieces described here — `WebhookPlatform`, `WebhookPlatformConfig`, `WebhookPlatformRegistry`, `MultiPlatformWebhookController` — and the shipped Shopify and WooCommerce classes were removed in 6.0. See [upgrade-6.0.md](./upgrade-6.0.md). The rest of this guide is kept as the record of what 5.1 introduced.
 
 This guide covers the enhancements in v5.1 and how to migrate your webhook integrations.
 
@@ -162,7 +162,7 @@ To adopt v5.1 features:
 
 ### Options A and B (removed in 6.0)
 
-v5.1 offered two routes here: a built-in platform (Shopify or WooCommerce) and a custom `WebhookPlatformConfig` registered under the `integration_engine.webhook_platform` tag. Both are gone in 6.0, along with the platform registry and the multi-platform controller — see [UPGRADE-6.0.md](./UPGRADE-6.0.md) for what replaces them.
+v5.1 offered two routes here: a built-in platform (Shopify or WooCommerce) and a custom `WebhookPlatformConfig` registered under the `integration_engine.webhook_platform` tag. Both are gone in 6.0, along with the platform registry and the multi-platform controller — see [upgrade-6.0.md](./upgrade-6.0.md) for what replaces them.
 
 
 ### Option C: Enable Async Processing

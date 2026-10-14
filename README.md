@@ -6,7 +6,7 @@
 **Requirements:** PHP 8.2+ · Symfony 6.4 / 7.x / 8.x
 **Website:** [integrationengine.dev](https://integrationengine.dev)
 **Documentation:** [docs/documentation.md](./docs/documentation.md)
-**Roadmap:** [docs/ROADMAP.md](./docs/ROADMAP.md)
+**Roadmap:** [docs/roadmap.md](./docs/roadmap.md)
 
 IntegrationEngine is a Symfony bundle for keeping outbound API integrations predictable: actions describe requests, mappers turn external responses into typed DTOs, and the engine owns the repetitive transport/authentication pipeline.
 
@@ -188,4 +188,4 @@ A rough guide to where things live:
 - [docs/adr/](./docs/adr/) — Architecture Decision Records; read these for *why* a design was chosen, not just *what* it does.
 - [docs/archived/](./docs/archived/) — historical plans, audits and spikes; explicitly not the current contract.
 - `docs/architecture.md` is the single reference for dependency rules and the runtime pipeline.
-- Breaking-change migration notes live under `docs/`, one `UPGRADE-N.0.md` file per major version.
+- Breaking-change migration notes live under `docs/`, one `upgrade-N.0.md` file per major version.

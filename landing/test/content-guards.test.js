@@ -73,7 +73,7 @@ for (const [lang, address] of [['en', 'hi@integrationengine.dev'], ['es', 'hola@
     assert.ok(html.includes('id="roadmap"'));
     assert.ok(html.indexOf('id="roadmap"') < html.indexOf('id="contact"'));
     assert.ok(html.includes('https://github.com/CarlosGude/integrationEngine-demo'));
-    assert.ok(html.includes('https://github.com/CarlosGude/integrationEngine/blob/main/docs/ROADMAP.md'));
+    assert.ok(html.includes('https://github.com/CarlosGude/integrationEngine/blob/main/docs/roadmap.md'));
     const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]));
     for (const [, anchor] of html.matchAll(/href="#([^"]+)"/g)) {
       assert.ok(ids.has(anchor), `Missing section #${anchor}`);
