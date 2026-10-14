@@ -30,6 +30,12 @@ export function getHTML(lang = 'en') {
         <p>${i.desc}</p>
       </div>`).join('');
 
+    const altCards = t.altItems.map(i => `
+      <div class="alt-card">
+        <h3>${i.title}</h3>
+        <p>${i.desc}</p>
+      </div>`).join('');
+
     return String.raw`<!DOCTYPE html>
 <html lang="${t.lang}">
 <head>
@@ -153,6 +159,14 @@ export function getHTML(lang = 'en') {
 <div class="trust-bar">
   <span class="trust-item">
     <img src="https://img.shields.io/packagist/v/carlosgude/integration-engine?style=flat-square&labelColor=0d1b2e&color=2f6fbd&label=version" alt="Latest version" height="18" loading="lazy">
+  </span>
+  <span class="trust-sep">&middot;</span>
+  <span class="trust-item">
+    <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener"><img src="https://img.shields.io/github/stars/CarlosGude/integrationEngine?style=flat-square&labelColor=0d1b2e&color=2f6fbd&label=stars" alt="GitHub stars" height="18" loading="lazy"></a>
+  </span>
+  <span class="trust-sep">&middot;</span>
+  <span class="trust-item">
+    <img src="https://img.shields.io/packagist/dt/carlosgude/integration-engine?style=flat-square&labelColor=0d1b2e&color=2f6fbd&label=installs" alt="Packagist installs" height="18" loading="lazy">
   </span>
   <span class="trust-sep">&middot;</span>
   <span class="trust-item trust-compat">PHP 8.2+ &middot; Symfony 6.4+</span>
@@ -888,6 +902,16 @@ MyApi/
   </div>
 </section>
 
+<!-- ALTERNATIVES -->
+<section id="alternatives" class="s-light">
+  <div class="container">
+    <div class="eyebrow">${t.altEyebrow}</div>
+    <h2 class="s-heading">${t.altH2}</h2>
+    <p class="s-sub">${t.altSub}</p>
+    <div class="alt-grid">${altCards}</div>
+  </div>
+</section>
+
 <!-- WIKI & DOCUMENTATION -->
 <section id="wiki" class="s-white">
   <div class="container">
@@ -932,12 +956,15 @@ MyApi/
     <h2 class="s-heading lt">${t.ctaH2}</h2>
     <p class="s-sub lt">${t.ctaSub}</p>
     <div class="cta-actions">
-      <a href="${t.ctaEmailHref}" class="btn-primary cta-btn">
-        <span class="cta-icon">&#9993;</span> ${t.ctaEmailLabel}
-        <span class="cta-email-addr">${t.ctaEmail}</span>
+      <a href="https://github.com/CarlosGude/integrationEngine" target="_blank" rel="noopener" class="btn-primary cta-btn">
+        <span class="cta-icon">&#11088;</span> ${t.ctaStar}
       </a>
       <a href="https://github.com/CarlosGude/integrationEngine/discussions" target="_blank" rel="noopener" class="btn-outline cta-btn">
         <span class="cta-icon">&#128172;</span> ${t.ctaDiscuss}
+      </a>
+      <a href="${t.ctaEmailHref}" class="btn-outline cta-btn">
+        <span class="cta-icon">&#9993;</span> ${t.ctaEmailLabel}
+        <span class="cta-email-addr">${t.ctaEmail}</span>
       </a>
     </div>
   </div>

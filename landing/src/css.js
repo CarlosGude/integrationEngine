@@ -274,6 +274,12 @@ footer a:hover { text-decoration: underline; }
 .biz-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.75rem 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
 .biz-stat { font-size: 1.65rem; font-weight: 800; color: var(--blue); letter-spacing: -.02em; margin-bottom: .55rem; }
 .biz-card p { font-size: .84rem; color: #64748b; line-height: 1.65; }
+/* ── ALTERNATIVES ── */
+.alt-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-top: 2rem; }
+@media (max-width: 700px) { .alt-grid { grid-template-columns: 1fr; } }
+.alt-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.75rem 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+.alt-card h3 { font-family: 'JetBrains Mono', monospace; font-size: .95rem; font-weight: 700; color: var(--navy); margin-bottom: .6rem; }
+.alt-card p { font-size: .84rem; color: #64748b; line-height: 1.65; }
 /* ── SOCIAL PROOF ── */
 .proof-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-top: 2rem; }
 @media (max-width: 900px) { .proof-grid { grid-template-columns: repeat(2, 1fr); } }

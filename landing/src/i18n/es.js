@@ -241,6 +241,21 @@ export default {
     ],
     wikiBtn:     'Explorar documentación →',
 
+    // Alternatives section
+    altEyebrow: '¿No sabes qué herramienta usar?',
+    altH2:      'Dónde encaja IntegrationEngine.',
+    altSub:     'Dos herramientas se comparan con IntegrationEngine por las razones equivocadas. Esto es lo que realmente se solapa.',
+    altItems: [
+        {
+            title: 'vs API Platform',
+            desc: 'API Platform expone tu propia API &mdash; genera endpoints REST/GraphQL a partir de tus entidades de Doctrine. IntegrationEngine consume la API de otro. Es un problema distinto; ambas se usan habitualmente juntas en la misma app, no como alternativas una de la otra.',
+        },
+        {
+            title: 'vs SDKs generados',
+            desc: 'openapi-generator y herramientas similares cambian tipado por acción por cobertura amplia y gratuita de lenguajes &mdash; salida genérica, plantillas propias que mantener. IntegrationEngine cambia esa amplitud por clases Request/Response/Mapper tipadas e idiomáticas a Symfony, con DI, caché, middleware y despacho en batch integrados.',
+        },
+    ],
+
     // Thanks section
     thanksEyebrow: 'Antes de irte',
     thanksH2:      'Gracias por llegar hasta aquí.',
@@ -249,7 +264,8 @@ export default {
     // CTA
     ctaEyebrow:   'Contacto',
     ctaH2:        'Empieza a construir tu próxima integración hoy.',
-    ctaSub: "Escríbeme, abre una GitHub Discussion o instala el bundle y pruébalo.",
+    ctaSub: "Dale una estrella al repo para seguirlo, abre una GitHub Discussion o escríbeme directamente.",
+    ctaStar:      'Estrella en GitHub',
     ctaEmailLabel: "Envíame un email",
     ctaEmail:     'hola@integrationengine.dev',
     ctaEmailHref: 'mailto:hola@integrationengine.dev',
