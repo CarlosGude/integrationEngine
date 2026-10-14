@@ -28,14 +28,14 @@ final class DocumentationLinksTest extends TestCase
     private const EXCLUDED_DIRECTORIES = ['vendor', 'var', 'node_modules', 'memory'];
 
     /**
-     * docs/PLAN-STATUS.md is a forward-looking task plan — its prose
-     * mentions file paths that are deliverables of *future* work (e.g.
-     * docs/resilience.md) or live in the demo repository, so they don't
-     * exist here by design. Checking those backtick mentions against "does
-     * it exist now" would be checking the wrong thing. Its actual Markdown
-     * links are still checked.
+     * docs/archived/plan-status.md is a forward-looking task plan — its
+     * prose mentions file paths that are deliverables of *future* work
+     * (e.g. docs/resilience.md) or live in the demo repository, so they
+     * don't exist here by design. Checking those backtick mentions against
+     * "does it exist now" would be checking the wrong thing. Its actual
+     * Markdown links are still checked.
      */
-    private const NO_BACKTICK_CHECK = ['docs/PLAN-STATUS.md'];
+    private const NO_BACKTICK_CHECK = ['docs/archived/plan-status.md'];
 
     /** @param list<array{0: string, 1: string}> $links */
     #[Test]

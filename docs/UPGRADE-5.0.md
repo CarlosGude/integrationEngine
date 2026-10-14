@@ -176,7 +176,7 @@ If you're adding webhooks to an existing integration:
 - [ ] Create the webhook endpoint in your controller
 - [ ] Listen to domain events in your application services
 - [ ] Test with `make:webhook` scaffolding or manual payload testing
-- [ ] Review `WEBHOOK.md` for platform-specific guides (Stripe, PayPal, etc.)
+- [ ] Review `webhook.md` for platform-specific guides (Stripe, PayPal, etc.)
 
 ## Compatibility
 
@@ -188,6 +188,6 @@ If you're adding webhooks to an existing integration:
 
 For questions or issues during upgrade:
 
-- Complete guide: [`WEBHOOK.md`](./WEBHOOK.md)
+- Complete guide: [`webhook.md`](./webhook.md)
 - Architecture: [`docs/adr/0009-inbound-webhooks.md`](./adr/0009-inbound-webhooks.md)
 - GitHub discussions: [IntegrationEngine discussions](https://github.com/carlosgude/integrationengine/discussions)

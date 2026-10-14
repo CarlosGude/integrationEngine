@@ -74,7 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-- `docs/archived/DOCUMENTACION_v8.0.0.md` referenced classes that don't exist: the removed `ActionCompleted` event, a `RequestEncoding` enum that was never implemented, and `RequestMiddlewareInterface`/`Request` under the wrong namespace. Corrected to match the actual v8.0.0 API (`ResponseMapped`/`RequestFailed` events, `FormEncodedBodyInterface` for form-encoded bodies, `Core\Contract\Client` namespace).
+- `docs/archived/documentation-v8.0.0.md` referenced classes that don't exist: the removed `ActionCompleted` event, a `RequestEncoding` enum that was never implemented, and `RequestMiddlewareInterface`/`Request` under the wrong namespace. Corrected to match the actual v8.0.0 API (`ResponseMapped`/`RequestFailed` events, `FormEncodedBodyInterface` for form-encoded bodies, `Core\Contract\Client` namespace).
 - Mutation testing's required Covered Code MSI lowered from 95% to 90% to match actual measured coverage (92.46%); the previous threshold was unreachable and had left CI red on every push since the v8.0.0 release.
 
 ## [8.0.0] - 2026-09-22
@@ -114,7 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - **Legacy webhook idempotency services removed.** The engine no longer ships `WebhookIdempotencyService`,
   `WebhookFingerprinter`, or `WebhookIdempotencyPort`. Applications must implement their own
-  deduplication. See docs/WEBHOOK.md for guidance.
+  deduplication. See docs/webhook.md for guidance.
 
 ### Added
 
@@ -229,7 +229,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - **Old (v6.0):** `client_service: integration_engine.client.graphql`
   - **New (v7.0):** `client: graphql` with per-integration auto-wiring
   - **Why:** Simpler configuration, consistent middleware chains per integration, better isolation between integrations
-  - **Migration:** See [MIGRATION-v7-client-registration.md](./docs/MIGRATION-v7-client-registration.md) for detailed upgrade instructions
+  - **Migration:** See [migration-v7-client-registration.md](./docs/migration-v7-client-registration.md) for detailed upgrade instructions
 - PHP minimum remains 8.2; PHP 8.4 is used for the dedicated quality jobs.
 - Middleware pipeline refactored: decorators replaced with tagged service middleware via `integration_engine.middleware` priority system
 - Request middleware interface: new `RequestMiddlewareInterface` for request signing schemes (OAuth 1.0a, etc.) requiring fully-built request
@@ -278,7 +278,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Internal
 
-- Mutation testing back over its threshold and then some: 100% covered MSI over 755 mutants, up from 92%. 41 escaped mutants turned into tests (lifecycle event durations and `ActionFailed`, the HMAC prefix check, `SignatureConfig` validation, the webhook mappers' defaults and casts, the request parser's id extraction and POST-only matcher, actions declared after a `webhooks:` block), and the equivalent ones are documented one by one in `docs/advanced/QUALITY.md`.
+- Mutation testing back over its threshold and then some: 100% covered MSI over 755 mutants, up from 92%. 41 escaped mutants turned into tests (lifecycle event durations and `ActionFailed`, the HMAC prefix check, `SignatureConfig` validation, the webhook mappers' defaults and casts, the request parser's id extraction and POST-only matcher, actions declared after a `webhooks:` block), and the equivalent ones are documented one by one in `docs/advanced/quality.md`.
 - Landing page, webhook section: it documented a flow that does not exist — a `webhooks:` YAML block that nothing in the request flow reads, a controller built on the deprecated `MultiPlatformWebhookController`, a `mapper_class` key (it is `mapper`), a mapper missing its `$headers` argument, and business logic inside that mapper. It now shows the real path: `framework.webhook.routing` → a parser extending `IntegrationWebhookRequestParser` → `#[AsRemoteEventConsumer]` → a typed event in an `#[AsEventListener]` listener. Idempotency, DLQ and audit trail are described as contracts you back with your own storage, in both languages. The status block also still announced v5.2.0 and 607 tests; it now reports the current release, test count and mutation score.
 - README's status block announced v5.2.0 and listed the 5.2.0 feature set; it now reports v5.4.0, the events that actually reach Symfony listeners, the separate HTTP/mapping timings and the Flex recipe, and describes the webhook flow as parser + consumer + listener.
 - Two `infection.json5` ignores still pointed at `IntegrationEngine::dispatchBatch` and `::resolveConnection`, methods that moved to `BatchDispatcher` and `ConnectionResolver` — so the mutants they excused escaped at their new home.
@@ -610,7 +610,7 @@ See WEBHOOK.md for step-by-step guide.
 
 ### Added
 
-- `docs/advanced/QUALITY.md`: documented unified quality standards and interpretation of MSI metrics.
+- `docs/advanced/quality.md`: documented unified quality standards and interpretation of MSI metrics.
 
 ## [4.0.0] - 2026-06-28
 

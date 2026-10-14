@@ -32,7 +32,7 @@ make ci     # qa + deptrac + mutation — run before opening a PR
 ## Code quality
 
 Quality gates (style, static analysis, tests, mutation), their commands, and
-current MSI: see [`docs/advanced/QUALITY.md`](docs/advanced/QUALITY.md).
+current MSI: see [`docs/advanced/quality.md`](docs/advanced/quality.md).
 
 `make deptrac` enforces architectural layers locally and in CI, with no baseline
 and no uncovered dependencies. Core may depend only on PSR and its own classes;
@@ -112,14 +112,14 @@ Increment on **backward-compatible bug fixes**:
 ## When to Open a PR
 
 - Any change to `src/` or `tests/`.
-- Changes to `docs/advanced/QUALITY.md`, `ARCHITECTURE.md`, or version-related files.
+- Changes to `docs/advanced/quality.md`, `docs/architecture.md`, or version-related files.
 - Anything affecting public API or behavior.
 
 Skip PRs only for trivial documentation (typos in README examples, comment fixes) when committing directly to `main` is acceptable to your team.
 
 ## Further reading
 
-- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — design decisions: why actions are stateless,
+- [`docs/architecture.md`](./docs/architecture.md) — design decisions: why actions are stateless,
   how path resolution works, the mapper invariant, cache behaviour, and the
   DTO/domain boundary.
 - [`CLAUDE.md`](./CLAUDE.md) — the engine's contracts and conventions in agent-readable

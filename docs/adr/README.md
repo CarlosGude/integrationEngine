@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-ADRs preserve decisions in their historical context. A superseded ADR is intentionally kept: it explains how the design evolved but is not a current API reference. For current behavior, start with [DOCUMENTATION.md](../DOCUMENTATION.md) and [ARCHITECTURE.md](../ARCHITECTURE.md).
+ADRs preserve decisions in their historical context. A superseded ADR is intentionally kept: it explains how the design evolved but is not a current API reference. For current behavior, start with [documentation.md](../documentation.md) and [architecture.md](../architecture.md).
 
 | # | Decision | Status |
 |---|---|---|

@@ -26,7 +26,7 @@ integration_engine:
       client: graphql  # ✅ Auto-wired per-integration
 ```
 
-**Migration guide:** See [MIGRATION-v7-client-registration.md](./MIGRATION-v7-client-registration.md).
+**Migration guide:** See [migration-v7-client-registration.md](./migration-v7-client-registration.md).
 
 ---
 
@@ -198,8 +198,8 @@ This is a major release. **No backwards compatibility shims** for `client_servic
 
 ## Further Reading
 
-- [MIGRATION-v7-client-registration.md](./MIGRATION-v7-client-registration.md) — detailed client migration
-- [DOCUMENTATION.md](./DOCUMENTATION.md) → *Middleware Pipeline* section
-- [DOCUMENTATION.md](./DOCUMENTATION.md) → *Connection Resolver* section
-- [DOCUMENTATION.md](./DOCUMENTATION.md) → *Request Middleware* section
+- [migration-v7-client-registration.md](./migration-v7-client-registration.md) — detailed client migration
+- [documentation.md](./documentation.md) → *Middleware Pipeline* section
+- [documentation.md](./documentation.md) → *Connection Resolver* section
+- [documentation.md](./documentation.md) → *Request Middleware* section
 - [CHANGELOG.md](../CHANGELOG.md) → v7.0.0 and v7.0.1 entries

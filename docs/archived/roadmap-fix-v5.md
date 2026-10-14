@@ -106,7 +106,7 @@ equivalentes (3.2) y 41 huecos de test (3.3).
 ### 3.1 Exclusiones obsoletas (2 mutantes)
 
 El refactor sacó esta lógica de `IntegrationEngine`, pero `infection.json5` y la tabla "Equivalent
-mutants" de `docs/advanced/QUALITY.md` siguen apuntando a los métodos antiguos. Por eso los mismos
+mutants" de `docs/advanced/quality.md` siguen apuntando a los métodos antiguos. Por eso los mismos
 mutantes equivalentes escapan en su nueva ubicación.
 
 - [x] `ReturnRemoval`: `IntegrationEngine::dispatchBatch` → `BatchDispatcher::dispatch::36`, fijado

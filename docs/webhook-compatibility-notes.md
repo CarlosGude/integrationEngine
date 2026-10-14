@@ -1,6 +1,6 @@
 # Webhook contract and compatibility notes
 
-This page records the current webhook contract's background and compatibility findings. For implementation steps, use [WEBHOOK.md](./WEBHOOK.md).
+This page records the current webhook contract's background and compatibility findings. For implementation steps, use [webhook.md](./webhook.md).
 
 ## What changed in v8
 

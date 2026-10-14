@@ -1,6 +1,6 @@
 # IntegrationEngine · Observability
 
-The primary observability contract is the scalar lifecycle event set documented in [LIFECYCLE.md](./LIFECYCLE.md). In a normal Symfony application, listen to those events through Symfony's `event_dispatcher`.
+The primary observability contract is the scalar lifecycle event set documented in [lifecycle.md](./lifecycle.md). In a normal Symfony application, listen to those events through Symfony's `event_dispatcher`.
 
 This page documents the optional `ObservabilitySetup` helper and the generator built around it.
 

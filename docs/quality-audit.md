@@ -1,6 +1,6 @@
 # Quality audit — 2026-09-22
 
-This records the quality work following the [historical bundle plan](archived/PLAN-STATUS.md).
+This records the quality work following the [historical bundle plan](archived/plan-status.md).
 The implementation baseline is `6f3107cd98daef8114d05dab9e56dd4979347c9d`;
 measurements below also include the local quality changes. They are not remote
 CI results for a new commit.
@@ -90,7 +90,7 @@ the documentation suite after writing; its data-provider case count may increase
 
 That first pass changed no production behavior or MSI threshold. The subsequent
 architecture correction preserves the documented utility behavior; all mutator
-suppressions have now been removed. See [QUALITY](advanced/QUALITY.md).
+suppressions have now been removed. See [QUALITY](advanced/quality.md).
 
 ## Negative checks and documentation
 

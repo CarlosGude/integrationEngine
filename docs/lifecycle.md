@@ -79,4 +79,4 @@ A freshly fetched token that is rejected with 401 is not retried again.
 
 Lifecycle listeners execute through the configured dispatcher. If a listener throws, normal dispatcher exception semantics apply; the engine does not promise observer isolation. Production metrics/log listeners should therefore avoid throwing into the integration flow.
 
-For higher-level helper registration, see [OBSERVABILITY.md](./OBSERVABILITY.md). For profiler/request debugging, see [advanced/debugging.md](./advanced/debugging.md).
+For higher-level helper registration, see [observability.md](./observability.md). For profiler/request debugging, see [advanced/debugging.md](./advanced/debugging.md).

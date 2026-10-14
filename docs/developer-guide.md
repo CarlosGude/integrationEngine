@@ -1,6 +1,6 @@
 # IntegrationEngine Complete Developer Guide
 
-> **Canonical long-form guide.** This document explains IntegrationEngine as one coherent system and is intended to be read sequentially. For task-oriented lookup, use [`DOCUMENTATION.md`](./DOCUMENTATION.md). When this guide and the implementation disagree, the implementation and tested contracts are authoritative.
+> **Canonical long-form guide.** This document explains IntegrationEngine as one coherent system and is intended to be read sequentially. For task-oriented lookup, use [`documentation.md`](./documentation.md). When this guide and the implementation disagree, the implementation and tested contracts are authoritative.
 
 This guide describes the bundle as one coherent system. Upgrade material and project history are intentionally kept outside this document.
 

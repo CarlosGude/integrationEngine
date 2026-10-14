@@ -5,7 +5,7 @@
 **Latest tagged release:** [see releases](https://github.com/CarlosGude/integrationEngine/releases/latest)
 **Requirements:** PHP 8.2+ · Symfony 6.4 / 7.x / 8.x
 **Website:** [integrationengine.dev](https://integrationengine.dev)
-**Documentation:** [docs/DOCUMENTATION.md](./docs/DOCUMENTATION.md)
+**Documentation:** [docs/documentation.md](./docs/documentation.md)
 **Roadmap:** [docs/ROADMAP.md](./docs/ROADMAP.md)
 
 IntegrationEngine is a Symfony bundle for keeping outbound API integrations predictable: actions describe requests, mappers turn external responses into typed DTOs, and the engine owns the repetitive transport/authentication pipeline.
@@ -138,11 +138,11 @@ See [Getting started](./docs/getting-started/README.md) for the request, context
 | Batch | `sendMany()` isolates failures; built-in REST, GraphQL and form adapters support concurrent dispatch when request middleware does not force the sequential fallback | [Batch requests](./docs/getting-started/batch-requests.md) |
 | Auth | bearer/basic/API key; dynamic token action with cache + one fresh-token retry after a cached-token 401 | [Authorization](./docs/getting-started/authorization.md) |
 | Multi-connection | `ConnectionResolverInterface` can override base URL/auth and namespace token caches per call | [HTTP clients](./docs/advanced/architecture/clients.md#runtime-connection-resolution) |
-| Middleware | action-level client middleware plus full-request middleware for signing | [Architecture](./docs/ARCHITECTURE.md#middleware-boundaries) |
+| Middleware | action-level client middleware plus full-request middleware for signing | [Architecture](./docs/architecture.md#middleware-boundaries) |
 | Resilience | transport timeout, max duration and Symfony retry configuration | [Resilience](./docs/resilience.md) |
 | Outgoing security | hostname allowlist and optional private-network blocking for built-in transports | [Security](./docs/security.md) |
-| Observability | scalar-only request, response, failure, token and webhook events | [Lifecycle events](./docs/LIFECYCLE.md) |
-| Webhooks | YAML definition, HMAC verification, typed mapper, Symfony Webhook/RemoteEvent integration | [Webhooks](./docs/WEBHOOK.md) |
+| Observability | scalar-only request, response, failure, token and webhook events | [Lifecycle events](./docs/lifecycle.md) |
+| Webhooks | YAML definition, HMAC verification, typed mapper, Symfony Webhook/RemoteEvent integration | [Webhooks](./docs/webhook.md) |
 | Static analysis | optional PHPStan rules for mapper reciprocity, response modifiers and facade return types | [PHPStan](./docs/phpstan.md) |
 | Debugging | `debug:integration [name]` and Symfony profiler integration in debug mode | [Debugging](./docs/advanced/debugging.md) |
 
@@ -167,11 +167,11 @@ Keeping those scopes separate matters: bundle configuration decides **how an int
 
 `Core` defines contracts and orchestration; `Infrastructure` implements adapters; `Bundle` wires Symfony; compatibility shims stay outside Core; optional PHPStan rules live in their own extension layer. The dependency direction is enforced by Deptrac.
 
-The detailed dependency rules and runtime pipeline are in [ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+The detailed dependency rules and runtime pipeline are in [architecture.md](./docs/architecture.md).
 
 ## Quality
 
-Repository gates cover style, PHPStan, PHPUnit, Deptrac and Infection. Measured results belong in [docs/advanced/QUALITY.md](./docs/advanced/QUALITY.md), not in this README, so release copy does not become a museum of stale numbers.
+Repository gates cover style, PHPStan, PHPUnit, Deptrac and Infection. Measured results belong in [docs/advanced/quality.md](./docs/advanced/quality.md), not in this README, so release copy does not become a museum of stale numbers.
 
 ## Demo
 
@@ -179,7 +179,7 @@ Repository gates cover style, PHPStan, PHPUnit, Deptrac and Infection. Measured 
 
 ## Further reading
 
-Start from [docs/DOCUMENTATION.md](./docs/DOCUMENTATION.md). It is the only documentation index; archived plans, spikes and release-preparation notes live under [docs/archived/](./docs/archived/) and are explicitly non-current.
+Start from [docs/documentation.md](./docs/documentation.md). It is the only documentation index; archived plans, spikes and release-preparation notes live under [docs/archived/](./docs/archived/) and are explicitly non-current.
 
 A rough guide to where things live:
 
@@ -187,5 +187,5 @@ A rough guide to where things live:
 - [docs/advanced/](./docs/advanced/) — client/architecture internals, debugging, quality gates, AI-agent-assisted generation.
 - [docs/adr/](./docs/adr/) — Architecture Decision Records; read these for *why* a design was chosen, not just *what* it does.
 - [docs/archived/](./docs/archived/) — historical plans, audits and spikes; explicitly not the current contract.
-- `docs/ARCHITECTURE.md` is the single reference for dependency rules and the runtime pipeline.
+- `docs/architecture.md` is the single reference for dependency rules and the runtime pipeline.
 - Breaking-change migration notes live under `docs/`, one `UPGRADE-N.0.md` file per major version.

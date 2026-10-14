@@ -2,7 +2,7 @@
 
 IntegrationEngine separates the engine contract from the HTTP implementation. `ClientInterface` is the minimum capability; optional interfaces add batching and runtime URL overrides.
 
-For the architectural boundary around clients and middleware, see [ARCHITECTURE.md](../../ARCHITECTURE.md). This page is the configuration and extension reference.
+For the architectural boundary around clients and middleware, see [architecture.md](../../architecture.md). This page is the configuration and extension reference.
 
 ## Built-in clients
 

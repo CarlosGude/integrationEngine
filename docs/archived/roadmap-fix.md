@@ -54,7 +54,7 @@ la revisión antigua y sus anotaciones se conservan en
 Resultados, pruebas negativas y límites: [auditoría de calidad](../quality-audit.md).
 
 Los mutantes supervivientes permanecen visibles y cuentan contra los umbrales.
-La medición actual y el alcance están en [QUALITY.md](../advanced/QUALITY.md).
+La medición actual y el alcance están en [QUALITY.md](../advanced/quality.md).
 Los componentes de proveedores, DLQ y state machine eliminados en v6 no son tareas
 pendientes del bundle.
 

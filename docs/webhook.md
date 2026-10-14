@@ -191,6 +191,6 @@ Signature verification proves authenticity according to the configured scheme. I
 ## Related documents
 
 - [webhook-compatibility-notes.md](./webhook-compatibility-notes.md) — contract background and compatibility notes
-- [LIFECYCLE.md](./LIFECYCLE.md) — `WebhookReceived` / `WebhookRejected`
+- [lifecycle.md](./lifecycle.md) — `WebhookReceived` / `WebhookRejected`
 - [ADR 0016](./adr/0016-generic-webhooks-and-application-idempotency.md) — generic webhook + application idempotency decision
 - [UPGRADE-8.0.md](./UPGRADE-8.0.md) — migration from the v7 webhook model

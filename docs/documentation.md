@@ -8,24 +8,24 @@ The documentation is deliberately split by responsibility. If two pages appear t
 
 | Need | Canonical document |
 |---|---|
-| Read the bundle end to end | [DEVELOPER-GUIDE.md](./DEVELOPER-GUIDE.md) |
-| Understand the architecture and dependency rules | [ARCHITECTURE.md](./ARCHITECTURE.md) |
+| Read the bundle end to end | [developer-guide.md](./developer-guide.md) |
+| Understand the architecture and dependency rules | [architecture.md](./architecture.md) |
 | Build the first action | [getting-started/actions.md](./getting-started/actions.md) |
 | Resolve path/query inputs | [getting-started/context-and-path.md](./getting-started/context-and-path.md) |
 | Configure auth/token caching | [getting-started/authorization.md](./getting-started/authorization.md) |
 | Map responses and headers | [getting-started/mappers-and-responses.md](./getting-started/mappers-and-responses.md) |
 | Send batches | [getting-started/batch-requests.md](./getting-started/batch-requests.md) |
 | Choose/customize clients, base URLs or connections | [advanced/architecture/clients.md](./advanced/architecture/clients.md) |
-| Add request/client middleware | [ARCHITECTURE.md](./ARCHITECTURE.md#middleware-boundaries) |
+| Add request/client middleware | [architecture.md](./architecture.md#middleware-boundaries) |
 | Configure retries/timeouts | [resilience.md](./resilience.md) |
 | Configure host/private-network protection | [security.md](./security.md) |
-| Receive webhooks | [WEBHOOK.md](./WEBHOOK.md) |
-| Observe lifecycle events | [LIFECYCLE.md](./LIFECYCLE.md) |
-| Configure helper observability | [OBSERVABILITY.md](./OBSERVABILITY.md) |
+| Receive webhooks | [webhook.md](./webhook.md) |
+| Observe lifecycle events | [lifecycle.md](./lifecycle.md) |
+| Configure helper observability | [observability.md](./observability.md) |
 | Debug an integration | [advanced/debugging.md](./advanced/debugging.md) |
 | Enable PHPStan integration rules | [phpstan.md](./phpstan.md) |
-| Run/extend the test suite | [TESTING.md](./TESTING.md) |
-| Check quality gates and measured evidence | [advanced/QUALITY.md](./advanced/QUALITY.md) |
+| Run/extend the test suite | [testing.md](./testing.md) |
+| Check quality gates and measured evidence | [advanced/quality.md](./advanced/quality.md) |
 | Contribute | [CONTRIBUTING.md](../CONTRIBUTING.md) |
 
 ## Browse by area
@@ -69,7 +69,7 @@ These pages are narrow references, not alternative manuals:
 - [form-bodies.md](./form-bodies.md) — how form encoding is selected.
 - [resilience.md](./resilience.md) — transport retry/timeout semantics.
 - [security.md](./security.md) — outgoing host/private-network policy.
-- [webhook-compatibility-notes.md](./webhook-compatibility-notes.md) — webhook contract background and compatibility notes; the usage guide remains `WEBHOOK.md`.
+- [webhook-compatibility-notes.md](./webhook-compatibility-notes.md) — webhook contract background and compatibility notes; the usage guide remains `webhook.md`.
 - [phpstan.md](./phpstan.md) — optional development-time contracts.
 
 ## Architecture decisions

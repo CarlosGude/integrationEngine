@@ -1,6 +1,6 @@
 # Class relationship graph
 
-This is a navigation aid, not a second architecture specification. The invariants and dependency rules live in [ARCHITECTURE.md](../../ARCHITECTURE.md); this page shows the current major runtime relationships.
+This is a navigation aid, not a second architecture specification. The invariants and dependency rules live in [architecture.md](../../architecture.md); this page shows the current major runtime relationships.
 
 ## Engine and ports
 
@@ -118,4 +118,4 @@ IntegrationEngine v8 exposes the verified event ID and typed event but deliberat
 
 `IntegrationCompilerPass` creates one engine service per configured integration. The bundle wires the config adapter, selected client, cache adapter, optional connection resolver, middleware chains and lifecycle dispatcher dependencies. Protocol adapters are discovered through the `integration_engine.client_adapter` tag; request middleware uses its own bundle tag.
 
-For exact configuration keys, use [HTTP clients](clients.md) and [DOCUMENTATION.md](../../DOCUMENTATION.md), not this graph.
+For exact configuration keys, use [HTTP clients](clients.md) and [documentation.md](../../documentation.md), not this graph.

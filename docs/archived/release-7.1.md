@@ -43,7 +43,7 @@ sequential batch failures and invalid authorization/middleware configuration.
 
 ## Validation and publication
 
-Local quality results are recorded in [QUALITY.md](../advanced/QUALITY.md).
+Local quality results are recorded in [QUALITY.md](../advanced/quality.md).
 Remote validation checked on 2026-09-22 for commit
 `6f3107cd98daef8114d05dab9e56dd4979347c9d`:
 

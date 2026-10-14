@@ -1,3 +1,5 @@
+<!-- TODO: historical Spanish-language audit snapshot (v8.0.0), not translated — out of scope for this documentation pass. -->
+
 # IntegrationEngine v8.0.0 - Documentación Técnica Completa
 
 ## Tabla de Contenidos

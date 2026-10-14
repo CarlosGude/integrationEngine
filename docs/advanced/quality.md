@@ -71,7 +71,7 @@ Compatibility, Utils, PSR, Symfony and PHPUnit layers. Core allows PSR only.
 The two old resilience APIs keep their public names in an explicit outer
 Compatibility layer; Core never references those facades. See
 [ADR 0015](../adr/0015-resilience-classification-boundary.md) and
-[the architecture rules](../ARCHITECTURE.md).
+[the architecture rules](../architecture.md).
 
 The initial two Core-to-Symfony violations were fixed in the separate
 [architecture PR #5](https://github.com/CarlosGude/integrationEngine/pull/5)

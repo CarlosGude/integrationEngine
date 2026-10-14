@@ -227,7 +227,7 @@ See:
 
 - [ ] Update `composer.json` to `^5.1`
 - [ ] Run `composer update`
-- [ ] Review new configuration options in `WEBHOOK.md`
+- [ ] Review new configuration options in `webhook.md`
 - [ ] If using multiple platforms, implement or use built-in `WebhookPlatformConfig`
 - [ ] If using Messenger, configure webhook transport
 - [ ] If using DLQ, configure cache backend
@@ -250,7 +250,7 @@ echo "DLQ size: {$metrics['dlq_count']}";
 
 For questions or issues:
 
-- Complete guide: [`WEBHOOK.md`](./WEBHOOK.md)
+- Complete guide: [`webhook.md`](./webhook.md)
 - Architecture decisions: [`docs/adr/`](./adr/)
 - Performance tuning: [`docs/advanced/debugging.md`](./advanced/debugging.md)
 - GitHub discussions: [IntegrationEngine discussions](https://github.com/carlosgude/integrationengine/discussions)

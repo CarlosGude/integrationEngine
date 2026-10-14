@@ -73,5 +73,5 @@ Fired after the response is mapped to a DTO, before ActionCompleted.
 
 - **Code:** `src/Core/Lifecycle/HttpResponseReceived.php`, `src/Core/Lifecycle/ResponseMapped.php`
 - **Integration:** `src/Core/IntegrationEngine.php:send()` (lines 107-143) fires both events after measuring each phase
-- **Documentation:** `OBSERVABILITY.md` "Detailed Timing" section with examples and use cases
+- **Documentation:** `observability.md` "Detailed Timing" section with examples and use cases
 - **Tests:** Lifecycle event tests verify event dispatch and data integrity (524 core tests passing)

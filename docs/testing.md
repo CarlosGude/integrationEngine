@@ -14,7 +14,7 @@ make qa         # cs + stan + test
 make ci         # qa + deptrac + mutation
 ```
 
-Thresholds and measured CI evidence belong in [advanced/QUALITY.md](./advanced/QUALITY.md).
+Thresholds and measured CI evidence belong in [advanced/quality.md](./advanced/quality.md).
 
 ## Test areas
 
@@ -97,4 +97,4 @@ Use Symfony `MockHttpClient`/`MockResponse` or small spy transports. No test sho
 
 Mutation results are a signal about exercised behavior, not a substitute for line/branch coverage or architectural tests. Keep surviving/equivalent/uncovered mutants visible rather than excluding broad source areas just to improve a percentage.
 
-The repository's current Infection policy and measured run are documented in [advanced/QUALITY.md](./advanced/QUALITY.md).
+The repository's current Infection policy and measured run are documented in [advanced/quality.md](./advanced/quality.md).

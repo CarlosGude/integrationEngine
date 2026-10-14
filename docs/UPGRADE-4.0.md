@@ -186,6 +186,6 @@ integrations:
 
 For questions or issues during upgrade, consult:
 
-- Architecture documentation: [`ARCHITECTURE.md`](./ARCHITECTURE.md)
+- Architecture documentation: [`architecture.md`](./architecture.md)
 - Middleware and clients: [`docs/advanced/architecture/clients.md`](./advanced/architecture/clients.md)
 - GitHub discussions: [IntegrationEngine discussions](https://github.com/carlosgude/integrationengine/discussions)

@@ -177,7 +177,7 @@ integration_engine:
 
 ## Lifecycle Events
 
-Tap into integration lifecycle for observability. See **[LIFECYCLE.md](./docs/LIFECYCLE.md)** for:
+Tap into integration lifecycle for observability. See **[lifecycle.md](./docs/lifecycle.md)** for:
 
 - `RequestSent`, `ResponseMapped`, `RequestFailed`, `TokenRefreshed`, `WebhookReceived`, `WebhookRejected`
 - Scalar-only metadata: no request/response/token/exception objects in lifecycle events
@@ -187,7 +187,7 @@ Tap into integration lifecycle for observability. See **[LIFECYCLE.md](./docs/LI
 
 ## Inbound Webhooks
 
-For **receiving** webhooks from external platforms, see **[WEBHOOK.md](./docs/WEBHOOK.md)**. It covers:
+For **receiving** webhooks from external platforms, see **[webhook.md](./docs/webhook.md)**. It covers:
 
 - How the bundle plugs into Symfony's Webhook/RemoteEvent components: `IntegrationWebhookRequestParser` → `MappedRemoteEvent` → application consumer
 - Signature verifiers for the three common schemes (hex HMAC behind a prefix, raw HMAC in base64, timestamped HMAC) and typed payload mapping

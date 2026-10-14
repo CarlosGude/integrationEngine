@@ -11,7 +11,7 @@ The reasoning is in [ADR 0014](./adr/0014-no-vendor-integrations-in-the-bundle.m
 | `ShopifyHmacSignatureVerifier`, `WooCommerceHmacSignatureVerifier` | `Base64HmacSignatureVerifier($header)` — the same scheme, with the header as an argument |
 | `ShopifyProductUpdatedParser`, `ShopifyOrderCreatedParser` | `php bin/console make:webhook <provider> <event>` |
 | The six mappers and six event DTOs under `Infrastructure/Webhook/{Mapper,Event}` | The mapper and DTO the generator writes, edited to your payload |
-| `ShopifyWebhookController` | A parser per event type plus `framework.webhook.routing` (see WEBHOOK.md), or your own controller if you need the request headers |
+| `ShopifyWebhookController` | A parser per event type plus `framework.webhook.routing` (see webhook.md), or your own controller if you need the request headers |
 | `MultiPlatformWebhookController` (deprecated in 5.4.0), `WebhookPlatform`, `WebhookPlatformConfig`, `WebhookPlatformRegistry` | Symfony's webhook routing: one key, one parser, one secret per event type |
 
 Everything else stays where it was: `IntegrationWebhookRequestParser`, `AbstractWebhookMapper`, `WebhookEventDispatcher`, `ConsumesWebhookEvents`, `HmacSha256SignatureVerifier`, `TimestampedHmacSignatureVerifier`, `Base64HmacSignatureVerifier`, and `WebhookIdempotencyService` with its fingerprinter.

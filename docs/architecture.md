@@ -1,6 +1,6 @@
 # IntegrationEngine — Architecture
 
-This document describes the boundaries enforced by the current code. Usage examples live in the focused guides linked from [`DOCUMENTATION.md`](./DOCUMENTATION.md); this page explains the invariants behind them.
+This document describes the boundaries enforced by the current code. Usage examples live in the focused guides linked from [`documentation.md`](./documentation.md); this page explains the invariants behind them.
 
 ## Repository layers
 
@@ -210,7 +210,7 @@ Events contain scalar metadata only; request/response objects, payloads, tokens 
 
 The Symfony bundle wires engines to Symfony's `event_dispatcher` when available. `LifecycleEventDispatcher` is a small PSR-14 dispatcher for direct/manual use; `SymfonyEventDispatcherAdapter` can bridge local subscriptions to Symfony.
 
-See [LIFECYCLE.md](./LIFECYCLE.md) for the exact event fields.
+See [lifecycle.md](./lifecycle.md) for the exact event fields.
 
 ## Inbound webhook boundary
 
@@ -229,7 +229,7 @@ integration YAML
 
 The parser verifies the raw body before JSON decoding, requires POST + JSON media type, resolves event type/id through configured dot paths and maps only declared event types. Deduplication and business side effects belong to the consuming application.
 
-See [WEBHOOK.md](./WEBHOOK.md).
+See [webhook.md](./webhook.md).
 
 ## Compatibility layer
 

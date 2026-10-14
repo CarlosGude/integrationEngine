@@ -71,7 +71,7 @@ final class MakeObservabilityCommand extends Command
             "Inject the app.{$integration}.observability service into an application service that is instantiated before integration requests; defining a private service alone does not activate observers.",
             'Use the same LifecycleEventDispatcher instance for this setup and the integration engine.',
             'Configure async logging in config/packages/monolog.yaml',
-            'See OBSERVABILITY.md for performance options',
+            'See docs/observability.md for performance options',
             "Test: php bin/console debug:autowiring {$className}ObservabilitySetup",
         ]);
 
