@@ -30,6 +30,10 @@ It intentionally does **not** own your domain model. Keep the external DTOs behi
 
 IntegrationEngine is a poor fit when an API needs a highly stateful SDK, protocol-specific streaming/session behavior, or a vendor library that already owns transport, retries and object mapping coherently. In those cases, wrapping the SDK behind your own application boundary is usually simpler than forcing it into this action/mapper model.
 
+## Why this exists
+
+Integrations tend to accumulate their own ad-hoc HTTP client, their own way of attaching auth, and their own untyped response handling, repeated slightly differently for every external API a project talks to. That inconsistency shows up as duplicated token logic, DTOs that drift from what the API actually returns, and observability that exists for some integrations and not others. This bundle grew out of exactly that pattern in a production integration, not from a speculative design exercise. The response is a small, uniform contract — Action, Mapper, Response — so every integration looks like every other one and can be tested in isolation.
+
 ## Install
 
 ```bash
