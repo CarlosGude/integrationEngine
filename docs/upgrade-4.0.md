@@ -50,15 +50,19 @@ MyMiddlewareB:
 ```php
 class MyMiddleware extends AbstractClientMiddleware
 {
-    public function process(PreparedRequest $request, callable $next): Response
-    {
+    public function process(
+        AbstractAction $action,
+        ?ActionContextInterface $context,
+        ?RequestHeadersInterface $headers,
+        callable $next,
+    ): array {
         // Single request handling
-        return $next($request);
+        return $next($action, $context, $headers);
     }
 
     public function processMany(array $requests, callable $next): array
     {
-        // Batch handling (default: sequential passthrough)
+        // Batch handling (default: passes the whole batch through unchanged)
         return $next($requests);
     }
 }
