@@ -23,8 +23,8 @@ export default {
     }
 ],
     roadmapLink: "Ver la hoja de ruta completa →",
-    roadmapSub: "Última versión: v9.3.1. Desde v9.0.0 (parámetros de URL movidos a context) se ha añadido validación de tipo del body, un panel opcional de payloads en el profiler y autorización por defecto compartida con override por acción.",
-    releaseLink: "Notas de v9.3.1 →",
+    roadmapSub: "Última versión: v9.4.0. Desde v9.0.0 (parámetros de URL movidos a context) se ha añadido validación de tipo del body, un panel opcional de payloads en el profiler y autorización por defecto compartida con override por acción.",
+    releaseLink: "Notas de v9.4.0 →",
     migrationLink: "Ejemplos de contexto y migración →",
     statusH2: "Hoja de ruta",
     parallelComment: "// Concurrente con el adaptador REST incluido; con middleware de petición es secuencial",
