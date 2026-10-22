@@ -18,9 +18,9 @@ In multi-tenant scenarios, tokens are different per tenant (per connection). Als
 
 **Cache tokens per connection; retry once with a fresh token on 401.**
 
-1. **Per-connection caching:** Token cache key includes `connectionId` (or connection itself if no id provided)
+1. **Per-connection caching:** Token cache key includes a connection discriminator: `connectionId` if the resolver returns one, otherwise the `connection` argument when it is scalar, otherwise the resolved base URL
 2. **Single retry:** Only retry HTTP 401 if the token was from cache; if freshly fetched, fail immediately
-3. **Batch consistency:** All items in a batch share the cached token (one fetch per batch, one retry per batch)
+3. **Batch consistency:** Items that share a token cache key (integration + token action + connection discriminator) share one token: one fetch per key, and after a 401 one eviction and one fresh token per key. A batch spanning several connections fetches one token per connection
 
 ## Alternatives considered
 
@@ -44,13 +44,13 @@ In multi-tenant scenarios, tokens are different per tenant (per connection). Als
 **Positive:**
 - Token expiry is transparently handled
 - Multi-tenant scenarios work without extra code
-- Batch efficiency: one token fetch, one retry for all items
+- Batch efficiency: items sharing a token cache key reuse one token fetch and one post-401 refresh
 - Single-threaded retry logic avoids race conditions
 
 **Negative:**
 - Requires understanding of "connection" concept
 - Retry happens without caller's knowledge (implicit behavior)
-- If token service is flaky, one error blocks the whole batch
+- If the token service fails, nothing is cached, so every item sharing that key attempts its own fetch; each failure stays isolated to its item and the rest of the batch still runs
 
 ## References
 
