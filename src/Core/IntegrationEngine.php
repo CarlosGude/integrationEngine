@@ -25,6 +25,7 @@ use IntegrationEngine\Core\Dispatch\ResponseBuilder;
 use IntegrationEngine\Core\Event\RequestFailed;
 use IntegrationEngine\Core\Event\RequestSent;
 use IntegrationEngine\Core\Event\ResponseMapped;
+use IntegrationEngine\Core\Event\ResponseReceived;
 use IntegrationEngine\Core\Exception\RequestResponseException;
 use IntegrationEngine\Core\Port\CachePort;
 use IntegrationEngine\Core\Port\ConfigPort;
@@ -101,8 +102,9 @@ final readonly class IntegrationEngine
                     auth: $auth,
                     context: $context,
                     headers: $headers,
-                    buildResponse: function (AbstractAction $a, array $respBody, array $respHeaders, int $status = 0) use (&$statusCode): ResponseInterface {
+                    buildResponse: function (AbstractAction $a, array $respBody, array $respHeaders, int $status = 0) use (&$statusCode, $actionName, $startTime): ResponseInterface {
                         $statusCode = $status;
+                        $this->emitReceived($actionName, $status, $startTime);
 
                         return $this->responseBuilder->build($a, $respBody, $respHeaders);
                     },
@@ -112,6 +114,7 @@ final readonly class IntegrationEngine
             } else {
                 $rawResponse = $client->send($action, $context, $headers);
                 $statusCode = $rawResponse['statusCode'] ?? 0;
+                $this->emitReceived($actionName, $statusCode, $startTime);
                 $response = $this->responseBuilder->build($action, $rawResponse['body'], $rawResponse['headers']);
             }
         } catch (\Throwable $e) {
@@ -217,6 +220,9 @@ final readonly class IntegrationEngine
             }
 
             try {
+                // The batch hands back every result at once, so this marks when the
+                // item's result became available, not when its response arrived.
+                $this->emitReceived($request->actionName, $rawResult['statusCode'] ?? 0, $startedAt[$key], $key);
                 $response = $this->responseBuilder->build($prepared[$key]->action, $rawResult['body'], $rawResult['headers']);
                 $results[$key] = BatchResult::success($response);
                 $this->emitMapped($request->actionName, $response, $rawResult['statusCode'] ?? 0, $startedAt[$key], $key);
@@ -260,6 +266,11 @@ final readonly class IntegrationEngine
     private function emitStarted(string $actionName, ?AbstractAction $action, float $start, ?string $connectionId = null, int|string|null $requestKey = null): void
     {
         $this->eventDispatcher?->dispatch(new RequestSent($this->integrationName, $actionName, $action?->getMethod() ?? '', $action?->getRawPath() ?? '', $start, $connectionId, $requestKey));
+    }
+
+    private function emitReceived(string $actionName, int $statusCode, float $start, int|string|null $requestKey = null): void
+    {
+        $this->eventDispatcher?->dispatch(new ResponseReceived($this->integrationName, $actionName, (microtime(true) - $start) * 1000, $statusCode, microtime(true), $requestKey));
     }
 
     private function emitMapped(string $actionName, ResponseInterface $response, int $statusCode, float $start, int|string|null $requestKey = null): void

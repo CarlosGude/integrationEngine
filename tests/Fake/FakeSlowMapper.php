@@ -9,7 +9,7 @@ use IntegrationEngine\Core\Contract\Mapper\AbstractMapper;
 use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 
 /**
- * Takes measurable time to map, so the mapping duration carried by
+ * Takes measurable time to map, so the gap between ResponseReceived and
  * ResponseMapped can be asserted against a real elapsed time.
  */
 final class FakeSlowMapper extends AbstractMapper

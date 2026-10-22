@@ -179,7 +179,7 @@ integration_engine:
 
 Tap into integration lifecycle for observability. See **[lifecycle.md](./docs/lifecycle.md)** for:
 
-- `RequestSent`, `ResponseMapped`, `RequestFailed`, `TokenRefreshed`, `WebhookReceived`, `WebhookRejected`
+- `RequestSent`, `ResponseReceived`, `ResponseMapped`, `RequestFailed`, `TokenRefreshed`, `WebhookReceived`, `WebhookRejected`
 - Scalar-only metadata: no request/response/token/exception objects in lifecycle events
 - Bundle-managed engines dispatch through Symfony's `event_dispatcher`; `LifecycleEventDispatcher` is for manual/shared-dispatcher wiring
 

@@ -71,9 +71,10 @@ For `IntegrationEngine::send()` the current order is:
    ├─ request headers/auth
    ├─ request middleware on the fully built request
    └─ HTTP transport
-8. ResponseBuilder
+8. ResponseReceived event
+9. ResponseBuilder
    └─ mapper → typed ResponseInterface, or EmptyResponse
-9. ResponseMapped event
+10. ResponseMapped event
 ```
 
 Any exception inside preparation/dispatch/mapping produces `RequestFailed` with scalar metadata and is rethrown. Listener exceptions follow the semantics of the configured dispatcher and are not converted into transport errors.
@@ -202,6 +203,7 @@ See [security.md](./security.md) and [resilience.md](./resilience.md) for behavi
 Events contain scalar metadata only; request/response objects, payloads, tokens and exceptions are not attached. The current event set is:
 
 - `RequestSent`
+- `ResponseReceived`
 - `ResponseMapped`
 - `RequestFailed`
 - `TokenRefreshed`

@@ -24,6 +24,7 @@ ADRs preserve decisions in their historical context. A superseded ADR is intenti
 | [0018](0018-body-type-invariant.md) | Body type invariant, validated at config time | Accepted |
 | [0019](0019-profiler-payload-visibility.md) | Opt-in payload visibility in the profiler | Accepted |
 | [0020](0020-shared-default-authorization.md) | Shared `defaults.authorization` with per-action override | Accepted |
+| [0021](0021-response-received-event.md) | `ResponseReceived` event before mapping | Accepted |
 
 Status values: `Accepted` (current), `Superseded` (replaced — see the ADR's own status line for the successor), `Retired` (no longer applicable, no successor).
 

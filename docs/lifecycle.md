@@ -7,6 +7,7 @@ IntegrationEngine emits immutable scalar metadata for outbound calls, auth refre
 | Event | Emitted when | Public fields |
 |---|---|---|
 | `RequestSent` | an outbound action has been resolved and is about to be dispatched | `integrationName`, `action`, `method`, `path`, `timestamp`, `connectionId`, `requestKey` |
+| `ResponseReceived` | the client returned a response and the engine is about to map it | `integrationName`, `action`, `durationMs`, `statusCode`, `timestamp`, `requestKey` |
 | `ResponseMapped` | the response has been successfully mapped (or `EmptyResponse` built) | `integrationName`, `action`, `durationMs`, `statusCode`, `responseClass`, `timestamp`, `requestKey` |
 | `RequestFailed` | preparation, transport, auth or mapping fails inside the engine flow | `integrationName`, `action`, `durationMs`, `statusCode`, `exceptionClass`, sanitized `message`, `timestamp`, `requestKey` |
 | `TokenRefreshed` | dynamic auth resolves a new token | `integrationName`, token `action`, `reason`, `timestamp`, `requestKey` |
@@ -38,7 +39,7 @@ final class IntegrationMetricsListener
 }
 ```
 
-The same applies to `RequestSent`, `RequestFailed`, `TokenRefreshed`, `WebhookReceived` and `WebhookRejected`.
+The same applies to `RequestSent`, `ResponseReceived`, `RequestFailed`, `TokenRefreshed`, `WebhookReceived` and `WebhookRejected`.
 
 ## Direct PSR-14 dispatcher
 
@@ -63,6 +64,10 @@ Pass the **same dispatcher instance** to `IntegrationEngine` if you construct th
 `durationMs` is measured around the logical engine operation. It can include configuration/connection resolution after the initial timestamp, authentication work, transport, retries, middleware and mapping. It is not a pure network-latency metric.
 
 For batches, each item gets its own start timestamp and completion/failure duration. Concurrent requests can therefore have overlapping durations; summing them is not equivalent to wall-clock batch duration.
+
+`ResponseReceived` splits that operation in two. Its `durationMs` covers everything before mapping (resolution, authentication, middleware, transport), and the gap between its `timestamp` and `ResponseMapped::timestamp` is the mapping time. It is emitted only for responses that reach the mapper: a transport failure goes straight to `RequestFailed`, and the 401 that triggers a token refresh shows up as `TokenRefreshed` (`rejected_401`), not as a received response. `ResponseReceived` followed by `RequestFailed` therefore means the API answered and mapping failed. Response-cache hits emit it too, since their mapping still runs.
+
+In a batch the engine gets every item's result at once, so an item's `ResponseReceived::durationMs` measures until the batch returned, not that request's own network time. The per-item mapping time (the timestamp gap, correlated by `requestKey`) stays exact.
 
 `RequestSent::path` is the action's raw path at that point. It preserves the configured placeholders; `ActionContextInterface` supplies their values during path resolution. Treat it as operation metadata, not as a complete URL or trace span.
 
