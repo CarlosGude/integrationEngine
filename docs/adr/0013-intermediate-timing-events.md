@@ -1,6 +1,6 @@
 # 0013 · Intermediate Timing Events (HttpResponseReceived, ResponseMapped)
 
-- **Status:** Superseded in v8
+- **Status:** Superseded in v8; intermediate timing restored by [0021](0021-response-received-event.md)
 - **Date:** 2026-09-18
 
 ## Context

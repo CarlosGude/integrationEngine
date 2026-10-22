@@ -679,6 +679,7 @@ Application loggers and optional LoggingMiddleware are outside the profiler hard
 | Event | Important fields | When emitted |
 | --- | --- | --- |
 | RequestSent | integrationName, action, method, raw path, timestamp, connectionId, requestKey | After action/connection resolution and before host policy/dispatch; also emitted with blank method/path if preparation fails early. |
+| ResponseReceived | integrationName, action, durationMs, statusCode, timestamp, requestKey | After the client returns a response, before mapping. Not emitted for transport failures or for the 401 that triggers a token refresh. |
 | ResponseMapped | integrationName, action, durationMs, statusCode, responseClass, timestamp, requestKey | After successful response mapping. |
 | RequestFailed | integrationName, action, durationMs, statusCode, exceptionClass, safe message, timestamp, requestKey | When preparation, transport or mapping fails. |
 | TokenRefreshed | integrationName, token action, reason, timestamp, requestKey | After a token is fetched and cached. |
@@ -688,7 +689,9 @@ Application loggers and optional LoggingMiddleware are outside the profiler hard
 
 ## 16.2 Duration semantics
 
-ResponseMapped.durationMs and RequestFailed.durationMs are logical engine durations from the beginning of send/item preparation until mapping/failure. They may include connection resolution, authentication/token fetching, middleware, transport, retry and mapping. They are not a split between HTTP time and mapping time.
+ResponseMapped.durationMs and RequestFailed.durationMs are logical engine durations from the beginning of send/item preparation until mapping/failure. They may include connection resolution, authentication/token fetching, middleware, transport, retry and mapping. On their own they are not a split between HTTP time and mapping time.
+
+ResponseReceived provides that split: its durationMs covers everything before mapping, and ResponseMapped.timestamp minus ResponseReceived.timestamp is the mapping time. In a batch, every item's result reaches the engine at once, so ResponseReceived.durationMs measures until the batch returned rather than that request's own network time; the per-item mapping time stays exact.
 
 
 ## 16.3 Batch requestKey
@@ -1250,6 +1253,7 @@ webhooks:
 | Event | Fields |
 | --- | --- |
 | RequestSent | integrationName, action, method, path, timestamp, connectionId?, requestKey? |
+| ResponseReceived | integrationName, action, durationMs, statusCode, timestamp, requestKey? |
 | ResponseMapped | integrationName, action, durationMs, statusCode, responseClass, timestamp, requestKey? |
 | RequestFailed | integrationName, action, durationMs, statusCode, exceptionClass, safe message, timestamp, requestKey? |
 | TokenRefreshed | integrationName, action, reason, timestamp, requestKey? |

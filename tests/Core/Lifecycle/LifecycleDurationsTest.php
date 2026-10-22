@@ -10,6 +10,7 @@ use IntegrationEngine\Core\Contract\Client\ClientInterface;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 use IntegrationEngine\Core\Event\RequestFailed;
 use IntegrationEngine\Core\Event\ResponseMapped;
+use IntegrationEngine\Core\Event\ResponseReceived;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Core\Lifecycle\LifecycleEventDispatcher;
 use IntegrationEngine\Tests\Fake\FakeCache;
@@ -45,6 +46,23 @@ final class LifecycleDurationsTest extends TestCase
         self::assertInstanceOf(ResponseMapped::class, $event);
         self::assertGreaterThan(self::MIN_MS, $event->durationMs);
         self::assertLessThan(self::MAX_MS, $event->durationMs);
+    }
+
+    #[Test]
+    public function responseReceivedSeparatesTheClientCallFromTheMapping(): void
+    {
+        $this->engine($this->slowClient())->send(FakeSlowAction::getName());
+        $received = $this->event(ResponseReceived::class);
+        $mapped = $this->event(ResponseMapped::class);
+        self::assertInstanceOf(ResponseReceived::class, $received);
+        self::assertInstanceOf(ResponseMapped::class, $mapped);
+
+        self::assertGreaterThan(self::MIN_MS, $received->durationMs);
+        self::assertLessThan($mapped->durationMs, $received->durationMs);
+
+        $mappingMs = ($mapped->timestamp - $received->timestamp) * 1000;
+        self::assertGreaterThan(self::MIN_MS, $mappingMs);
+        self::assertLessThan(self::MAX_MS, $mappingMs);
     }
 
     #[Test]
@@ -98,7 +116,7 @@ final class LifecycleDurationsTest extends TestCase
         $config->register(FakeSlowAction::getName(), FakeSlowAction::create('GET', '/slow'));
 
         $dispatcher = new LifecycleEventDispatcher();
-        foreach ([ResponseMapped::class, RequestFailed::class] as $eventClass) {
+        foreach ([ResponseReceived::class, ResponseMapped::class, RequestFailed::class] as $eventClass) {
             $dispatcher->subscribe($eventClass, function (object $event): void {
                 $this->events[] = $event;
             });

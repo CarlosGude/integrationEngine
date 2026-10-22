@@ -83,6 +83,8 @@ The command generates an application class under `src/Integration/<Name>/` and a
 
 Lifecycle durations are logical-operation durations, not pure network timings. For batches, every item carries its own `requestKey`; concurrent durations overlap.
 
+To tell a slow mapper from a slow upstream, subtract `ResponseReceived::timestamp` from `ResponseMapped::timestamp` for the mapping time; `ResponseReceived::durationMs` is the time before mapping. See [lifecycle.md](./lifecycle.md) for what that includes and how it behaves in batches.
+
 Good metric labels are bounded values such as integration name, action, outcome and status class. Avoid connection IDs, resolved URLs, payload fields, exception messages and any credential-derived value.
 
 The bundle does not ship a Prometheus registry/exporter. Storage, aggregation and scrape endpoints belong to the consuming application.

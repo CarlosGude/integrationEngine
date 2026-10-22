@@ -8,6 +8,7 @@ use IntegrationEngine\Core\Batch\EngineRequest;
 use IntegrationEngine\Core\Event\RequestFailed;
 use IntegrationEngine\Core\Event\RequestSent;
 use IntegrationEngine\Core\Event\ResponseMapped;
+use IntegrationEngine\Core\Event\ResponseReceived;
 use IntegrationEngine\Core\IntegrationEngine;
 use IntegrationEngine\Tests\Fake\FakeCache;
 use IntegrationEngine\Tests\Fake\FakeClient;
@@ -24,12 +25,14 @@ final class SafeLifecycleEventsTest extends TestCase
         $client = new FakeClient();
         $client->setResponse(FakeTokenAction::getName(), ['secret' => 'CONFIDENTIAL_789']);
         $this->engine($client, $dispatcher)->send(FakeTokenAction::getName());
-        self::assertSame([RequestSent::class, ResponseMapped::class], array_map(static fn (object $e): string => $e::class, $dispatcher->events));
+        self::assertSame([RequestSent::class, ResponseReceived::class, ResponseMapped::class], array_map(static fn (object $e): string => $e::class, $dispatcher->events));
         self::assertStringNotContainsString('CONFIDENTIAL_789', var_export($dispatcher->events, true));
         self::assertInstanceOf(RequestSent::class, $dispatcher->events[0]);
         self::assertSame('/token/{id}', $dispatcher->events[0]->path);
-        self::assertInstanceOf(ResponseMapped::class, $dispatcher->events[1]);
+        self::assertInstanceOf(ResponseReceived::class, $dispatcher->events[1]);
         self::assertGreaterThanOrEqual(0, $dispatcher->events[1]->durationMs);
+        self::assertInstanceOf(ResponseMapped::class, $dispatcher->events[2]);
+        self::assertGreaterThanOrEqual(0, $dispatcher->events[2]->durationMs);
     }
 
     public function testFailurePreservesExceptionButNeverPublishesItsMessage(): void
@@ -58,11 +61,12 @@ final class SafeLifecycleEventsTest extends TestCase
             'bad' => new EngineRequest('missing'),
         ]);
         self::assertCount(2, $results);
-        self::assertCount(4, $dispatcher->events);
+        self::assertCount(5, $dispatcher->events);
         $keys = array_map(static fn (object $e): mixed => property_exists($e, 'requestKey') ? $e->requestKey : null, $dispatcher->events);
-        self::assertSame(['ok', 'bad', 'ok', 'bad'], $keys);
-        self::assertInstanceOf(ResponseMapped::class, $dispatcher->events[2]);
-        self::assertInstanceOf(RequestFailed::class, $dispatcher->events[3]);
+        self::assertSame(['ok', 'bad', 'ok', 'ok', 'bad'], $keys);
+        self::assertInstanceOf(ResponseReceived::class, $dispatcher->events[2]);
+        self::assertInstanceOf(ResponseMapped::class, $dispatcher->events[3]);
+        self::assertInstanceOf(RequestFailed::class, $dispatcher->events[4]);
     }
 
     private function engine(FakeClient $client, FakeEventDispatcher $dispatcher): IntegrationEngine

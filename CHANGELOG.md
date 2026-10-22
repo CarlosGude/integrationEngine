@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `ResponseReceived` lifecycle event, emitted once the client has returned a response and before mapping: in `send()` (static and dynamic auth alike) and for each `sendMany()` item. `ResponseMapped::timestamp − ResponseReceived::timestamp` is the mapping time, and `ResponseReceived` followed by `RequestFailed` means the API answered and mapping failed. Restores the pre-mapping split that v7's `HttpResponseReceived` provided and the v8 event rework dropped. Code asserting an exact event sequence now sees it between `RequestSent` and `ResponseMapped`. See [ADR 0021](docs/adr/0021-response-received-event.md).
+
 ## [9.3.1] - 2026-10-14
 
 ### Fixed
