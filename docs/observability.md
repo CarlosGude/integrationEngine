@@ -6,31 +6,7 @@ This page documents the optional `ObservabilitySetup` helper and the generator b
 
 ## Recommended Symfony setup
 
-For application-wide production observability, Symfony listeners are the least surprising path because bundle-managed engines already dispatch there:
-
-```php
-use IntegrationEngine\Core\Event\RequestFailed;
-use IntegrationEngine\Core\Event\ResponseMapped;
-use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
-
-final class IntegrationObservability
-{
-    #[AsEventListener]
-    public function success(ResponseMapped $event): void
-    {
-        // histogram/counter/logging using bounded labels such as
-        // integrationName + action + statusCode
-    }
-
-    #[AsEventListener]
-    public function failure(RequestFailed $event): void
-    {
-        // error metric/log; do not add tenant IDs, URLs or payloads as labels
-    }
-}
-```
-
-Use `TokenRefreshed`, `WebhookReceived` and `WebhookRejected` when those are meaningful operational signals.
+For application-wide production observability, ordinary Symfony listeners on the lifecycle events are the least surprising path, because bundle-managed engines already dispatch there. See [Lifecycle events — Symfony applications](./lifecycle.md#symfony-applications) for the listener shape, and [Metric design](#metric-design) below for what to record.
 
 ## `ObservabilitySetup` helper
 
@@ -81,9 +57,7 @@ The command generates an application class under `src/Integration/<Name>/` and a
 
 ## Metric design
 
-Lifecycle durations are logical-operation durations, not pure network timings. For batches, every item carries its own `requestKey`; concurrent durations overlap.
-
-To tell a slow mapper from a slow upstream, subtract `ResponseReceived::timestamp` from `ResponseMapped::timestamp` for the mapping time; `ResponseReceived::durationMs` is the time before mapping. See [lifecycle.md](./lifecycle.md) for what that includes and how it behaves in batches.
+Durations are logical-operation durations, not pure network timings, and `ResponseReceived` lets you separate mapping time from everything before it. See [Timing semantics](./lifecycle.md#timing-semantics) for what each duration includes and how it behaves in batches.
 
 Good metric labels are bounded values such as integration name, action, outcome and status class. Avoid connection IDs, resolved URLs, payload fields, exception messages and any credential-derived value.
 

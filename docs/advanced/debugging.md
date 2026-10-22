@@ -21,7 +21,9 @@ check or validation that the referenced classes exist.
 
 `--format=json` formats successful results for scripts. Unknown integrations and
 unreadable or invalid action files return exit code 1 with a text error;
-unsupported output formats return exit code 2.
+unsupported output formats return exit code 2. The error for an unreadable file is
+deliberately generic: YAML parser messages can quote source lines that contain
+credentials.
 
 ## Symfony Profiler
 
@@ -93,7 +95,9 @@ over a throwaway `dump()`:
 This is per **app request**, not per outgoing call. If a controller triggers three calls
 across two integrations (including a `sendMany()` batch), all three show up in the same
 panel. Batch entries are recorded in the input request order after the batch completes;
-they are not ordered by network completion time.
+they are not ordered by network completion time. Their requests run concurrently, so no
+per-item wall-clock duration exists: each entry shows the batch duration divided by the
+number of requests, which keeps the panel's total truthful but is an approximation per item.
 
 ---
 

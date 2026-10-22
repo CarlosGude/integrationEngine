@@ -24,6 +24,6 @@ Consumers receive typed events directly. v7 instance mapper and verifier APIs ch
 ## References
 
 - [Archived spike with exact Symfony tags](../archived/spikes/webhooks.md)
-- [Webhook contract and compatibility notes](../webhook-compatibility-notes.md)
+- [Webhook integration guide](../webhook.md)
 - [Parser](../../src/Infrastructure/Webhook/IntegrationWebhookRequestParser.php)
 - [Timestamp boundary tests](../../tests/Core/Webhook/TimestampedHmacSignatureVerifierTest.php)

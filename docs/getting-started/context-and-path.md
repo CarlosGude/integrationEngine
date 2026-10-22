@@ -70,8 +70,9 @@ DefaultActionContext::create(['status' => 'active'])
 // → GET /employees?status=active
 ```
 
-Missing a placeholder throws `PathResolutionException` immediately, before the HTTP
-request is made.
+A missing or non-scalar placeholder value throws `PathResolutionException` immediately,
+before the HTTP request is made. A placeholder that appears more than once in the path
+is resolved from the same context value everywhere.
 
 ---
 

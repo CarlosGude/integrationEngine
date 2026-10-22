@@ -1,24 +1,31 @@
 # IntegrationEngine — Testing Guide
 
-The test suite is organized around contracts rather than around one giant kernel test. Most behavior is exercised with direct objects/fakes; bundle wiring gets focused container/compiler-pass tests.
+This page covers two audiences: what to test in an integration you build with the bundle, and how the bundle's own suite is organized.
 
-## Commands
+## Testing your integration
 
-```bash
-make test       # PHPUnit
-make stan       # PHPStan
-make deptrac    # dependency rules
-make cs         # php-cs-fixer dry run
-make mutation   # Infection with uncovered code included
-make qa         # cs + stan + test
-make ci         # qa + deptrac + mutation
-```
+Worth covering in a consuming application:
 
-Thresholds and measured CI evidence belong in [advanced/quality.md](./advanced/quality.md).
+- action metadata: name, `hasResponse()`, `mapper()`;
+- body, context and path behavior, including missing and non-scalar values;
+- mappers, with representative response bodies and headers;
+- facade return types and the gateway/ACL translation;
+- authentication failures and token refresh, when dynamic auth is used;
+- batch partial failures and key preservation;
+- connection isolation, when several tenants or accounts share an endpoint;
+- request-signing middleware against the final URL, body and headers;
+- webhook signature verification, event type/id extraction and typed mapping;
+- that no secrets reach the profiler or lifecycle data.
 
-## Test areas
+A mapper can be unit-tested by calling `AbstractMapper::map()` directly; the headers argument defaults to `[]`.
 
-### Core engine
+## The bundle's own suite
+
+The suite is organized around contracts rather than around one giant kernel test. Most behavior is exercised with direct objects/fakes; bundle wiring gets focused container/compiler-pass tests. The commands are in [CONTRIBUTING.md](../CONTRIBUTING.md#running-tests); thresholds and measured CI evidence are in [advanced/quality.md](./advanced/quality.md).
+
+### Test areas
+
+#### Core engine
 
 Tests under `tests/Core/` cover:
 
@@ -32,7 +39,7 @@ Tests under `tests/Core/` cover:
 - resilience classification and backoff contracts;
 - webhook mapper/signature/domain contracts.
 
-### Infrastructure
+#### Infrastructure
 
 Tests under `tests/Infrastructure/` exercise the real adapter behavior around fake/mock transports:
 
@@ -45,7 +52,7 @@ Tests under `tests/Infrastructure/` exercise the real adapter behavior around fa
 - host allowlists/private-network blocking without real external network calls;
 - YAML configuration, webhook parsing and lifecycle helper behavior.
 
-### Bundle
+#### Bundle
 
 Tests under `tests/Bundle/` focus on configuration and generated/wired services:
 
@@ -57,11 +64,11 @@ Tests under `tests/Bundle/` focus on configuration and generated/wired services:
 
 These tests are intentionally narrower than booting a full application kernel for every case.
 
-### PHPStan extension
+#### PHPStan extension
 
 `tests/PHPStan/` contains rule tests and intentionally invalid fixtures. The fixtures use a dedicated extension so the repository's normal PHPStan run does not treat them as source code that should pass.
 
-## Batch assertions
+### Batch assertions
 
 `sendMany()` returns `BatchResultCollection`. Tests should assert success/failure per original key rather than relying on exception order:
 
@@ -76,7 +83,7 @@ self::assertArrayHasKey('first', $results->errors());
 
 Use `sendManyOrFail()` only when the behavior under test is the strict unwrapping contract. The engine still dispatches the complete batch before the first failed result is thrown during unwrapping.
 
-## Webhook tests
+### Webhook tests
 
 Current webhook tests should pin the v8 order of operations:
 
@@ -89,11 +96,11 @@ Current webhook tests should pin the v8 order of operations:
 
 Do not add tests for removed bundle idempotency classes; v8 deliberately moved deduplication to the consuming application.
 
-## Transport tests
+### Transport tests
 
 Use Symfony `MockHttpClient`/`MockResponse` or small spy transports. No test should depend on a live external API. For private-network behavior, the fake must expose the transport metadata/progress callbacks that Symfony's decorator actually reads; a plain mock response is not sufficient evidence by itself.
 
-## Mutation testing
+### Mutation testing
 
 Mutation results are a signal about exercised behavior, not a substitute for line/branch coverage or architectural tests. Keep surviving/equivalent/uncovered mutants visible rather than excluding broad source areas just to improve a percentage.
 

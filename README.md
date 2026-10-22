@@ -40,7 +40,7 @@ Integrations tend to accumulate their own ad-hoc HTTP client, their own way of a
 composer require carlosgude/integration-engine
 ```
 
-With Symfony Flex, the bundle is registered automatically.
+With Symfony Flex, the bundle is registered automatically. Without Flex, add `IntegrationEngine\Bundle\IntegrationEngineBundle::class => ['all' => true]` to `config/bundles.php`.
 
 ## First integration
 
@@ -85,7 +85,7 @@ $response = $registry->get('my_api')->send(
 
 In practice, wrap that behind a small facade instead of calling `IntegrationRegistry` directly from controllers and application services, so callers get a typed return instead of the base `ResponseInterface`.
 
-The facade implements `IntegrationName` so the integration is referenced as `MyApiIntegration::NAME` rather than a bare string — the constant is autocompleted and can be grepped/refactored with the rest of the codebase, instead of relying on string literals that silently drift. This is the recommended facade pattern:
+The facade implements `IntegrationName` so the integration is referenced as `MyApiIntegration::NAME` rather than a bare string — the constant is autocompleted and can be grepped/refactored with the rest of the codebase, instead of relying on string literals that silently drift. The registry rejects a blank name and the interface's placeholder value, so every facade declares its own. This is the recommended facade pattern:
 
 ```php
 use IntegrationEngine\Core\Contract\Action\DefaultActionContext;
@@ -114,7 +114,7 @@ final class MyApiIntegration implements IntegrationName
 }
 ```
 
-A failed call (HTTP 4xx/5xx, or a network error) throws `RequestResponseException`, which carries the status code and context:
+A failed call (HTTP 4xx/5xx, or a network error) throws `RequestResponseException`, which carries the status code and context ([all exceptions](./docs/errors.md)):
 
 ```php
 use IntegrationEngine\Core\Exception\RequestResponseException;
@@ -138,30 +138,19 @@ See [Getting started](./docs/getting-started/README.md) for the request, context
 | Batch | `sendMany()` isolates failures; built-in REST, GraphQL and form adapters support concurrent dispatch when request middleware does not force the sequential fallback | [Batch requests](./docs/getting-started/batch-requests.md) |
 | Auth | bearer/basic/API key; dynamic token action with cache + one fresh-token retry after a cached-token 401 | [Authorization](./docs/getting-started/authorization.md) |
 | Multi-connection | `ConnectionResolverInterface` can override base URL/auth and namespace token caches per call | [HTTP clients](./docs/advanced/architecture/clients.md#runtime-connection-resolution) |
-| Middleware | action-level client middleware plus full-request middleware for signing | [Architecture](./docs/architecture.md#middleware-boundaries) |
+| Middleware | action-level client middleware plus full-request middleware for signing | [Middleware](./docs/middleware.md) |
+| Response caching | per-action `cache_ttl` over the raw response | [Response caching](./docs/middleware.md#response-caching) |
 | Resilience | transport timeout, max duration and Symfony retry configuration | [Resilience](./docs/resilience.md) |
 | Outgoing security | hostname allowlist and optional private-network blocking for built-in transports | [Security](./docs/security.md) |
 | Observability | scalar-only request, response, failure, token and webhook events | [Lifecycle events](./docs/lifecycle.md) |
 | Webhooks | YAML definition, HMAC verification, typed mapper, Symfony Webhook/RemoteEvent integration | [Webhooks](./docs/webhook.md) |
 | Static analysis | optional PHPStan rules for mapper reciprocity, response modifiers and facade return types | [PHPStan](./docs/phpstan.md) |
 | Debugging | `debug:integration [name]` and Symfony profiler integration in debug mode | [Debugging](./docs/advanced/debugging.md) |
+| Errors | typed exceptions; `RequestResponseException` carries status and context | [Errors](./docs/errors.md) |
 
 ## Configuration split
 
-There are two YAML scopes and they solve different problems:
-
-```text
-config/packages/integration_engine.yaml
-└── integration wiring: base_url, client, transport, headers, cache,
-    middlewares, request_middlewares, connection_resolver
-
-src/.../MyApi.yaml
-├── action definitions: class, method, path, body, authorization,
-│   cache_ttl, timeout
-└── optional webhooks definition
-```
-
-Keeping those scopes separate matters: bundle configuration decides **how an integration is wired**; integration YAML describes **what operations that integration exposes**.
+Bundle configuration decides **how an integration is wired**; the integration YAML describes **what operations that integration exposes**. Every key is in [docs/configuration.md](./docs/configuration.md).
 
 ## Architecture in one sentence
 
@@ -179,13 +168,4 @@ Repository gates cover style, PHPStan, PHPUnit, Deptrac and Infection. Measured 
 
 ## Further reading
 
-Start from [docs/documentation.md](./docs/documentation.md). It is the only documentation index; archived plans, spikes and release-preparation notes live under [docs/archived/](./docs/archived/) and are explicitly non-current.
-
-A rough guide to where things live:
-
-- [docs/getting-started/](./docs/getting-started/) — task-oriented guides for building a first integration: actions, context/path, auth, mapping, batching.
-- [docs/advanced/](./docs/advanced/) — client/architecture internals, debugging, quality gates, AI-agent-assisted generation.
-- [docs/adr/](./docs/adr/) — Architecture Decision Records; read these for *why* a design was chosen, not just *what* it does.
-- [docs/archived/](./docs/archived/) — historical plans, audits and spikes; explicitly not the current contract.
-- `docs/architecture.md` is the single reference for dependency rules and the runtime pipeline.
-- Breaking-change migration notes live under `docs/`, one `upgrade-N.0.md` file per major version.
+Start from [docs/documentation.md](./docs/documentation.md), the only documentation index. It also lists the Architecture Decision Records (*why* a design was chosen) and the upgrade guide for each major version. Archived plans, audits and spikes under [docs/archived/](./docs/archived/) are explicitly non-current.

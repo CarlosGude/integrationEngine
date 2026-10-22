@@ -204,7 +204,7 @@ The current parser:
 7. validates the event against the configured mapper table;
 8. returns `MappedRemoteEvent` and emits `WebhookReceived`.
 
-Rejected requests use HTTP 406 through Symfony's `RejectWebhookException` and emit `WebhookRejected`. Rejection messages carry fixed reason codes and do not include payloads, signatures or secrets.
+Rejected requests use HTTP 406 through Symfony's `RejectWebhookException` and emit `WebhookRejected`. Rejection messages carry fixed reason codes and do not include payloads, signatures or secrets. The reason codes are `header_missing`, `header_malformed`, `signature_invalid`, `timestamp_out_of_tolerance`, `payload_invalid` and `unknown_event`.
 
 ## Unknown events
 
@@ -212,13 +212,15 @@ Rejected requests use HTTP 406 through Symfony's `RejectWebhookException` and em
 
 `unknown_events: ignore` makes the parser return `null`. Be aware that Symfony Webhook controller behavior around a `null` parser result is version-sensitive and, in the supported 6.4/7.4/8.0 controller flow verified by the project spike, a null event is not a portable way to guarantee a 2xx acknowledgement. Use `reject` when you need unambiguous behavior, or own the acknowledgement/controller policy in the application.
 
-See [webhook-compatibility-notes.md](./webhook-compatibility-notes.md) for the compatibility finding behind this caveat.
+The investigation behind this caveat, checked against Symfony 6.4.0, 7.4.0 and 8.0.0, is archived in [archived/spikes/webhooks.md](./archived/spikes/webhooks.md).
 
 ## Signature schemes
 
+All three verify HMAC-SHA256 over the raw request body, before any decoding. Only these three can be selected in the YAML.
+
 ### `hmac_sha256`
 
-Compares a hexadecimal HMAC-SHA256 signature. Optional `prefix` is supported by this scheme only.
+Compares a hexadecimal HMAC-SHA256 signature. Optional `prefix` (for example `sha256=`) is supported by this scheme only.
 
 ### `hmac_base64`
 
@@ -226,7 +228,7 @@ Compares the raw HMAC-SHA256 digest encoded as base64.
 
 ### `timestamped_hmac`
 
-Validates timestamped HMAC input and requires a non-negative `tolerance`. It uses a PSR-20 clock through the bundle's `SystemClock` adapter.
+Reads a header of the form `t=<timestamp>,v1=<hex signature>`, where the signature is the HMAC-SHA256 of `<timestamp>.<raw body>`. Requires a non-negative `tolerance` in seconds; a timestamp further than that from the current time, in either direction, is rejected. It uses a PSR-20 clock through the bundle's `SystemClock` adapter.
 
 ## Generator
 
@@ -314,7 +316,6 @@ Signature verification proves authenticity according to the configured scheme. I
 
 ## Related documents
 
-- [webhook-compatibility-notes.md](./webhook-compatibility-notes.md) — contract background and compatibility notes
 - [lifecycle.md](./lifecycle.md) — `WebhookReceived` / `WebhookRejected`
 - [ADR 0016](./adr/0016-generic-webhooks-and-application-idempotency.md) — generic webhook + application idempotency decision
 - [upgrade-8.0.md](./upgrade-8.0.md) — migration from the v7 webhook model

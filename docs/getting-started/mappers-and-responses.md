@@ -99,7 +99,9 @@ unit test for the mapper itself) can omit `$headers`; it defaults to `[]`.
 
 The engine enforces `$mapper::getAction() === $action::class` before calling
 `transform()`. Two action classes cannot share the same mapper — this throws
-`MapperActionMismatchException`.
+`MapperActionMismatchException`. The optional [PHPStan rules](../phpstan.md) check the
+same pairing statically. An action whose `hasResponse()` is `false` needs no mapper:
+the engine returns `EmptyResponse` after the request succeeds.
 
 When two actions return the same response shape, extract the transformation logic into a
 dedicated class and delegate from each mapper:

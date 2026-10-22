@@ -2,7 +2,12 @@
 
 IntegrationEngine separates the engine contract from the HTTP implementation. `ClientInterface` is the minimum capability; optional interfaces add batching and runtime URL overrides.
 
-For the architectural boundary around clients and middleware, see [architecture.md](../../architecture.md). This page is the configuration and extension reference.
+| Capability | Contract | Effect |
+|---|---|---|
+| Send | `ClientInterface` | Executes one action and returns the decoded body, response headers and, when known, the status code. |
+| Batch | `BatchClientInterface` | Executes several prepared requests concurrently ([Batch requests](../../getting-started/batch-requests.md)). |
+| Runtime base URL | `DynamicBaseUrlClientInterface` | Returns a copy of the client pointed at a per-call base URL. |
+| Named adapter | `ClientAdapterInterface` | Makes the client selectable through `client:`. |
 
 ## Built-in clients
 
@@ -17,19 +22,22 @@ integration_engine:
             client: rest
 ```
 
-`client` defaults to `rest`.
+`client` defaults to `rest`. The three built-ins implement `BatchClientInterface` and `DynamicBaseUrlClientInterface`, and support [request middleware](../../middleware.md#request-middleware).
 
-| `client` | Adapter | Body/request model | Batch | Runtime `baseUrl` |
-|---|---|---|---|---|
-| `rest` | `SymfonyHttpClientAdapter` | ordinary HTTP, JSON by default | yes | yes |
-| `graphql` | `GraphQLClientAdapter` | POST to the configured endpoint using `GraphQLBodyInterface` | yes | yes |
-| `form_encoded` | `FormEncodedClientAdapter` | `application/x-www-form-urlencoded` | yes | yes |
-
-All three built-ins implement `BatchClientInterface` and `DynamicBaseUrlClientInterface`. With `request_middlewares` configured, their batch path falls back to sequential per-item dispatch so middleware semantics remain identical to `send()`.
+| `client` | Adapter | Request model |
+|---|---|---|
+| `rest` | `SymfonyHttpClientAdapter` | ordinary HTTP, JSON body by default |
+| `graphql` | `GraphQLClientAdapter` | POST to the configured endpoint with `GraphQLBodyInterface` |
+| `form_encoded` | `FormEncodedClientAdapter` | `application/x-www-form-urlencoded` body by default |
 
 ### REST
 
-REST is the default. Action method and path are used to build the request. Bodies are JSON unless the action's body implements the form-encoding contract described below.
+The action's method and path build the request.
+
+- Bodies are sent only for POST, PUT and PATCH. They are JSON unless the body implements `FormEncodedBodyInterface` ([Form bodies](../../form-bodies.md)).
+- A per-action `timeout` is passed to Symfony HttpClient.
+- HTTP 204 or an empty body is returned to the mapper as an empty array.
+- HTTP status ≥ 400 and network errors throw `RequestResponseException` ([Errors](../../errors.md#requestresponseexception)).
 
 ### GraphQL
 
@@ -64,17 +72,28 @@ final readonly class GetUserBody implements GraphQLBodyInterface
 }
 ```
 
-The GraphQL adapter posts to the integration endpoint, returns the `data` payload to the mapper and converts GraphQL `errors` into `RequestResponseException`.
+- The adapter always sends POST to the endpoint, with `query` and `variables` as JSON.
+- The mapper receives only the `data` member of the response.
+- A non-empty `errors` array throws `RequestResponseException`, even when the HTTP status is 200.
+- A body that is not a `GraphQLBodyInterface` is rejected.
+- The per-action `timeout` is **not** applied to GraphQL requests; use the integration-level `timeout` instead.
 
-### Form-encoded requests
+### Form-encoded
 
-Use `client: form_encoded` when an integration is form-based by default. `FormEncodedClientAdapter` delegates transport behavior to the REST adapter with form body encoding.
+`client: form_encoded` makes form encoding the default for a whole integration; it delegates to the REST adapter. For a REST integration where only some actions are form-encoded, see [Form bodies](../../form-bodies.md).
 
-For a REST integration where only particular actions are form-encoded, implement `FormEncodedBodyInterface` on those action bodies instead of changing the whole integration client.
+## Header precedence
+
+The built-in clients merge headers in this order, later ones winning:
+
+1. adapter default: `Accept: application/json`;
+2. the integration's `headers`;
+3. the headers produced by the action's authorization;
+4. the caller's `RequestHeadersInterface` headers.
 
 ## `client` vs `client_service`
 
-`client_service` bypasses the built-in adapter construction and injects an application service implementing `ClientInterface`:
+`client_service` bypasses the built-in adapters and injects an application service implementing `ClientInterface`:
 
 ```yaml
 integration_engine:
@@ -84,13 +103,13 @@ integration_engine:
             client_service: App\Infrastructure\Http\MyApiClient
 ```
 
-`client` and `client_service` are alternative extension points. With `client_service`, the bundle does not control the transport, so transport options such as `retry`, `timeout`, `max_duration` and `block_private_networks` are rejected by configuration. Request middleware is likewise the responsibility of the custom client.
+With `client_service` the bundle does not control the transport, so `retry`, `timeout`, `max_duration` and `block_private_networks` are rejected by configuration. The custom client also owns request construction: request middleware does not run, and batching and runtime base URLs work only if it implements `BatchClientInterface` and `DynamicBaseUrlClientInterface`.
 
-A custom service can opt into additional engine capabilities by implementing `BatchClientInterface` and/or `DynamicBaseUrlClientInterface`.
+For providers that serve CSV, a custom client can turn the text into rows with the standalone `IntegrationEngine\Utils\CsvParser::parse($csv, $options)`. `CsvParseOptions` sets the delimiter, enclosure, source encoding (converted to UTF-8; `null` keeps the bytes as they are), empty-line skipping and the header row; it has presets for semicolon (`semiocolnDelimited()`, spelled that way in the code), tab, UTF-16 and ISO-8859-1. Every row must have as many columns as the header.
 
 ## Custom adapter type
 
-Use `ClientAdapterInterface` when you want a reusable protocol type selectable through `client:`. Tag the service with `integration_engine.client_adapter`; the adapter's `getClientType()` becomes the configuration value.
+Use `ClientAdapterInterface` when you want a reusable protocol type selectable through `client:`. Tag the service with `integration_engine.client_adapter`; the adapter's `getClientType()` becomes the configuration value, and `requiresPath()` / `requiresMethod()` tell the generator which action fields to ask for.
 
 ```php
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
@@ -121,11 +140,11 @@ App\Infrastructure\Http\SoapClientAdapter:
     tags: [integration_engine.client_adapter]
 ```
 
-An application adapter registered for an existing type can replace the bundle adapter for that type.
+An application adapter registered for an existing type replaces the bundle adapter for that type. Implement `BatchClientInterface` and `DynamicBaseUrlClientInterface` as well if it should support concurrent batches and runtime base URLs.
 
 ## Runtime base URL
 
-The `baseUrl` argument on `send()` and `EngineRequest` is honored only when the resolved client implements `DynamicBaseUrlClientInterface`:
+The `baseUrl` argument on `send()` and `EngineRequest` is honored only when the client implements `DynamicBaseUrlClientInterface`:
 
 ```php
 $response = $engine->send(
@@ -135,13 +154,11 @@ $response = $engine->send(
 );
 ```
 
-The three built-ins support this. A custom client that does not implement the interface keeps its configured endpoint; the override is ignored.
-
-In a batch, the engine groups prepared requests by resolved base URL before delegating each group to the client.
+The three built-ins support it. A custom client without the interface silently keeps its configured endpoint.
 
 ## Runtime connection resolution
 
-Use `connection_resolver` when a per-call connection changes credentials as well as, or instead of, the URL:
+Use `connection_resolver` when a per-call connection changes the credentials as well as, or instead of, the URL — typically one integration serving several tenants or accounts:
 
 ```yaml
 integration_engine:
@@ -175,48 +192,13 @@ final class MyApiConnectionResolver implements ConnectionResolverInterface
 $response = $engine->send(GetOrdersAction::getName(), connection: $tenantId);
 ```
 
-`ConnectionCredentials` can provide `baseUrl`, `authorization` and `connectionId`; every field is optional. Passing a connection without a configured resolver is an error. Omitting `connection` leaves the integration's static configuration unchanged.
+The engine never inspects `connection`; it is only passed to the resolver when it is not `null`. Every field of `ConnectionCredentials` is optional, so set only what varies per connection.
 
-`connectionId` is also the strongest discriminator for dynamic-auth token caching. Use a stable, non-secret identifier when different connections may share one endpoint.
+- An explicit `baseUrl` argument wins over the resolved one.
+- A resolved `authorization` replaces the action's authorization from YAML.
+- `connectionId` separates the dynamic-token cache between connections ([Authorization](../../getting-started/authorization.md#token-cache-identity)). It must be stable and non-secret: a tenant or account ID, never a token or password.
+- Passing a `connection` to an integration without a resolver throws `ConnectionResolutionException`.
 
-## Engine middleware vs request middleware
+## Transport controls
 
-These extension points run at different levels.
-
-`middlewares:` registers `AbstractClientMiddleware` services. They see the action, context and caller headers before a final transport request is built. This is appropriate for engine-level cross-cutting behavior.
-
-`request_middlewares:` registers `RequestMiddlewareInterface` services. They receive an immutable `Request` containing the resolved method, URL, headers, body, encoding and optional timeout immediately before transport execution. This is the extension point for signatures such as OAuth 1.0a or AWS SigV4.
-
-```php
-use IntegrationEngine\Core\Contract\Client\Request;
-use IntegrationEngine\Core\Contract\Client\RequestMiddlewareInterface;
-
-final class SigningMiddleware implements RequestMiddlewareInterface
-{
-    public function handle(Request $request, callable $next): array
-    {
-        return $next($request->withHeader('Authorization', $this->sign($request)));
-    }
-}
-```
-
-```yaml
-integration_engine:
-    integrations:
-        my_api:
-            request_middlewares:
-                - App\Infrastructure\Integrations\MyApi\SigningMiddleware
-```
-
-The built-in REST, GraphQL and form-encoded clients support request middleware. A `client_service` owns its request construction and must implement equivalent behavior itself if needed.
-
-## Transport controls for built-in clients
-
-The bundle can wrap its managed Symfony HTTP transport with:
-
-- `timeout` and `max_duration`;
-- private-network blocking;
-- an `allowed_hosts` policy;
-- retry configuration for selected status codes and methods.
-
-These settings are integration-level controls. An action may additionally define its own `timeout`, which travels on the prepared request. See [Resilience and transport policy](../resilience.md) and [Security](../../security.md) for the specialized rules rather than duplicating them here.
+For the built-in clients, the bundle builds the Symfony transport with optional timeouts, retries, a host allowlist and private-network blocking. See [Resilience](../../resilience.md) and [Security](../../security.md); the decorator order is in [Architecture](../../architecture.md#transport-composition).

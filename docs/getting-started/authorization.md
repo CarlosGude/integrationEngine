@@ -22,6 +22,8 @@ Supported static forms:
 | `basic` | `username`, `password` | HTTP Basic `Authorization` header |
 | `api_key` | `token`, optional `header`, optional `prefix` | Custom header; header defaults to `X-Api-Key` |
 
+An unknown `type`, or a parameter whose value is not a string, fails explicitly.
+
 ```yaml
 # Basic
 authorization:
@@ -59,9 +61,9 @@ GetOrders:
         prefix: Bearer              # optional
 ```
 
-The token action is a normal action. Its mapped response must expose `token_field` through `toArray()`.
+The token action is a normal action. Its mapped response must expose `token_field` through `toArray()`. `token_field` is a direct key, not a dot path; a missing key or a non-scalar value throws `DynamicAuthException`.
 
-On a cache miss the engine executes the token action, extracts the scalar token, stores it for `ttl`, converts the dynamic configuration to static authorization and sends the protected request.
+On a cache miss the engine executes the token action, extracts the token, stores it for `ttl`, converts the dynamic configuration to static authorization and sends the protected request. Each fetch emits a `TokenRefreshed` event ([Lifecycle events](../lifecycle.md#token-refresh-reasons)).
 
 ### Rejected cached tokens
 
@@ -71,7 +73,11 @@ A 401 is retried once only when the rejected token came from cache:
 2. fetch and cache a fresh token;
 3. retry the protected request once.
 
-A 401 returned after a freshly fetched token is not retried, and non-401 failures do not evict the token.
+A 401 returned after a freshly fetched token is not retried, and non-401 failures do not evict the token. The single retry covers tokens revoked before their TTL; retrying further would hide real authentication problems ([ADR 0005](../adr/0005-token-cache-per-connection-and-single-retry-on-401.md)).
+
+### Dynamic auth in batches
+
+Inside `sendMany()`, items that share a token cache key (see [below](#token-cache-identity)) share one token: a token fetched for an earlier item is reused by the later ones. Only items that entered the batch with a token already cached are eligible for the 401 retry; a token fetched during the batch is already fresh, so its 401 is final. When several retryable items share a key, the stale entry is deleted once and all of them reuse the newly fetched token.
 
 ## Sharing authorization across actions
 

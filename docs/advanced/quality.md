@@ -13,12 +13,7 @@ is used.
 | Mutation | `make mutation` | MSI >=85%, covered MSI >=90%; includes uncovered code |
 | Landing | `cd landing && node --test` | EN/ES parity and content checks; dedicated CI job |
 
-```bash
-make qa   # style + static analysis + tests
-make ci   # qa + deptrac + mutation
-```
-
-`make pre-commit` is an alias of `make ci`. Mutation runs
+The commands are listed in [CONTRIBUTING.md](../../CONTRIBUTING.md#running-tests). Mutation runs
 `vendor/bin/infection --threads=max --show-mutations --with-uncovered` locally
 and in CI. QualityConfigTest guards the thresholds, existing excluded paths,
 the absence of suppressed default mutators and inclusion of uncovered code.
@@ -34,7 +29,7 @@ Measured 2026-10-22 on PHP 8.5.12 with Xdebug:
 - Landing: **27 tests** passing in its independent Node job.
 
 Counts reflect that execution; documentation data-provider counts can change
-when documents are updated. The [quality audit](../quality-audit.md) includes
+when documents are updated. The [quality audit](../archived/quality-audit-2026-09-22.md) includes
 commit-specific remote results. PHPUnit line coverage and mutation coverage are different measurements;
 passing MSI does not establish complete line coverage.
 
@@ -66,12 +61,10 @@ historical evidence, not the current measurement.
 
 ## Architectural boundary
 
-Deptrac checks src and tests with explicit Core, Infrastructure, Bundle,
-Compatibility, Utils, PSR, Symfony and PHPUnit layers. Core allows PSR only.
+Deptrac checks src and tests against [the architecture rules](../architecture.md#repository-layers).
 The two old resilience APIs keep their public names in an explicit outer
 Compatibility layer; Core never references those facades. See
-[ADR 0015](../adr/0015-resilience-classification-boundary.md) and
-[the architecture rules](../architecture.md).
+[ADR 0015](../adr/0015-resilience-classification-boundary.md).
 
 The initial two Core-to-Symfony violations were fixed in the separate
 [architecture PR #5](https://github.com/CarlosGude/integrationEngine/pull/5)
@@ -90,4 +83,4 @@ installs this bundle checkout through a path repository and runs the consuming
 application's tests and PHPStan. The temporary
 [negative-verification PR #6](https://github.com/CarlosGude/integrationEngine/pull/6)
 proved both checks fail for the intended regressions and was closed without merge.
-The [audit](../quality-audit.md) links the exact failing jobs and diagnostic messages.
+The [audit](../archived/quality-audit-2026-09-22.md) links the exact failing jobs and diagnostic messages.

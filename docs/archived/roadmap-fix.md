@@ -51,7 +51,7 @@ la revisión antigua y sus anotaciones se conservan en
 - [x] Pruebas negativas remotas de generador PHP 8.2 y contrato demo completadas;
   PR temporal #6 cerrado sin fusionar. Evidencia enlazada en la auditoría.
 
-Resultados, pruebas negativas y límites: [auditoría de calidad](../quality-audit.md).
+Resultados, pruebas negativas y límites: [auditoría de calidad](quality-audit-2026-09-22.md).
 
 Los mutantes supervivientes permanecen visibles y cuentan contra los umbrales.
 La medición actual y el alcance están en [QUALITY.md](../advanced/quality.md).

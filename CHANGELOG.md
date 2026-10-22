@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Documentation
+
+- One canonical page per concept: pages that repeated a concept now link to its canonical page instead. The long-form developer guide, which restated every topic, was removed after moving the content found only there to the pages that own each concept. Use `docs/documentation.md` for the reading order, or the single-file editions.
+- New canonical pages for content that was scattered: `docs/configuration.md` (bundle configuration keys and validation), `docs/middleware.md` (client and request middleware, response caching and its cache-key limits) and `docs/errors.md` (exception reference).
+- Added single-file editions generated from the source pages: `docs/documentation-minimal.md`, `docs/documentation-extended.md` and `docs/documentation-full.md`. Regenerate them with `make docs-editions` (`tools/build-docs.py`, Python 3), which fails on any unresolved link or anchor.
+- `docs/advanced/resilience.md` now covers only application-owned retry utilities, including why engine network errors (status 0) are not classified as transient; transport retries stay in `docs/resilience.md`.
+- The webhook compatibility notes were folded into `docs/webhook.md`, which now also documents the rejection reason codes and the `timestamped_hmac` header format. The developer guide's claim that a custom `SignatureVerifierInterface` can be plugged in was dropped: the YAML only selects the three built-in schemes.
+- The 2026-09-22 quality audit moved to `docs/archived/quality-audit-2026-09-22.md`; the navigation-only READMEs under the advanced docs directory were removed in favour of `docs/documentation.md`.
+
 ## [9.4.0] - 2026-10-22
 
 ### Added

@@ -25,3 +25,14 @@ The [7.4.0 implementation](https://github.com/symfony/symfony/blob/v7.4.0/src/Sy
 The [test](../tests/Infrastructure/PrivateNetworkBlockingTest.php) exercises the old transport-progress contract and newer decorator-managed redirects without pretending that MockHttpClient follows redirects itself. For newer versions it supplies `redirect_url` metadata as a real Symfony transport does and verifies the private redirect never reaches a second request.
 
 These controls supplement application input validation and network egress policy. An allowed public hostname is not a guarantee about the content it serves. Proxy configuration and the underlying supported Symfony transport remain part of the deployment trust boundary.
+
+## Secrets elsewhere in the bundle
+
+The bundle keeps credentials and payloads out of its own diagnostic surfaces. Each rule is explained where the feature lives:
+
+- `connectionId` is an isolation identifier, never a credential — [HTTP clients](./advanced/architecture/clients.md#runtime-connection-resolution).
+- Lifecycle events carry scalar metadata only — [Lifecycle events](./lifecycle.md).
+- The profiler never stores credentials, exception messages or failed-call bodies; payloads only with `profiler_payloads` in debug — [Debugging](./advanced/debugging.md).
+- Webhook rejections expose fixed reason codes, never payloads or signatures — [Webhooks](./webhook.md#parser-behavior).
+
+Two surfaces are **not** redacted and need an application policy: `RequestResponseException` context, which can include the upstream body ([Errors](./errors.md#requestresponseexception)), and the optional `LoggingMiddleware` ([Middleware](./middleware.md#built-in-loggingmiddleware)).

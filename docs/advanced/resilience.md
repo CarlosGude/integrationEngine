@@ -1,39 +1,18 @@
-# Resilience
+# Application-owned resilience utilities
 
-IntegrationEngine has two distinct resilience layers. Keeping them separate avoids implying that application retry utilities automatically wrap engine calls.
+The bundle retries in two places on its own:
 
-## Managed HTTP transport retries
+- the **transport retry policy** configured per integration — see [Declarative HTTP resilience](../resilience.md);
+- a **single retry when a cached dynamic token is rejected with 401** — see [Authorization](../getting-started/authorization.md#rejected-cached-tokens).
 
-For built-in clients, `integration_engine.yaml` can configure Symfony's managed transport retry policy:
+Everything else — retrying a whole business operation, falling back, giving up — belongs to the application. For that, Core exposes framework-independent classification and backoff building blocks. They do **not** wrap `IntegrationEngine::send()` automatically.
 
-```yaml
-integration_engine:
-    integrations:
-        my_api:
-            retry:
-                max_retries: 3
-                delay_ms: 200
-                multiplier: 2
-                max_delay_ms: 2000
-                jitter: 0.1
-                status_codes: [423, 425, 429, 500, 502, 503, 504, 507, 510]
-                retry_non_idempotent: false
-```
+## Classification and backoff
 
-This policy belongs to the HTTP transport constructed by the bundle. It is not available with `client_service`, because a custom client owns its own transport behavior. Non-idempotent methods are not retried unless explicitly enabled.
-
-See [the transport resilience reference](../resilience.md) for the detailed transport classification and configuration introduced for v8.
-
-## Application-owned resilience utilities
-
-The core also exposes framework-independent classification/backoff contracts for code that owns a retry loop outside the engine transport:
-
-- `EngineErrorClassifier` and `ErrorClassifierInterface`;
-- `ErrorClassification`;
-- `ExponentialBackoff` and `ResiliencePolicyInterface`;
-- `SymfonyErrorClassifier` when Symfony HTTP exception knowledge is useful.
-
-Example:
+- `ErrorClassifierInterface` turns a `Throwable` into an `ErrorClassification`.
+- `ErrorClassification` treats network errors, HTTP 408, 429 and 5xx as transient, and every other 4xx as permanent.
+- `EngineErrorClassifier` classifies `RequestResponseException` by its status code; `SymfonyErrorClassifier` additionally understands Symfony's HTTP and transport exceptions.
+- `ResiliencePolicyInterface` and `ExponentialBackoff` decide whether to retry and how long to wait.
 
 ```php
 use IntegrationEngine\Core\Resilience\ExponentialBackoff;
@@ -50,12 +29,8 @@ if ($policy->shouldRetry($error, $retryNumber)) {
 }
 ```
 
-These objects do not intercept `IntegrationEngine::send()` automatically. They are building blocks for application orchestration.
-
-## Dynamic-auth 401 retry
-
-Dynamic authorization has one separate, narrowly scoped retry: when a cached token is rejected with 401, the engine evicts it, fetches a new token and retries the protected request once. This is credential refresh behavior, not the general transport retry policy. See [Authorization](../getting-started/authorization.md).
+**Network errors from the engine are not classified as transient.** The built-in adapters wrap network failures as `RequestResponseException` with status `0` ([Errors](../errors.md#requestresponseexception)), and both classifiers read that as a status code, not as a network error. Rely on the declarative transport retry for automatic network retries: it runs before the wrapping.
 
 ## Compatibility names
 
-Legacy `ErrorClassifier` and `ExponentialBackoffPolicy` names remain in the compatibility layer. New code should use the core contracts/classes above; compatibility exists to preserve migrations, not as a parallel API to document independently.
+Legacy `ErrorClassifier` and `ExponentialBackoffPolicy` names remain in the compatibility layer ([Architecture](../architecture.md#compatibility-layer)). New code should use the Core contracts above; the compatibility names exist to preserve migrations, not as a parallel API.

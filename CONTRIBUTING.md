@@ -22,11 +22,15 @@ vendor/bin/phpunit --testdox
 Or via the Makefile:
 
 ```bash
-make test   # phpunit
-make stan   # phpstan level max
-make cs     # php-cs-fixer (dry-run)
-make qa     # cs + stan + test — run before each commit
-make ci     # qa + deptrac + mutation — run before opening a PR
+make test      # phpunit
+make stan      # phpstan level max
+make cs        # php-cs-fixer (dry-run)
+make cs-fix    # php-cs-fixer, applying fixes
+make deptrac   # architectural layers
+make mutation  # Infection, including uncovered code
+make qa        # cs + stan + test — run before each commit
+make ci        # qa + deptrac + mutation — run before opening a PR (alias: make pre-commit)
+make docs-editions  # regenerate the single-file documentation editions
 ```
 
 ## Code quality
@@ -34,16 +38,21 @@ make ci     # qa + deptrac + mutation — run before opening a PR
 Quality gates (style, static analysis, tests, mutation), their commands, and
 current MSI: see [`docs/advanced/quality.md`](docs/advanced/quality.md).
 
-`make deptrac` enforces architectural layers locally and in CI, with no baseline
-and no uncovered dependencies. Core may depend only on PSR and its own classes;
-legacy resilience facades live in an explicit outer compatibility layer. See the
-[quality audit](docs/quality-audit.md) and [ADR 0015](docs/adr/0015-resilience-classification-boundary.md).
+`make deptrac` enforces the [architectural layers](docs/architecture.md#repository-layers)
+locally and in CI, with no baseline and no uncovered dependencies. See
+[ADR 0015](docs/adr/0015-resilience-classification-boundary.md) for why legacy
+resilience facades live in an explicit outer compatibility layer.
 
 The documentation tests run in the normal PHPUnit suite. Use Markdown links
 relative to the document containing them. Backtick path mentions are relative
 to the repository root; use a Markdown link when you mean a navigable relative
 path. CLAUDE.md is the canonical agent guide, so update it rather than creating
 another guide under a separate agent directory.
+
+Each concept has one canonical page; link to it instead of restating it. After
+changing any page, run `make docs-editions` (Python 3) to regenerate the
+single-file editions in `docs/documentation-{minimal,extended,full}.md` and
+commit them with the change.
 
 A red *Demo contract* job means a potential breaking change: investigate the
 failure, then justify any contract change with an ADR or redesign it. Dependency
@@ -119,8 +128,8 @@ Skip PRs only for trivial documentation (typos in README examples, comment fixes
 
 ## Further reading
 
-- [`docs/architecture.md`](./docs/architecture.md) — design decisions: why actions are stateless,
-  how path resolution works, the mapper invariant, cache behaviour, and the
-  DTO/domain boundary.
+- [`docs/documentation.md`](./docs/documentation.md) — the documentation index.
+- [`docs/architecture.md`](./docs/architecture.md) — scope, layers, request pipeline
+  and the DTO/domain boundary.
 - [`CLAUDE.md`](./CLAUDE.md) — the engine's contracts and conventions in agent-readable
   form; also the context for AI-assisted integration generation.

@@ -52,11 +52,11 @@ ActionName:
     authorization:                     # optional; see authorization.md
         type: bearer
         token: '%env(API_TOKEN)%'
-    cache_ttl: 60                      # optional raw-response cache TTL in seconds
+    cache_ttl: 60                      # optional raw-response cache TTL in seconds; see middleware.md
     timeout: 5.0                       # optional per-action request timeout
 ```
 
-Transport selection (`client`, `client_service`, retries, host policy and middleware) belongs in `config/packages/integration_engine.yaml`, not in the action YAML. See [HTTP clients](../advanced/architecture/clients.md).
+The same file can hold a `defaults:` block shared by every action ([Authorization](authorization.md#sharing-authorization-across-actions)) and a `webhooks:` block ([Webhooks](../webhook.md)). Transport selection (`client`, `client_service`, retries, host policy and middleware) belongs in the bundle configuration, not in the action YAML. See [Bundle configuration](../configuration.md); for `cache_ttl`, see [Response caching](../middleware.md#response-caching).
 
 ## Runtime data
 
@@ -72,8 +72,15 @@ The configuration adapter creates action instances through `AbstractAction::crea
 
 All `{placeholder}` values are resolved exclusively from the action context. The body is preserved, including fields whose names match placeholders. See [Context and path resolution](context-and-path.md).
 
+A body is an `ActionBodyInterface`: `create(array)` and `toArray()`. The `body` class in YAML decides whether the action accepts one:
+
+- passing a body to an action that declares none is an error;
+- if the action declares a body and the caller passes none, the declared class is created with an empty array.
+
+How per-request headers combine with integration and authorization headers is described in [Header precedence](../advanced/architecture/clients.md#header-precedence).
+
 ## Invariants
 
-Actions carry no mutable request state. A configured action may therefore be reused safely across single and batch dispatch without leaking values between calls. When `hasResponse()` is `true`, `mapper()` must identify the mapper for that action; the engine validates that relationship before mapping.
+Actions carry no mutable request state. A configured action may therefore be reused safely across single and batch dispatch without leaking values between calls. When `hasResponse()` is `true`, `mapper()` must identify the mapper for that action — `null` throws `NotMappedActionException` — and the engine validates that relationship before mapping ([Mappers and responses](mappers-and-responses.md)).
 
 When the YAML declares a `body` class for an action, a body passed to `send()` / `sendMany()` must be an instance of that declared class — `YamlConfigAdapter` throws `\InvalidArgumentException` otherwise, before any HTTP call is made. See [0018](../adr/0018-body-type-invariant.md).

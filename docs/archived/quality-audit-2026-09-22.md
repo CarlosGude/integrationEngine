@@ -1,6 +1,6 @@
 # Quality audit — 2026-09-22
 
-This records the quality work following the [historical bundle plan](archived/plan-status.md).
+This records the quality work following the [historical bundle plan](plan-status.md).
 The implementation baseline is `6f3107cd98daef8114d05dab9e56dd4979347c9d`;
 measurements below also include the local quality changes. They are not remote
 CI results for a new commit.
@@ -12,7 +12,7 @@ The separate [PR #5](https://github.com/CarlosGude/integrationEngine/pull/5) int
 Core-owned classification and backoff contracts, a Symfony Infrastructure adapter
 and explicitly classmapped legacy compatibility facades. Existing public methods,
 constructor arguments and service IDs remain callable; existing behavior tests
-pass unchanged. See [ADR 0015](adr/0015-resilience-classification-boundary.md).
+pass unchanged. See [ADR 0015](../adr/0015-resilience-classification-boundary.md).
 
 The architecture PR passed [main CI](https://github.com/CarlosGude/integrationEngine/actions/runs/35743555351)
 and [demo contract](https://github.com/CarlosGude/integrationEngine/actions/runs/35743555349).
@@ -90,7 +90,7 @@ the documentation suite after writing; its data-provider case count may increase
 
 That first pass changed no production behavior or MSI threshold. The subsequent
 architecture correction preserves the documented utility behavior; all mutator
-suppressions have now been removed. See [QUALITY](advanced/quality.md).
+suppressions have now been removed. See [QUALITY](../advanced/quality.md).
 
 ## Negative checks and documentation
 

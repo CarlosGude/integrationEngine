@@ -1,6 +1,6 @@
 PHP=php
 COMPOSER=composer
-.PHONY: install test qa ci cs cs-fix stan deptrac mutation pre-commit deploy-landing
+.PHONY: install test qa ci cs cs-fix stan deptrac mutation pre-commit docs-editions deploy-landing
 # -----------------------------
 # SETUP
 # -----------------------------
@@ -55,6 +55,12 @@ test-coverage:
 # -----------------------------
 mutation:
 	./vendor/bin/infection --threads=max --show-mutations --with-uncovered
+
+# -----------------------------
+# DOCUMENTATION
+# -----------------------------
+docs-editions:
+	python3 tools/build-docs.py
 
 # -----------------------------
 # LANDING

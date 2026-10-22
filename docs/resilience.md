@@ -26,7 +26,9 @@ Symfony has one explicit exception: a DNS failure with an empty `primary_ip` is 
 
 `Retry-After` overrides exponential delay, supporting seconds or an HTTP date. The bundle delegates this to Symfony; no duplicate retry scheduler is introduced. The test records the pause handler requested by Symfony, without sleeping. A max retry count of three permits four attempts in total.
 
-Action YAML may set `timeout` to override the integration inactivity timeout. `AbstractAction::getTimeout()` and the fully built `Request` preserve the override through header middleware and authorization rebuilding. Batch transport starts every initial request before consuming responses. Request middlewares retain the documented sequential fallback because they can synchronously inspect or replace responses.
+Action YAML may set `timeout` to override the integration inactivity timeout. `AbstractAction::getTimeout()` and the fully built `Request` preserve the override through header middleware and authorization rebuilding. The GraphQL client does not apply the per-action timeout ([HTTP clients](./advanced/architecture/clients.md#graphql)).
+
+This page covers the transport. For retry loops owned by the application, see [Application-owned resilience utilities](./advanced/resilience.md).
 
 Source verification against exact Symfony tags:
 

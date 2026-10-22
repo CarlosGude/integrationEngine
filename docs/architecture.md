@@ -1,6 +1,21 @@
 # IntegrationEngine — Architecture
 
-This document describes the boundaries enforced by the current code. Usage examples live in the focused guides linked from [`documentation.md`](./documentation.md); this page explains the invariants behind them.
+This document describes the boundaries enforced by the current code: what the bundle owns, how the source is layered and the order in which a request flows. Each runtime concern is explained in its own guide, linked from the pipeline below.
+
+## Scope
+
+The bundle standardizes integration mechanics, not business meaning. It owns:
+
+- integration registration and lookup, and declarative action configuration in YAML;
+- action construction, path resolution and response mapping;
+- the built-in REST, GraphQL and form-encoded transports, with timeouts, retries and host/network restrictions;
+- static and dynamic authorization, token caching and runtime connection resolution;
+- client and request middleware, raw-response caching and batch execution;
+- scalar lifecycle events, profiler integration and debugging commands;
+- generic authenticated webhook parsing with typed mapping;
+- generators and optional PHPStan rules.
+
+It deliberately does not own business workflows or domain rules, vendor-specific SDK behavior, credential storage, exactly-once webhook processing, queue/retry/DLQ topology, metrics storage, business-level fallbacks or circuit breakers, or domain entities. When a concern belongs to the consuming application, the bundle exposes a boundary instead of absorbing it.
 
 ## Repository layers
 
@@ -19,38 +34,11 @@ Deptrac classifies six source layers plus tests/external tool layers:
 
 The important invariant is simple: **Core does not know Symfony**. Transport/framework behavior is pushed outward.
 
-## Configuration boundaries
-
-IntegrationEngine intentionally has two different YAML scopes:
-
-```text
-bundle configuration
-config/packages/integration_engine.yaml
-    └─ how this integration is wired
-
-integration configuration
-src/.../MyApi.yaml
-    └─ which actions/webhooks this integration exposes
-```
-
-Bundle configuration accepts, per integration:
-
-- `config_path` (required by the compiler pass);
-- `base_url` or `client_service`;
-- `client` (`rest`, `graphql`, `form_encoded`, or a tagged custom adapter type);
-- `headers`, `cache_service`;
-- `connection_resolver`;
-- `middlewares`, `request_middlewares`;
-- transport `timeout`, `max_duration`, `retry`, `allowed_hosts`, `block_private_networks`;
-- `profiler_payloads` (debug-only opt-in, see [ADR 0019](adr/0019-profiler-payload-visibility.md)).
-
-Integration YAML accepts action entries with `action`, optional `method`, `path`, `body`, `authorization`, `cache_ttl`, and per-action `timeout`, plus an optional top-level `webhooks` block.
-
-Putting a client selector in an action entry or an action class in bundle configuration mixes the two boundaries and is not part of the current contract.
+The two configuration scopes — bundle configuration and integration YAML — are described in [configuration.md](./configuration.md).
 
 ## Outbound request pipeline
 
-For `IntegrationEngine::send()` the current order is:
+For `IntegrationEngine::send()` the order is:
 
 ```text
 1. ConfigPort::getAction(actionName, body)
@@ -79,109 +67,22 @@ For `IntegrationEngine::send()` the current order is:
 
 Any exception inside preparation/dispatch/mapping produces `RequestFailed` with scalar metadata and is rethrown. Listener exceptions follow the semantics of the configured dispatcher and are not converted into transport errors.
 
-## Actions are stateless descriptions
+Where each step is documented:
 
-An `AbstractAction` contains only the resolved method, path, body, authorization, cache TTL and timeout for one call. Concrete actions declare three static contracts:
+| Step | Guide |
+|---|---|
+| 1, 7 (path) | [Actions](./getting-started/actions.md), [Context and path resolution](./getting-started/context-and-path.md) |
+| 2 | [Runtime connection resolution](./advanced/architecture/clients.md#runtime-connection-resolution) |
+| 3, 8, 10 | [Lifecycle events](./lifecycle.md) |
+| 4 | [Security](./security.md) |
+| 5 | [Authorization](./getting-started/authorization.md) |
+| 6, 7 (request middleware) | [Middleware](./middleware.md) |
+| 7 | [HTTP clients](./advanced/architecture/clients.md) |
+| 9 | [Mappers and responses](./getting-started/mappers-and-responses.md) |
 
-```php
-public static function getName(): string;
-public static function hasResponse(): bool;
-public static function mapper(): ?string;
-```
+`sendMany()` applies the same steps per item; see [Batch requests](./getting-started/batch-requests.md). Inbound webhooks have their own flow, described in [webhook.md](./webhook.md#request-flow).
 
-Instances are created through `AbstractAction::create()` by the configuration adapter. Application code normally passes runtime values through:
-
-- `ActionBodyInterface` — request payload;
-- `ActionContextInterface` — path/query context;
-- `RequestHeadersInterface` — caller-supplied headers;
-- the `connection` argument — opaque application-specific connection identity.
-
-No mutable request state is stored on the concrete action class.
-
-## Path resolution
-
-`YamlConfigAdapter` preserves the configured path and body. `AbstractAction::getPath()` resolves placeholders exclusively from context. A custom `PathResolvableContextInterface` may resolve the whole path first; returning null delegates to the default context lookup.
-
-Missing or non-scalar context parameters fail explicitly. A body field never supplies a URL parameter, and matching body fields remain in the payload.
-
-Detailed examples: [context-and-path.md](./getting-started/context-and-path.md).
-
-## Mapper invariant
-
-Each response-producing action has one mapper relationship in both directions:
-
-- action `mapper()` returns the mapper class;
-- mapper `getAction()` returns the action class.
-
-`ResponseBuilder` and `AbstractMapper::map()` validate this at runtime. Optional PHPStan rules can also validate statically declared pairs. Mappers receive **both** decoded body and response headers:
-
-```php
-protected static function transform(
-    AbstractAction $action,
-    array $response,
-    array $headers,
-): ResponseInterface;
-```
-
-An action with `hasResponse() === false` returns `EmptyResponse`; it still performs the request.
-
-## Client and transport boundaries
-
-`ClientInterface` is the engine-facing transport contract. Built-in protocol adapters are:
-
-- `SymfonyHttpClientAdapter` (`client: rest`);
-- `GraphQLClientAdapter` (`client: graphql`);
-- `FormEncodedClientAdapter` (`client: form_encoded`).
-
-All three built-ins implement `BatchClientInterface` and `DynamicBaseUrlClientInterface`.
-
-A tagged `ClientAdapterInterface` adds another `client:` type while retaining bundle-managed wiring. `client_service` is different: it injects an application-owned `ClientInterface` directly and therefore owns its own transport behavior. Bundle transport options such as retry/timeout/private-network blocking are rejected with `client_service` because the engine does not control that transport.
-
-## Middleware boundaries
-
-There are two middleware levels because they see different data.
-
-### Client middleware
-
-`AbstractClientMiddleware` receives the action, context and caller headers **before** the adapter builds the final HTTP request. It is suitable for concerns such as caching, tracing around the client call, or policies based on action metadata. It also has `processMany()` for batch-aware behavior.
-
-The bundle always places `CachingMiddleware` outermost. Configured user middleware follows. In debug mode `TracingMiddleware` is added nearest the HTTP adapter.
-
-### Request middleware
-
-`RequestMiddlewareInterface` receives a fully built immutable `Request` containing method, final URL, merged headers, body, encoding and timeout. It is the extension point for OAuth 1.0a/AWS-style signatures and any concern that must see the exact outgoing request.
-
-Built-in REST, GraphQL and form adapters accept request middleware. A custom `client_service` is responsible for its own equivalent behavior.
-
-Because request middleware can synchronously inspect or replace a response, built-in batch adapters fall back to sequential per-item `send()` when request middleware is configured.
-
-## Batch execution
-
-`sendMany()` prepares every `EngineRequest` independently and preserves input keys/order in `BatchResultCollection`.
-
-Preparation failures do not abort other items. Prepared requests are grouped by resolved base URL. Within each group:
-
-- a `BatchClientInterface` gets the whole group;
-- otherwise the dispatcher sends items sequentially and captures each exception.
-
-REST, GraphQL and form built-ins dispatch all HTTP handles before consuming responses when no request middleware forces the sequential path. `sendManyOrFail()` still dispatches the complete batch first and throws only when results are unwrapped, in input order.
-
-Dynamic auth is batch-aware: token acquisition can be shared, and items rejected with 401 after using cached credentials are re-prepared with one fresh token retry.
-
-## Runtime connections and dynamic auth
-
-`ConnectionResolverInterface` is an application boundary. The engine does not inspect the opaque `connection` value; it asks the configured resolver for `ConnectionCredentials` containing optional base URL, authorization and stable non-secret `connectionId`.
-
-Dynamic-token cache keys are namespaced by integration + token action + an `xxh128` hash of a discriminator. The discriminator prefers:
-
-1. resolved `connectionId`;
-2. the scalar `connection` argument;
-3. resolved base URL;
-4. empty string when none exists.
-
-The hash keeps the cache key compact; it is **not** a mechanism for making secrets safe. Do not use access tokens or client secrets as connection IDs.
-
-## Transport resilience and egress policy
+## Transport composition
 
 For bundle-managed clients, the compiler builds the Symfony transport in this order:
 
@@ -194,44 +95,7 @@ http_client
   → protocol adapter
 ```
 
-`HostPolicy` is also checked by the engine before dispatch. `HostPolicyHttpClient` checks the final URL again, including token requests and URLs modified by request middleware, and disables automatic redirects when an allowlist is active.
-
 See [security.md](./security.md) and [resilience.md](./resilience.md) for behavior and supported-version notes.
-
-## Lifecycle and observability boundary
-
-Events contain scalar metadata only; request/response objects, payloads, tokens and exceptions are not attached. The current event set is:
-
-- `RequestSent`
-- `ResponseReceived`
-- `ResponseMapped`
-- `RequestFailed`
-- `TokenRefreshed`
-- `WebhookReceived`
-- `WebhookRejected`
-
-The Symfony bundle wires engines to Symfony's `event_dispatcher` when available. `LifecycleEventDispatcher` is a small PSR-14 dispatcher for direct/manual use; `SymfonyEventDispatcherAdapter` can bridge local subscriptions to Symfony.
-
-See [lifecycle.md](./lifecycle.md) for the exact event fields.
-
-## Inbound webhook boundary
-
-Webhooks are provider-agnostic. The bundle owns mechanisms, not Stripe/Shopify/etc. integrations:
-
-```text
-integration YAML
-  → WebhookDefinition
-  → IntegrationWebhookRequestParser
-  → signature verifier
-  → AbstractWebhookMapper
-  → MappedRemoteEvent
-  → Symfony Webhook / RemoteEvent transport
-  → application consumer/listener
-```
-
-The parser verifies the raw body before JSON decoding, requires POST + JSON media type, resolves event type/id through configured dot paths and maps only declared event types. Deduplication and business side effects belong to the consuming application.
-
-See [webhook.md](./webhook.md).
 
 ## Compatibility layer
 
@@ -255,4 +119,6 @@ IntegrationEngine
 External API DTOs
 ```
 
-That boundary is an application architecture choice, not something the bundle can enforce, but it prevents an upstream API schema from leaking across the codebase.
+That boundary is an application architecture choice, not something the bundle can enforce, but it prevents an upstream API schema from leaking across the codebase. See [ADR 0003](./adr/0003-gateway-acl-outside-the-bundle.md).
+
+For a diagram of the main classes, see [class-graph.md](./advanced/architecture/class-graph.md).

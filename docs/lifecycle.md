@@ -16,6 +16,8 @@ IntegrationEngine emits immutable scalar metadata for outbound calls, auth refre
 
 `requestKey` is populated for `sendMany()` items so one listener can correlate per-item batch events without receiving the request itself.
 
+If preparation fails before the action is resolved, `RequestSent` is still emitted, with an empty `method` and `path`, and followed by `RequestFailed`.
+
 `RequestFailed::message` is intentionally coarse (`Upstream request failed.` or `Integration request failed.`); detailed exception messages are not copied into the lifecycle event.
 
 ## Symfony applications
@@ -78,7 +80,7 @@ Dynamic authentication currently emits:
 - `cache_miss` — no usable cached token existed;
 - `rejected_401` — a cached token was rejected and the engine fetched one fresh token for the single retry.
 
-A freshly fetched token that is rejected with 401 is not retried again.
+The retry rules are in [Authorization](./getting-started/authorization.md#rejected-cached-tokens).
 
 ## Failure semantics
 
