@@ -24,30 +24,29 @@ External provider (e.g. Stripe)
               → Mapper::map() → transform() → WebhookEventInterface DTO
               → wrap in MappedRemoteEvent (a RemoteEvent carrying the typed DTO)
               → emit WebhookReceived
-  ← WebhookController responds to the provider:
-        202 Accepted — parser returned a MappedRemoteEvent
-        406 Rejected — reject() was called (fixed reason code, WebhookRejected emitted)
-        406 Rejected — parser returned null (generic message, no reason code, no WebhookRejected — same
-                        status as a rejection even though the parser itself never called reject())
+  ← reject() was called       → 406 Rejected (fixed reason code, WebhookRejected emitted); Messenger never involved
+  ← parser returned null      → 406 Rejected (generic message, no reason code, no WebhookRejected — same status
+                                 as a rejection even though the parser itself never called reject())
+  ← parser returned a MappedRemoteEvent
+      → WebhookController dispatches it through Messenger: $bus->dispatch(new ConsumeRemoteEventMessage(...))
+          default synchronous bus → Messenger runs your consumer (below) right here, inside the HTTP request
+          async transport         → Messenger only enqueues the message; a worker runs your consumer later
+      → WebhookController responds 202 Accepted
                                                                                [HTTP REQUEST ENDS HERE, any branch]
 
-  ───────────────────────────────────────────────────────────────────── the provider's connection is done; nothing below runs for its benefit
-
-  → WebhookController dispatches the event through Messenger: $bus->dispatch(new ConsumeRemoteEventMessage(...))
-  → Messenger routes/handles the message — synchronously in-process, or on a worker, per the app's messenger.yaml
   → your #[AsRemoteEventConsumer('<name>')] class::consume(RemoteEvent $event)   (YOUR APPLICATION)
       → $event instanceof MappedRemoteEvent
       → $typedEvent = $event->event()
       → hand $typedEvent to application/domain code
 ```
 
-The HTTP response (202/406) is produced and sent back to the provider by the time the parser returns — your `#[AsRemoteEventConsumer]` consumer has not run yet at that point. It only runs once Messenger delivers the `ConsumeRemoteEventMessage`, which can be immediately after (default, synchronous bus) or arbitrarily later (if the app routes `RemoteEvent` messages to an async transport). Steps 1 and 2 below (YAML contract, mapper) are what you write for the first layer. Steps 3 and 4 are, respectively, telling *Symfony* which parser owns a routing name, and writing the consumer that runs *after* Messenger hands the event back to your code — the bundle has no part in that handoff; it only produces the `MappedRemoteEvent` that Messenger carries.
+A rejection (406) goes back to the provider without Messenger or your consumer ever being involved. An accepted event is dispatched to Messenger *before* the 202 is sent. With the default synchronous bus your `#[AsRemoteEventConsumer]` consumer therefore runs inside the webhook request, before the provider gets its response; only when the app routes `ConsumeRemoteEventMessage` to an async transport does the 202 go out first and the consumer run later, on a worker. Steps 1 and 2 below (YAML contract, mapper) are what you write for the first layer. Steps 3 and 4 are, respectively, telling *Symfony* which parser owns a routing name, and writing the consumer that runs *after* Messenger hands the event back to your code — the bundle has no part in that handoff; it only produces the `MappedRemoteEvent` that Messenger carries.
 
 ### Why dispatch an event at all, instead of just calling your business logic?
 
 Because the webhook connection needs to close fast, and your business logic is allowed to be slow or fail. Most providers (Stripe, GitHub, ...) expect an acknowledgement within a few seconds and will treat a slow or failed response as "not delivered" — retrying, and redelivering the same event. If verifying the signature and building the typed DTO were the *last* thing that happened before responding — i.e. if your domain code (database writes, calls to other services, emails, ...) ran inline, in the same request — then a slow dependency or a thrown exception in *your* code would make the provider think the webhook itself failed, and it would resend an event you may have already partially processed.
 
-Dispatching through Messenger is what *lets* the parser respond 202 the moment the event is authenticated and mapped, without waiting on business logic — but only if the app actually routes `ConsumeRemoteEventMessage` to an async transport. Without that routing, Messenger's default bus runs the consumer synchronously, inline, as part of `$bus->dispatch()` — which happens *before* `createSuccessfulResponse()` returns. See [What happens if the event fails](#what-happens-if-the-event-fails): that distinction is not cosmetic, it changes what the provider sees on failure.
+Dispatching through Messenger is what *lets* the controller respond 202 the moment the event is authenticated and mapped, without waiting on business logic — but only if the app actually routes `ConsumeRemoteEventMessage` to an async transport. Without that routing, Messenger's default bus runs the consumer synchronously, inline, as part of `$bus->dispatch()` — which happens *before* `createSuccessfulResponse()` returns. See [What happens if the event fails](#what-happens-if-the-event-fails): that distinction is not cosmetic, it changes what the provider sees on failure.
 
 ## Requirements
 
@@ -167,7 +166,7 @@ Import Symfony's webhook route resource according to the Symfony version used by
 
 ## 4. Consume the `RemoteEvent`
 
-This is the last hop in the [Request flow](#request-flow) diagram: the consumer below runs after Messenger delivers the event, which is after the HTTP response has already gone back to the provider — not inline with the webhook request. The parser returns `MappedRemoteEvent`, a `RemoteEvent` that retains both the authenticated decoded payload and the already-mapped typed event:
+This is the last hop in the [Request flow](#request-flow) diagram: the consumer below runs when Messenger delivers the event — inline, before the 202, on the default synchronous bus; after the HTTP response has already gone back to the provider when `ConsumeRemoteEventMessage` is routed to an async transport. The parser returns `MappedRemoteEvent`, a `RemoteEvent` that retains both the authenticated decoded payload and the already-mapped typed event:
 
 ```php
 use IntegrationEngine\Infrastructure\Webhook\MappedRemoteEvent;

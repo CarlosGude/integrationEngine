@@ -16,10 +16,10 @@ use Psr\Log\LogLevel;
  * Provides pre-built observers for logging, metrics, and alerting.
  *
  * Usage:
- *   ObservabilitySetup::register($dispatcher, [
+ *   ObservabilitySetup::register($dispatcher, $logger, [
  *       'logging' => true,
  *       'slow_request_threshold_ms' => 3000,
- *       'slack_webhook' => 'https://...',
+ *       'error_callback' => static function (RequestFailed $event): void { ... },
  *   ]);
  */
 final class ObservabilitySetup

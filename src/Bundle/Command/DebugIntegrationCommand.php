@@ -116,7 +116,7 @@ final class DebugIntegrationCommand extends Command
 
         $actions = [];
         foreach ($parsed as $name => $definition) {
-            if ('webhooks' === $name) {
+            if ('webhooks' === $name || 'defaults' === $name) {
                 continue;
             }
             if (!\is_string($name) || !\is_array($definition) || !isset($definition['action']) || !\is_string($definition['action'])) {

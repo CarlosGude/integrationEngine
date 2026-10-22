@@ -52,8 +52,9 @@ and authentication requirements.
 
 ### 3. Review the query param decision
 
-For any endpoint with optional filter parameters, the agent will pause and ask you
-to confirm which approach to use before generating code:
+`CLAUDE.md` describes both path-resolution approaches but does not make the agent stop
+and ask. Tell it to — the [example prompt](#example-prompt) below does — so that for any
+endpoint with filter parameters it confirms the approach before generating code:
 
 ```
 The API declares these filter params for /employees: name, department, status.
@@ -67,7 +68,7 @@ The API declares these filter params for /employees: name, department, status.
 Which fits this API?
 ```
 
-Answer `A` or `B`. The agent will not generate the filter action until you confirm.
+Answer `A` or `B` before letting it generate the filter action.
 
 ### 4. Collect the output
 

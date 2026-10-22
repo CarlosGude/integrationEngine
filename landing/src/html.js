@@ -945,7 +945,7 @@ MyApi/
     <div class="status-grid">
       ${t.roadmapColumns.map(column => `<article class="status-card"><h3>${column.title}</h3><ul>${column.items.map(item => `<li>${item}</li>`).join('')}</ul></article>`).join('')}
     </div>
-    <div class="status-footer"><a href="https://github.com/CarlosGude/integrationEngine/releases/tag/v9.3.0" target="_blank" rel="noopener" class="btn-outline">${t.releaseLink}</a> <a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/getting-started/context-and-path.md" target="_blank" rel="noopener" class="btn-outline">${t.migrationLink}</a> <a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/roadmap.md" target="_blank" rel="noopener" class="btn-outline">${t.roadmapLink}</a></div>
+    <div class="status-footer"><a href="https://github.com/CarlosGude/integrationEngine/releases/tag/v9.3.1" target="_blank" rel="noopener" class="btn-outline">${t.releaseLink}</a> <a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/getting-started/context-and-path.md" target="_blank" rel="noopener" class="btn-outline">${t.migrationLink}</a> <a href="https://github.com/CarlosGude/integrationEngine/blob/main/docs/roadmap.md" target="_blank" rel="noopener" class="btn-outline">${t.roadmapLink}</a></div>
   </div>
 </section>
 

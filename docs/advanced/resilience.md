@@ -40,7 +40,7 @@ use IntegrationEngine\Core\Resilience\ExponentialBackoff;
 use IntegrationEngine\Infrastructure\Resilience\SymfonyErrorClassifier;
 
 $policy = new ExponentialBackoff(
-    maxRetries: 3,
+    maxAttempts: 3,
     classifier: new SymfonyErrorClassifier(),
 );
 

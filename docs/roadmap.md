@@ -19,7 +19,7 @@ The exact breaking changes are in [upgrade-8.0.md](./upgrade-8.0.md) and release
 
 ## Current branch
 
-[v9.3.0](https://github.com/CarlosGude/integrationEngine/releases/tag/v9.3.0) is the latest tag. Since v9.0.0 (URL parameters resolved exclusively from context) it has added body-type validation against the declared YAML class (v9.1.0), an opt-in profiler payload panel (v9.2.0), and shared `defaults.authorization` with per-action override (v9.3.0). See [the changelog](../CHANGELOG.md) for details and migration guidance.
+[v9.3.1](https://github.com/CarlosGude/integrationEngine/releases/tag/v9.3.1) is the latest tag. Since v9.0.0 (URL parameters resolved exclusively from context, see [upgrade-9.0.md](./upgrade-9.0.md)) it has added body-type validation against the declared YAML class (v9.1.0), an opt-in profiler payload panel (v9.2.0), and shared `defaults.authorization` with per-action override (v9.3.0). `main` also carries the unreleased `ResponseReceived` lifecycle event. See [the changelog](../CHANGELOG.md) for details.
 
 ## Next proposals
 

@@ -290,6 +290,10 @@ final class IntegrationCompilerPass implements CompilerPassInterface
     {
         $id = IntegrationEngineDataCollector::class;
 
+        // Excluding this class from the blanket resource scan (services.yaml)
+        // does not make it disappear from the container: Symfony registers an
+        // *abstract* placeholder definition for every excluded class, and
+        // hasDefinition() alone can't tell that placeholder from a real
         // definition, so check isAbstract() too before reusing it.
         if (!$container->hasDefinition($id) || $container->getDefinition($id)->isAbstract()) {
             $definition = new Definition($id);

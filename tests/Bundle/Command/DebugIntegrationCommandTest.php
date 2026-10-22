@@ -94,6 +94,32 @@ YAML);
     }
 
     #[Test]
+    public function skipsTheSharedDefaultsSection(): void
+    {
+        file_put_contents($this->configPath, <<<'YAML'
+defaults:
+    authorization:
+        type: bearer
+        token: secret-default-token
+get_order:
+    action: App\UnloadedAction
+    method: GET
+    path: /orders/{id}
+YAML);
+        $tester = $this->tester();
+
+        self::assertSame(Command::SUCCESS, $tester->execute(['integration' => 'orders', '--format' => 'json']));
+        self::assertSame([
+            'integration' => 'orders',
+            'client' => 'rest',
+            'actions' => [
+                ['name' => 'get_order', 'method' => 'GET', 'path' => '/orders/{id}', 'class' => 'App\UnloadedAction'],
+            ],
+        ], json_decode($tester->getDisplay(), true, 512, JSON_THROW_ON_ERROR));
+        self::assertStringNotContainsString('secret-default-token', $tester->getDisplay());
+    }
+
+    #[Test]
     public function handlesEmptyConfiguration(): void
     {
         $tester = new CommandTester(new DebugIntegrationCommand([]));

@@ -662,7 +662,7 @@ block_private_networks wraps the transport with Symfony NoPrivateNetworkHttpClie
 
 - ConnectionCredentials::connectionId must be non-secret.
 - Lifecycle events carry scalar metadata, not token/request/response objects.
-- The profiler stores exception class names, not exception messages or upstream bodies.
+- The profiler stores exception class names, never exception messages, failed-call response bodies or credentials. Successful payloads are recorded only when profiler_payloads is enabled, and only while kernel.debug is true.
 - debug:integration deliberately suppresses YAML parser details because source lines might contain credentials.
 - Webhook SignatureConfig marks the secret as a sensitive parameter and rejection events expose fixed reason codes.
 
@@ -717,7 +717,9 @@ LifecycleEventDispatcher is a small PSR-14 dispatcher with direct subscriptions.
 
 When kernel.debug is true, the profiler service is available and HttpKernel DataCollectorInterface exists, the compiler pass wires TracingMiddleware and a shared IntegrationEngineDataCollector. All integrations report into that collector for the current application request.
 
-Recorded fields are integration name, action name, HTTP method, raw path template, duration, optional HTTP status, exception class and cache-hit flag. Exception messages, bodies, final resolved URLs, runtime context and credentials are deliberately not stored.
+Recorded fields are integration name, action name, HTTP method, raw path template, duration, HTTP status of a failed call, exception class, the action body's class name and cache-hit flag. Exception messages, final resolved URLs and credentials are never stored.
+
+Body, context and response contents are not stored by default. Setting profiler_payloads: true on an integration additionally records the action body's toArray(), the context's toArray() and the response body of successful calls; a failed call's response body is still never recorded. See [advanced/debugging.md](advanced/debugging.md) and [ADR 0019](adr/0019-profiler-payload-visibility.md).
 
 
 ## 17.2 Cache hits
@@ -1282,7 +1284,7 @@ Use normal try/catch around send(). For sendMany(), inspect BatchResult values r
 - Do not use secret material as connectionId.
 - Use shared token cache where multi-process token fetch duplication matters.
 - Do not log RequestResponseException messages without redaction.
-- Do not treat the profiler as a place to inspect provider bodies; it intentionally omits them.
+- Do not treat the profiler as a place to inspect provider bodies by default; it omits them unless profiler_payloads is enabled, and enable that only for development.
 - Keep retry_non_idempotent disabled unless request replay is demonstrably safe.
 - Verify webhook signatures before JSON parsing/business logic.
 - Use a durable application transaction for webhook deduplication/side effects.

@@ -76,14 +76,15 @@ that have more than three or four fields. Nested DTOs do **not** implement
 
 `transform()`'s third argument, `$headers`, is the response's HTTP headers as
 `array<string, string[]>` — the same shape Symfony's HttpClient exposes, one
-list per header name since a header can repeat. Most mappers ignore it; it
-exists for the data some APIs put outside the body: pagination cursors,
-rate-limit counters, request/correlation IDs.
+list per header name since a header can repeat. Header names are lowercase,
+so look them up as `x-ratelimit-remaining`, not `X-RateLimit-Remaining`. Most
+mappers ignore it; it exists for the data some APIs put outside the body:
+pagination cursors, rate-limit counters, request/correlation IDs.
 
 ```php
 protected static function transform(AbstractAction $action, array $response, array $headers): ResponseInterface
 {
-    $remaining = $headers['X-RateLimit-Remaining'][0] ?? null;
+    $remaining = $headers['x-ratelimit-remaining'][0] ?? null;
 
     return GetEmployeesResponse::create($response, remaining: $remaining !== null ? (int) $remaining : null);
 }

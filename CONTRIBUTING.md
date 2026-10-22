@@ -96,7 +96,7 @@ Increment on **backward-compatible bug fixes**:
    - Promoted to version number upon release.
    - Sections: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
 
-2. **UPGRADE-X.md** — created for each MAJOR version with migration guide for breaking changes.
+2. **docs/upgrade-N.0.md** — created for each MAJOR version with migration guide for breaking changes, and listed in [`docs/documentation.md`](docs/documentation.md).
 
 3. **Commit messages** — follow conventional commits (optional but encouraged):
    - `feat: description` (MINOR if new)

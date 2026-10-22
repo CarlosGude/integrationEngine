@@ -29,7 +29,7 @@ All three built-ins implement `BatchClientInterface` and `DynamicBaseUrlClientIn
 
 ### REST
 
-REST is the default. Action method and path are used to build the request. Bodies are JSON unless the action implements the form-encoding contract described below.
+REST is the default. Action method and path are used to build the request. Bodies are JSON unless the action's body implements the form-encoding contract described below.
 
 ### GraphQL
 
@@ -40,7 +40,12 @@ use IntegrationEngine\Core\Contract\Action\GraphQLBodyInterface;
 
 final readonly class GetUserBody implements GraphQLBodyInterface
 {
-    public function __construct(private int $id) {}
+    private function __construct(private int $id) {}
+
+    public static function create(array $data): self
+    {
+        return new self((int) ($data['id'] ?? 0));
+    }
 
     public function getQuery(): string
     {

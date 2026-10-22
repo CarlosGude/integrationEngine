@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - `ResponseReceived` lifecycle event, emitted once the client has returned a response and before mapping: in `send()` (static and dynamic auth alike) and for each `sendMany()` item. `ResponseMapped::timestamp − ResponseReceived::timestamp` is the mapping time, and `ResponseReceived` followed by `RequestFailed` means the API answered and mapping failed. Restores the pre-mapping split that v7's `HttpResponseReceived` provided and the v8 event rework dropped. Code asserting an exact event sequence now sees it between `RequestSent` and `ResponseMapped`. See [ADR 0021](docs/adr/0021-response-received-event.md).
 
+### Fixed
+
+- `debug:integration <name>` no longer fails with "Unable to inspect actions" on integration YAML that declares the v9.3.0 `defaults:` section; it skips `defaults:` like `webhooks:` instead of treating it as an action.
+
+### Documentation
+
+- Added `docs/upgrade-9.0.md`, the migration guide for the v9.0.0 context-only path resolution change, and listed it in `docs/documentation.md`.
+- Fixed examples that did not work against the code: the response-header lookup in `mappers-and-responses.md` (Symfony HttpClient header names are lowercase), the `ExponentialBackoff` named argument in `docs/advanced/resilience.md` (`maxAttempts`, not `maxRetries`) and the GraphQL body in `docs/advanced/architecture/clients.md` (missing `create()`).
+- `webhook.md` now matches Symfony's `WebhookController`: an accepted event is dispatched to Messenger before the 202 is sent, so with the default synchronous bus the consumer runs inside the webhook request. The v9.3.0 rewrite had placed the response before the dispatch.
+- The developer guide's profiler sections now describe the `bodyClass` field and the `profiler_payloads` opt-in instead of saying body and context contents are never stored.
+- Refreshed the latest-release marker to v9.3.1 in `docs/documentation.md`, `docs/roadmap.md` and the landing page, and the measured results in `docs/advanced/quality.md`.
+- Smaller alignments: `CLAUDE.md` (all three built-in adapters implement `BatchClientInterface`), `CONTRIBUTING.md` (lowercase upgrade-N.0.md naming), `ai-agent-usage.md` (`CLAUDE.md` does not make the agent stop to ask about query parameters; the prompt has to) and stale docblocks in `IntegrationName`, `ObservabilitySetup`, `TracingMiddleware` and `IntegrationCompilerPass`.
+
 ## [9.3.1] - 2026-10-14
 
 ### Fixed

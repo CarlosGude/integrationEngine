@@ -15,7 +15,7 @@ namespace IntegrationEngine\Core\Registry;
  *   }
  *
  *   // Usage:
- *   $registry->get(AcmeErpIntegration::NAME)->send(GetOrdersAction::ACTION, $body);
+ *   $registry->get(AcmeErpIntegration::NAME)->send(GetOrdersAction::getName(), body: $body);
  */
 interface IntegrationName
 {

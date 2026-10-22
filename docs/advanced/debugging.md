@@ -11,7 +11,8 @@ php bin/console debug:integration my_api --format=json
 The list shows integration names, client types (or custom service IDs) and YAML
 config paths. Selecting an integration shows each action's name, configured HTTP
 method, path and class. Missing methods and paths use the same `POST` and `/`
-defaults as the YAML adapter. Webhooks are excluded from the action list.
+defaults as the YAML adapter. The `webhooks:` and `defaults:` sections are
+excluded from the action list.
 
 Inspection reads configuration without instantiating action or body classes,
 resolving path placeholders or sending HTTP requests. It omits base URLs,
