@@ -15,7 +15,7 @@
     },
     "testFramework": "phpunit",
     "testFrameworkOptions": "--testdox",
-    "minMsi": 85,
+    "minMsi": 90,
     "minCoveredMsi": 90,
     "mutators": {
         "@default": true

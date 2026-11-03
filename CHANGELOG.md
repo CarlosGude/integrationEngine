@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Mutation gate raised from MSI ≥ 85% to MSI ≥ 90% (`infection.json5`); covered MSI stays at ≥ 90%. The README's mutation-score badge states the enforced threshold.
+
 ### Documentation
+
+- README badges for Packagist version, PHP version, installs, license, PHPStan level and mutation score.
 
 - One canonical page per concept: pages that repeated a concept now link to its canonical page instead. The long-form developer guide, which restated every topic, was removed after moving the content found only there to the pages that own each concept. Use `docs/documentation.md` for the reading order, or the single-file editions.
 - New canonical pages for content that was scattered: `docs/configuration.md` (bundle configuration keys and validation), `docs/middleware.md` (client and request middleware, response caching and its cache-key limits) and `docs/errors.md` (exception reference).

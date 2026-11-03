@@ -41,6 +41,12 @@
 *Source: `README.md`*
 
 [![CI](https://github.com/CarlosGude/integrationEngine/actions/workflows/ci.yml/badge.svg)](https://github.com/CarlosGude/integrationEngine/actions/workflows/ci.yml)
+[![Packagist](https://img.shields.io/packagist/v/carlosgude/integration-engine)](https://packagist.org/packages/carlosgude/integration-engine)
+[![PHP](https://img.shields.io/packagist/php-v/carlosgude/integration-engine)](https://packagist.org/packages/carlosgude/integration-engine)
+[![Installs](https://img.shields.io/packagist/dt/carlosgude/integration-engine)](https://packagist.org/packages/carlosgude/integration-engine/stats)
+[![License](https://img.shields.io/packagist/l/carlosgude/integration-engine)](../LICENSE)
+[![PHPStan](https://img.shields.io/badge/PHPStan-max-brightgreen)](../phpstan.neon)
+[![Mutation score](https://img.shields.io/badge/MSI-%E2%89%A5%2090%25-brightgreen)](../infection.json5)
 
 **Latest tagged release:** [see releases](https://github.com/CarlosGude/integrationEngine/releases/latest)
 **Requirements:** PHP 8.2+ · Symfony 6.4 / 7.x / 8.x
