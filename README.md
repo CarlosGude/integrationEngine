@@ -9,9 +9,13 @@
 [![Mutation score](https://img.shields.io/badge/MSI-%E2%89%A5%2090%25-brightgreen)](infection.json5)
 
 **Latest tagged release:** [see releases](https://github.com/CarlosGude/integrationEngine/releases/latest)
+
 **Requirements:** PHP 8.2+ · Symfony 6.4 / 7.x / 8.x
+
 **Website:** [integrationengine.dev](https://integrationengine.dev)
+
 **Documentation:** [docs/documentation.md](./docs/documentation.md)
+
 **Roadmap:** [docs/roadmap.md](./docs/roadmap.md)
 
 IntegrationEngine is a Symfony bundle for keeping outbound API integrations predictable: actions describe requests, mappers turn external responses into typed DTOs, and the engine owns the repetitive transport/authentication pipeline.
