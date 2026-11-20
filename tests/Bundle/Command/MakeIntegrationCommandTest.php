@@ -224,7 +224,7 @@ final class MakeIntegrationCommandTest extends TestCase
 
         $tester->execute(['name' => 'Acme', 'action' => 'GetThing'], ['interactive' => false]);
 
-        $display = $tester->getDisplay();
+        $display = self::singleSpaced($tester->getDisplay());
         self::assertFileDoesNotExist($this->projectDir.'/config/packages/integration_engine.yaml');
         self::assertStringContainsString('The "Acme" integration is not registered', $display);
         self::assertStringContainsString('replace the placeholder base_url', $display);
@@ -243,7 +243,7 @@ final class MakeIntegrationCommandTest extends TestCase
 
         self::assertSame(Command::SUCCESS, $exitCode);
 
-        $display = $tester->getDisplay();
+        $display = self::singleSpaced($tester->getDisplay());
         self::assertStringContainsString('Base URL for the "OtherApi" integration', $display);
         self::assertStringNotContainsString('Path for action', $display);
         self::assertStringContainsString('The "OtherApi" integration is not registered', $display);
@@ -291,6 +291,15 @@ final class MakeIntegrationCommandTest extends TestCase
 
         self::assertSame(Command::FAILURE, $exitCode);
         self::assertStringContainsString('Unknown client type "soap"', $tester->getDisplay());
+    }
+
+    /**
+     * SymfonyStyle wraps warnings to the terminal width, so a phrase can be split
+     * across lines differently on every machine; compare on single-spaced text.
+     */
+    private static function singleSpaced(string $display): string
+    {
+        return (string) preg_replace('/\s+/', ' ', $display);
     }
 
     private function tester(): CommandTester
