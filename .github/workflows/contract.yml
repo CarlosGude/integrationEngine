@@ -32,18 +32,21 @@ jobs:
           coverage: pcov # The demo's make test requests coverage.
 
       # Fetch tags so the path repository can expose this checkout as the
-      # latest released 8.x version required by the demo.
+      # latest released version required by the demo.
       - name: Fetch git tags
         run: cd bundle && git fetch --tags
 
-      # The demo requires a released 8.x version (currently ^8.0.4). A path
-      # repository is canonical, so advertising the checkout as dev-main makes
-      # Composer reject it. Use the highest v8.* tag as the synthetic package
-      # version; reading tag refs directly also works with the shallow clone.
+      # The demo requires a released version (e.g. ^9.4.0). A path repository
+      # is canonical, so advertising the checkout as dev-main makes Composer
+      # reject it. Use the highest release tag as the synthetic package version,
+      # whatever its major, so the contract follows the demo's constraint
+      # instead of a hard-coded major; reading tag refs directly also works
+      # with the shallow clone. `v[0-9]*` skips malformed tags such as v.1.16.2.
       - name: Install the demo against this bundle checkout
         working-directory: demo
         run: |
-          BUNDLE_VERSION="$(git -C ../bundle tag --list 'v8.*' --sort=-v:refname | head -n1 | sed 's/^v//')"
+          BUNDLE_VERSION="$(git -C ../bundle tag --list 'v[0-9]*' --sort=-v:refname | head -n1 | sed 's/^v//')"
+          test -n "${BUNDLE_VERSION}" || { echo "No release tag found in the bundle checkout" >&2; exit 1; }
           composer config repositories.bundle '{"type":"path","url":"../bundle","options":{"symlink":false,"versions":{"carlosgude/integration-engine":"'"${BUNDLE_VERSION}"'"}}}'
           composer update --no-interaction --prefer-dist # NOSONAR: the demo has no lock file; this resolves it against this checkout on purpose
           composer show carlosgude/integration-engine | grep -E '^(versions|source|dist)'
