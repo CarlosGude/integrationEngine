@@ -15,6 +15,7 @@ use IntegrationEngine\Core\Contract\Client\Request;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\Client\RequestMiddlewareInterface;
 use IntegrationEngine\Core\Exception\RequestResponseException;
+use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface as HttpResponseInterface;
 
@@ -195,7 +196,7 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
     /**
      * @return array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}
      *
-     * @throws RequestResponseException on HTTP errors or GraphQL errors in the response
+     * @throws RequestResponseException on HTTP errors, GraphQL errors in the response, or a body that does not decode to a JSON object or array
      */
     private function parseResponse(HttpResponseInterface $response, string $actionName): array
     {
@@ -213,7 +214,20 @@ final readonly class GraphQLClientAdapter implements ClientAdapterInterface, Bat
             );
         }
 
-        $data = $response->toArray();
+        try {
+            $data = $response->toArray();
+        } catch (DecodingExceptionInterface $e) {
+            // The response exists, so this must not reach the caller as a status-0 network error.
+            throw new RequestResponseException(
+                statusCode: $statusCode,
+                context: \sprintf(
+                    'GraphQL endpoint %s returned HTTP %d with a body that is not a JSON object or array: %s',
+                    $this->endpointUrl,
+                    $statusCode,
+                    $e->getMessage()
+                )
+            );
+        }
 
         $errors = $data['errors'] ?? null;
         if (!empty($errors) && \is_array($errors)) {

@@ -20,6 +20,8 @@ use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
  * process, last to return). Always implements BatchClientInterface: if the
  * inner adapter supports concurrent batches, they run concurrently; otherwise
  * the batch falls back to sequential per-item sends.
+ *
+ * @internal
  */
 final class MiddlewareClient implements ClientInterface, BatchClientInterface, DynamicBaseUrlClientInterface
 {

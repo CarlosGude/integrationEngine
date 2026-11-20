@@ -6,6 +6,7 @@ namespace IntegrationEngine\Bundle\Generator;
 
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 
+/** @internal */
 final readonly class IntegrationContext
 {
     public function __construct(

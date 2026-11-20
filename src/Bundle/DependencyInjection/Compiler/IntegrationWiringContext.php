@@ -9,6 +9,8 @@ use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 /**
  * Inputs IntegrationCompilerPass resolves once per compilation and shares
  * across every integration it wires.
+ *
+ * @internal
  */
 final readonly class IntegrationWiringContext
 {

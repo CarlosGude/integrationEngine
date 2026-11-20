@@ -92,6 +92,29 @@ final class IntegrationFileGeneratorTest extends TestCase
     }
 
     #[Test]
+    public function isActionDeclaredReadsTheIntegrationYaml(): void
+    {
+        $ctx = $this->context();
+
+        self::assertFalse($this->generator->isActionDeclared($ctx));
+
+        mkdir($ctx->basePath, 0o755, true);
+        $this->generator->appendActionToConfig($ctx);
+
+        self::assertTrue($this->generator->isActionDeclared($ctx));
+    }
+
+    #[Test]
+    public function isActionDeclaredStillDetectsTheActionInAYamlFileThatNoLongerParses(): void
+    {
+        $ctx = $this->context();
+        mkdir($ctx->basePath, 0o755, true);
+        file_put_contents($this->generator->configPath($ctx), "GetEmployees:\n    action: A\nGetEmployees:\n    action: A\n");
+
+        self::assertTrue($this->generator->isActionDeclared($ctx));
+    }
+
+    #[Test]
     public function integrationExistsReflectsTheDirectoryOnDisk(): void
     {
         $ctx = $this->context();
@@ -169,6 +192,51 @@ final class IntegrationFileGeneratorTest extends TestCase
 
         $content = (string) file_get_contents($path);
         self::assertStringContainsString('client: graphql', $content);
+    }
+
+    #[Test]
+    public function createBundleConfigPointsAtTheGivenIntegrationsPath(): void
+    {
+        $path = $this->tmpDir.'/config/packages/integration_engine.yaml';
+
+        $this->generator->createBundleConfig($path, 'MyApi', 'https://api.example.com', 'rest', 'src/Integrations');
+
+        $content = (string) file_get_contents($path);
+        self::assertStringContainsString("config_path: '%kernel.project_dir%/src/Integrations/MyApi/MyApi.yaml'", $content);
+    }
+
+    #[Test]
+    public function createBundleConfigDefaultsToTheDefaultIntegrationsPath(): void
+    {
+        $path = $this->tmpDir.'/config/packages/integration_engine.yaml';
+
+        $this->generator->createBundleConfig($path, 'MyApi', 'https://api.example.com', 'rest');
+
+        $content = (string) file_get_contents($path);
+        self::assertStringContainsString("config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/MyApi/MyApi.yaml'", $content);
+    }
+
+    #[Test]
+    public function isRegisteredOnlyForIntegrationsDeclaredInTheBundleConfig(): void
+    {
+        $path = $this->writeYaml(<<<'YAML'
+            integration_engine:
+                integrations:
+                    my_api:
+                        base_url: 'https://api.example.com'
+            YAML);
+
+        self::assertTrue($this->generator->isRegistered($path, 'MyApi'));
+        self::assertFalse($this->generator->isRegistered($path, 'OtherApi'));
+        self::assertFalse($this->generator->isRegistered($this->tmpDir.'/missing.yaml', 'MyApi'));
+    }
+
+    #[Test]
+    public function isRegisteredIsFalseOnMalformedYaml(): void
+    {
+        $path = $this->writeYaml("integration_engine: [\n");
+
+        self::assertFalse($this->generator->isRegistered($path, 'MyApi'));
     }
 
     private function writeYaml(string $content): string

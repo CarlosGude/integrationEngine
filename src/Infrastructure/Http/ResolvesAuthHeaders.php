@@ -7,6 +7,7 @@ namespace IntegrationEngine\Infrastructure\Http;
 use IntegrationEngine\Core\Contract\Action\AbstractAction;
 use IntegrationEngine\Core\Contract\Auth\StaticAuthorizationConfig;
 
+/** @internal */
 trait ResolvesAuthHeaders
 {
     /**

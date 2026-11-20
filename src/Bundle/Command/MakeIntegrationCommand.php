@@ -65,8 +65,9 @@ final class MakeIntegrationCommand extends Command
         $integrationPath = $this->projectDir.'/'.$basePath.'/'.$name;
         $bundleConfigPath = $this->projectDir.'/config/packages/integration_engine.yaml';
         $bundleConfigExists = file_exists($bundleConfigPath);
+        $registered = $this->generator->isRegistered($bundleConfigPath, $name);
 
-        [$clientType, $baseUrl] = $this->resolveClientConfig($io, $bundleConfigPath, $name, $bundleConfigExists);
+        [$clientType, $baseUrl] = $this->resolveClientConfig($io, $bundleConfigPath, $name, $registered);
 
         $resolved = $this->resolveAdapterAndAction($io, $clientType, $actionArg);
         if (null === $resolved) {
@@ -97,8 +98,9 @@ final class MakeIntegrationCommand extends Command
 
         if (!$bundleConfigExists && null !== $baseUrl) {
             try {
-                $this->generator->createBundleConfig($bundleConfigPath, $name, $baseUrl, $clientType);
+                $this->generator->createBundleConfig($bundleConfigPath, $name, $baseUrl, $clientType, $basePath);
                 $io->text("  created  {$bundleConfigPath}");
+                $registered = true;
             } catch (\RuntimeException $e) {
                 $io->warning($e->getMessage());
             }
@@ -114,8 +116,23 @@ final class MakeIntegrationCommand extends Command
             GeneratedFileWriter::write($file, $content, $io, $force);
         }
 
-        $configPath = $this->generator->appendActionToConfig($ctx);
-        $io->text("  updated  {$configPath}");
+        if ($this->generator->isActionDeclared($ctx)) {
+            $io->text(\sprintf('  skipped  %s ("%s" is already declared)', $this->generator->configPath($ctx), $action));
+        } else {
+            $configPath = $this->generator->appendActionToConfig($ctx);
+            $io->text("  updated  {$configPath}");
+        }
+
+        if (!$registered) {
+            $io->warning(\sprintf(
+                'The "%s" integration is not registered in %s, so the bundle will not load it. Add this to that file%s:',
+                $name,
+                $bundleConfigPath,
+                null === $baseUrl ? ' and replace the placeholder base_url' : '',
+            ));
+            $io->writeln($this->generator->bundleConfig($name, $baseUrl ?? 'https://api.example.com', $clientType, $basePath));
+        }
+
         $io->success('Done.');
 
         return Command::SUCCESS;
@@ -123,8 +140,8 @@ final class MakeIntegrationCommand extends Command
 
     /**
      * Resolves the client type and base URL.
-     * On first run (no bundle config), asks the user interactively.
-     * On subsequent runs, reads the client type from the existing YAML.
+     * When the integration is not registered in the bundle config yet, asks the user interactively.
+     * Otherwise, reads the client type from the existing YAML.
      *
      * @return array{string, null|string} [clientType, baseUrl|null]
      */
@@ -132,12 +149,12 @@ final class MakeIntegrationCommand extends Command
         SymfonyStyle $io,
         string $bundleConfigPath,
         string $name,
-        bool $bundleConfigExists,
+        bool $registered,
     ): array {
         $clientType = $this->generator->detectClientType($bundleConfigPath, $name);
         $baseUrl = null;
 
-        if (!$bundleConfigExists) {
+        if (!$registered) {
             $baseUrl = $io->ask(
                 \sprintf('Base URL for the "%s" integration (e.g. https://api.example.com)', $name),
                 null,

@@ -9,6 +9,7 @@ use IntegrationEngine\Core\Contract\Connection\ConnectionCredentials;
 use IntegrationEngine\Core\Contract\Connection\ConnectionResolverInterface;
 use IntegrationEngine\Core\Exception\ConnectionResolutionException;
 
+/** @internal */
 final class ConnectionResolver
 {
     public function __construct(

@@ -7,6 +7,7 @@ namespace IntegrationEngine\Infrastructure\Http;
 use IntegrationEngine\Core\Contract\Client\Request;
 use IntegrationEngine\Core\Contract\Client\RequestMiddlewareInterface;
 
+/** @internal */
 trait RunsRequestMiddlewares
 {
     /**

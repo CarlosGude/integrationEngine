@@ -8,7 +8,7 @@ All of them live in `IntegrationEngine\Core\Exception`.
 
 | Exception | Thrown when |
 |---|---|
-| `RequestResponseException` | The request failed: HTTP status ≥ 400, a GraphQL `errors` array, or a network error. See [below](#requestresponseexception). |
+| `RequestResponseException` | The request failed: HTTP status ≥ 400, a GraphQL `errors` array, a body that does not decode to a JSON object or array, or a network error. See [below](#requestresponseexception). |
 | `ActionNotFoundException` | The action name is not in the integration YAML. |
 | `IntegrationNotFoundException` | No integration is registered under that name. |
 | `PathResolutionException` | A path placeholder is missing from the context or is not scalar, a custom context resolved an empty path, or the placeholder regex failed. Thrown before the request is sent. |
@@ -28,7 +28,11 @@ Configuration mistakes in the integration YAML — an invalid authorization bloc
 It exposes two public properties:
 
 - `statusCode` — the HTTP status. `0` means the failure happened before an HTTP response existed: a network error, a destination blocked by `block_private_networks`, or a final URL that the built-in transport rejected against `allowed_hosts` (for example, one changed by a request middleware).
-- `context` — a human-readable description. For HTTP errors it **includes the upstream response body**; for network errors, the transport's message.
+- `context` — a human-readable description. For HTTP errors it **includes the upstream response body**; for network errors, the transport's message; for a body that does not decode to a JSON object or array, the decoder's message.
+
+A response whose body is not empty and does not decode to a JSON object or array — an HTML maintenance page, truncated JSON, a bare JSON string — is reported with the status of that response, usually `200`, not as a network error.
+
+Mapping failures are not `RequestResponseException`: whatever your mapper throws reaches the caller unchanged ([Mappers and responses](./getting-started/mappers-and-responses.md#what-the-engine-validates-and-what-your-mapper-must)).
 
 ```php
 use IntegrationEngine\Core\Exception\RequestResponseException;

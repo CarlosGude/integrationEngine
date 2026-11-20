@@ -7,6 +7,7 @@ namespace IntegrationEngine\Bundle\Generator;
 use Symfony\Component\Yaml\Yaml;
 
 /** Generates application DTOs and mappers; the bundle provides the parser. */
+/** @internal */
 final class WebhookFileGenerator
 {
     /** @return array<string, string> */

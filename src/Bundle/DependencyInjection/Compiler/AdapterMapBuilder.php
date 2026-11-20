@@ -8,6 +8,7 @@ use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 use IntegrationEngine\Infrastructure\Http\ClientAdapterResolver;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
+/** @internal */
 final class AdapterMapBuilder
 {
     /** @return array<string, class-string<ClientAdapterInterface>> client type => adapter class */

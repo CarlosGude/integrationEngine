@@ -16,6 +16,7 @@ use IntegrationEngine\Core\Contract\Client\Request;
 use IntegrationEngine\Core\Contract\Client\RequestHeadersInterface;
 use IntegrationEngine\Core\Contract\Client\RequestMiddlewareInterface;
 use IntegrationEngine\Core\Exception\RequestResponseException;
+use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface as HttpResponseInterface;
 
@@ -204,7 +205,7 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
     /**
      * @return array{body: array<mixed>, headers: array<string, list<string>>, statusCode?: int}
      *
-     * @throws RequestResponseException on HTTP 4xx/5xx
+     * @throws RequestResponseException on HTTP 4xx/5xx, or a body that does not decode to a JSON object or array
      */
     private function consume(HttpResponseInterface $response, string $method, string $path): array
     {
@@ -224,7 +225,22 @@ final readonly class SymfonyHttpClientAdapter implements ClientAdapterInterface,
         }
 
         $content = $response->getContent(throw: false);
-        $body = (204 === $statusCode || '' === trim($content)) ? [] : $response->toArray();
+
+        try {
+            $body = (204 === $statusCode || '' === trim($content)) ? [] : $response->toArray();
+        } catch (DecodingExceptionInterface $e) {
+            // The response exists, so this must not reach the caller as a status-0 network error.
+            throw new RequestResponseException(
+                statusCode: $statusCode,
+                context: \sprintf(
+                    '%s %s returned HTTP %d with a body that is not a JSON object or array: %s',
+                    $method,
+                    $path,
+                    $statusCode,
+                    $e->getMessage()
+                )
+            );
+        }
 
         return ['body' => $body, 'headers' => $response->getHeaders(throw: false), 'statusCode' => $statusCode];
     }

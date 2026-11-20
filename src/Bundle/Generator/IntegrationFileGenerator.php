@@ -8,6 +8,7 @@ use IntegrationEngine\Bundle\Exception\IntegrationGeneratorException;
 use IntegrationEngine\Infrastructure\Http\SymfonyHttpClientAdapter;
 use Symfony\Component\Yaml\Yaml;
 
+/** @internal */
 final class IntegrationFileGenerator
 {
     /** @return array<string, string> */
@@ -40,6 +41,24 @@ final class IntegrationFileGenerator
         return $files;
     }
 
+    public function isActionDeclared(IntegrationContext $ctx): bool
+    {
+        $configPath = $this->configPath($ctx);
+
+        if (!file_exists($configPath)) {
+            return false;
+        }
+
+        try {
+            $yaml = Yaml::parseFile($configPath, Yaml::PARSE_CUSTOM_TAGS);
+
+            return \is_array($yaml) && \array_key_exists($ctx->action, $yaml);
+        } catch (\Throwable) {
+            // A file that no longer parses (e.g. already holding a duplicate key) is still checked line by line.
+            return 1 === preg_match('/^'.preg_quote($ctx->action, '/').':/m', (string) file_get_contents($configPath));
+        }
+    }
+
     public function appendActionToConfig(IntegrationContext $ctx): string
     {
         $tpl = new TemplateRenderer($ctx);
@@ -58,19 +77,22 @@ final class IntegrationFileGenerator
 
     public function detectClientType(string $bundleConfigPath, string $integrationName): string
     {
-        if (!file_exists($bundleConfigPath)) {
-            return SymfonyHttpClientAdapter::CLIENT_TYPE;
-        }
+        $integration = $this->registeredIntegration($bundleConfigPath, $integrationName);
 
-        try {
-            return $this->resolveClientType(Yaml::parseFile($bundleConfigPath), IntegrationContext::toSnakeCase($integrationName));
-        } catch (\Throwable) {
-            return SymfonyHttpClientAdapter::CLIENT_TYPE;
-        }
+        return \is_array($integration) && \is_string($integration['client'] ?? null)
+            ? $integration['client']
+            : SymfonyHttpClientAdapter::CLIENT_TYPE;
+    }
+
+    public function isRegistered(string $bundleConfigPath, string $integrationName): bool
+    {
+        return \is_array($this->registeredIntegration($bundleConfigPath, $integrationName));
     }
 
     /**
      * Writes the initial integration_engine.yaml bundle config.
+     *
+     * @param string $integrationsPath project-relative directory holding the integrations, as given to --path
      *
      * @throws \RuntimeException if the config directory cannot be created
      */
@@ -79,6 +101,7 @@ final class IntegrationFileGenerator
         string $integrationName,
         string $baseUrl,
         string $clientType,
+        string $integrationsPath = 'src/Infrastructure/Integrations',
     ): void {
         $dir = \dirname($configPath);
 
@@ -86,23 +109,33 @@ final class IntegrationFileGenerator
             throw IntegrationGeneratorException::cannotCreateDirectory($dir);
         }
 
-        $snakeName = IntegrationContext::toSnakeCase($integrationName);
+        if (false === file_put_contents($configPath, $this->bundleConfig($integrationName, $baseUrl, $clientType, $integrationsPath))) {
+            throw IntegrationGeneratorException::cannotWriteFile($configPath);
+        }
+    }
 
+    /**
+     * The integration_engine.yaml content that registers one integration —
+     * also shown to the user when an existing bundle config must be edited by hand.
+     */
+    public function bundleConfig(
+        string $integrationName,
+        string $baseUrl,
+        string $clientType,
+        string $integrationsPath = 'src/Infrastructure/Integrations',
+    ): string {
         $integrationConfig = ['base_url' => $baseUrl];
         if (SymfonyHttpClientAdapter::CLIENT_TYPE !== $clientType) {
             $integrationConfig['client'] = $clientType;
         }
-        $integrationConfig['config_path'] = "%kernel.project_dir%/src/Infrastructure/Integrations/{$integrationName}/{$integrationName}.yaml";
+        $integrationsPath = trim($integrationsPath, '/');
+        $integrationConfig['config_path'] = "%kernel.project_dir%/{$integrationsPath}/{$integrationName}/{$integrationName}.yaml";
 
-        $content = Yaml::dump(
-            ['integration_engine' => ['integrations' => [$snakeName => $integrationConfig]]],
+        return Yaml::dump(
+            ['integration_engine' => ['integrations' => [IntegrationContext::toSnakeCase($integrationName) => $integrationConfig]]],
             6,
             4,
         );
-
-        if (false === file_put_contents($configPath, $content)) {
-            throw IntegrationGeneratorException::cannotWriteFile($configPath);
-        }
     }
 
     public function integrationExists(IntegrationContext $ctx): bool
@@ -115,15 +148,22 @@ final class IntegrationFileGenerator
         return $this->root($ctx).'/'.$ctx->name.'.yaml';
     }
 
-    private function resolveClientType(mixed $yaml, string $snakeName): string
+    private function registeredIntegration(string $bundleConfigPath, string $integrationName): mixed
     {
+        if (!file_exists($bundleConfigPath)) {
+            return null;
+        }
+
+        try {
+            $yaml = Yaml::parseFile($bundleConfigPath, Yaml::PARSE_CUSTOM_TAGS);
+        } catch (\Throwable) {
+            return null;
+        }
+
         $engine = \is_array($yaml) ? ($yaml['integration_engine'] ?? null) : null;
         $integrations = \is_array($engine) ? ($engine['integrations'] ?? null) : null;
-        $integration = \is_array($integrations) ? ($integrations[$snakeName] ?? null) : null;
 
-        return \is_array($integration) && \is_string($integration['client'] ?? null)
-            ? $integration['client']
-            : SymfonyHttpClientAdapter::CLIENT_TYPE;
+        return \is_array($integrations) ? ($integrations[IntegrationContext::toSnakeCase($integrationName)] ?? null) : null;
     }
 
     private function root(IntegrationContext $ctx): string

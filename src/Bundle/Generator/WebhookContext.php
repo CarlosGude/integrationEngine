@@ -8,6 +8,8 @@ namespace IntegrationEngine\Bundle\Generator;
  * Context for webhook code generation.
  *
  * @author Carlos Gude
+ *
+ * @internal
  */
 final readonly class WebhookContext
 {

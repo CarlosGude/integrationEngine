@@ -7,7 +7,7 @@ Every concept has one canonical page. Other pages link to it instead of repeatin
 ## Reading order
 
 1. [README](../README.md) — what the bundle is, installation and a first integration.
-2. [Getting started](./getting-started/README.md) — actions, context and paths, authorization, mappers, batches.
+2. [Getting started](./getting-started/README.md) — the generator, actions, context and paths, authorization, mappers, batches.
 3. [Bundle configuration](./configuration.md), [HTTP clients](./advanced/architecture/clients.md), [Middleware and response caching](./middleware.md) and [Errors](./errors.md).
 4. [Architecture](./architecture.md) — scope, layers and the request pipeline.
 5. The topic you need from the table below.
@@ -18,10 +18,11 @@ To read everything in one file, use the single-file editions generated from thes
 
 | Need | Canonical document |
 |---|---|
+| Generate an integration with `make:integration` and complete the generated files | [getting-started/generating-an-integration.md](./getting-started/generating-an-integration.md) |
 | Build an action and its YAML entry | [getting-started/actions.md](./getting-started/actions.md) |
 | Resolve path/query inputs | [getting-started/context-and-path.md](./getting-started/context-and-path.md) |
 | Configure auth/token caching | [getting-started/authorization.md](./getting-started/authorization.md) |
-| Map responses and headers | [getting-started/mappers-and-responses.md](./getting-started/mappers-and-responses.md) |
+| Map responses and headers; validate required fields | [getting-started/mappers-and-responses.md](./getting-started/mappers-and-responses.md) |
 | Send batches | [getting-started/batch-requests.md](./getting-started/batch-requests.md) |
 | Look up a bundle configuration key | [configuration.md](./configuration.md) |
 | Choose/customize clients, base URLs or connections | [advanced/architecture/clients.md](./advanced/architecture/clients.md) |

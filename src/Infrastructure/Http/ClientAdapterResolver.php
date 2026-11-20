@@ -6,6 +6,7 @@ namespace IntegrationEngine\Infrastructure\Http;
 
 use IntegrationEngine\Core\Contract\Client\ClientAdapterInterface;
 
+/** @internal */
 final class ClientAdapterResolver
 {
     /** @var array<string, class-string<ClientAdapterInterface>> */

@@ -10,6 +10,7 @@ use IntegrationEngine\Core\Exception\MapperActionMismatchException;
 use IntegrationEngine\Core\Exception\NotMappedActionException;
 use IntegrationEngine\Core\Response\EmptyResponse;
 
+/** @internal */
 final class ResponseBuilder
 {
     /**

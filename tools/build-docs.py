@@ -19,6 +19,7 @@ PARTS = [
         "docs/documentation.md",
     ]),
     ("Part II — Getting started", "part-getting-started", [
+        "docs/getting-started/generating-an-integration.md",
         "docs/getting-started/actions.md",
         "docs/getting-started/context-and-path.md",
         "docs/getting-started/authorization.md",

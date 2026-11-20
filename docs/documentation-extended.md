@@ -16,6 +16,7 @@
   - [IntegrationEngine](#readme)
   - [IntegrationEngine — Documentation](#documentation)
 - [Part II — Getting started](#part-getting-started)
+  - [Generating an integration](#getting-started-generating-an-integration)
   - [Actions](#getting-started-actions)
   - [Context and Path Resolution](#getting-started-context-and-path)
   - [Authorization](#getting-started-authorization)
@@ -71,9 +72,13 @@
 [![Mutation score](https://img.shields.io/badge/MSI-%E2%89%A5%2090%25-brightgreen)](../infection.json5)
 
 **Latest tagged release:** [see releases](https://github.com/CarlosGude/integrationEngine/releases/latest)
+
 **Requirements:** PHP 8.2+ · Symfony 6.4 / 7.x / 8.x
+
 **Website:** [integrationengine.dev](https://integrationengine.dev)
+
 **Documentation:** [docs/documentation.md](#documentation)
+
 **Roadmap:** [docs/roadmap.md](#roadmap)
 
 IntegrationEngine is a Symfony bundle for keeping outbound API integrations predictable: actions describe requests, mappers turn external responses into typed DTOs, and the engine owns the repetitive transport/authentication pipeline.
@@ -93,6 +98,8 @@ An integration is built from a small set of contracts:
 - an integration facade in the consuming application, backed by `IntegrationRegistry`.
 
 The bundle then handles configuration lookup, path resolution, static or dynamic auth, connection overrides, middleware, HTTP transport, batching, response mapping and lifecycle events.
+
+It rejects failed requests — HTTP errors, network errors, bodies that are not JSON objects or arrays, GraphQL `errors` — before your mapper runs. It does **not** validate the content of a successful response: which fields exist and what they hold is checked by your mapper, which should throw when a required field is missing or invalid. See [what the engine validates, and what your mapper must](#getting-started-mappers-and-responses--what-the-engine-validates-and-what-your-mapper-must).
 
 It intentionally does **not** own your domain model. Keep the external DTOs behind a Gateway / Anti-Corruption Layer when they cross into application or domain code.
 
@@ -128,7 +135,7 @@ Generate the integration shell and first action:
 php bin/console make:integration MyApi GetEmployee
 ```
 
-The command creates the integration facade, action, mapper/response when applicable, and the integration YAML. On the first integration it can also create `config/packages/integration_engine.yaml`.
+The command creates the integration class (`MyApiIntegration`, holding the `NAME` constant), the action, the mapper and response when the action returns data, and the action's entry in the integration YAML. On the first integration it also creates `config/packages/integration_engine.yaml`; for later integrations it prints the block to add there. The response fields, the mapping and the facade methods shown below are yours to write — see [Generating an integration](#getting-started-generating-an-integration).
 
 Bundle configuration is per integration:
 
@@ -276,7 +283,7 @@ Every concept has one canonical page. Other pages link to it instead of repeatin
 ### Reading order
 
 1. [README](#readme) — what the bundle is, installation and a first integration.
-2. [Getting started](#part-getting-started) — actions, context and paths, authorization, mappers, batches.
+2. [Getting started](#part-getting-started) — the generator, actions, context and paths, authorization, mappers, batches.
 3. [Bundle configuration](#configuration), [HTTP clients](#advanced-architecture-clients), [Middleware and response caching](#middleware) and [Errors](#errors).
 4. [Architecture](#architecture) — scope, layers and the request pipeline.
 5. The topic you need from the table below.
@@ -289,10 +296,11 @@ To read everything in one file, use the single-file editions generated from thes
 
 | Need | Canonical document |
 |---|---|
+| Generate an integration with `make:integration` and complete the generated files | [getting-started/generating-an-integration.md](#getting-started-generating-an-integration) |
 | Build an action and its YAML entry | [getting-started/actions.md](#getting-started-actions) |
 | Resolve path/query inputs | [getting-started/context-and-path.md](#getting-started-context-and-path) |
 | Configure auth/token caching | [getting-started/authorization.md](#getting-started-authorization) |
-| Map responses and headers | [getting-started/mappers-and-responses.md](#getting-started-mappers-and-responses) |
+| Map responses and headers; validate required fields | [getting-started/mappers-and-responses.md](#getting-started-mappers-and-responses) |
 | Send batches | [getting-started/batch-requests.md](#getting-started-batch-requests) |
 | Look up a bundle configuration key | [configuration.md](#configuration) |
 | Choose/customize clients, base URLs or connections | [advanced/architecture/clients.md](#advanced-architecture-clients) |
@@ -348,6 +356,99 @@ For current behavior, use the guides above, not an old upgrade document.
 <a id="part-getting-started"></a>
 
 # Part II — Getting started
+
+<a id="getting-started-generating-an-integration"></a>
+<a id="getting-started-generating-an-integration--generating-an-integration"></a>
+
+## Generating an integration
+
+*Source: `docs/getting-started/generating-an-integration.md`*
+
+`make:integration` writes the **structure** of an integration: the classes, the YAML entry and, the first time, the bundle configuration. The **logic** — which fields the response carries, how they are validated and which methods the facade exposes — is yours to write. This page covers what the command asks, what it creates and what is left to complete.
+
+<a id="getting-started-generating-an-integration--running-the-command"></a>
+
+### Running the command
+
+```bash
+php bin/console make:integration MyApi GetEmployee
+```
+
+| Argument / option | Meaning |
+|---|---|
+| `name` | Integration name in PascalCase. The bundle registers it under its snake_case form (`my_api`). |
+| `action` | Action name. Asked interactively when omitted. |
+| `--namespace` | Base namespace. Default: `App\Infrastructure\Integrations`. |
+| `--path` | Base directory, relative to the project. Default: `src/Infrastructure/Integrations`. |
+| `--force` | Overwrite generated PHP files that already exist. Without it they are skipped. |
+
+The command asks:
+
+- **Base URL and client type**, when the integration is not registered in `config/packages/integration_engine.yaml` yet. The client types offered are the registered adapters (`rest`, `graphql`, `form_encoded` and any of your own).
+- **Path and HTTP method**, when the adapter needs them (`rest`, `form_encoded`). A `graphql` integration asks neither.
+
+With `--no-interaction` every question takes its default; there is no default base URL, so the bundle configuration is not written (see below).
+
+<a id="getting-started-generating-an-integration--what-it-creates"></a>
+
+### What it creates
+
+```text
+config/packages/integration_engine.yaml     ← only when the file does not exist yet
+src/Infrastructure/Integrations/MyApi/
+├─ MyApi.yaml                               ← one entry appended per new action
+├─ MyApiIntegration.php                     ← only the first time for this integration
+└─ GetEmployee/
+   ├─ Request/GetEmployeeAction.php
+   └─ Response/                             ← not generated for DELETE
+      ├─ GetEmployeeMapper.php
+      └─ GetEmployeeResponse.php
+```
+
+Running the command again for another action adds that action's files and its YAML entry next to the existing ones. Existing PHP files are never overwritten without `--force`, and an action already declared in the integration YAML is not appended a second time.
+
+| File | What the generator writes | What you complete |
+|---|---|---|
+| `MyApi.yaml` | `action`, plus `method` and `path` for adapters that use them | Optional keys: `body`, `authorization`, `cache_ttl`, `timeout` ([Actions](#getting-started-actions--action-yaml)) |
+| `MyApiIntegration.php` | The class implementing `IntegrationName` with its `NAME` constant | The facade: inject `IntegrationRegistry` and add one typed method per action ([README](#readme--first-integration)) |
+| `GetEmployeeAction.php` | `getName()`, `hasResponse()` (`false` for DELETE) and `mapper()` | Usually nothing |
+| `GetEmployeeResponse.php` | An empty `readonly` DTO implementing `ResponseInterface` | The fields the API returns, its factory and `toArray()` ([Mappers and responses](#getting-started-mappers-and-responses)) |
+| `GetEmployeeMapper.php` | `getAction()` paired with the action, and a `transform()` that throws `LogicException` | The mapping, rejecting missing or invalid required fields ([Mappers and responses](#getting-started-mappers-and-responses--required-and-optional-fields)) |
+
+The generated `transform()` throws on purpose: until you implement it, a call fails with a message naming the mapper instead of returning an empty DTO that looks like a valid response.
+
+Request bodies and custom contexts are not generated. Add an `ActionBodyInterface` class and declare it under `body:` when the action sends a payload, and a custom context when path parameters need validation ([Context and path](#getting-started-context-and-path)).
+
+<a id="getting-started-generating-an-integration--registering-the-integration"></a>
+
+### Registering the integration
+
+The first time the command runs in a project without `config/packages/integration_engine.yaml`, it creates that file with the base URL and client type you entered.
+
+When the file already exists and does not declare the integration — your second integration, for example — the command does **not** edit it, so your comments and formatting stay intact. It prints the block to add instead:
+
+```text
+ [WARNING] The "OtherApi" integration is not registered in .../config/packages/integration_engine.yaml,
+           so the bundle will not load it. Add this to that file:
+
+integration_engine:
+    integrations:
+        other_api:
+            base_url: 'https://other.example.com'
+            config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/OtherApi/OtherApi.yaml'
+```
+
+The same warning appears after a `--no-interaction` run, with a placeholder `base_url` to replace. Every key the bundle accepts is in [Bundle configuration](#configuration).
+
+<a id="getting-started-generating-an-integration--checklist-after-generating"></a>
+
+### Checklist after generating
+
+1. Add the response fields and validate them in the mapper.
+2. Add the facade method that calls `send()` and returns the typed response.
+3. Add the YAML keys the endpoint needs (authorization, body, timeout).
+4. If the command printed the registration warning, add the block to `config/packages/integration_engine.yaml`.
+5. Check the wiring with `php bin/console debug:integration my_api` ([Debugging](#advanced-debugging)).
 
 <a id="getting-started-actions"></a>
 <a id="getting-started-actions--actions"></a>
@@ -837,7 +938,8 @@ final class GetEmployeeMapper extends AbstractMapper
 }
 ```
 
-The response DTO must implement `ResponseInterface`:
+The response DTO must implement `ResponseInterface`. Its factory rejects a response
+that breaks the API contract instead of filling the gap with a default:
 
 ```php
 use IntegrationEngine\Core\Contract\Response\ResponseInterface;
@@ -845,44 +947,90 @@ use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 final readonly class GetEmployeeResponse implements ResponseInterface
 {
     private function __construct(
-        public int    $id,
-        public string $name,
+        public int     $id,
+        public string  $name,
+        public ?string $email,
     ) {}
 
+    /** @param array<mixed> $data */
     public static function create(array $data): self
     {
-        return new self(
-            id:   (int)    ($data['id']   ?? 0),
-            name: (string) ($data['name'] ?? ''),
-        );
+        $id = $data['id'] ?? null;
+        if (!\is_int($id) || $id < 1) {
+            throw new \UnexpectedValueException('GetEmployee response: "id" is missing or not a positive integer.');
+        }
+
+        $name = $data['name'] ?? null;
+        if (!\is_string($name) || '' === $name) {
+            throw new \UnexpectedValueException('GetEmployee response: "name" is missing or empty.');
+        }
+
+        // The API documents email as optional, so absence is a valid value here.
+        $email = $data['email'] ?? null;
+
+        return new self($id, $name, \is_string($email) ? $email : null);
     }
 
-    public function toArray(): array { return ['id' => $this->id, 'name' => $this->name]; }
+    public function toArray(): array
+    {
+        return ['id' => $this->id, 'name' => $this->name, 'email' => $this->email];
+    }
 }
 ```
 
 ---
 
-<a id="getting-started-mappers-and-responses--type-mapping"></a>
+<a id="getting-started-mappers-and-responses--required-and-optional-fields"></a>
 
-### Type mapping
+### Required and optional fields
 
-Match PHP types to what the API returns:
+Decide per field from the API contract, not from what PHP can cast. With `$v = $data['x'] ?? null`:
 
-| API type | PHP type | Cast in `create()` |
+| API type | Required: reject when missing or invalid | Optional: absence is a valid value |
 |---|---|---|
-| integer | `int` | `(int) ($data['x'] ?? 0)` |
-| number | `float` | `(float) ($data['x'] ?? 0.0)` |
-| boolean | `bool` | `(bool) ($data['x'] ?? false)` |
-| string | `string` | `(string) ($data['x'] ?? '')` |
-| array | `array` | `$data['x'] ?? []` |
-| nullable string | `?string` | `is_string($data['x'] ?? null) ? $data['x'] : null` |
-| nested object (simple) | `array` | `$data['x'] ?? []` |
-| nested object (reused) | `NestedDto` | `NestedDto::create($data['x'] ?? [])` |
+| integer | `\is_int($v) ? $v : throw new \UnexpectedValueException(...)` | `\is_int($v) ? $v : null` |
+| number | `\is_int($v) \|\| \is_float($v) ? (float) $v : throw ...` | `\is_int($v) \|\| \is_float($v) ? (float) $v : null` |
+| boolean | `\is_bool($v) ? $v : throw ...` | `\is_bool($v) ? $v : null` |
+| string | `\is_string($v) ? $v : throw ...` | `\is_string($v) ? $v : null` |
+| array / list | `\is_array($v) ? $v : throw ...` | `\is_array($v) ? $v : []` — only when the API documents that absence means empty |
+| nested object | `\is_array($v) ? NestedDto::create($v) : throw ...` | `\is_array($v) ? NestedDto::create($v) : null` |
+
+A default such as `(int) ($data['x'] ?? 0)` turns a missing, `null`, renamed or malformed
+field into a value that looks valid: the DTO is built, nothing fails, and the error surfaces
+far from the mapper. Casts hide malformed values as well — `(int) '12abc'` is `12` and
+`(string)` of an array is `'Array'`. Use a default only when the API documents that the field
+may be absent and the default means exactly what absence means.
 
 Use a dedicated DTO class for nested objects that appear in more than one response, or
 that have more than three or four fields. Nested DTOs do **not** implement
 `ResponseInterface` — only the top-level class returned from `transform()` does.
+
+---
+
+<a id="getting-started-mappers-and-responses--what-the-engine-validates-and-what-your-mapper-must"></a>
+
+### What the engine validates, and what your mapper must
+
+The engine rejects a response before your mapper runs when:
+
+- the HTTP status is 400 or higher, or the request fails at the network level;
+- the body is not empty and does not decode to a JSON object or array (for example, an HTML maintenance page);
+- a GraphQL response carries an `errors` array;
+- the mapper's `getAction()` does not match the action, or an action that declares a response has no mapper.
+
+Each of these throws before `transform()` is called ([Errors](#errors)).
+
+Everything about the **content** of the response is the mapper's job: which fields exist, their types,
+their formats and their allowed values. The engine passes the decoded body to `transform()` unchanged, so a
+`200` with `{}`, a renamed field or a string where you expected a number reaches your mapper as is. An empty
+body or HTTP 204 arrives as `[]`; with GraphQL, the mapper receives the `data` member, and `[]` when the
+response has none. PHPStan does not cover this either: a `@var array{...}` annotation describes the shape
+to the analyser without checking it at runtime.
+
+An exception thrown from `transform()` is neither caught nor wrapped. `send()` rethrows it after
+dispatching `RequestFailed` — preceded by `ResponseReceived`, which tells you the API answered and the
+mapping failed ([Lifecycle events](#lifecycle)). In `sendMany()` it becomes that item's failure,
+without affecting the other items ([Batch requests](#getting-started-batch-requests)).
 
 ---
 
@@ -1259,7 +1407,7 @@ The action's method and path build the request.
 - Bodies are sent only for POST, PUT and PATCH. They are JSON unless the body implements `FormEncodedBodyInterface` ([Form bodies](#form-bodies)).
 - A per-action `timeout` is passed to Symfony HttpClient.
 - HTTP 204 or an empty body is returned to the mapper as an empty array.
-- HTTP status ≥ 400 and network errors throw `RequestResponseException` ([Errors](#errors--requestresponseexception)).
+- HTTP status ≥ 400, a non-empty body that does not decode to a JSON object or array, and network errors throw `RequestResponseException` ([Errors](#errors--requestresponseexception)).
 
 <a id="advanced-architecture-clients--graphql"></a>
 
@@ -1276,7 +1424,12 @@ final readonly class GetUserBody implements GraphQLBodyInterface
 
     public static function create(array $data): self
     {
-        return new self((int) ($data['id'] ?? 0));
+        $id = $data['id'] ?? null;
+        if (!\is_int($id) || $id < 1) {
+            throw new \InvalidArgumentException('GetUser body: "id" must be a positive integer.');
+        }
+
+        return new self($id);
     }
 
     public function getQuery(): string
@@ -1641,7 +1794,7 @@ All of them live in `IntegrationEngine\Core\Exception`.
 
 | Exception | Thrown when |
 |---|---|
-| `RequestResponseException` | The request failed: HTTP status ≥ 400, a GraphQL `errors` array, or a network error. See [below](#errors--requestresponseexception). |
+| `RequestResponseException` | The request failed: HTTP status ≥ 400, a GraphQL `errors` array, a body that does not decode to a JSON object or array, or a network error. See [below](#errors--requestresponseexception). |
 | `ActionNotFoundException` | The action name is not in the integration YAML. |
 | `IntegrationNotFoundException` | No integration is registered under that name. |
 | `PathResolutionException` | A path placeholder is missing from the context or is not scalar, a custom context resolved an empty path, or the placeholder regex failed. Thrown before the request is sent. |
@@ -1663,7 +1816,11 @@ Configuration mistakes in the integration YAML — an invalid authorization bloc
 It exposes two public properties:
 
 - `statusCode` — the HTTP status. `0` means the failure happened before an HTTP response existed: a network error, a destination blocked by `block_private_networks`, or a final URL that the built-in transport rejected against `allowed_hosts` (for example, one changed by a request middleware).
-- `context` — a human-readable description. For HTTP errors it **includes the upstream response body**; for network errors, the transport's message.
+- `context` — a human-readable description. For HTTP errors it **includes the upstream response body**; for network errors, the transport's message; for a body that does not decode to a JSON object or array, the decoder's message.
+
+A response whose body is not empty and does not decode to a JSON object or array — an HTML maintenance page, truncated JSON, a bare JSON string — is reported with the status of that response, usually `200`, not as a network error.
+
+Mapping failures are not `RequestResponseException`: whatever your mapper throws reaches the caller unchanged ([Mappers and responses](#getting-started-mappers-and-responses--what-the-engine-validates-and-what-your-mapper-must)).
 
 ```php
 use IntegrationEngine\Core\Exception\RequestResponseException;
@@ -3426,6 +3583,29 @@ Increment on **backward-compatible bug fixes**:
 - Security patches.
 - Test and documentation corrections.
 - Performance improvements.
+
+<a id="contributing--what-the-versioning-covers"></a>
+
+#### What the versioning covers
+
+Only breaking changes to the **public API** require a MAJOR release. The public API is:
+
+- every class, interface, trait, method and constant under `src/` that is **not** marked `@internal`;
+- the bundle configuration keys, the integration YAML keys and the `integration_engine.*` service tags;
+- lifecycle event classes and their public properties, and exception classes with their public properties (including the meaning of `RequestResponseException::$statusCode`);
+- console command names, arguments and options.
+
+Not part of the public API, and free to change in any release:
+
+- anything marked `@internal` — the engine's dispatch helpers, the HTTP pipeline internals, the profiler collector, the compiler-pass helpers and the code generators;
+- exception messages and `RequestResponseException::$context` text;
+- the content of files produced by `make:integration` and `make:webhook` (files already generated belong to the application).
+
+<a id="contributing--deprecations"></a>
+
+#### Deprecations
+
+A public API element that will be removed or changed incompatibly is first deprecated in a MINOR release: it gets a `@deprecated` tag naming its replacement and an entry under `Deprecated` in `CHANGELOG.md`. It is removed no earlier than the next MAJOR release, and that MAJOR's upgrade guide (docs/upgrade-N.0.md) lists the removal with its migration.
 
 <a id="contributing--release-process"></a>
 

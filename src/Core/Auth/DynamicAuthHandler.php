@@ -19,6 +19,7 @@ use IntegrationEngine\Core\Port\ConfigPort;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 
+/** @internal */
 final readonly class DynamicAuthHandler
 {
     public function __construct(

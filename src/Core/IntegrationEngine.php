@@ -40,6 +40,9 @@ final readonly class IntegrationEngine
     private ResponseBuilder $responseBuilder;
     private BatchDispatcher $batchDispatcher;
 
+    /**
+     * @param null|AuthenticationHandler $authHandler internal seam for the engine's own tests; leave it null
+     */
     public function __construct(
         private ConfigPort $config,
         private ClientInterface $client,

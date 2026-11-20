@@ -8,6 +8,7 @@ use IntegrationEngine\Core\Contract\Client\AbstractClientMiddleware;
 use IntegrationEngine\Core\Contract\Client\RequestMiddlewareInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
+/** @internal */
 final class MiddlewareResolver
 {
     /** @return array<string, true> service IDs of valid tagged middlewares */

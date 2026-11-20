@@ -37,7 +37,7 @@ The action's method and path build the request.
 - Bodies are sent only for POST, PUT and PATCH. They are JSON unless the body implements `FormEncodedBodyInterface` ([Form bodies](../../form-bodies.md)).
 - A per-action `timeout` is passed to Symfony HttpClient.
 - HTTP 204 or an empty body is returned to the mapper as an empty array.
-- HTTP status ≥ 400 and network errors throw `RequestResponseException` ([Errors](../../errors.md#requestresponseexception)).
+- HTTP status ≥ 400, a non-empty body that does not decode to a JSON object or array, and network errors throw `RequestResponseException` ([Errors](../../errors.md#requestresponseexception)).
 
 ### GraphQL
 
@@ -52,7 +52,12 @@ final readonly class GetUserBody implements GraphQLBodyInterface
 
     public static function create(array $data): self
     {
-        return new self((int) ($data['id'] ?? 0));
+        $id = $data['id'] ?? null;
+        if (!\is_int($id) || $id < 1) {
+            throw new \InvalidArgumentException('GetUser body: "id" must be a positive integer.');
+        }
+
+        return new self($id);
     }
 
     public function getQuery(): string

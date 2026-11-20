@@ -88,6 +88,16 @@ for (const [lang, address] of [['en', 'hi@integrationengine.dev'], ['es', 'hola@
     assert.doesNotMatch(code, /EngineRequest\s*::\s*create/);
   });
 
+  test(`rendered html (${lang}): mapper examples implement the AbstractMapper contract`, () => {
+    const code = getHTML(lang).replace(/<[^>]*>/g, '');
+    const mappers = code.split(/(?=final class \w+ extends AbstractMapper)/).slice(1);
+    assert.ok(mappers.length > 0);
+    for (const mapper of mappers) {
+      assert.match(mapper, /public static function getAction\(\): string/);
+      assert.match(mapper, /function transform\(\s*AbstractAction \$action, array \$response, array \$headers\s*\)/);
+    }
+  });
+
   test(`rendered html (${lang}): repository documentation links exist`, () => {
     const html = getHTML(lang);
     for (const [, path] of html.matchAll(/https:\/\/github\.com\/CarlosGude\/integrationEngine\/blob\/main\/([^"#?]+)/g)) {

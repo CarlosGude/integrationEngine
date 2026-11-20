@@ -26,6 +26,8 @@ use Symfony\Component\HttpKernel\DataCollector\DataCollectorInterface;
  * because DataCollectorInterface comes from symfony/http-kernel, which is not
  * a required dependency of this bundle — only registered by IntegrationCompilerPass
  * when that interface is actually available.
+ *
+ * @internal
  */
 final class IntegrationEngineDataCollector implements DataCollectorInterface
 {
