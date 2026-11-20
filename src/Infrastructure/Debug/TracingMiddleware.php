@@ -22,6 +22,8 @@ use IntegrationEngine\Core\Exception\RequestResponseException;
  * profiler_payloads (see ADR 0019). It is irrelevant on its own: this class
  * is only ever wired into the container when kernel.debug is already true,
  * so there is no code path where payloads are captured outside debug mode.
+ *
+ * @internal
  */
 final class TracingMiddleware extends AbstractClientMiddleware
 {

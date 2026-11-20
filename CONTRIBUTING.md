@@ -98,6 +98,25 @@ Increment on **backward-compatible bug fixes**:
 - Test and documentation corrections.
 - Performance improvements.
 
+### What the versioning covers
+
+Only breaking changes to the **public API** require a MAJOR release. The public API is:
+
+- every class, interface, trait, method and constant under `src/` that is **not** marked `@internal`;
+- the bundle configuration keys, the integration YAML keys and the `integration_engine.*` service tags;
+- lifecycle event classes and their public properties, and exception classes with their public properties (including the meaning of `RequestResponseException::$statusCode`);
+- console command names, arguments and options.
+
+Not part of the public API, and free to change in any release:
+
+- anything marked `@internal` — the engine's dispatch helpers, the HTTP pipeline internals, the profiler collector, the compiler-pass helpers and the code generators;
+- exception messages and `RequestResponseException::$context` text;
+- the content of files produced by `make:integration` and `make:webhook` (files already generated belong to the application).
+
+### Deprecations
+
+A public API element that will be removed or changed incompatibly is first deprecated in a MINOR release: it gets a `@deprecated` tag naming its replacement and an entry under `Deprecated` in `CHANGELOG.md`. It is removed no earlier than the next MAJOR release, and that MAJOR's upgrade guide (docs/upgrade-N.0.md) lists the removal with its migration.
+
 ## Release Process
 
 1. **CHANGELOG.md** — updated with each release, following [Keep a Changelog](https://keepachangelog.com/) format.

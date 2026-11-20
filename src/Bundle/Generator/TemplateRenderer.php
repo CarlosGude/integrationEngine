@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IntegrationEngine\Bundle\Generator;
 
+/** @internal */
 final readonly class TemplateRenderer
 {
     public function __construct(
@@ -133,7 +134,7 @@ final readonly class TemplateRenderer
 
                 protected static function transform(AbstractAction \$action, array \$response, array \$headers): ResponseInterface
                 {
-                    return new {$this->ctx->action}Response();
+                    throw new \\LogicException('{$this->ctx->action}Mapper::transform() is not implemented yet: map \$response into {$this->ctx->action}Response and reject missing required fields.');
                 }
             }
             PHP;

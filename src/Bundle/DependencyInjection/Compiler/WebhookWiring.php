@@ -19,6 +19,7 @@ use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\Webhook\Client\AbstractRequestParser;
 
+/** @internal */
 final readonly class WebhookWiring
 {
     /** @param \Closure(string): bool $classExists */

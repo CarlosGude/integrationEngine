@@ -12,6 +12,18 @@ export function getHTML(lang = 'en') {
 
     const isEs = lang === 'es';
     const docsHref = 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/documentation.md';
+    const generatorDocsHref = 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/getting-started/generating-an-integration.md';
+    const demoBlob = 'https://github.com/CarlosGude/integrationEngine-demo/blob/main/';
+    const linkTargets = {
+        legacy: `${demoBlob}src/Legacy/TmdbApiService.php`,
+        engine: 'https://github.com/CarlosGude/integrationEngine-demo/tree/main/src/Integrations/Tmdb',
+        parity: `${demoBlob}tests/Legacy/LegacyEngineParityTest.php`,
+        validation: 'https://github.com/CarlosGude/integrationEngine/blob/main/docs/getting-started/mappers-and-responses.md#what-the-engine-validates-and-what-your-mapper-must',
+    };
+    // Copy marks a link as [name]text[/] so both languages share the same URLs.
+    const withLinks = text => text
+        .replace(/\[(\w+)\]/g, (_, name) => `<a href="${linkTargets[name]}" target="_blank" rel="noopener">`)
+        .replaceAll('[/]', '</a>');
 
     const compareLeft  = t.compareItems.map(i => `
       <div class="compare-item"><span class="ci-icon">&#10007;</span>${i.without}</div>`).join('');
@@ -271,8 +283,10 @@ export function getHTML(lang = 'en') {
       <div class="struct-header">MAKE:INTEGRATION OUTPUT</div>
       <pre><span class="cm">$ php bin/console make:integration MyApi GetUser</span>
 
+config/packages/integration_engine.yaml <span class="cm">${t.startGenBundleConfig}</span>
 MyApi/
 <span class="key">├─</span> MyApi.yaml                    <span class="cm">${t.startGenYaml}</span>
+<span class="key">├─</span> <span class="hl">MyApiIntegration.php</span>          <span class="cm">${t.startGenIntegration}</span>
 <span class="key">└─</span> GetUser/
    <span class="key">├─</span> Request/<span class="hl">GetUserAction.php</span>    <span class="cm">${t.startGenAction}</span>
    <span class="key">└─</span> Response/
@@ -282,7 +296,7 @@ MyApi/
 <span class="cm">${t.startGenIncrementalLabel}</span>
 <span class="cm">$ php bin/console make:integration MyApi CreateOrder</span>
 <span class="cm">${t.startGenIncrementalNote}</span></pre>
-      <a href="${docsHref}" target="_blank" rel="noopener" class="btn-primary gen-docs-link">${t.startGenDocsLink}</a>
+      <a href="${generatorDocsHref}" target="_blank" rel="noopener" class="btn-primary gen-docs-link">${t.startGenDocsLink}</a>
     </div>
   </div>
 </section>
@@ -542,6 +556,7 @@ MyApi/
     <div class="eyebrow">${t.patternEyebrow}</div>
     <h2 class="s-heading">${t.patternH2}</h2>
     <p class="s-sub">${t.patternSub}</p>
+    <div class="insight pattern-measured">${withLinks(t.patternMeasured)}</div>
     <button class="pattern-expand-btn" id="pattern-expand-btn"
       onclick="togglePattern()"
       data-label-open="${t.patternExpandLabel}"
@@ -692,7 +707,9 @@ MyApi/
             <span class="str">'stationId'</span> =&gt; <span class="var">$stationId</span>,
         ])</span>,
     );
-    \assert(<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetStationByIdResponse</span>);
+    <span class="kw">if</span> (!<span class="var">$response</span> <span class="kw">instanceof</span> <span class="cls">GetStationByIdResponse</span>) {
+        <span class="kw">throw new</span> <span class="cls">\LogicException</span>(<span class="str">'Unexpected response type.'</span>);
+    }
     <span class="kw">return</span> <span class="var">$response</span>;
 }
 
@@ -733,26 +750,37 @@ MyApi/
             <div class="file-label">src/Engine/.../GetStationsByCountryMapper.php</div>
             <div class="code-block"><span class="kw">final class</span> <span class="cls">GetStationsByCountryMapper</span> <span class="kw">extends</span> <span class="cls">AbstractMapper</span>
 {
+    <span class="kw">public static function</span> <span class="fn">getAction</span>(): <span class="cls">string</span>
+    {
+        <span class="kw">return</span> <span class="cls">GetStationsByCountryAction</span>::<span class="kw">class</span>;
+    }
+
     <span class="kw">protected static function</span> <span class="fn">transform</span>(
-        <span class="cls">AbstractAction</span> <span class="var">$action</span>, <span class="cls">array</span> <span class="var">$response</span>
+        <span class="cls">AbstractAction</span> <span class="var">$action</span>, <span class="cls">array</span> <span class="var">$response</span>, <span class="cls">array</span> <span class="var">$headers</span>
     ): <span class="cls">ResponseInterface</span> {
-        <span class="var">$photoBaseUrl</span> = <span class="var">$response</span>[<span class="good-hl"><span class="str">'photoBaseUrl'</span></span>];  <span class="cm">${t.p3CmOnlyPlace}</span>
-        <span class="var">$stations</span> = <span class="fn">array_map</span>(
+        <span class="var">$photoBaseUrl</span> = <span class="var">$response</span>[<span class="good-hl"><span class="str">'photoBaseUrl'</span></span>]  <span class="cm">${t.p3CmOnlyPlace}</span>
+            ?? <span class="kw">throw new</span> <span class="cls">\UnexpectedValueException</span>(<span class="str">'missing photoBaseUrl'</span>);
+        <span class="var">$stations</span> = <span class="var">$response</span>[<span class="good-hl"><span class="str">'stations'</span></span>]          <span class="cm">${t.p3CmOnlyPlace}</span>
+            ?? <span class="kw">throw new</span> <span class="cls">\UnexpectedValueException</span>(<span class="str">'missing stations'</span>);
+
+        <span class="kw">return new</span> <span class="cls">GetStationsByCountryResponse</span>(<span class="fn">array_map</span>(
             <span class="kw">fn</span>(<span class="cls">array</span> <span class="var">$s</span>) =&gt; <span class="cls">StationDto</span>::<span class="fn">fromApiData</span>(<span class="var">$s</span>, <span class="var">$photoBaseUrl</span>),
-            <span class="var">$response</span>[<span class="good-hl"><span class="str">'stations'</span></span>],              <span class="cm">${t.p3CmOnlyPlace}</span>
-        );
-        <span class="kw">return new</span> <span class="cls">GetStationsByCountryResponse</span>(<span class="var">$stations</span>);
+            <span class="var">$stations</span>,
+        ));
     }
 }</div>
             <div class="file-label">src/Engine/.../StationDto.php</div>
             <div class="code-block"><span class="kw">public static function</span> <span class="fn">fromApiData</span>(<span class="cls">array</span> <span class="var">$station</span>, <span class="cls">string</span> <span class="var">$photoBaseUrl</span>): <span class="cls">self</span>
 {
+    <span class="var">$required</span> = <span class="kw">static fn</span>(<span class="cls">string</span> <span class="var">$field</span>) =&gt; <span class="var">$station</span>[<span class="var">$field</span>]
+        ?? <span class="kw">throw new</span> <span class="cls">\UnexpectedValueException</span>(<span class="str">"missing </span><span class="var">$field</span><span class="str">"</span>);
     <span class="var">$firstPhoto</span> = <span class="var">$station</span>[<span class="good-hl"><span class="str">'photos'</span></span>][0] ?? <span class="kw">null</span>;  <span class="cm">${t.p3CmOnlyPlace}</span>
+
     <span class="kw">return new</span> <span class="cls">self</span>(
-        <span class="key">id</span>:       <span class="var">$station</span>[<span class="good-hl"><span class="str">'id'</span></span>],
-        <span class="key">title</span>:    <span class="var">$station</span>[<span class="good-hl"><span class="str">'title'</span></span>],
-        <span class="key">lat</span>:      (<span class="cls">float</span>) <span class="var">$station</span>[<span class="good-hl"><span class="str">'lat'</span></span>],
-        <span class="key">lon</span>:      (<span class="cls">float</span>) <span class="var">$station</span>[<span class="good-hl"><span class="str">'lon'</span></span>],
+        <span class="key">id</span>:       <span class="var">$required</span>(<span class="good-hl"><span class="str">'id'</span></span>),
+        <span class="key">title</span>:    <span class="var">$required</span>(<span class="good-hl"><span class="str">'title'</span></span>),
+        <span class="key">lat</span>:      <span class="var">$required</span>(<span class="good-hl"><span class="str">'lat'</span></span>),
+        <span class="key">lon</span>:      <span class="var">$required</span>(<span class="good-hl"><span class="str">'lon'</span></span>),
         <span class="key">hasPhoto</span>: <span class="var">$firstPhoto</span> !== <span class="kw">null</span>,
         <span class="key">photoUrl</span>: <span class="var">$firstPhoto</span> !== <span class="kw">null</span>
             ? <span class="var">$photoBaseUrl</span> . <span class="var">$firstPhoto</span>[<span class="good-hl"><span class="str">'path'</span></span>]
@@ -762,7 +790,7 @@ MyApi/
 <span class="cm">${t.p3CmRenameOne}</span></div>
           </div>
         </div>
-        <div class="insight">${t.p3Insight}</div>
+        <div class="insight">${withLinks(t.p3Insight)}</div>
       </div>
 
       <!-- 4. ACL -->

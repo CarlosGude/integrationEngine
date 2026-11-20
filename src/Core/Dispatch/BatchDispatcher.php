@@ -12,6 +12,7 @@ use IntegrationEngine\Core\Contract\Client\ClientInterface;
 use IntegrationEngine\Core\Contract\Client\DynamicBaseUrlClientInterface;
 use Psr\Log\LoggerInterface;
 
+/** @internal */
 final class BatchDispatcher
 {
     public function __construct(

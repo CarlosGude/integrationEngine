@@ -17,6 +17,8 @@ namespace IntegrationEngine\Infrastructure\Debug;
  * kernel.debug is true. responseData is only ever populated on success: a
  * failed call's upstream response/error body is never captured, matching the
  * existing rule for error messages.
+ *
+ * @internal
  */
 final readonly class IntegrationCall
 {

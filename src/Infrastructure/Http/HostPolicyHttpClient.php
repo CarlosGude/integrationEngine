@@ -11,6 +11,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
 /** Guards the final URL, including token requests and request middleware changes. */
+/** @internal */
 final class HostPolicyHttpClient implements HttpClientInterface
 {
     use DecoratorTrait;

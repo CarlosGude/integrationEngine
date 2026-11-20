@@ -47,6 +47,8 @@ use Symfony\Component\HttpKernel\DataCollector\DataCollectorInterface;
  *     block_private_networks?: bool,
  *     retry?: array{max_retries: int, delay_ms: int, multiplier: float, max_delay_ms: int, jitter: float, status_codes: list<int>, retry_non_idempotent: bool},
  * }
+ *
+ * @internal
  */
 final class IntegrationCompilerPass implements CompilerPassInterface
 {

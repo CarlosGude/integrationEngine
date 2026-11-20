@@ -16,6 +16,7 @@ use IntegrationEngine\Core\Port\ConfigPort;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 
+/** @internal */
 final class AuthenticationHandler
 {
     private DynamicAuthHandler $dynamicAuthHandler;

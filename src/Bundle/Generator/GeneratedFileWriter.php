@@ -11,6 +11,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Static and stateless: the bundle autodiscovers this namespace as services, so a
  * constructor taking the console style or the force flag could not be autowired.
+ *
+ * @internal
  */
 final class GeneratedFileWriter
 {

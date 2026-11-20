@@ -19,6 +19,8 @@ use IntegrationEngine\Core\Port\CachePort;
  *      state, then resolves the token by calling $factory(); the factory cannot be
  *      reordered because it runs inside this method
  *   2. plan($raw) — after dispatch: identifies 401s, drops stale cache entries
+ *
+ * @internal
  */
 final class BatchTokenRetry
 {

@@ -25,7 +25,8 @@ final class GetEmployeeMapper extends AbstractMapper
 }
 ```
 
-The response DTO must implement `ResponseInterface`:
+The response DTO must implement `ResponseInterface`. Its factory rejects a response
+that breaks the API contract instead of filling the gap with a default:
 
 ```php
 use IntegrationEngine\Core\Contract\Response\ResponseInterface;
@@ -33,42 +34,86 @@ use IntegrationEngine\Core\Contract\Response\ResponseInterface;
 final readonly class GetEmployeeResponse implements ResponseInterface
 {
     private function __construct(
-        public int    $id,
-        public string $name,
+        public int     $id,
+        public string  $name,
+        public ?string $email,
     ) {}
 
+    /** @param array<mixed> $data */
     public static function create(array $data): self
     {
-        return new self(
-            id:   (int)    ($data['id']   ?? 0),
-            name: (string) ($data['name'] ?? ''),
-        );
+        $id = $data['id'] ?? null;
+        if (!\is_int($id) || $id < 1) {
+            throw new \UnexpectedValueException('GetEmployee response: "id" is missing or not a positive integer.');
+        }
+
+        $name = $data['name'] ?? null;
+        if (!\is_string($name) || '' === $name) {
+            throw new \UnexpectedValueException('GetEmployee response: "name" is missing or empty.');
+        }
+
+        // The API documents email as optional, so absence is a valid value here.
+        $email = $data['email'] ?? null;
+
+        return new self($id, $name, \is_string($email) ? $email : null);
     }
 
-    public function toArray(): array { return ['id' => $this->id, 'name' => $this->name]; }
+    public function toArray(): array
+    {
+        return ['id' => $this->id, 'name' => $this->name, 'email' => $this->email];
+    }
 }
 ```
 
 ---
 
-## Type mapping
+## Required and optional fields
 
-Match PHP types to what the API returns:
+Decide per field from the API contract, not from what PHP can cast. With `$v = $data['x'] ?? null`:
 
-| API type | PHP type | Cast in `create()` |
+| API type | Required: reject when missing or invalid | Optional: absence is a valid value |
 |---|---|---|
-| integer | `int` | `(int) ($data['x'] ?? 0)` |
-| number | `float` | `(float) ($data['x'] ?? 0.0)` |
-| boolean | `bool` | `(bool) ($data['x'] ?? false)` |
-| string | `string` | `(string) ($data['x'] ?? '')` |
-| array | `array` | `$data['x'] ?? []` |
-| nullable string | `?string` | `is_string($data['x'] ?? null) ? $data['x'] : null` |
-| nested object (simple) | `array` | `$data['x'] ?? []` |
-| nested object (reused) | `NestedDto` | `NestedDto::create($data['x'] ?? [])` |
+| integer | `\is_int($v) ? $v : throw new \UnexpectedValueException(...)` | `\is_int($v) ? $v : null` |
+| number | `\is_int($v) \|\| \is_float($v) ? (float) $v : throw ...` | `\is_int($v) \|\| \is_float($v) ? (float) $v : null` |
+| boolean | `\is_bool($v) ? $v : throw ...` | `\is_bool($v) ? $v : null` |
+| string | `\is_string($v) ? $v : throw ...` | `\is_string($v) ? $v : null` |
+| array / list | `\is_array($v) ? $v : throw ...` | `\is_array($v) ? $v : []` — only when the API documents that absence means empty |
+| nested object | `\is_array($v) ? NestedDto::create($v) : throw ...` | `\is_array($v) ? NestedDto::create($v) : null` |
+
+A default such as `(int) ($data['x'] ?? 0)` turns a missing, `null`, renamed or malformed
+field into a value that looks valid: the DTO is built, nothing fails, and the error surfaces
+far from the mapper. Casts hide malformed values as well — `(int) '12abc'` is `12` and
+`(string)` of an array is `'Array'`. Use a default only when the API documents that the field
+may be absent and the default means exactly what absence means.
 
 Use a dedicated DTO class for nested objects that appear in more than one response, or
 that have more than three or four fields. Nested DTOs do **not** implement
 `ResponseInterface` — only the top-level class returned from `transform()` does.
+
+---
+
+## What the engine validates, and what your mapper must
+
+The engine rejects a response before your mapper runs when:
+
+- the HTTP status is 400 or higher, or the request fails at the network level;
+- the body is not empty and does not decode to a JSON object or array (for example, an HTML maintenance page);
+- a GraphQL response carries an `errors` array;
+- the mapper's `getAction()` does not match the action, or an action that declares a response has no mapper.
+
+Each of these throws before `transform()` is called ([Errors](../errors.md)).
+
+Everything about the **content** of the response is the mapper's job: which fields exist, their types,
+their formats and their allowed values. The engine passes the decoded body to `transform()` unchanged, so a
+`200` with `{}`, a renamed field or a string where you expected a number reaches your mapper as is. An empty
+body or HTTP 204 arrives as `[]`; with GraphQL, the mapper receives the `data` member, and `[]` when the
+response has none. PHPStan does not cover this either: a `@var array{...}` annotation describes the shape
+to the analyser without checking it at runtime.
+
+An exception thrown from `transform()` is neither caught nor wrapped. `send()` rethrows it after
+dispatching `RequestFailed` — preceded by `ResponseReceived`, which tells you the API answered and the
+mapping failed ([Lifecycle events](../lifecycle.md)). In `sendMany()` it becomes that item's failure,
+without affecting the other items ([Batch requests](batch-requests.md)).
 
 ---
 

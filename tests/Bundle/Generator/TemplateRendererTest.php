@@ -83,7 +83,10 @@ final class TemplateRendererTest extends TestCase
 
         self::assertStringContainsString('final class GetEmployeesMapper extends AbstractMapper', $code);
         self::assertStringContainsString('return GetEmployeesAction::class;', $code);
-        self::assertStringContainsString('return new GetEmployeesResponse();', $code);
+        self::assertStringContainsString(
+            "throw new \\LogicException('GetEmployeesMapper::transform() is not implemented yet: map \$response into GetEmployeesResponse and reject missing required fields.');",
+            $code
+        );
         self::assertStringContainsString(
             'use App\Infrastructure\Integrations\MyApi\GetEmployees\Request\GetEmployeesAction;',
             $code

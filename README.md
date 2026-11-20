@@ -34,6 +34,8 @@ An integration is built from a small set of contracts:
 
 The bundle then handles configuration lookup, path resolution, static or dynamic auth, connection overrides, middleware, HTTP transport, batching, response mapping and lifecycle events.
 
+It rejects failed requests — HTTP errors, network errors, bodies that are not JSON objects or arrays, GraphQL `errors` — before your mapper runs. It does **not** validate the content of a successful response: which fields exist and what they hold is checked by your mapper, which should throw when a required field is missing or invalid. See [what the engine validates, and what your mapper must](./docs/getting-started/mappers-and-responses.md#what-the-engine-validates-and-what-your-mapper-must).
+
 It intentionally does **not** own your domain model. Keep the external DTOs behind a Gateway / Anti-Corruption Layer when they cross into application or domain code.
 
 ## When not to use it
@@ -60,7 +62,7 @@ Generate the integration shell and first action:
 php bin/console make:integration MyApi GetEmployee
 ```
 
-The command creates the integration facade, action, mapper/response when applicable, and the integration YAML. On the first integration it can also create `config/packages/integration_engine.yaml`.
+The command creates the integration class (`MyApiIntegration`, holding the `NAME` constant), the action, the mapper and response when the action returns data, and the action's entry in the integration YAML. On the first integration it also creates `config/packages/integration_engine.yaml`; for later integrations it prints the block to add there. The response fields, the mapping and the facade methods shown below are yours to write — see [Generating an integration](./docs/getting-started/generating-an-integration.md).
 
 Bundle configuration is per integration:
 

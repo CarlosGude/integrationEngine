@@ -13,6 +13,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
+use Symfony\Component\Yaml\Yaml;
 
 final class MakeIntegrationCommandTest extends TestCase
 {
@@ -172,6 +173,25 @@ final class MakeIntegrationCommandTest extends TestCase
         self::assertSame('<?php // manually edited', file_get_contents($actionFile));
     }
 
+    #[Test]
+    public function rerunningForAnExistingActionDoesNotDuplicateItsYamlEntry(): void
+    {
+        $this->writeBundleConfig('my_api');
+
+        foreach ([1, 2] as $run) {
+            $tester = $this->tester();
+            $tester->setInputs(['/employees', 'GET']);
+            $tester->execute(['name' => 'MyApi', 'action' => 'GetEmployees', '--force' => true]);
+        }
+
+        $yamlPath = $this->projectDir.'/src/Infrastructure/Integrations/MyApi/MyApi.yaml';
+        self::assertSame(1, substr_count((string) file_get_contents($yamlPath), 'GetEmployees:'));
+        self::assertStringContainsString('"GetEmployees" is already declared', $tester->getDisplay());
+        $actions = Yaml::parseFile($yamlPath);
+        self::assertIsArray($actions);
+        self::assertArrayHasKey('GetEmployees', $actions);
+    }
+
     /**
      * The CI job that validates the generator on PHP 8.2 (see
      * .github/workflows/ci.yml) runs this command with --no-interaction
@@ -195,6 +215,70 @@ final class MakeIntegrationCommandTest extends TestCase
         self::assertFileExists($root.'/GetThing/Request/GetThingAction.php');
         self::assertFileExists($root.'/GetThing/Response/GetThingMapper.php');
         self::assertFileExists($root.'/GetThing/Response/GetThingResponse.php');
+    }
+
+    #[Test]
+    public function noInteractionFirstRunWarnsThatTheIntegrationIsNotRegistered(): void
+    {
+        $tester = $this->tester();
+
+        $tester->execute(['name' => 'Acme', 'action' => 'GetThing'], ['interactive' => false]);
+
+        $display = $tester->getDisplay();
+        self::assertFileDoesNotExist($this->projectDir.'/config/packages/integration_engine.yaml');
+        self::assertStringContainsString('The "Acme" integration is not registered', $display);
+        self::assertStringContainsString('replace the placeholder base_url', $display);
+        self::assertStringContainsString("config_path: '%kernel.project_dir%/src/Infrastructure/Integrations/Acme/Acme.yaml'", $display);
+    }
+
+    #[Test]
+    public function newIntegrationWithAnExistingBundleConfigAsksForItsWiringAndShowsWhatToAdd(): void
+    {
+        $this->writeBundleConfig('my_api');
+        $bundleConfigBefore = (string) file_get_contents($this->projectDir.'/config/packages/integration_engine.yaml');
+
+        $tester = $this->tester();
+        $tester->setInputs(['https://other.example.com', 'graphql']);
+        $exitCode = $tester->execute(['name' => 'OtherApi', 'action' => 'GetThing']);
+
+        self::assertSame(Command::SUCCESS, $exitCode);
+
+        $display = $tester->getDisplay();
+        self::assertStringContainsString('Base URL for the "OtherApi" integration', $display);
+        self::assertStringNotContainsString('Path for action', $display);
+        self::assertStringContainsString('The "OtherApi" integration is not registered', $display);
+        self::assertStringNotContainsString('replace the placeholder base_url', $display);
+        self::assertStringContainsString('other_api:', $display);
+        self::assertStringContainsString("base_url: 'https://other.example.com'", $display);
+        self::assertStringContainsString('client: graphql', $display);
+
+        // The user's file is never rewritten: comments and formatting stay theirs.
+        self::assertSame($bundleConfigBefore, file_get_contents($this->projectDir.'/config/packages/integration_engine.yaml'));
+    }
+
+    #[Test]
+    public function registeredIntegrationDoesNotWarn(): void
+    {
+        $this->writeBundleConfig('my_api');
+
+        $tester = $this->tester();
+        $tester->setInputs(['/orders/{id}', 'GET']);
+        $tester->execute(['name' => 'MyApi', 'action' => 'GetOrder']);
+
+        self::assertStringNotContainsString('is not registered', $tester->getDisplay());
+    }
+
+    #[Test]
+    public function firstRunBundleConfigPointsAtTheCustomPath(): void
+    {
+        $tester = $this->tester();
+        $tester->setInputs(['https://api.example.com', 'rest', '/x', 'GET']);
+        $tester->execute(['name' => 'MyApi', 'action' => 'GetX', '--path' => 'src/Integrations/', '--namespace' => 'App\Integrations']);
+
+        $bundleConfig = (string) file_get_contents($this->projectDir.'/config/packages/integration_engine.yaml');
+        self::assertStringContainsString("config_path: '%kernel.project_dir%/src/Integrations/MyApi/MyApi.yaml'", $bundleConfig);
+        self::assertFileExists($this->projectDir.'/src/Integrations/MyApi/MyApi.yaml');
+        self::assertStringNotContainsString('is not registered', $tester->getDisplay());
     }
 
     #[Test]

@@ -6,6 +6,7 @@ namespace IntegrationEngine\Infrastructure\Http;
 
 use Symfony\Component\HttpClient\Retry\GenericRetryStrategy;
 
+/** @internal */
 final class RetryStrategyFactory
 {
     /** @param array{status_codes?: list<int>, retry_non_idempotent?: bool, delay_ms?: int, multiplier?: float, max_delay_ms?: int, jitter?: float, max_retries?: int} $retryConfig */
