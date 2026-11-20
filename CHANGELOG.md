@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [9.5.0] - 2026-11-20
+
 ### Fixed
 
 - The REST and GraphQL adapters reported a response whose body is not a JSON object or array (an HTML maintenance page served with HTTP 200, invalid JSON, a JSON scalar) as "Network error" with status code 0, which `docs/errors.md` reserves for failures before any response exists. They now throw `RequestResponseException` with the response's HTTP status and a message saying the body could not be decoded, in `send()` and `sendMany()` alike. Only 2xx/3xx responses reach decoding, so retry classification is unchanged: neither 0 nor a 2xx status is transient.
@@ -28,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `CONTRIBUTING.md` states what the versioning covers (public contracts vs `@internal` classes) and a deprecation policy: deprecate in a MINOR release, remove no earlier than the next MAJOR, listed in its upgrade guide.
 - CHANGELOG release dates for 2.0.0 to 4.1.0 corrected to the dates of their tags.
 - Landing page: the mapper example now implements `AbstractMapper` (`getAction()`, the `$headers` argument) and rejects missing fields, guarded by a test; the facade example throws `LogicException` like the README instead of using `assert()`; the route-building claim about `null` was corrected (a `string` parameter cannot receive one, and an empty string passes the engine too); the comparison states it shows excerpts and adds the files and line counts measured on the demo's TMDB code; "Less boilerplate" was replaced, since one endpoint takes more files with the pattern; the generator tree lists `MyApiIntegration.php` and the bundle configuration, and no longer says the YAML entry must be added by hand.
+- Refreshed the latest-release marker to v9.5.0 in `docs/documentation.md`, `docs/roadmap.md` and the landing page, and the measured results in `docs/advanced/quality.md`.
 - README badges for Packagist version, PHP version, installs, license, PHPStan level and mutation score.
 
 - One canonical page per concept: pages that repeated a concept now link to its canonical page instead. The long-form developer guide, which restated every topic, was removed after moving the content found only there to the pages that own each concept. Use `docs/documentation.md` for the reading order, or the single-file editions.

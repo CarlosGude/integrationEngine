@@ -1,6 +1,6 @@
 # IntegrationEngine — Documentation
 
-This is the **single index for current documentation**. It describes the code on `main`; the latest tagged release is [v9.4.0](https://github.com/CarlosGude/integrationEngine/releases/tag/v9.4.0) and release history remains in [`CHANGELOG.md`](../CHANGELOG.md).
+This is the **single index for current documentation**. It describes the code on `main`; the latest tagged release is [v9.5.0](https://github.com/CarlosGude/integrationEngine/releases/tag/v9.5.0) and release history remains in [`CHANGELOG.md`](../CHANGELOG.md).
 
 Every concept has one canonical page. Other pages link to it instead of repeating it.
 

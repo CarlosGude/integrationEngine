@@ -19,7 +19,7 @@ The exact breaking changes are in [upgrade-8.0.md](./upgrade-8.0.md) and release
 
 ## Current branch
 
-[v9.4.0](https://github.com/CarlosGude/integrationEngine/releases/tag/v9.4.0) is the latest tag. Since v9.0.0 (URL parameters resolved exclusively from context, see [upgrade-9.0.md](./upgrade-9.0.md)) it has added body-type validation against the declared YAML class (v9.1.0), an opt-in profiler payload panel (v9.2.0), shared `defaults.authorization` with per-action override (v9.3.0), and the `ResponseReceived` lifecycle event that separates pre-mapping time from mapping time (v9.4.0). See [the changelog](../CHANGELOG.md) for details.
+[v9.5.0](https://github.com/CarlosGude/integrationEngine/releases/tag/v9.5.0) is the latest tag. Since v9.0.0 (URL parameters resolved exclusively from context, see [upgrade-9.0.md](./upgrade-9.0.md)) it has added body-type validation against the declared YAML class (v9.1.0), an opt-in profiler payload panel (v9.2.0), shared `defaults.authorization` with per-action override (v9.3.0), the `ResponseReceived` lifecycle event that separates pre-mapping time from mapping time (v9.4.0), and undecodable response bodies reported with their HTTP status, `make:integration` fixes for registering further integrations, and `@internal` markers with a deprecation policy (v9.5.0). See [the changelog](../CHANGELOG.md) for details.
 
 ## Next proposals
 

@@ -306,7 +306,7 @@ Start from [docs/documentation.md](#documentation), the only documentation index
 
 *Source: `docs/documentation.md`*
 
-This is the **single index for current documentation**. It describes the code on `main`; the latest tagged release is [v9.4.0](https://github.com/CarlosGude/integrationEngine/releases/tag/v9.4.0) and release history remains in [`CHANGELOG.md`](../CHANGELOG.md).
+This is the **single index for current documentation**. It describes the code on `main`; the latest tagged release is [v9.5.0](https://github.com/CarlosGude/integrationEngine/releases/tag/v9.5.0) and release history remains in [`CHANGELOG.md`](../CHANGELOG.md).
 
 Every concept has one canonical page. Other pages link to it instead of repeating it.
 
@@ -3236,13 +3236,13 @@ the absence of suppressed default mutators and inclusion of uncovered code.
 
 ### Measurements and scope
 
-Measured 2026-10-22 on PHP 8.5.12 with Xdebug:
+Measured 2026-11-20 on PHP 8.5.12 with Xdebug:
 
-- `make ci`: **918 tests, 2,651 assertions**, style, PHPStan and Deptrac passing.
+- `make ci`: **948 tests, 3,350 assertions**, style, PHPStan and Deptrac passing.
 - Deptrac: **0 violations, 0 skipped violations, 0 uncovered dependencies**.
-- Infection: **1,548 mutants**, 1,421 killed, 2 errored, 110 escaped, 15 uncovered.
-- **MSI 91.93%; covered MSI 92.82%**. All default mutators enabled, no ignores.
-- Landing: **27 tests** passing in its independent Node job.
+- Infection: **1,550 mutants**, 1,423 killed, 2 errored, 110 escaped, 15 uncovered.
+- **MSI 91.94%; covered MSI 92.83%**. All default mutators enabled, no ignores.
+- Landing: **29 tests** passing in its independent Node job.
 
 Counts reflect that execution; documentation data-provider counts can change
 when documents are updated. The [quality audit](archived/quality-audit-2026-09-22.md) includes
@@ -3719,7 +3719,7 @@ The exact breaking changes are in [upgrade-8.0.md](#upgrade-8-0) and release his
 
 ### Current branch
 
-[v9.4.0](https://github.com/CarlosGude/integrationEngine/releases/tag/v9.4.0) is the latest tag. Since v9.0.0 (URL parameters resolved exclusively from context, see [upgrade-9.0.md](#upgrade-9-0)) it has added body-type validation against the declared YAML class (v9.1.0), an opt-in profiler payload panel (v9.2.0), shared `defaults.authorization` with per-action override (v9.3.0), and the `ResponseReceived` lifecycle event that separates pre-mapping time from mapping time (v9.4.0). See [the changelog](../CHANGELOG.md) for details.
+[v9.5.0](https://github.com/CarlosGude/integrationEngine/releases/tag/v9.5.0) is the latest tag. Since v9.0.0 (URL parameters resolved exclusively from context, see [upgrade-9.0.md](#upgrade-9-0)) it has added body-type validation against the declared YAML class (v9.1.0), an opt-in profiler payload panel (v9.2.0), shared `defaults.authorization` with per-action override (v9.3.0), the `ResponseReceived` lifecycle event that separates pre-mapping time from mapping time (v9.4.0), and undecodable response bodies reported with their HTTP status, `make:integration` fixes for registering further integrations, and `@internal` markers with a deprecation policy (v9.5.0). See [the changelog](../CHANGELOG.md) for details.
 
 <a id="roadmap--next-proposals"></a>
 
